@@ -55,7 +55,6 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
-extern CEC_HandleTypeDef hcec;
 extern TIM_HandleTypeDef htim3;
 
 /* USER CODE BEGIN EV */
@@ -172,20 +171,6 @@ void TIM3_IRQHandler(void)
   /* USER CODE BEGIN TIM3_IRQn 1 */
 
   /* USER CODE END TIM3_IRQn 1 */
-}
-
-/**
-  * @brief This function handles HDMI-CEC global interrupt.
-  */
-void CEC_IRQHandler(void)
-{
-  /* USER CODE BEGIN CEC_IRQn 0 */
-
-  /* USER CODE END CEC_IRQn 0 */
-  HAL_CEC_IRQHandler(&hcec);
-  /* USER CODE BEGIN CEC_IRQn 1 */
-
-  /* USER CODE END CEC_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */
