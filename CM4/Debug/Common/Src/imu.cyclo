@@ -1,0 +1,3 @@
+C:/Users/c.thomas/STM32CubeIDE/workspace_1.18.0/Drone/Common/Src/imu.c:5:8:IMUReadReg	3
+C:/Users/c.thomas/STM32CubeIDE/workspace_1.18.0/Drone/Common/Src/imu.c:38:8:IMUWriteReg	1
+C:/Users/c.thomas/STM32CubeIDE/workspace_1.18.0/Drone/Common/Src/imu.c:46:5:IMUInit	2
