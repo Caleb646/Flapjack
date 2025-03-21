@@ -102,6 +102,13 @@
 #define BMI2_INT_STATUS_GYR_RDY_BIT (1 << 6)
 #define BMI2_INT_STATUS_ACC_RDY_BIT (1 << 7)
 
+#define BMI2_ACC_CONF_BWP_NORMAL_BIT  (4 << 4)
+#define BMI2_ACC_CONF_PERF_MODE_BIT   (1 << 7)
+
+#define BMI2_GYRO_CONF_BWP_NORMAL_BIT  (2 << 4)
+#define BMI2_GYRO_CONF_NOISE_PERF_BIT  (1 << 6)
+#define BMI2_GYRO_CONF_FILTER_PERF_BIT (1 << 7)
+
 #define BMI2_CHIP_ID 0x24
 
 #endif // BMI270_H
