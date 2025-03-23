@@ -32,11 +32,11 @@ typedef enum {
 } IMU_GYRO_RANGE;
 
 typedef enum {
-	IMU_ACC_ODR_50   = 0x07,
-	IMU_ACC_ODR_100  = 0x08,
-	IMU_ACC_ODR_200  = 0x09,
-	IMU_ACC_ODR_400  = 0x0A,
-	IMU_ACC_ODR_800  = 0x0B
+	IMU_GYRO_ODR_50   = 0x07,
+	IMU_GYRO_ODR_100  = 0x08,
+	IMU_GYRO_ODR_200  = 0x09,
+	IMU_GYRO_ODR_400  = 0x0A,
+	IMU_GYRO_ODR_800  = 0x0B
 } IMU_GYRO_ODR;
 
 typedef enum {
@@ -52,7 +52,7 @@ typedef struct
 	int16_t ax, ay, az;
 	// millidegrees per second
 	int16_t gx, gy, gz;
-	uint8_t accRange, accODR, gyroRange, gyroODR
+	uint8_t accRange, accODR, gyroRange, gyroODR;
 } IMU;
 
 IMU_STATUS IMUReadReg(IMU *pIMU, uint8_t const reg, uint8_t *pBuf, uint32_t len);

@@ -501,6 +501,7 @@ IMU_STATUS IMUWriteReg(IMU *pIMU, uint8_t const reg, uint8_t *pBuf, uint32_t len
 IMU_STATUS IMUUpdateGyro(IMU *pIMU)
 {
   uint8_t pBuffer[6];
+  memset(pBuffer, 0, sizeof(pBuffer));
   IMU_STATUS status = IMUReadReg(pIMU, BMI2_GYR_X_LSB_ADDR, pBuffer, 6);
 
   pIMU->rgx = (int16_t)((uint16_t)(pBuffer[1] << 8)) | ((uint16_t)pBuffer[0]);
@@ -517,12 +518,13 @@ IMU_STATUS IMUUpdateGyro(IMU *pIMU)
   pIMU->gy = ( ((int32_t)pIMU->rgy) * 1000 * scale) / 0x7FFF;
   pIMU->gz = ( ((int32_t)pIMU->rgz) * 1000 * scale) / 0x7FFF;
 
-  return IMU_OK;
+  return status;
 }
 
 IMU_STATUS IMUUpdateAccel(IMU *pIMU)
 {
   uint8_t pBuffer[6];
+  memset(pBuffer, 0, sizeof(pBuffer));
   IMU_STATUS status = IMUReadReg(pIMU, BMI2_ACC_X_LSB_ADDR, pBuffer, 6);
 
   pIMU->rax = (int16_t)((uint16_t)(pBuffer[1] << 8)) | ((uint16_t)pBuffer[0]);
@@ -538,7 +540,7 @@ IMU_STATUS IMUUpdateAccel(IMU *pIMU)
   pIMU->ay = ( ((int32_t)pIMU->ray) * 1000 * scale) / 0x7FFF;
   pIMU->az = ( ((int32_t)pIMU->raz) * 1000 * scale) / 0x7FFF;
 
-  return IMU_OK;
+  return status;
 }
 
 IMU_STATUS IMUUpdateAccelGyro(IMU *pIMU)
@@ -546,7 +548,7 @@ IMU_STATUS IMUUpdateAccelGyro(IMU *pIMU)
   IMU_STATUS status;
   status = IMUUpdateAccel(pIMU);
   status = IMUUpdateGyro(pIMU);
-  return IMU_OK;
+  return status;
 }
 
 void IMUInterruptHandler(IMU *pIMU)
@@ -555,14 +557,14 @@ void IMUInterruptHandler(IMU *pIMU)
   uint8_t pBuf[2] = {0, 0};
   IMU_STATUS status = IMUReadReg(pIMU, BMI2_INT_STATUS_1_ADDR, pBuf, 2);
 
-  uint8_t intStatus0 = pBuf[0];
+  // uint8_t intStatus0 = pBuf[0];
   uint8_t intStatus1 = pBuf[1];
 
   if(BIT_ISSET(intStatus1, BMI2_INT_STATUS_ERROR_BIT))
   {
     // TODO: log error
     status = IMUReadReg(pIMU, BMI2_ERROR_ADDR, pBuf, 1);
-    uint8_t errorCode = pBuf[0];
+    // uint8_t errorCode = pBuf[0];
     return;
   }
   if(BIT_ISSET(intStatus1, BMI2_INT_STATUS_ACC_RDY_BIT))
@@ -661,11 +663,11 @@ IMU_STATUS IMUInit(
   */
   // enable INT1 w input disabled, output enabled, push pull, and active high
   pBuffer[0] = (0 << 3) | (1 << 2) | (0 << 1) | (1 << 0);
-  status = IMUWrite(pIMU, BMI2_INT1_IO_CTRL_ADDR, pBuffer, 1);
+  status = IMUWriteReg(pIMU, BMI2_INT1_IO_CTRL_ADDR, pBuffer, 1);
   // interrupts will NOT be cleared automatically. Have to be cleared by the
   // the host reading the int status registers
   pBuffer[0] = 1;
-  status = IMUWrite(pIMU, BMI2_INT_LATCH_ADDR, pBuffer, 1);
+  status = IMUWriteReg(pIMU, BMI2_INT_LATCH_ADDR, pBuffer, 1);
 
 	return IMU_OK;
 }

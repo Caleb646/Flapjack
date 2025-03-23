@@ -1,4 +1,5 @@
 "./Common/Src/imu.o"
+"./Common/Src/log.o"
 "./Common/Src/system_stm32h7xx_dualcore_boot_cm4_cm7.o"
 "./Core/Src/freertos.o"
 "./Core/Src/main.o"
