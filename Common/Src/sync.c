@@ -1,4 +1,6 @@
 #include "stm32h7xx_it.h"
+#include "sync.h"
+#include "mem/mem.h"
 
 /*
 * \brief A SEV instruction was executed by CM7 
@@ -8,7 +10,8 @@
 */
 void CM7_SEV_IRQHandler(void)
 {
-
+    // CPUID == CM4
+    uint32_t taskID = *((uint32_t volatile *)MEM_SHARED_MAILBOX_CM4_START);
 }
 
 /*
@@ -19,5 +22,10 @@ void CM7_SEV_IRQHandler(void)
 */
 void CM4_SEV_IRQHandler(void)
 {
+    // CPUID == CM7
+    uint32_t taskID = *((uint32_t volatile *)MEM_SHARED_MAILBOX_CM7_START);
+    if(taskID == SYNC_TASKID_UART_OUT)
+    {
 
+    }
 }

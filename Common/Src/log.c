@@ -9,7 +9,7 @@
 #define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
 #endif
 
-Log sLogger_ = {NULL};
+Log sLogger_ = { NULL };
 
 PUTCHAR_PROTOTYPE
 {
