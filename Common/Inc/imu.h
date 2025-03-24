@@ -59,7 +59,7 @@ IMU_STATUS IMUReadReg(IMU *pIMU, uint8_t const reg, uint8_t *pBuf, uint32_t len)
 IMU_STATUS IMUWriteReg(IMU *pIMU, uint8_t const reg, uint8_t *pBuf, uint32_t len);
 IMU_STATUS IMUInit(  
 	IMU *pIMU, 
-	SPI_HandleTypeDef* pSPI,
+	SPI_HandleTypeDef *pSPI,
 	IMU_ACC_RANGE accRange,
 	IMU_ACC_ODR accODR,
 	IMU_GYRO_RANGE gyroRange,

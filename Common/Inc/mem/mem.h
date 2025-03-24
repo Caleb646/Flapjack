@@ -1,0 +1,24 @@
+
+#ifndef MEM_H
+#define MEM_H
+ 
+// #include "stm32h7xx_hal.h"
+#include <stdint.h>
+#include "common.h"
+#include "mem/ring_buff.h"
+
+#define MEM_U32_ALIGN4(addr) ( (uint32_t)addr & ((uint32_t)~0x3) )
+
+// SRAM4 = 0x38000000 - 0x3800FFFF
+#define MEM_SRAM_4_START 0x38000000
+#define MEM_SRAM_4_END   0x3800FFFF
+
+/*
+* Shared Ring Buffer for CM4 to write to the UART
+*/
+#define MEM_SHARED_UART_RINGBUFF_START MEM_U32_ALIGN4(MEM_SRAM_4_START)
+#define MEM_SHARED_UART_RINGBUFF_TOTAL_LEN (sizeof(RingBuff) + 256)
+#define MEM_SHARED_UART_RINGBUFF_END (MEM_SHARED_UART_RINGBUFF_START + MEM_SHARED_UART_RINGBUFF_TOTAL_LEN)
+
+#endif // MEM_H
+ 
