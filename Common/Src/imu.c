@@ -1,6 +1,7 @@
+#include <string.h>
 #include "imu.h"
 #include "bmi270.h"
-#include "string.h"
+
 
 // https://github.com/boschsensortec/BMI270_SensorAPI/blob/master/bmi270.c
 uint8_t const bmi270_config_file[] = {
@@ -575,6 +576,8 @@ void IMUInterruptHandler(IMU *pIMU)
   {
     status = IMUUpdateGyro(pIMU);
   }
+
+  if(status != IMU_OK) {}
 }
 
 

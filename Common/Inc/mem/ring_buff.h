@@ -35,8 +35,6 @@
 #ifndef RING_BUFF_H
 #define RING_BUFF_H
 
-// #include "stm32h7xx_hal.h"
-// #include "stm32h7xx_hal_spi.h"
 #include <stdint.h>
 #include "common.h"
 
@@ -88,10 +86,17 @@ typedef struct RingBuff_ {
     uint32_t magic2;
     // added paddding to ensure that 
     // uint8_t* buff starts at a 4 byte aligned address
-    uint8_t padding_[8];                           
+    uint8_t padding_[4];
 } RingBuff;
 
-STATIC_ASSERT(sizeof(RingBuff) == 64, "Ring buffer needs to be 64 bytes");
+// #define xstr(s) str(s)
+// #define str(s) #s
+// #define err_msg(x) #x " is " xstr(x)
+// #define AAA sizeof(RingBuff)
+
+// #pragma message "content of AAA: " err_msg(AAA)
+
+STATIC_ASSERT(sizeof(RingBuff) == 32, "RingBuff is not 32 bytes");
 
 RINGBUFF_VOLATILE RingBuff*     RingBuffCreate(void* buffdata, size_t size);
 uint8_t                         RingBuffIsReady(RINGBUFF_VOLATILE RingBuff* buff);

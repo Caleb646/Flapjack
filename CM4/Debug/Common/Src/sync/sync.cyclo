@@ -1,0 +1,5 @@
+C:/Users/caleb/Projects/Drone/Common/Src/sync/sync.c:21:26:SyncGetTaskHandler	2
+C:/Users/caleb/Projects/Drone/Common/Src/sync/sync.c:30:8:SyncInit	1
+C:/Users/caleb/Projects/Drone/Common/Src/sync/sync.c:36:8:SyncRegisterHandler	2
+C:/Users/caleb/Projects/Drone/Common/Src/sync/sync.c:49:6:CM7_SEV_IRQHandler	2
+C:/Users/caleb/Projects/Drone/Common/Src/sync/sync.c:67:6:CM4_SEV_IRQHandler	2

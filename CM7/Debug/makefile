@@ -13,6 +13,8 @@ RM := rm -rf
 -include Drivers/STM32H7xx_HAL_Driver/subdir.mk
 -include Core/Startup/subdir.mk
 -include Core/Src/subdir.mk
+-include Common/Src/sync/subdir.mk
+-include Common/Src/mem/subdir.mk
 -include Common/Src/subdir.mk
 -include objects.mk
 
@@ -62,8 +64,8 @@ all: main-build
 main-build: Drone_CM7.elf secondary-outputs
 
 # Tool invocations
-Drone_CM7.elf Drone_CM7.map: $(OBJS) $(USER_OBJS) C:\Users\c.thomas\STM32CubeIDE\workspace_1.18.0\Drone\CM7\CM7_Flash.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "Drone_CM7.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"C:\Users\c.thomas\STM32CubeIDE\workspace_1.18.0\Drone\CM7\CM7_Flash.ld" --specs=nosys.specs -Wl,-Map="Drone_CM7.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Drone_CM7.elf Drone_CM7.map: $(OBJS) $(USER_OBJS) C:\Users\caleb\Projects\Drone\CM7\CM7_Flash.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "Drone_CM7.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"C:\Users\caleb\Projects\Drone\CM7\CM7_Flash.ld" --specs=nosys.specs -Wl,-Map="Drone_CM7.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

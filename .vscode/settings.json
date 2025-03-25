@@ -1,6 +1,7 @@
 {
     "makefile.makefilePath": "${workspaceFolder}/CM4/Debug/makefile",
     "files.associations": {
-        "string.h": "c"
+        "string.h": "c",
+        "stdio.h": "c"
     }
 }

@@ -1,19 +1,11 @@
 #ifndef LOG_H
 #define LOG_H
 
-#include "stm32h7xx_hal.h"
+#include <stdint.h>
 #include "stm32h7xx_hal_uart.h"
-#include "stdint.h"
 
-#include "mem/mem.h"
-#include "mem/ring_buff.h"
-
-typedef struct {
-    RingBuff volatile *pRingBuf;
-    UART_HandleTypeDef *pUART;
-} Log;
-
-extern Log sLogger_;
+#define CM4_BUFF_ID 0
+#define CM7_BUFF_ID 1
 
 int8_t LoggerInit(UART_HandleTypeDef *pUART);
 
