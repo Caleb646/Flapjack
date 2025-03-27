@@ -552,7 +552,7 @@ IMU_STATUS IMUUpdateAccelGyro(IMU *pIMU)
   return status;
 }
 
-void IMUInterruptHandler(IMU *pIMU)
+void IMU2CPUInterruptHandler(IMU *pIMU)
 {
   // read both status registers
   uint8_t pBuf[2] = {0, 0};

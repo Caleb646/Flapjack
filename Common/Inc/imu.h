@@ -47,11 +47,11 @@ typedef enum {
 typedef struct
 {
 	SPI_HandleTypeDef* pSPI;
-	int16_t rax, ray, raz, rgx, rgy, rgz;
+	int16_t volatile rax, ray, raz, rgx, rgy, rgz;
 	// millimeters per second ^ 2
-	int16_t ax, ay, az;
+	int16_t volatile ax, ay, az;
 	// millidegrees per second
-	int16_t gx, gy, gz;
+	int16_t volatile gx, gy, gz;
 	uint8_t accRange, accODR, gyroRange, gyroODR;
 } IMU;
 
