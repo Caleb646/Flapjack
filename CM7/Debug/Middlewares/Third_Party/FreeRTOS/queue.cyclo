@@ -1,15 +1,12 @@
 C:/Users/caleb/Projects/Drone/Middlewares/Third_Party/FreeRTOS/Source/queue.c:255:12:xQueueGenericReset	5
-C:/Users/caleb/Projects/Drone/Middlewares/Third_Party/FreeRTOS/Source/queue.c:310:16:xQueueGenericCreateStatic	11
 C:/Users/caleb/Projects/Drone/Middlewares/Third_Party/FreeRTOS/Source/queue.c:368:16:xQueueGenericCreate	3
 C:/Users/caleb/Projects/Drone/Middlewares/Third_Party/FreeRTOS/Source/queue.c:422:13:prvInitialiseNewQueue	2
 C:/Users/caleb/Projects/Drone/Middlewares/Third_Party/FreeRTOS/Source/queue.c:466:14:prvInitialiseMutex	2
 C:/Users/caleb/Projects/Drone/Middlewares/Third_Party/FreeRTOS/Source/queue.c:496:16:xQueueCreateMutex	1
-C:/Users/caleb/Projects/Drone/Middlewares/Third_Party/FreeRTOS/Source/queue.c:512:16:xQueueCreateMutexStatic	1
 C:/Users/caleb/Projects/Drone/Middlewares/Third_Party/FreeRTOS/Source/queue.c:532:15:xQueueGetMutexHolder	2
 C:/Users/caleb/Projects/Drone/Middlewares/Third_Party/FreeRTOS/Source/queue.c:563:15:xQueueGetMutexHolderFromISR	3
 C:/Users/caleb/Projects/Drone/Middlewares/Third_Party/FreeRTOS/Source/queue.c:589:13:xQueueGiveMutexRecursive	4
 C:/Users/caleb/Projects/Drone/Middlewares/Third_Party/FreeRTOS/Source/queue.c:644:13:xQueueTakeMutexRecursive	4
-C:/Users/caleb/Projects/Drone/Middlewares/Third_Party/FreeRTOS/Source/queue.c:686:16:xQueueCreateCountingSemaphoreStatic	4
 C:/Users/caleb/Projects/Drone/Middlewares/Third_Party/FreeRTOS/Source/queue.c:714:16:xQueueCreateCountingSemaphore	4
 C:/Users/caleb/Projects/Drone/Middlewares/Third_Party/FreeRTOS/Source/queue.c:740:12:xQueueGenericSend	23
 C:/Users/caleb/Projects/Drone/Middlewares/Third_Party/FreeRTOS/Source/queue.c:950:12:xQueueGenericSendFromISR	14
@@ -22,7 +19,7 @@ C:/Users/caleb/Projects/Drone/Middlewares/Third_Party/FreeRTOS/Source/queue.c:18
 C:/Users/caleb/Projects/Drone/Middlewares/Third_Party/FreeRTOS/Source/queue.c:1930:13:uxQueueMessagesWaiting	2
 C:/Users/caleb/Projects/Drone/Middlewares/Third_Party/FreeRTOS/Source/queue.c:1946:13:uxQueueSpacesAvailable	2
 C:/Users/caleb/Projects/Drone/Middlewares/Third_Party/FreeRTOS/Source/queue.c:1963:13:uxQueueMessagesWaitingFromISR	2
-C:/Users/caleb/Projects/Drone/Middlewares/Third_Party/FreeRTOS/Source/queue.c:1975:6:vQueueDelete	3
+C:/Users/caleb/Projects/Drone/Middlewares/Third_Party/FreeRTOS/Source/queue.c:1975:6:vQueueDelete	2
 C:/Users/caleb/Projects/Drone/Middlewares/Third_Party/FreeRTOS/Source/queue.c:2019:14:uxQueueGetQueueNumber	1
 C:/Users/caleb/Projects/Drone/Middlewares/Third_Party/FreeRTOS/Source/queue.c:2029:7:vQueueSetQueueNumber	1
 C:/Users/caleb/Projects/Drone/Middlewares/Third_Party/FreeRTOS/Source/queue.c:2039:10:ucQueueGetQueueType	1

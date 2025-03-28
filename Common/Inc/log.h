@@ -5,30 +5,18 @@
 #include <stdint.h>
 #include "stm32h7xx_hal_uart.h"
 
-#define LOG_INFO(...)          \
-    do {                       \
-        printf ("[INFO] -- "); \
-        printf (__VA_ARGS__);  \
-        printf ("\r\n");       \
+#define LOG_(lvl, ...)      \
+do {                        \
+    printf (lvl);           \
+    printf (__FILE__);      \
+    printf ("%u", __LINE__);\
+    printf (__VA_ARGS__);   \
+    printf ("\r\n");        \
     } while (0)
-#define LOG_DEBUG(...)          \
-    do {                        \
-        printf ("[DEBUG] -- "); \
-        printf (__VA_ARGS__);   \
-        printf ("\r\n");        \
-    } while (0)
-#define LOG_WARN(...)          \
-    do {                       \
-        printf ("[WARN] -- "); \
-        printf (__VA_ARGS__);  \
-        printf ("\r\n");       \
-    } while (0)
-#define LOG_ERROR(...)          \
-    do {                        \
-        printf ("[ERROR] -- "); \
-        printf (__VA_ARGS__);   \
-        printf ("\r\n");        \
-    } while (0)
+#define LOG_INFO(...)   LOG_("[INFO] -- ", __VA_ARGS__)
+#define LOG_DEBUG(...)  LOG_("[DEBUG] -- ", __VA_ARGS__)
+#define LOG_WARN(...)   LOG_("[WARN] -- ", __VA_ARGS__)
+#define LOG_ERROR(...)  LOG_("[ERROR] -- ", __VA_ARGS__)
 
 int8_t LoggerInit(UART_HandleTypeDef *pUART);
 

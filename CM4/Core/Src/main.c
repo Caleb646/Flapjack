@@ -18,12 +18,19 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "cmsis_os.h"
+// #include "cmsis_os.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+
+#include "FreeRTOS.h"
+#include "task.h"
+#include "timers.h"
+#include "semphr.h"
+
 #include "log.h"
+#include "imu.h"
 #include "sync/sync.h"
 /* USER CODE END Includes */
 
@@ -68,12 +75,13 @@ TIM_HandleTypeDef htim13;
 PCD_HandleTypeDef hpcd_USB_OTG_HS;
 
 /* Definitions for defaultTask */
-osThreadId_t defaultTaskHandle;
-const osThreadAttr_t defaultTask_attributes = {
-  .name = "defaultTask",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
-};   uint8_t cec_receive_buffer[16];
+// osThreadId_t defaultTaskHandle;
+// const osThreadAttr_t defaultTask_attributes = {
+//   .name = "defaultTask",
+//   .stack_size = 128 * 4,
+//   .priority = (osPriority_t) osPriorityNormal,
+// };   
+uint8_t cec_receive_buffer[16];
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -89,7 +97,6 @@ static void MX_SPI5_Init(void);
 static void MX_TIM8_Init(void);
 static void MX_TIM13_Init(void);
 static void MX_USB_OTG_HS_PCD_Init(void);
-void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -98,17 +105,14 @@ void StartDefaultTask(void *argument);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-static void PositionUpdateTask(void *argument)
-{
-
-}
-
-// SPI_HandleTypeDef *const pIMUSPIRef = &hspi2;
+IMU gIMU;
+TaskHandle_t pPIDTaskHandler;
+TaskHandle_t pPWMTaskHandler;
 
 void HAL_GPIO_EXTI_Callback(uint16_t gpioPin)
 {
 	if(gpioPin == IMU_INT_Pin) {
-
+    IMU2CPUInterruptHandler(&gIMU);
 	}
 }
 
@@ -165,8 +169,27 @@ int main(void)
   MX_TIM13_Init();
   MX_USB_OTG_HS_PCD_Init();
   /* USER CODE BEGIN 2 */
+
+//   xTaskCreate(
+//     StartDefaultTask,                 /* Function pointer */
+//     "Default Task",                          /* Task name - for debugging only*/
+//     configMINIMAL_STACK_SIZE,         /* Stack depth in words */
+//     (void*) NULL,                     /* Pointer to tasks arguments (parameter) */
+//     tskIDLE_PRIORITY + 2UL,           /* Task priority*/
+//     NULL                              /* Task handle */
+// );
+
   LoggerInit(NULL);
   SyncInit();
+  IMUInit(
+    &gIMU, 
+    &hspi2,
+    pPIDTaskHandler,
+    IMU_ACC_RANGE_4G,
+    IMU_ACC_ODR_100,
+    IMU_GYRO_RANGE_250,
+    IMU_GYRO_ODR_100
+  );
 
   while (1)
   {
@@ -176,45 +199,10 @@ int main(void)
 	  LOG_INFO("Hello from CM4");
   }
 
+  vTaskStartScheduler();
+
   /* USER CODE END 2 */
 
-  /* Init scheduler */
-  osKernelInitialize();
-
-  /* USER CODE BEGIN RTOS_MUTEX */
-  /* add mutexes, ... */
-  /* USER CODE END RTOS_MUTEX */
-
-  /* USER CODE BEGIN RTOS_SEMAPHORES */
-  /* add semaphores, ... */
-  /* USER CODE END RTOS_SEMAPHORES */
-
-  /* USER CODE BEGIN RTOS_TIMERS */
-  /* start timers, add new ones, ... */
-  /* USER CODE END RTOS_TIMERS */
-
-  /* USER CODE BEGIN RTOS_QUEUES */
-  /* add queues, ... */
-  /* USER CODE END RTOS_QUEUES */
-
-  /* Create the thread(s) */
-  /* creation of defaultTask */
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
-
-  /* USER CODE BEGIN RTOS_THREADS */
-  /* add threads, ... */
-  /* USER CODE END RTOS_THREADS */
-
-  /* USER CODE BEGIN RTOS_EVENTS */
-  /* add events, ... */
-  /* USER CODE END RTOS_EVENTS */
-
-  /* Start scheduler */
-  osKernelStart();
-
-  /* We should never get here as control is now taken by the scheduler */
-
-  /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
@@ -913,17 +901,6 @@ static void MX_GPIO_Init(void)
   * @retval None
   */
 /* USER CODE END Header_StartDefaultTask */
-void StartDefaultTask(void *argument)
-{
-  /* USER CODE BEGIN 5 */
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
-  /* USER CODE END 5 */
-}
-
 /**
   * @brief  Period elapsed callback in non blocking mode
   * @note   This function is called  when TIM3 interrupt took place, inside

@@ -1,9 +1,11 @@
 #ifndef IMU_H
 #define IMU_H
 
+#include <stdint.h>
 #include "stm32h7xx_hal.h"
 #include "stm32h7xx_hal_spi.h"
-#include "stdint.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 #define BIT_ISSET(v, bit) ((v & bit) == 1)
 
@@ -14,6 +16,7 @@ typedef enum {
 	IMU_ACC_RANGE_16G = 0x03
 } IMU_ACC_RANGE;
 
+// Accelerometer output data rate in Hertz
 typedef enum {
 	IMU_ACC_ODR_50   = 0x07,
 	IMU_ACC_ODR_100  = 0x08,
@@ -31,6 +34,7 @@ typedef enum {
 	IMU_GYRO_RANGE_125  = 0x04
 } IMU_GYRO_RANGE;
 
+// Gyro output data rate in Hertz
 typedef enum {
 	IMU_GYRO_ODR_50   = 0x07,
 	IMU_GYRO_ODR_100  = 0x08,
@@ -53,13 +57,16 @@ typedef struct
 	// millidegrees per second
 	int16_t volatile gx, gy, gz;
 	uint8_t accRange, accODR, gyroRange, gyroODR;
+	TaskHandle_t pTasktoNofityOnIMUUpdate;
 } IMU;
 
+void IMU2CPUInterruptHandler(IMU *pIMU);
 IMU_STATUS IMUReadReg(IMU *pIMU, uint8_t const reg, uint8_t *pBuf, uint32_t len);
 IMU_STATUS IMUWriteReg(IMU *pIMU, uint8_t const reg, uint8_t *pBuf, uint32_t len);
 IMU_STATUS IMUInit(  
 	IMU *pIMU, 
 	SPI_HandleTypeDef *pSPI,
+	TaskHandle_t pTasktoNofityOnIMUUpdate,
 	IMU_ACC_RANGE accRange,
 	IMU_ACC_ODR accODR,
 	IMU_GYRO_RANGE gyroRange,

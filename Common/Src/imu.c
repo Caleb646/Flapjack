@@ -1,6 +1,7 @@
 #include <string.h>
 #include "imu.h"
 #include "bmi270.h"
+#include "log.h"
 
 
 // https://github.com/boschsensortec/BMI270_SensorAPI/blob/master/bmi270.c
@@ -554,6 +555,12 @@ IMU_STATUS IMUUpdateAccelGyro(IMU *pIMU)
 
 void IMU2CPUInterruptHandler(IMU *pIMU)
 {
+  if(pIMU == NULL || pIMU->pSPI == NULL)
+  {
+    LOG_ERROR("IMU Interrupt Handler: pIMU or pSPI is NULL");
+    return;
+  }
+
   // read both status registers
   uint8_t pBuf[2] = {0, 0};
   IMU_STATUS status = IMUReadReg(pIMU, BMI2_INT_STATUS_1_ADDR, pBuf, 2);
@@ -563,9 +570,9 @@ void IMU2CPUInterruptHandler(IMU *pIMU)
 
   if(BIT_ISSET(intStatus1, BMI2_INT_STATUS_ERROR_BIT))
   {
-    // TODO: log error
     status = IMUReadReg(pIMU, BMI2_ERROR_ADDR, pBuf, 1);
-    // uint8_t errorCode = pBuf[0];
+    uint8_t errorCode = pBuf[0];
+    LOG_ERROR("IMU Interrupt Handler: IMU encountered error [0x%X]", (uint16_t)errorCode);
     return;
   }
   if(BIT_ISSET(intStatus1, BMI2_INT_STATUS_ACC_RDY_BIT))
@@ -577,13 +584,17 @@ void IMU2CPUInterruptHandler(IMU *pIMU)
     status = IMUUpdateGyro(pIMU);
   }
 
-  if(status != IMU_OK) {}
+  if(status != IMU_OK) 
+  {
+    LOG_ERROR("IMU Interrupt Handler: Failed to update IMU position data");
+  }
 }
 
 
 IMU_STATUS IMUInit(
   IMU *pIMU, 
   SPI_HandleTypeDef* pSPI,
+  TaskHandle_t pTasktoNofityOnIMUUpdate,
   IMU_ACC_RANGE accRange,
   IMU_ACC_ODR accODR,
   IMU_GYRO_RANGE gyroRange,
@@ -598,7 +609,7 @@ IMU_STATUS IMUInit(
   pIMU->gyroODR = gyroODR;
 
 	IMU_STATUS status;
-	uint8_t pBuffer[10];
+	uint8_t pBuffer[2];
   memset(pBuffer, 0, sizeof(pBuffer));
 
 	// Dummy read to initialize SPI

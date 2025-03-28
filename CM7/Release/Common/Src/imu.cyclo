@@ -1,7 +1,0 @@
-C:/Users/c.thomas/STM32CubeIDE/workspace_1.18.0/Drone/Common/Src/imu.c:445:12:IMUReadReg	3
-C:/Users/c.thomas/STM32CubeIDE/workspace_1.18.0/Drone/Common/Src/imu.c:478:12:IMUWriteReg	2
-C:/Users/c.thomas/STM32CubeIDE/workspace_1.18.0/Drone/Common/Src/imu.c:501:12:IMUUpdateGyro	4
-C:/Users/c.thomas/STM32CubeIDE/workspace_1.18.0/Drone/Common/Src/imu.c:524:12:IMUUpdateAccel	3
-C:/Users/c.thomas/STM32CubeIDE/workspace_1.18.0/Drone/Common/Src/imu.c:546:12:IMUUpdateAccelGyro	1
-C:/Users/c.thomas/STM32CubeIDE/workspace_1.18.0/Drone/Common/Src/imu.c:554:6:IMUInterruptHandler	1
-C:/Users/c.thomas/STM32CubeIDE/workspace_1.18.0/Drone/Common/Src/imu.c:581:12:IMUInit	2
