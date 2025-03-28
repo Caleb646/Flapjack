@@ -18,7 +18,6 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-// #include "cmsis_os.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -73,14 +72,7 @@ TIM_HandleTypeDef htim13;
 // UART_HandleTypeDef huart1;
 
 PCD_HandleTypeDef hpcd_USB_OTG_HS;
-
-/* Definitions for defaultTask */
-// osThreadId_t defaultTaskHandle;
-// const osThreadAttr_t defaultTask_attributes = {
-//   .name = "defaultTask",
-//   .stack_size = 128 * 4,
-//   .priority = (osPriority_t) osPriorityNormal,
-// };   
+ 
 uint8_t cec_receive_buffer[16];
 /* USER CODE BEGIN PV */
 
@@ -894,13 +886,6 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE END 4 */
 
-/* USER CODE BEGIN Header_StartDefaultTask */
-/**
-  * @brief  Function implementing the defaultTask thread.
-  * @param  argument: Not used
-  * @retval None
-  */
-/* USER CODE END Header_StartDefaultTask */
 /**
   * @brief  Period elapsed callback in non blocking mode
   * @note   This function is called  when TIM3 interrupt took place, inside
