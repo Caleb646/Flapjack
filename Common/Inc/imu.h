@@ -7,7 +7,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-#define BIT_ISSET(v, bit) ((v & bit) == 1)
+#define IMU_MAGIC 0xFAFAAFAF
 
 typedef enum {
 	IMU_ACC_RANGE_2G  = 0x00,
@@ -58,6 +58,7 @@ typedef struct
 	int16_t volatile gx, gy, gz;
 	uint8_t accRange, accODR, gyroRange, gyroODR;
 	TaskHandle_t pTasktoNofityOnIMUUpdate;
+	uint32_t magic;
 } IMU;
 
 void IMU2CPUInterruptHandler(IMU *pIMU);

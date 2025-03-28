@@ -3,6 +3,8 @@
 #include "bmi270.h"
 #include "log.h"
 
+#define BIT_ISSET(v, bit) ((v & bit) == 1)
+
 
 // https://github.com/boschsensortec/BMI270_SensorAPI/blob/master/bmi270.c
 uint8_t const bmi270_config_file[] = {
@@ -587,6 +589,12 @@ void IMU2CPUInterruptHandler(IMU *pIMU)
   if(status != IMU_OK) 
   {
     LOG_ERROR("IMU Interrupt Handler: Failed to update IMU position data");
+    return;
+  }
+
+  if(pIMU->pTasktoNofityOnIMUUpdate != NULL)
+  {
+    xTaskNotifyGive(pIMU->pTasktoNofityOnIMUUpdate);
   }
 }
 
@@ -607,6 +615,8 @@ IMU_STATUS IMUInit(
   pIMU->accODR = accODR;
   pIMU->gyroRange = gyroRange;
   pIMU->gyroODR = gyroODR;
+  pIMU->pTasktoNofityOnIMUUpdate = pTasktoNofityOnIMUUpdate;
+  pIMU->magic = IMU_MAGIC;
 
 	IMU_STATUS status;
 	uint8_t pBuffer[2];
