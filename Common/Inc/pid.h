@@ -8,7 +8,12 @@
 
 #include "imu.h"
 
+typedef struct
+{
+	IMU *pIMU;
+} PIDVelocityUpdate;
 
-void PIDTaskCalcNewPositionFromIMU(void *pvParameters);
+void PIDTaskCalcNewVelFromIMU(void *pvParameters);
+int8_t PIDVelInit();
 
 #endif // PID_H

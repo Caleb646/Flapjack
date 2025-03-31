@@ -30,6 +30,7 @@
 
 #include "log.h"
 #include "imu.h"
+#include "pid.h"
 #include "sync/sync.h"
 /* USER CODE END Includes */
 

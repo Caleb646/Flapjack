@@ -1,6 +1,16 @@
 #include "pid.h"
 
-void PIDTaskCalcNewPositionFromIMU(void *pvParameters)
+/*
+* variables passed in:
+    IMU updated accel and gyro
+    Current vel and angular vel
+    Desired vel and angular vel 
+
+  variables to return:
+    Change needed to vel and angular vel
+*/
+
+void PIDTaskCalcNewVelFromIMU(void *pvParameters)
 {
     IMU *pIMU = (IMU*)pvParameters;
     while(1)
