@@ -31,6 +31,7 @@
 #include "log.h"
 #include "imu.h"
 #include "pid.h"
+#include "flight_context.h"
 #include "sync/sync.h"
 /* USER CODE END Includes */
 
@@ -99,6 +100,7 @@ static void MX_USB_OTG_HS_PCD_Init(void);
 /* USER CODE BEGIN 0 */
 
 IMU gIMU;
+FlightContext gFlightContext;
 TaskHandle_t pPIDTaskHandler;
 TaskHandle_t pPWMTaskHandler;
 

@@ -2,6 +2,7 @@
 #include "imu.h"
 #include "bmi270.h"
 #include "log.h"
+#include "flight_context.h"
 
 #define BIT_ISSET(v, bit) ((v & bit) == 1)
 
@@ -502,15 +503,15 @@ IMU_STATUS IMUWriteReg(IMU *pIMU, uint8_t reg, uint8_t *pBuf, uint32_t len)
 	return IMU_OK;
 }
 
-IMU_STATUS IMUUpdateGyro(IMU *pIMU)
+IMU_STATUS IMUUpdateGyro(IMU *pIMU, Vec3 curAngularVel, Vec3 *pOutputAngularVel)
 {
   uint8_t pBuffer[6];
   memset(pBuffer, 0, sizeof(pBuffer));
   IMU_STATUS status = IMUReadReg(pIMU, BMI2_GYR_X_LSB_ADDR, pBuffer, 6);
 
-  pIMU->rgx = (int16_t)((uint16_t)(pBuffer[1] << 8)) | ((uint16_t)pBuffer[0]);
-  pIMU->rgy = (int16_t)((uint16_t)(pBuffer[3] << 8)) | ((uint16_t)pBuffer[2]);
-  pIMU->rgz = (int16_t)((uint16_t)(pBuffer[5] << 8)) | ((uint16_t)pBuffer[4]);
+  pIMU->rawGyro.x = (int32_t)((uint16_t)(pBuffer[1] << 8)) | ((uint16_t)pBuffer[0]);
+  pIMU->rawGyro.y = (int32_t)((uint16_t)(pBuffer[3] << 8)) | ((uint16_t)pBuffer[2]);
+  pIMU->rawGyro.z = (int32_t)((uint16_t)(pBuffer[5] << 8)) | ((uint16_t)pBuffer[4]);
 
   int32_t scale = 125;
   if(pIMU->gyroRange == IMU_GYRO_RANGE_250)  scale = 250;
@@ -518,48 +519,54 @@ IMU_STATUS IMUUpdateGyro(IMU *pIMU)
   if(pIMU->gyroRange == IMU_GYRO_RANGE_1000) scale = 1000;
   if(pIMU->gyroRange == IMU_GYRO_RANGE_2000) scale = 2000;
   // scale to milli degrees per second
-  pIMU->gx = ( ((int32_t)pIMU->rgx) * 1000 * scale) / 0x7FFF;
-  pIMU->gy = ( ((int32_t)pIMU->rgy) * 1000 * scale) / 0x7FFF;
-  pIMU->gz = ( ((int32_t)pIMU->rgz) * 1000 * scale) / 0x7FFF;
+  pOutputAngularVel->x = ( ((int32_t)pIMU->rawGyro.x) * 1000 * scale ) / 0x7FFF;
+  pOutputAngularVel->y = ( ((int32_t)pIMU->rawGyro.y) * 1000 * scale ) / 0x7FFF;
+  pOutputAngularVel->z = ( ((int32_t)pIMU->rawGyro.z) * 1000 * scale ) / 0x7FFF;
+
+  pIMU->msLastGyroUpdateTime = HAL_GetTick();
 
   return status;
 }
 
-IMU_STATUS IMUUpdateAccel(IMU *pIMU)
+IMU_STATUS IMUUpdateAccel(IMU *pIMU, Vec3 curVel, Vec3 *pOutputVel)
 {
   uint8_t pBuffer[6];
   memset(pBuffer, 0, sizeof(pBuffer));
   IMU_STATUS status = IMUReadReg(pIMU, BMI2_ACC_X_LSB_ADDR, pBuffer, 6);
 
-  pIMU->rax = (int16_t)((uint16_t)(pBuffer[1] << 8)) | ((uint16_t)pBuffer[0]);
-  pIMU->ray = (int16_t)((uint16_t)(pBuffer[3] << 8)) | ((uint16_t)pBuffer[2]);
-  pIMU->raz = (int16_t)((uint16_t)(pBuffer[5] << 8)) | ((uint16_t)pBuffer[4]);
+  pIMU->rawAccel.x = (int32_t)((uint16_t)(pBuffer[1] << 8)) | ((uint16_t)pBuffer[0]);
+  pIMU->rawAccel.y = (int32_t)((uint16_t)(pBuffer[3] << 8)) | ((uint16_t)pBuffer[2]);
+  pIMU->rawAccel.z = (int32_t)((uint16_t)(pBuffer[5] << 8)) | ((uint16_t)pBuffer[4]);
 
   int32_t scale = 2;
   if(pIMU->accRange == IMU_ACC_RANGE_4G) scale = 4;
   if(pIMU->accRange == IMU_ACC_RANGE_8G) scale = 8;
   if(pIMU->accRange == IMU_ACC_RANGE_16G) scale = 16;
   // scale to millimeters per second ^ 2
-  pIMU->ax = ( ((int32_t)pIMU->rax) * 1000 * scale) / 0x7FFF;
-  pIMU->ay = ( ((int32_t)pIMU->ray) * 1000 * scale) / 0x7FFF;
-  pIMU->az = ( ((int32_t)pIMU->raz) * 1000 * scale) / 0x7FFF;
+  int32_t ax = ( ((int32_t)pIMU->rawAccel.x) * 1000 * scale ) / 0x7FFF;
+  int32_t ay = ( ((int32_t)pIMU->rawAccel.y) * 1000 * scale ) / 0x7FFF;
+  int32_t az = ( ((int32_t)pIMU->rawAccel.z) * 1000 * scale ) / 0x7FFF;
+
+  int32_t ms = HAL_GetTick();
+  int32_t dt = ms - pIMU->msLastAccUpdateTime;
+  pIMU->msLastAccUpdateTime = ms;
+
+  pOutputVel->x = curVel.x + ((ax * dt) / 1000);
+  pOutputVel->y = curVel.y + ((ay * dt) / 1000);
+  pOutputVel->z = curVel.z + ((az * dt) / 1000);
 
   return status;
 }
 
-IMU_STATUS IMUUpdateAccelGyro(IMU *pIMU)
+void IMU2CPUInterruptHandler(
+  IMU *pIMU, 
+  FlightContext *pFlightContext,
+	TaskHandle_t pTasktoNofityOnIMUUpdate
+)
 {
-  IMU_STATUS status;
-  status = IMUUpdateAccel(pIMU);
-  status = IMUUpdateGyro(pIMU);
-  return status;
-}
-
-void IMU2CPUInterruptHandler(IMU *pIMU)
-{
-  if(pIMU == NULL || pIMU->pSPI == NULL)
+  if(pIMU == NULL || pIMU->pSPI == NULL || pFlightContext == NULL)
   {
-    LOG_ERROR("IMU Interrupt Handler: pIMU or pSPI is NULL");
+    LOG_ERROR("Invalid arguments");
     return;
   }
 
@@ -574,35 +581,27 @@ void IMU2CPUInterruptHandler(IMU *pIMU)
   {
     status = IMUReadReg(pIMU, BMI2_ERROR_ADDR, pBuf, 1);
     uint8_t errorCode = pBuf[0];
-    LOG_ERROR("IMU Interrupt Handler: IMU encountered error [0x%X]", (uint16_t)errorCode);
-    return;
-  }
-  if(BIT_ISSET(intStatus1, BMI2_INT_STATUS_ACC_RDY_BIT))
-  {
-    status = IMUUpdateAccel(pIMU);
-  }
-  if(BIT_ISSET(intStatus1, BMI2_INT_STATUS_GYR_RDY_BIT))
-  {
-    status = IMUUpdateGyro(pIMU);
-  }
-
-  if(status != IMU_OK) 
-  {
-    LOG_ERROR("IMU Interrupt Handler: Failed to update IMU position data");
+    LOG_ERROR("IMU encountered error [0x%X]", (uint16_t)errorCode);
     return;
   }
 
-  if(pIMU->pTasktoNofityOnIMUUpdate != NULL)
+  Vec3 curVel = pFlightContext->curVel;
+  Vec3 curAngVel = pFlightContext->curAngVel;
+  if(BIT_ISSET(intStatus1, BMI2_INT_STATUS_ACC_RDY_BIT)) status |= IMUUpdateAccel(pIMU, curVel, &curVel);
+  if(BIT_ISSET(intStatus1, BMI2_INT_STATUS_GYR_RDY_BIT)) status |= IMUUpdateGyro(pIMU, curAngVel, &curAngVel);
+
+  if(status == IMU_OK)
   {
-    xTaskNotifyGive(pIMU->pTasktoNofityOnIMUUpdate);
+    FlightContextUpdateCurrentVelocities(pFlightContext, curVel, curAngVel);
+    if(pTasktoNofityOnIMUUpdate != NULL) xTaskNotifyGive(pTasktoNofityOnIMUUpdate);
   }
+  else LOG_ERROR("Failed to update IMU position data");
 }
 
 
 IMU_STATUS IMUInit(
   IMU *pIMU, 
   SPI_HandleTypeDef* pSPI,
-  TaskHandle_t pTasktoNofityOnIMUUpdate,
   IMU_ACC_RANGE accRange,
   IMU_ACC_ODR accODR,
   IMU_GYRO_RANGE gyroRange,
@@ -615,7 +614,8 @@ IMU_STATUS IMUInit(
   pIMU->accODR = accODR;
   pIMU->gyroRange = gyroRange;
   pIMU->gyroODR = gyroODR;
-  pIMU->pTasktoNofityOnIMUUpdate = pTasktoNofityOnIMUUpdate;
+  pIMU->msLastAccUpdateTime = HAL_GetTick();
+  pIMU->msLastGyroUpdateTime = HAL_GetTick();
   pIMU->magic = IMU_MAGIC;
 
 	IMU_STATUS status;

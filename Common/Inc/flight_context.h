@@ -6,19 +6,22 @@
 
 typedef enum {
     eFLIGHT_MODE_HELI,
-    eFLIGHT_MODE_PLANE
+    eFLIGHT_MODE_PLANE,
+    eFLIGHT_MODE_PROGRAMMING
 } FlightMode;
 
-typedef struct {
+typedef struct FlightContext__ {
     // millimeters per second
-    UVec3 vel;
+    Vec3 curVel;
+    Vec3 targetVel;
     // millidegrees per second (1 /1000 of a degree)
-    UVec3 angVel;
-    // helicoptor or plane
+    Vec3 curAngVel;
+    Vec3 targetAngVel;
     FlightMode flightMode;
 } FlightContext;
 
-void FlightContextUpdateVelocities(FlightContext *pContext, UVec3 vel, UVec3 angVel);
+void FlightContextUpdateCurrentVelocities(FlightContext *pContext, Vec3 vel, Vec3 angVel);
+void FlightContextUpdateTargetVelocities(FlightContext *pContext, Vec3 vel, Vec3 angVel);
 void FlightContextUpdateFlightMode(FlightContext *pContext, uint32_t flightMode);
 
 #endif // FLIGHT_CONTEXT_H

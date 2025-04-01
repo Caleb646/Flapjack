@@ -7,6 +7,8 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
+#include "common.h"
+
 #define IMU_MAGIC 0xFAFAAFAF
 
 typedef enum {
@@ -51,23 +53,30 @@ typedef enum {
 typedef struct
 {
 	SPI_HandleTypeDef* pSPI;
-	int16_t volatile rax, ray, raz, rgx, rgy, rgz;
-	// millimeters per second ^ 2
-	int16_t volatile ax, ay, az;
-	// millidegrees per second
-	int16_t volatile gx, gy, gz;
-	uint8_t accRange, accODR, gyroRange, gyroODR;
-	TaskHandle_t pTasktoNofityOnIMUUpdate;
+	Vec3 volatile rawAccel;
+	Vec3 volatile rawGyro;
+	int32_t volatile msLastAccUpdateTime;
+	int32_t volatile msLastGyroUpdateTime;
+	uint32_t accRange, accODR, gyroRange, gyroODR;
 	uint32_t magic;
 } IMU;
 
-void IMU2CPUInterruptHandler(IMU *pIMU);
+/*
+* Forward declared FlightContext
+*/
+typedef struct FlightContext__ FlightContext;
+// typedef IMU_STATUS (*imu_update_fn)(IMU *pIMU);
+
+void IMU2CPUInterruptHandler(
+	IMU *pIMU, 
+	FlightContext *pFlightContext,
+	TaskHandle_t pTasktoNofityOnIMUUpdate
+);
 IMU_STATUS IMUReadReg(IMU *pIMU, uint8_t reg, uint8_t *pBuf, uint32_t len);
 IMU_STATUS IMUWriteReg(IMU *pIMU, uint8_t reg, uint8_t *pBuf, uint32_t len);
 IMU_STATUS IMUInit(  
 	IMU *pIMU, 
 	SPI_HandleTypeDef *pSPI,
-	TaskHandle_t pTasktoNofityOnIMUUpdate,
 	IMU_ACC_RANGE accRange,
 	IMU_ACC_ODR accODR,
 	IMU_GYRO_RANGE gyroRange,
