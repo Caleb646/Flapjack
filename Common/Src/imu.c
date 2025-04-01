@@ -446,7 +446,7 @@ uint8_t const bmi270_config_file[] = {
 };
 
 
-IMU_STATUS IMUReadReg(IMU *pIMU, uint8_t const reg, uint8_t *pBuf, uint32_t len)
+IMU_STATUS IMUReadReg(IMU *pIMU, uint8_t reg, uint8_t *pBuf, uint32_t len)
 {
 	uint8_t pTx[16];
 	memset(pTx, 0, sizeof(pTx));
@@ -479,7 +479,7 @@ IMU_STATUS IMUReadReg(IMU *pIMU, uint8_t const reg, uint8_t *pBuf, uint32_t len)
 	return IMU_OK;
 }
 
-IMU_STATUS IMUWriteReg(IMU *pIMU, uint8_t const reg, uint8_t *pBuf, uint32_t len)
+IMU_STATUS IMUWriteReg(IMU *pIMU, uint8_t reg, uint8_t *pBuf, uint32_t len)
 {
 	uint8_t pTx[16];
 	memset(pTx, 0, sizeof(pTx));

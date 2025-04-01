@@ -62,8 +62,8 @@ typedef struct
 } IMU;
 
 void IMU2CPUInterruptHandler(IMU *pIMU);
-IMU_STATUS IMUReadReg(IMU *pIMU, uint8_t const reg, uint8_t *pBuf, uint32_t len);
-IMU_STATUS IMUWriteReg(IMU *pIMU, uint8_t const reg, uint8_t *pBuf, uint32_t len);
+IMU_STATUS IMUReadReg(IMU *pIMU, uint8_t reg, uint8_t *pBuf, uint32_t len);
+IMU_STATUS IMUWriteReg(IMU *pIMU, uint8_t reg, uint8_t *pBuf, uint32_t len);
 IMU_STATUS IMUInit(  
 	IMU *pIMU, 
 	SPI_HandleTypeDef *pSPI,
