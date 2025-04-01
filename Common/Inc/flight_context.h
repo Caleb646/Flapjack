@@ -14,9 +14,11 @@ typedef struct FlightContext__ {
     // millimeters per second
     Vec3 curVel;
     Vec3 targetVel;
+    Vec3 pidStepVel;
     // millidegrees per second (1 /1000 of a degree)
     Vec3 curAngVel;
     Vec3 targetAngVel;
+    Vec3 pidStepAngVel;
     FlightMode flightMode;
 } FlightContext;
 

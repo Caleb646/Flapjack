@@ -30,7 +30,7 @@
 
 #include "log.h"
 #include "imu.h"
-#include "pid.h"
+#include "motion_control.h"
 #include "flight_context.h"
 #include "sync/sync.h"
 /* USER CODE END Includes */
@@ -101,14 +101,31 @@ static void MX_USB_OTG_HS_PCD_Init(void);
 
 IMU gIMU;
 FlightContext gFlightContext;
-TaskHandle_t pPIDTaskHandler;
+PIDContext gPIDVelContext;
+PIDContext gPIDVelAngularContext;
+TaskHandle_t pTaskPIDMotorUpdate;
 TaskHandle_t pPWMTaskHandler;
 
 void HAL_GPIO_EXTI_Callback(uint16_t gpioPin)
 {
-	if(gpioPin == IMU_INT_Pin) {
-    IMU2CPUInterruptHandler(&gIMU);
-	}
+    if(gpioPin == IMU_INT_Pin) 
+    {
+        IMU2CPUInterruptHandler(&gIMU, &gFlightContext, pTaskPIDMotorUpdate);
+    }
+}
+
+void TaskDroneVelocitiesUpdate(void *pvParameters)
+{
+    while(1)
+    {
+        ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(1000));
+        Vec3 velSteps = PIDCalcNewVelocitySteps(
+            gPIDVelContext, gFlightContext.curVel, gFlightContext.targetVel
+        );
+        Vec3 velAngSteps = PIDCalcNewVelocitySteps(
+            gPIDVelAngularContext, gFlightContext.curAngVel, gFlightContext.targetAngVel
+        );
+    }
 }
 
 /* USER CODE END 0 */

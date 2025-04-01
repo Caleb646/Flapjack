@@ -1,0 +1,16 @@
+#include "flight_context.h"
+
+void FlightContextUpdateCurrentVelocities(FlightContext *pContext, Vec3 vel, Vec3 angVel)
+{
+    pContext->curVel = vel;
+    pContext->curAngVel = angVel;
+}
+void FlightContextUpdateTargetVelocities(FlightContext *pContext, Vec3 vel, Vec3 angVel)
+{
+    pContext->targetVel = vel;
+    pContext->targetAngVel = angVel;
+}
+void FlightContextUpdateFlightMode(FlightContext *pContext, uint32_t flightMode)
+{
+    pContext->flightMode = flightMode;
+}
