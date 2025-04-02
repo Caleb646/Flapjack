@@ -509,9 +509,9 @@ IMU_STATUS IMUUpdateGyro(IMU *pIMU, Vec3 curAngularVel, Vec3 *pOutputAngularVel)
   memset(pBuffer, 0, sizeof(pBuffer));
   IMU_STATUS status = IMUReadReg(pIMU, BMI2_GYR_X_LSB_ADDR, pBuffer, 6);
 
-  pIMU->rawGyro.x = (int32_t)((uint16_t)(pBuffer[1] << 8)) | ((uint16_t)pBuffer[0]);
-  pIMU->rawGyro.y = (int32_t)((uint16_t)(pBuffer[3] << 8)) | ((uint16_t)pBuffer[2]);
-  pIMU->rawGyro.z = (int32_t)((uint16_t)(pBuffer[5] << 8)) | ((uint16_t)pBuffer[4]);
+  pIMU->rawGyro.x = (int32_t)( ((uint16_t)pBuffer[1]) << 8) | ((uint16_t)pBuffer[0]);
+  pIMU->rawGyro.y = (int32_t)( ((uint16_t)pBuffer[3]) << 8) | ((uint16_t)pBuffer[2]);
+  pIMU->rawGyro.z = (int32_t)( ((uint16_t)pBuffer[5]) << 8) | ((uint16_t)pBuffer[4]);
 
   int32_t scale = 125;
   if(pIMU->gyroRange == IMU_GYRO_RANGE_250)  scale = 250;
@@ -534,9 +534,9 @@ IMU_STATUS IMUUpdateAccel(IMU *pIMU, Vec3 curVel, Vec3 *pOutputVel)
   memset(pBuffer, 0, sizeof(pBuffer));
   IMU_STATUS status = IMUReadReg(pIMU, BMI2_ACC_X_LSB_ADDR, pBuffer, 6);
 
-  pIMU->rawAccel.x = (int32_t)((uint16_t)(pBuffer[1] << 8)) | ((uint16_t)pBuffer[0]);
-  pIMU->rawAccel.y = (int32_t)((uint16_t)(pBuffer[3] << 8)) | ((uint16_t)pBuffer[2]);
-  pIMU->rawAccel.z = (int32_t)((uint16_t)(pBuffer[5] << 8)) | ((uint16_t)pBuffer[4]);
+  pIMU->rawAccel.x = (int32_t)( ((uint16_t)pBuffer[1]) << 8) | ((uint16_t)pBuffer[0]);
+  pIMU->rawAccel.y = (int32_t)( ((uint16_t)pBuffer[3]) << 8) | ((uint16_t)pBuffer[2]);
+  pIMU->rawAccel.z = (int32_t)( ((uint16_t)pBuffer[5]) << 8) | ((uint16_t)pBuffer[4]);
 
   int32_t scale = 2;
   if(pIMU->accRange == IMU_ACC_RANGE_4G) scale = 4;

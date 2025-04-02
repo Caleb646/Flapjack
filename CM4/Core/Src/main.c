@@ -103,28 +103,29 @@ IMU gIMU;
 FlightContext gFlightContext;
 PIDContext gPIDVelContext;
 PIDContext gPIDVelAngularContext;
-TaskHandle_t pTaskPIDMotorUpdate;
-TaskHandle_t pPWMTaskHandler;
+TaskHandle_t pTaskMotionControlUpdate;
+// TaskHandle_t pPWMTaskHandler;
 
 void HAL_GPIO_EXTI_Callback(uint16_t gpioPin)
 {
     if(gpioPin == IMU_INT_Pin) 
     {
-        IMU2CPUInterruptHandler(&gIMU, &gFlightContext, pTaskPIDMotorUpdate);
+        IMU2CPUInterruptHandler(&gIMU, &gFlightContext, pTaskMotionControlUpdate);
     }
 }
 
-void TaskDroneVelocitiesUpdate(void *pvParameters)
+void TaskMotionControlUpdate(void *pvParameters)
 {
     while(1)
     {
         ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(1000));
-        Vec3 velSteps = PIDCalcNewVelocitySteps(
+        Vec3 velSteps = MotionControlPIDUpdateVel(
             gPIDVelContext, gFlightContext.curVel, gFlightContext.targetVel
         );
-        Vec3 velAngSteps = PIDCalcNewVelocitySteps(
+        Vec3 velAngSteps = MotionControlPIDUpdateVel(
             gPIDVelAngularContext, gFlightContext.curAngVel, gFlightContext.targetAngVel
         );
+        MotionControlUpdatePWM(velSteps, velAngSteps, NULL, 0);
     }
 }
 
