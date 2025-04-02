@@ -1,7 +1,6 @@
-C:/Users/caleb/Projects/Drone/Common/Src/imu.c:447:12:IMUReadReg	3
-C:/Users/caleb/Projects/Drone/Common/Src/imu.c:480:12:IMUWriteReg	3
-C:/Users/caleb/Projects/Drone/Common/Src/imu.c:503:12:IMUUpdateGyro	5
-C:/Users/caleb/Projects/Drone/Common/Src/imu.c:526:12:IMUUpdateAccel	4
-C:/Users/caleb/Projects/Drone/Common/Src/imu.c:548:12:IMUUpdateAccelGyro	1
-C:/Users/caleb/Projects/Drone/Common/Src/imu.c:556:6:IMU2CPUInterruptHandler	4
-C:/Users/caleb/Projects/Drone/Common/Src/imu.c:594:12:IMUInit	2
+C:/Users/caleb/Projects/Drone/Common/Src/imu.c:450:12:IMUReadReg	3
+C:/Users/caleb/Projects/Drone/Common/Src/imu.c:483:12:IMUWriteReg	3
+C:/Users/caleb/Projects/Drone/Common/Src/imu.c:506:12:IMUUpdateGyro	5
+C:/Users/caleb/Projects/Drone/Common/Src/imu.c:531:12:IMUUpdateAccel	4
+C:/Users/caleb/Projects/Drone/Common/Src/imu.c:561:6:IMU2CPUInterruptHandler	6
+C:/Users/caleb/Projects/Drone/Common/Src/imu.c:602:12:IMUInit	2

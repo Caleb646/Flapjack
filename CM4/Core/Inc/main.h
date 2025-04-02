@@ -49,10 +49,9 @@ extern "C" {
 
 /* USER CODE END EM */
 
-void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
-
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
+void MX_GPIO_Init(void);
 void MX_USART1_UART_Init(void);
 
 /* USER CODE BEGIN EFP */
@@ -86,14 +85,8 @@ void MX_USART1_UART_Init(void);
 #define SAI1_SD_A_GPIO_Port GPIOE
 #define CEC_CK_MCO1_Pin GPIO_PIN_8
 #define CEC_CK_MCO1_GPIO_Port GPIOA
-#define SPI2_SCK_Pin GPIO_PIN_12
-#define SPI2_SCK_GPIO_Port GPIOA
-#define SPI2_NSS_Pin GPIO_PIN_11
-#define SPI2_NSS_GPIO_Port GPIOA
 #define ULPI_DIR_Pin GPIO_PIN_11
 #define ULPI_DIR_GPIO_Port GPIOI
-#define IMU_INT_Pin GPIO_PIN_7
-#define IMU_INT_GPIO_Port GPIOC
 #define SAI1_MCLK_A_Pin GPIO_PIN_7
 #define SAI1_MCLK_A_GPIO_Port GPIOG
 #define OSC_OUT_Pin GPIO_PIN_1
@@ -104,22 +97,12 @@ void MX_USART1_UART_Init(void);
 #define ARD_D13_GPIO_Port GPIOK
 #define ARD_D10_Pin GPIO_PIN_1
 #define ARD_D10_GPIO_Port GPIOK
-#define PMOD_14_ARD_D3_Pin GPIO_PIN_8
-#define PMOD_14_ARD_D3_GPIO_Port GPIOF
 #define ARD_D12_Pin GPIO_PIN_11
 #define ARD_D12_GPIO_Port GPIOJ
 #define ULPI_STP_Pin GPIO_PIN_0
 #define ULPI_STP_GPIO_Port GPIOC
 #define ARD_D11_Pin GPIO_PIN_10
 #define ARD_D11_GPIO_Port GPIOJ
-#define PMOD_3_Pin GPIO_PIN_2
-#define PMOD_3_GPIO_Port GPIOC
-#define PMOD_2_Pin GPIO_PIN_3
-#define PMOD_2_GPIO_Port GPIOC
-#define ARD_D6_Pin GPIO_PIN_7
-#define ARD_D6_GPIO_Port GPIOJ
-#define ARD_D9_Pin GPIO_PIN_6
-#define ARD_D9_GPIO_Port GPIOJ
 #define ULPI_NXT_Pin GPIO_PIN_4
 #define ULPI_NXT_GPIO_Port GPIOH
 #define ULPI_D3_Pin GPIO_PIN_10

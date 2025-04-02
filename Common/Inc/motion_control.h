@@ -18,7 +18,7 @@ typedef struct
 	uint32_t P, I, D;
 } PIDContext;
 
-Vec3 MotionControlPIDUpdate(PIDContext pidContext, Vec3 curVel, Vec3 targetVel);
+Vec3 MotionControlPIDUpdateVel(PIDContext pidContext, Vec3 curVel, Vec3 targetVel);
 
 /*
 * PWM & Motion Control
@@ -59,8 +59,8 @@ typedef struct {
     Vec3 right;
 } AxisMap;
 
-void MotionControlUpdatePWM(
-    AxisMap axisConf, Vec3 mmVelSteps, Vec3 mmAngVelSteps, void *devs, uint32_t nDevs
-);
+// void MotionControlUpdatePWM(
+//     AxisMap axisConf, Vec3 mmVelSteps, Vec3 mmAngVelSteps, void *devs, uint32_t nDevs
+// );
 
 #endif // MOTION_CONTROL_H
