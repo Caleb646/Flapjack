@@ -1,5 +1,10 @@
 #include "flight_context.h"
 
+void FlightContextUpdateAttitude(FlightContext *pContext, Vec3f attitude)
+{
+    pContext->attitude = attitude;
+}
+
 void FlightContextUpdateIMUData(FlightContext *pContext, Vec3 accel, Vec3 gyro)
 {
     pContext->imuUnFilteredAccel = accel;

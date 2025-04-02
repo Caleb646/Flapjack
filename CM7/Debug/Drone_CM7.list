@@ -7,45 +7,45 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
   1 .text         0000c10c  080002a0  080002a0  000012a0  2**4
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
-  2 .rodata       00002134  0800c3ac  0800c3ac  0000d3ac  2**2
+  2 .rodata       0000214c  0800c3ac  0800c3ac  0000d3ac  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  3 .ARM.extab    00000000  0800e4e0  0800e4e0  00010070  2**0
+  3 .ARM.extab    00000000  0800e4f8  0800e4f8  00010070  2**0
                   CONTENTS, READONLY
-  4 .ARM          00000008  0800e4e0  0800e4e0  0000f4e0  2**2
+  4 .ARM          00000008  0800e4f8  0800e4f8  0000f4f8  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  5 .preinit_array 00000000  0800e4e8  0800e4e8  00010070  2**0
+  5 .preinit_array 00000000  0800e500  0800e500  00010070  2**0
                   CONTENTS, ALLOC, LOAD, DATA
-  6 .init_array   00000004  0800e4e8  0800e4e8  0000f4e8  2**2
+  6 .init_array   00000004  0800e500  0800e500  0000f500  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  7 .fini_array   00000004  0800e4ec  0800e4ec  0000f4ec  2**2
+  7 .fini_array   00000004  0800e504  0800e504  0000f504  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  8 .data         00000070  24000000  0800e4f0  00010000  2**2
+  8 .data         00000070  24000000  0800e508  00010000  2**2
                   CONTENTS, ALLOC, LOAD, DATA
-  9 .bss          00004d78  24000070  0800e560  00010070  2**2
+  9 .bss          00004d78  24000070  0800e578  00010070  2**2
                   ALLOC
- 10 ._user_heap_stack 00000600  24004de8  0800e560  00010de8  2**0
+ 10 ._user_heap_stack 00000600  24004de8  0800e578  00010de8  2**0
                   ALLOC
  11 .ARM.attributes 0000002e  00000000  00000000  00010070  2**0
                   CONTENTS, READONLY
- 12 .debug_info   00025879  00000000  00000000  0001009e  2**0
+ 12 .debug_info   0002588e  00000000  00000000  0001009e  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 13 .debug_abbrev 00004c46  00000000  00000000  00035917  2**0
+ 13 .debug_abbrev 00004c46  00000000  00000000  0003592c  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 14 .debug_aranges 00001d58  00000000  00000000  0003a560  2**3
+ 14 .debug_aranges 00001d58  00000000  00000000  0003a578  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 15 .debug_rnglists 000016ab  00000000  00000000  0003c2b8  2**0
+ 15 .debug_rnglists 000016ab  00000000  00000000  0003c2d0  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 16 .debug_macro  000440ef  00000000  00000000  0003d963  2**0
+ 16 .debug_macro  0004314d  00000000  00000000  0003d97b  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .debug_line   00024b59  00000000  00000000  00081a52  2**0
+ 17 .debug_line   00024f35  00000000  00000000  00080ac8  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_str    001b416e  00000000  00000000  000a65ab  2**0
+ 18 .debug_str    001b43f6  00000000  00000000  000a59fd  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .comment      00000043  00000000  00000000  0025a719  2**0
+ 19 .comment      00000043  00000000  00000000  00259df3  2**0
                   CONTENTS, READONLY
- 20 .debug_frame  0000834c  00000000  00000000  0025a75c  2**2
+ 20 .debug_frame  0000834c  00000000  00000000  00259e38  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 21 .debug_line_str 00000050  00000000  00000000  00262aa8  2**0
+ 21 .debug_line_str 00000068  00000000  00000000  00262184  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -651,7 +651,7 @@ IMU_STATUS IMU2CPUInterruptHandler(
  80007fa:	d002      	beq.n	8000802 <IMU2CPUInterruptHandler+0x26>
  80007fc:	687b      	ldr	r3, [r7, #4]
  80007fe:	2b00      	cmp	r3, #0
- 8000800:	d111      	bne.n	8000826 <IMU2CPUInterruptHandler+0x4a>
+ 8000800:	d112      	bne.n	8000828 <IMU2CPUInterruptHandler+0x4c>
   {
     LOG_ERROR("Invalid arguments");
  8000802:	481c      	ldr	r0, [pc, #112]	@ (8000874 <IMU2CPUInterruptHandler+0x98>)
@@ -665,62 +665,62 @@ IMU_STATUS IMU2CPUInterruptHandler(
  800081a:	f00a fee3 	bl	800b5e4 <iprintf>
  800081e:	4819      	ldr	r0, [pc, #100]	@ (8000884 <IMU2CPUInterruptHandler+0xa8>)
  8000820:	f00a ff48 	bl	800b6b4 <puts>
- 8000824:	e021      	b.n	800086a <IMU2CPUInterruptHandler+0x8e>
-    return;
+    return IMU_ERROR;
+ 8000824:	2301      	movs	r3, #1
+ 8000826:	e021      	b.n	800086c <IMU2CPUInterruptHandler+0x90>
   }
 
   // read both status registers
   uint8_t pBuf[2] = {0, 0};
- 8000826:	2300      	movs	r3, #0
- 8000828:	82bb      	strh	r3, [r7, #20]
+ 8000828:	2300      	movs	r3, #0
+ 800082a:	82bb      	strh	r3, [r7, #20]
   IMU_STATUS status = IMUReadReg(pIMU, BMI2_INT_STATUS_1_ADDR, pBuf, 2);
- 800082a:	f107 0214 	add.w	r2, r7, #20
- 800082e:	2302      	movs	r3, #2
- 8000830:	211d      	movs	r1, #29
- 8000832:	68f8      	ldr	r0, [r7, #12]
- 8000834:	f7ff ff54 	bl	80006e0 <IMUReadReg>
- 8000838:	4603      	mov	r3, r0
- 800083a:	75fb      	strb	r3, [r7, #23]
+ 800082c:	f107 0214 	add.w	r2, r7, #20
+ 8000830:	2302      	movs	r3, #2
+ 8000832:	211d      	movs	r1, #29
+ 8000834:	68f8      	ldr	r0, [r7, #12]
+ 8000836:	f7ff ff53 	bl	80006e0 <IMUReadReg>
+ 800083a:	4603      	mov	r3, r0
+ 800083c:	75fb      	strb	r3, [r7, #23]
 
   // uint8_t intStatus0 = pBuf[0];
   uint8_t intStatus1 = pBuf[1];
- 800083c:	7d7b      	ldrb	r3, [r7, #21]
- 800083e:	75bb      	strb	r3, [r7, #22]
+ 800083e:	7d7b      	ldrb	r3, [r7, #21]
+ 8000840:	75bb      	strb	r3, [r7, #22]
   }
 
   if(BIT_ISSET(intStatus1, BMI2_INT_STATUS_ACC_RDY_BIT)) status |= IMUUpdateAccel(pIMU, *pOutputAccel, pOutputAccel);
   if(BIT_ISSET(intStatus1, BMI2_INT_STATUS_GYR_RDY_BIT)) status |= IMUUpdateGyro(pIMU, *pOutputGyro, pOutputGyro);
 
   if(status != IMU_OK) LOG_ERROR("Failed to update IMU position data");
- 8000840:	7dfb      	ldrb	r3, [r7, #23]
- 8000842:	2b00      	cmp	r3, #0
- 8000844:	d010      	beq.n	8000868 <IMU2CPUInterruptHandler+0x8c>
- 8000846:	480b      	ldr	r0, [pc, #44]	@ (8000874 <IMU2CPUInterruptHandler+0x98>)
- 8000848:	f00a fecc 	bl	800b5e4 <iprintf>
- 800084c:	480a      	ldr	r0, [pc, #40]	@ (8000878 <IMU2CPUInterruptHandler+0x9c>)
- 800084e:	f00a fec9 	bl	800b5e4 <iprintf>
- 8000852:	f240 215b 	movw	r1, #603	@ 0x25b
- 8000856:	4809      	ldr	r0, [pc, #36]	@ (800087c <IMU2CPUInterruptHandler+0xa0>)
- 8000858:	f00a fec4 	bl	800b5e4 <iprintf>
- 800085c:	480a      	ldr	r0, [pc, #40]	@ (8000888 <IMU2CPUInterruptHandler+0xac>)
- 800085e:	f00a fec1 	bl	800b5e4 <iprintf>
- 8000862:	4808      	ldr	r0, [pc, #32]	@ (8000884 <IMU2CPUInterruptHandler+0xa8>)
- 8000864:	f00a ff26 	bl	800b6b4 <puts>
+ 8000842:	7dfb      	ldrb	r3, [r7, #23]
+ 8000844:	2b00      	cmp	r3, #0
+ 8000846:	d010      	beq.n	800086a <IMU2CPUInterruptHandler+0x8e>
+ 8000848:	480a      	ldr	r0, [pc, #40]	@ (8000874 <IMU2CPUInterruptHandler+0x98>)
+ 800084a:	f00a fecb 	bl	800b5e4 <iprintf>
+ 800084e:	480a      	ldr	r0, [pc, #40]	@ (8000878 <IMU2CPUInterruptHandler+0x9c>)
+ 8000850:	f00a fec8 	bl	800b5e4 <iprintf>
+ 8000854:	f240 215b 	movw	r1, #603	@ 0x25b
+ 8000858:	4808      	ldr	r0, [pc, #32]	@ (800087c <IMU2CPUInterruptHandler+0xa0>)
+ 800085a:	f00a fec3 	bl	800b5e4 <iprintf>
+ 800085e:	480a      	ldr	r0, [pc, #40]	@ (8000888 <IMU2CPUInterruptHandler+0xac>)
+ 8000860:	f00a fec0 	bl	800b5e4 <iprintf>
+ 8000864:	4807      	ldr	r0, [pc, #28]	@ (8000884 <IMU2CPUInterruptHandler+0xa8>)
+ 8000866:	f00a ff25 	bl	800b6b4 <puts>
 
   return status;
- 8000868:	7dfb      	ldrb	r3, [r7, #23]
+ 800086a:	7dfb      	ldrb	r3, [r7, #23]
 }
- 800086a:	4618      	mov	r0, r3
- 800086c:	3718      	adds	r7, #24
- 800086e:	46bd      	mov	sp, r7
- 8000870:	bd80      	pop	{r7, pc}
- 8000872:	bf00      	nop
+ 800086c:	4618      	mov	r0, r3
+ 800086e:	3718      	adds	r7, #24
+ 8000870:	46bd      	mov	sp, r7
+ 8000872:	bd80      	pop	{r7, pc}
  8000874:	0800c3ac 	.word	0x0800c3ac
  8000878:	0800c3b8 	.word	0x0800c3b8
- 800087c:	0800c3e8 	.word	0x0800c3e8
- 8000880:	0800c3ec 	.word	0x0800c3ec
- 8000884:	0800c400 	.word	0x0800c400
- 8000888:	0800c404 	.word	0x0800c404
+ 800087c:	0800c400 	.word	0x0800c400
+ 8000880:	0800c404 	.word	0x0800c404
+ 8000884:	0800c418 	.word	0x0800c418
+ 8000888:	0800c41c 	.word	0x0800c41c
 
 0800088c <IMUInit>:
   IMU_ACC_RANGE accRange,
@@ -1004,7 +1004,7 @@ IMU_STATUS IMU2CPUInterruptHandler(
  8000a4c:	bd80      	pop	{r7, pc}
  8000a4e:	bf00      	nop
  8000a50:	fafaafaf 	.word	0xfafaafaf
- 8000a54:	0800c44c 	.word	0x0800c44c
+ 8000a54:	0800c464 	.word	0x0800c464
 
 08000a58 <__io_putchar>:
 
@@ -2690,7 +2690,7 @@ while(__HAL_RCC_GET_FLAG(RCC_FLAG_D2CKRDY) != RESET) { asm("NOP"); }
  8001414:	240001c0 	.word	0x240001c0
  8001418:	240000a0 	.word	0x240000a0
  800141c:	24000258 	.word	0x24000258
- 8001420:	0800e460 	.word	0x0800e460
+ 8001420:	0800e478 	.word	0x0800e478
  8001424:	08001945 	.word	0x08001945
  8001428:	24000254 	.word	0x24000254
 
@@ -4887,7 +4887,7 @@ LoopFillZerobss:
   ldr r1, =_edata
  8002060:	24000070 	.word	0x24000070
   ldr r2, =_sidata
- 8002064:	0800e4f0 	.word	0x0800e4f0
+ 8002064:	0800e508 	.word	0x0800e508
   ldr r2, =_sbss
  8002068:	24000070 	.word	0x24000070
   ldr r4, =_ebss
@@ -4989,7 +4989,7 @@ HAL_StatusTypeDef HAL_Init(void)
  80020d8:	46bd      	mov	sp, r7
  80020da:	bd80      	pop	{r7, pc}
  80020dc:	58024400 	.word	0x58024400
- 80020e0:	0800e450 	.word	0x0800e450
+ 80020e0:	0800e468 	.word	0x0800e468
  80020e4:	24000004 	.word	0x24000004
  80020e8:	24000000 	.word	0x24000000
 
@@ -8312,7 +8312,7 @@ HAL_StatusTypeDef HAL_RCC_ClockConfig(const RCC_ClkInitTypeDef  *RCC_ClkInitStru
  800341c:	bd80      	pop	{r7, pc}
  800341e:	bf00      	nop
  8003420:	58024400 	.word	0x58024400
- 8003424:	0800e450 	.word	0x0800e450
+ 8003424:	0800e468 	.word	0x0800e468
  8003428:	24000004 	.word	0x24000004
  800342c:	24000000 	.word	0x24000000
  8003430:	24000008 	.word	0x24000008
@@ -8844,7 +8844,7 @@ uint32_t HAL_RCC_GetHCLKFreq(void)
  8003848:	46bd      	mov	sp, r7
  800384a:	bd80      	pop	{r7, pc}
  800384c:	58024400 	.word	0x58024400
- 8003850:	0800e450 	.word	0x0800e450
+ 8003850:	0800e468 	.word	0x0800e468
  8003854:	24000004 	.word	0x24000004
  8003858:	24000000 	.word	0x24000000
 
@@ -8878,7 +8878,7 @@ uint32_t HAL_RCC_GetPCLK1Freq(void)
  800387c:	4618      	mov	r0, r3
  800387e:	bd80      	pop	{r7, pc}
  8003880:	58024400 	.word	0x58024400
- 8003884:	0800e450 	.word	0x0800e450
+ 8003884:	0800e468 	.word	0x0800e468
 
 08003888 <HAL_RCC_GetPCLK2Freq>:
   * @note   Each time PCLK2 changes, this function must be called to update the
@@ -8909,7 +8909,7 @@ uint32_t HAL_RCC_GetPCLK2Freq(void)
  80038a8:	4618      	mov	r0, r3
  80038aa:	bd80      	pop	{r7, pc}
  80038ac:	58024400 	.word	0x58024400
- 80038b0:	0800e450 	.word	0x0800e450
+ 80038b0:	0800e468 	.word	0x0800e468
 
 080038b4 <HAL_RCC_GetClockConfig>:
   * will be configured.
@@ -12119,7 +12119,7 @@ uint32_t HAL_RCCEx_GetD3PCLK1Freq(void)
  8004dec:	4618      	mov	r0, r3
  8004dee:	bd80      	pop	{r7, pc}
  8004df0:	58024400 	.word	0x58024400
- 8004df4:	0800e450 	.word	0x0800e450
+ 8004df4:	0800e468 	.word	0x0800e468
 
 08004df8 <HAL_RCCEx_GetPLL2ClockFreq>:
   *         right PLL2CLK value. Otherwise, any configuration based on this function will be incorrect.
@@ -19740,7 +19740,7 @@ HAL_StatusTypeDef UART_SetConfig(UART_HandleTypeDef *huart)
  8007f6e:	e0b5      	b.n	80080dc <UART_SetConfig+0xa94>
  8007f70:	03d09000 	.word	0x03d09000
  8007f74:	003d0900 	.word	0x003d0900
- 8007f78:	0800e484 	.word	0x0800e484
+ 8007f78:	0800e49c 	.word	0x0800e49c
  8007f7c:	58024400 	.word	0x58024400
       }
     }
@@ -19956,7 +19956,7 @@ HAL_StatusTypeDef UART_SetConfig(UART_HandleTypeDef *huart)
  8008108:	58024400 	.word	0x58024400
  800810c:	03d09000 	.word	0x03d09000
  8008110:	003d0900 	.word	0x003d0900
- 8008114:	0800e484 	.word	0x0800e484
+ 8008114:	0800e49c 	.word	0x0800e49c
 
 08008118 <UART_AdvFeatureConfig>:
   * @brief Configure the UART peripheral advanced features.
@@ -21061,8 +21061,8 @@ static void UARTEx_SetNbDataToProcess(UART_HandleTypeDef *huart)
  8008750:	f85d 7b04 	ldr.w	r7, [sp], #4
  8008754:	4770      	bx	lr
  8008756:	bf00      	nop
- 8008758:	0800e49c 	.word	0x0800e49c
- 800875c:	0800e4a4 	.word	0x0800e4a4
+ 8008758:	0800e4b4 	.word	0x0800e4b4
+ 800875c:	0800e4bc 	.word	0x0800e4bc
 
 08008760 <__NVIC_SetPriority>:
 {
@@ -26218,7 +26218,7 @@ BaseType_t xReturn;
  800a28a:	46bd      	mov	sp, r7
  800a28c:	bd80      	pop	{r7, pc}
  800a28e:	bf00      	nop
- 800a290:	0800c434 	.word	0x0800c434
+ 800a290:	0800c44c 	.word	0x0800c44c
  800a294:	0800a8c9 	.word	0x0800a8c9
  800a298:	24004b68 	.word	0x24004b68
  800a29c:	24004b64 	.word	0x24004b64
@@ -28362,7 +28362,7 @@ BaseType_t xReturn = pdFAIL;
  800ae2c:	bd80      	pop	{r7, pc}
  800ae2e:	bf00      	nop
  800ae30:	24004ba0 	.word	0x24004ba0
- 800ae34:	0800c43c 	.word	0x0800c43c
+ 800ae34:	0800c454 	.word	0x0800c454
  800ae38:	0800af79 	.word	0x0800af79
  800ae3c:	24004ba4 	.word	0x24004ba4
 
@@ -29471,7 +29471,7 @@ static void prvCheckForValidListAndQueue( void )
  800b450:	24004b9c 	.word	0x24004b9c
  800b454:	24004c4c 	.word	0x24004c4c
  800b458:	24004bac 	.word	0x24004bac
- 800b45c:	0800c444 	.word	0x0800c444
+ 800b45c:	0800c45c 	.word	0x0800c45c
 
 0800b460 <std>:
  800b460:	2300      	movs	r3, #0
@@ -30044,10 +30044,10 @@ static void prvCheckForValidListAndQueue( void )
  800b94e:	4798      	blx	r3
  800b950:	3601      	adds	r6, #1
  800b952:	e7f2      	b.n	800b93a <__libc_init_array+0x1e>
- 800b954:	0800e4e8 	.word	0x0800e4e8
- 800b958:	0800e4e8 	.word	0x0800e4e8
- 800b95c:	0800e4e8 	.word	0x0800e4e8
- 800b960:	0800e4ec 	.word	0x0800e4ec
+ 800b954:	0800e500 	.word	0x0800e500
+ 800b958:	0800e500 	.word	0x0800e500
+ 800b95c:	0800e500 	.word	0x0800e500
+ 800b960:	0800e504 	.word	0x0800e504
 
 0800b964 <__retarget_lock_init_recursive>:
  800b964:	4770      	bx	lr
@@ -30559,11 +30559,11 @@ static void prvCheckForValidListAndQueue( void )
  800bde0:	4630      	mov	r0, r6
  800bde2:	f000 f879 	bl	800bed8 <_printf_i>
  800bde6:	e7e4      	b.n	800bdb2 <_vfiprintf_r+0x1e6>
- 800bde8:	0800e4ac 	.word	0x0800e4ac
- 800bdec:	0800e4b6 	.word	0x0800e4b6
+ 800bde8:	0800e4c4 	.word	0x0800e4c4
+ 800bdec:	0800e4ce 	.word	0x0800e4ce
  800bdf0:	00000000 	.word	0x00000000
  800bdf4:	0800bba7 	.word	0x0800bba7
- 800bdf8:	0800e4b2 	.word	0x0800e4b2
+ 800bdf8:	0800e4ca 	.word	0x0800e4ca
 
 0800bdfc <_printf_common>:
  800bdfc:	e92d 47f0 	stmdb	sp!, {r4, r5, r6, r7, r8, r9, sl, lr}
@@ -30892,8 +30892,8 @@ static void prvCheckForValidListAndQueue( void )
  800c104:	2500      	movs	r5, #0
  800c106:	f104 0619 	add.w	r6, r4, #25
  800c10a:	e7f5      	b.n	800c0f8 <_printf_i+0x220>
- 800c10c:	0800e4bd 	.word	0x0800e4bd
- 800c110:	0800e4ce 	.word	0x0800e4ce
+ 800c10c:	0800e4d5 	.word	0x0800e4d5
+ 800c110:	0800e4e6 	.word	0x0800e4e6
 
 0800c114 <__sflush_r>:
  800c114:	f9b1 200c 	ldrsh.w	r2, [r1, #12]

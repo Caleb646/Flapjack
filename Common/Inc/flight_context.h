@@ -21,9 +21,12 @@ typedef struct FlightContext__ {
     Vec3 curAngVel;
     Vec3 targetAngVel;
     Vec3 pidStepAngVel;
+    // Attitude relative to earth frame
+    Vec3f attitude;
     FlightMode flightMode;
 } FlightContext;
 
+void FlightContextUpdateAttitude(FlightContext *pContext, Vec3f attitude);
 void FlightContextUpdateIMUData(FlightContext *pContext, Vec3 accel, Vec3 gyro);
 void FlightContextUpdateCurrentVelocities(FlightContext *pContext, Vec3 vel, Vec3 angVel);
 void FlightContextUpdateTargetVelocities(FlightContext *pContext, Vec3 vel, Vec3 angVel);

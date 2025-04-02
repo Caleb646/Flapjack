@@ -1,4 +1,4 @@
-C:/Users/caleb/Projects/Drone/Common/Src/log.c:24:1:__io_putchar	4
-C:/Users/caleb/Projects/Drone/Common/Src/log.c:49:8:LoggerInit	3
-C:/Users/caleb/Projects/Drone/Common/Src/log.c:65:15:LoggerWriteToUART	2
-C:/Users/caleb/Projects/Drone/Common/Src/log.c:83:13:SyncUARTTaskHandler	2
+C:/Users/c.thomas/STM32CubeIDE/workspace_1.18.0/Drone/Common/Src/log.c:24:1:__io_putchar	4
+C:/Users/c.thomas/STM32CubeIDE/workspace_1.18.0/Drone/Common/Src/log.c:49:8:LoggerInit	3
+C:/Users/c.thomas/STM32CubeIDE/workspace_1.18.0/Drone/Common/Src/log.c:65:15:LoggerWriteToUART	2
+C:/Users/c.thomas/STM32CubeIDE/workspace_1.18.0/Drone/Common/Src/log.c:83:13:SyncUARTTaskHandler	2

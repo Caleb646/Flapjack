@@ -10,4 +10,22 @@ typedef struct {
     int32_t x, y, z;
 } Vec3;
 
+typedef struct {
+    union
+    {
+        float x;
+        float pitch;
+    };
+    union
+    {
+        float y;
+        float roll;
+    };
+    union
+    {
+        float z;
+        float yaw;
+    };
+} Vec3f;
+
 #endif // COMMON_H
