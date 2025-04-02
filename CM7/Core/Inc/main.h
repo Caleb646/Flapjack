@@ -75,6 +75,7 @@ void Error_Handler(void);
 #define SPI2_NSS_GPIO_Port GPIOA
 #define IMU_INT_Pin GPIO_PIN_7
 #define IMU_INT_GPIO_Port GPIOC
+#define IMU_INT_EXTI_IRQn EXTI9_5_IRQn
 #define OSC_OUT_Pin GPIO_PIN_1
 #define OSC_OUT_GPIO_Port GPIOH
 #define OSC_IN_Pin GPIO_PIN_0
