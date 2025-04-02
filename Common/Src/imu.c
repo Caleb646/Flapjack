@@ -503,7 +503,7 @@ IMU_STATUS IMUWriteReg(IMU *pIMU, uint8_t reg, uint8_t *pBuf, uint32_t len)
 	return IMU_OK;
 }
 
-IMU_STATUS IMUUpdateGyro(IMU *pIMU, Vec3 curAngularVel, Vec3 *pOutputAngularVel)
+IMU_STATUS IMUUpdateGyro(IMU *pIMU, Vec3 curAngularVel, Vec3 *pOutputGyro)
 {
   uint8_t pBuffer[6];
   memset(pBuffer, 0, sizeof(pBuffer));
@@ -519,16 +519,24 @@ IMU_STATUS IMUUpdateGyro(IMU *pIMU, Vec3 curAngularVel, Vec3 *pOutputAngularVel)
   if(pIMU->gyroRange == IMU_GYRO_RANGE_1000) scale = 1000;
   if(pIMU->gyroRange == IMU_GYRO_RANGE_2000) scale = 2000;
   // scale to milli degrees per second
-  pOutputAngularVel->x = ( ((int32_t)pIMU->rawGyro.x) * 1000 * scale ) / 0x7FFF;
-  pOutputAngularVel->y = ( ((int32_t)pIMU->rawGyro.y) * 1000 * scale ) / 0x7FFF;
-  pOutputAngularVel->z = ( ((int32_t)pIMU->rawGyro.z) * 1000 * scale ) / 0x7FFF;
+  pOutputGyro->x = ( ((int32_t)pIMU->rawGyro.x) * 1000 * scale ) / 0x7FFF;
+  pOutputGyro->y = ( ((int32_t)pIMU->rawGyro.y) * 1000 * scale ) / 0x7FFF;
+  pOutputGyro->z = ( ((int32_t)pIMU->rawGyro.z) * 1000 * scale ) / 0x7FFF;
+
+  // pOutputAngularVel->x = ( ((int32_t)pIMU->rawGyro.x) * 1000 * scale ) / 0x7FFF;
+  // pOutputAngularVel->y = ( ((int32_t)pIMU->rawGyro.y) * 1000 * scale ) / 0x7FFF;
+  // pOutputAngularVel->z = ( ((int32_t)pIMU->rawGyro.z) * 1000 * scale ) / 0x7FFF;
+
+  // pOutputGyro->x = pOutputAngularVel->x;
+  // pOutputGyro->y = pOutputAngularVel->y;
+  // pOutputGyro->z = pOutputAngularVel->z;
 
   pIMU->msLastGyroUpdateTime = HAL_GetTick();
 
   return status;
 }
 
-IMU_STATUS IMUUpdateAccel(IMU *pIMU, Vec3 curVel, Vec3 *pOutputVel)
+IMU_STATUS IMUUpdateAccel(IMU *pIMU, Vec3 curVel, Vec3 *pOutputAccel)
 {
   uint8_t pBuffer[6];
   memset(pBuffer, 0, sizeof(pBuffer));
@@ -547,27 +555,31 @@ IMU_STATUS IMUUpdateAccel(IMU *pIMU, Vec3 curVel, Vec3 *pOutputVel)
   int32_t ay = ( ((int32_t)pIMU->rawAccel.y) * 1000 * scale ) / 0x7FFF;
   int32_t az = ( ((int32_t)pIMU->rawAccel.z) * 1000 * scale ) / 0x7FFF;
 
-  int32_t ms = HAL_GetTick();
-  int32_t dt = ms - pIMU->msLastAccUpdateTime;
-  pIMU->msLastAccUpdateTime = ms;
+  // int32_t ms = HAL_GetTick();
+  // int32_t dt = ms - pIMU->msLastAccUpdateTime;
+  // pIMU->msLastAccUpdateTime = ms;
 
-  pOutputVel->x = curVel.x + ((ax * dt) / 1000);
-  pOutputVel->y = curVel.y + ((ay * dt) / 1000);
-  pOutputVel->z = curVel.z + ((az * dt) / 1000);
+  pOutputAccel->x = ax;
+  pOutputAccel->y = ay;
+  pOutputAccel->z = az;
+
+  pIMU->msLastAccUpdateTime = HAL_GetTick();
+
+  // pOutputVel->x = curVel.x + ((ax * dt) / 1000);
+  // pOutputVel->y = curVel.y + ((ay * dt) / 1000);
+  // pOutputVel->z = curVel.z + ((az * dt) / 1000);
 
   return status;
 }
 
-void IMU2CPUInterruptHandler(
-  IMU *pIMU, 
-  FlightContext *pFlightContext,
-	TaskHandle_t pTasktoNofityOnIMUUpdate
+IMU_STATUS IMU2CPUInterruptHandler(
+  IMU *pIMU, Vec3 *pOutputAccel,Vec3 *pOutputGyro
 )
 {
-  if(pIMU == NULL || pIMU->pSPI == NULL || pFlightContext == NULL)
+  if(pIMU == NULL || pIMU->pSPI == NULL || pOutputAccel == NULL || pOutputGyro == NULL)
   {
     LOG_ERROR("Invalid arguments");
-    return;
+    return IMU_ERROR;
   }
 
   // read both status registers
@@ -582,20 +594,15 @@ void IMU2CPUInterruptHandler(
     status = IMUReadReg(pIMU, BMI2_ERROR_ADDR, pBuf, 1);
     uint8_t errorCode = pBuf[0];
     LOG_ERROR("IMU encountered error [0x%X]", (uint16_t)errorCode);
-    return;
+    return IMU_ERROR;
   }
 
-  Vec3 curVel = pFlightContext->curVel;
-  Vec3 curAngVel = pFlightContext->curAngVel;
-  if(BIT_ISSET(intStatus1, BMI2_INT_STATUS_ACC_RDY_BIT)) status |= IMUUpdateAccel(pIMU, curVel, &curVel);
-  if(BIT_ISSET(intStatus1, BMI2_INT_STATUS_GYR_RDY_BIT)) status |= IMUUpdateGyro(pIMU, curAngVel, &curAngVel);
+  if(BIT_ISSET(intStatus1, BMI2_INT_STATUS_ACC_RDY_BIT)) status |= IMUUpdateAccel(pIMU, *pOutputAccel, pOutputAccel);
+  if(BIT_ISSET(intStatus1, BMI2_INT_STATUS_GYR_RDY_BIT)) status |= IMUUpdateGyro(pIMU, *pOutputGyro, pOutputGyro);
 
-  if(status == IMU_OK)
-  {
-    FlightContextUpdateCurrentVelocities(pFlightContext, curVel, curAngVel);
-    if(pTasktoNofityOnIMUUpdate != NULL) xTaskNotifyGive(pTasktoNofityOnIMUUpdate);
-  }
-  else LOG_ERROR("Failed to update IMU position data");
+  if(status != IMU_OK) LOG_ERROR("Failed to update IMU position data");
+
+  return status;
 }
 
 

@@ -1,5 +1,10 @@
 #include "flight_context.h"
 
+void FlightContextUpdateIMUData(FlightContext *pContext, Vec3 accel, Vec3 gyro)
+{
+    pContext->imuUnFilteredAccel = accel;
+    pContext->imuUnFilteredGyro = gyro;
+}
 void FlightContextUpdateCurrentVelocities(FlightContext *pContext, Vec3 vel, Vec3 angVel)
 {
     pContext->curVel = vel;

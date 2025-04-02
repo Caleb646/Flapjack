@@ -12,16 +12,19 @@ typedef enum {
 
 typedef struct FlightContext__ {
     // millimeters per second
+    Vec3 imuUnFilteredAccel;
     Vec3 curVel;
     Vec3 targetVel;
     Vec3 pidStepVel;
     // millidegrees per second (1 /1000 of a degree)
+    Vec3 imuUnFilteredGyro;
     Vec3 curAngVel;
     Vec3 targetAngVel;
     Vec3 pidStepAngVel;
     FlightMode flightMode;
 } FlightContext;
 
+void FlightContextUpdateIMUData(FlightContext *pContext, Vec3 accel, Vec3 gyro);
 void FlightContextUpdateCurrentVelocities(FlightContext *pContext, Vec3 vel, Vec3 angVel);
 void FlightContextUpdateTargetVelocities(FlightContext *pContext, Vec3 vel, Vec3 angVel);
 void FlightContextUpdateFlightMode(FlightContext *pContext, uint32_t flightMode);

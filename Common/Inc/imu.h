@@ -67,10 +67,8 @@ typedef struct
 typedef struct FlightContext__ FlightContext;
 // typedef IMU_STATUS (*imu_update_fn)(IMU *pIMU);
 
-void IMU2CPUInterruptHandler(
-	IMU *pIMU, 
-	FlightContext *pFlightContext,
-	TaskHandle_t pTasktoNofityOnIMUUpdate
+IMU_STATUS IMU2CPUInterruptHandler(
+	IMU *pIMU, Vec3 *pOutputAccel,Vec3 *pOutputGyro
 );
 IMU_STATUS IMUReadReg(IMU *pIMU, uint8_t reg, uint8_t *pBuf, uint32_t len);
 IMU_STATUS IMUWriteReg(IMU *pIMU, uint8_t reg, uint8_t *pBuf, uint32_t len);

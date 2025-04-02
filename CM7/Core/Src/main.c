@@ -95,14 +95,20 @@ IMU gIMU;
 FlightContext gFlightContext;
 PIDContext gPIDVelContext;
 PIDContext gPIDVelAngularContext;
-TaskHandle_t pTaskMotionControlUpdate;
+TaskHandle_t gpTaskMotionControlUpdate;
 // TaskHandle_t pPWMTaskHandler;
 
 void HAL_GPIO_EXTI_Callback(uint16_t gpioPin)
 {
     if(gpioPin == IMU_INT_Pin) 
     {
-        IMU2CPUInterruptHandler(&gIMU, &gFlightContext, pTaskMotionControlUpdate);
+        Vec3 accel = gFlightContext.imuUnFilteredAccel;
+        Vec3 gyro = gFlightContext.imuUnFilteredGyro;
+        if(IMU2CPUInterruptHandler(&gIMU, &accel, &gyro) == IMU_OK)
+        {
+            FlightContextUpdateIMUData(&gFlightContext, accel, gyro);
+            if(gpTaskMotionControlUpdate != NULL) xTaskNotifyGive(gpTaskMotionControlUpdate);
+        }
     }
 }
 
