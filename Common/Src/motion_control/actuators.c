@@ -1,4 +1,4 @@
-#include "motion_control.h"
+#include "motion_control/actuators.h"
 
 Vec3 MotionControlPIDUpdateVel(PIDContext pidContext, Vec3 curVel, Vec3 targetVel)
 {

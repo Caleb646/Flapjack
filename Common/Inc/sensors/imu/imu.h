@@ -1,5 +1,5 @@
-#ifndef IMU_H
-#define IMU_H
+#ifndef SENSORS_IMU_H
+#define SENSORS_IMU_H
 
 #include <stdint.h>
 #include "stm32h7xx_hal.h"
@@ -81,4 +81,4 @@ IMU_STATUS IMUInit(
 	IMU_GYRO_ODR gyroODR
 );
 
-#endif // IMU_H
+#endif // SENSORS_IMU_H

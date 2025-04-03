@@ -1,5 +1,5 @@
-#ifndef BMI270_H
-#define BMI270_H
+#ifndef SENSORS_BMI270_H
+#define SENSORS_BMI270_H
 
 #include "stdint.h"
 
@@ -111,4 +111,4 @@
 
 #define BMI2_CHIP_ID 0x24
 
-#endif // BMI270_H
+#endif // SENSORS_BMI270_H

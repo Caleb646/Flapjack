@@ -1,5 +1,5 @@
-#ifndef MOTION_CONTROL_H
-#define MOTION_CONTROL_H
+#ifndef MOTION_CONTROL_ACTUATORS_H
+#define MOTION_CONTROL_ACTUATORS_H
 
 #include <stdint.h>
 #include "stm32h747xx.h"
@@ -8,7 +8,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "common.h"
-#include "flight_context.h"
+// #include "flight_context.h"
 
 /*
 * PID 
@@ -63,4 +63,4 @@ typedef struct {
 //     AxisMap axisConf, Vec3 mmVelSteps, Vec3 mmAngVelSteps, void *devs, uint32_t nDevs
 // );
 
-#endif // MOTION_CONTROL_H
+#endif // MOTION_CONTROL_ACTUATORS_H

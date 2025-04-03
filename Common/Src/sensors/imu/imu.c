@@ -1,8 +1,7 @@
 #include <string.h>
-#include "imu.h"
-#include "bmi270.h"
+#include "sensors/imu/imu.h"
+#include "sensors/imu/bmi270.h"
 #include "log.h"
-#include "flight_context.h"
 
 #define BIT_ISSET(v, bit) ((v & bit) == 1)
 

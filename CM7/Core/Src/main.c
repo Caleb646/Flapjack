@@ -30,9 +30,9 @@
 #include "semphr.h"
 
 #include "log.h"
-#include "imu.h"
+#include "sensors/imu/imu.h"
 #include "filter.h"
-#include "motion_control.h"
+#include "motion_control/actuators.h"
 #include "flight_context.h"
 #include "sync/sync.h"
 /* USER CODE END Includes */

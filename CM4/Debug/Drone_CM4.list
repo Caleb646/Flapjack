@@ -7,41 +7,41 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
   1 .text         00008644  081002a0  081002a0  000012a0  2**4
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
-  2 .rodata       00000088  081088e4  081088e4  000098e4  2**2
+  2 .rodata       0000007c  081088e4  081088e4  000098e4  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  3 .ARM          00000008  0810896c  0810896c  0000996c  2**2
+  3 .ARM          00000008  08108960  08108960  00009960  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  4 .init_array   00000004  08108974  08108974  00009974  2**2
+  4 .init_array   00000004  08108968  08108968  00009968  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  5 .fini_array   00000004  08108978  08108978  00009978  2**2
+  5 .fini_array   00000004  0810896c  0810896c  0000996c  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  6 .data         0000006c  10000000  0810897c  0000a000  2**2
+  6 .data         0000006c  10000000  08108970  0000a000  2**2
                   CONTENTS, ALLOC, LOAD, DATA
-  7 .bss          00000dc4  1000006c  081089e8  0000a06c  2**2
+  7 .bss          00000dc4  1000006c  081089dc  0000a06c  2**2
                   ALLOC
-  8 ._user_heap_stack 00000600  10000e30  081089e8  0000ae30  2**0
+  8 ._user_heap_stack 00000600  10000e30  081089dc  0000ae30  2**0
                   ALLOC
   9 .ARM.attributes 00000030  00000000  00000000  0000a06c  2**0
                   CONTENTS, READONLY
- 10 .debug_info   00029093  00000000  00000000  0000a09c  2**0
+ 10 .debug_info   00028df0  00000000  00000000  0000a09c  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 11 .debug_abbrev 00004fcb  00000000  00000000  0003312f  2**0
+ 11 .debug_abbrev 00004fc5  00000000  00000000  00032e8c  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 12 .debug_aranges 000021f0  00000000  00000000  00038100  2**3
+ 12 .debug_aranges 000021e8  00000000  00000000  00037e58  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 13 .debug_rnglists 00001a5a  00000000  00000000  0003a2f0  2**0
+ 13 .debug_rnglists 00001a53  00000000  00000000  0003a040  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 14 .debug_macro  000079ca  00000000  00000000  0003bd4a  2**0
+ 14 .debug_macro  00044b52  00000000  00000000  0003ba93  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 15 .debug_line   0002be46  00000000  00000000  00043714  2**0
+ 15 .debug_line   0002b9d3  00000000  00000000  000805e5  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 16 .debug_str    001c0b18  00000000  00000000  0006f55a  2**0
+ 16 .debug_str    001c079c  00000000  00000000  000abfb8  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .comment      00000043  00000000  00000000  00230072  2**0
+ 17 .comment      00000043  00000000  00000000  0026c754  2**0
                   CONTENTS, READONLY
- 18 .debug_frame  000098ac  00000000  00000000  002300b8  2**2
+ 18 .debug_frame  00009890  00000000  00000000  0026c798  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .debug_line_str 00000068  00000000  00000000  00239964  2**0
+ 19 .debug_line_str 00000050  00000000  00000000  00276028  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -1502,7 +1502,7 @@ int main(void)
  8100b76:	f006 ffd1 	bl	8107b1c <iprintf>
  8100b7a:	480b      	ldr	r0, [pc, #44]	@ (8100ba8 <main+0xcc>)
  8100b7c:	f006 ffce 	bl	8107b1c <iprintf>
- 8100b80:	21ad      	movs	r1, #173	@ 0xad
+ 8100b80:	21a7      	movs	r1, #167	@ 0xa7
  8100b82:	480a      	ldr	r0, [pc, #40]	@ (8100bac <main+0xd0>)
  8100b84:	f006 ffca 	bl	8107b1c <iprintf>
  8100b88:	4809      	ldr	r0, [pc, #36]	@ (8100bb0 <main+0xd4>)
@@ -1515,11 +1515,11 @@ int main(void)
  8100b98:	58024400 	.word	0x58024400
  8100b9c:	e000ed00 	.word	0xe000ed00
  8100ba0:	58026400 	.word	0x58026400
- 8100ba4:	081088f0 	.word	0x081088f0
- 8100ba8:	081088fc 	.word	0x081088fc
- 8100bac:	08108910 	.word	0x08108910
- 8100bb0:	08108914 	.word	0x08108914
- 8100bb4:	08108924 	.word	0x08108924
+ 8100ba4:	081088e4 	.word	0x081088e4
+ 8100ba8:	081088f0 	.word	0x081088f0
+ 8100bac:	08108904 	.word	0x08108904
+ 8100bb0:	08108908 	.word	0x08108908
+ 8100bb4:	08108918 	.word	0x08108918
 
 08100bb8 <MX_HDMI_CEC_Init>:
   * @brief HDMI_CEC Initialization Function
@@ -4580,7 +4580,7 @@ LoopFillZerobss:
   ldr r1, =_edata
  8101e04:	1000006c 	.word	0x1000006c
   ldr r2, =_sidata
- 8101e08:	0810897c 	.word	0x0810897c
+ 8101e08:	08108970 	.word	0x08108970
   ldr r2, =_sbss
  8101e0c:	1000006c 	.word	0x1000006c
   ldr r4, =_ebss
@@ -4714,7 +4714,7 @@ uint32_t common_system_clock;
  8101ebe:	bd80      	pop	{r7, pc}
  8101ec0:	58024400 	.word	0x58024400
  8101ec4:	40024400 	.word	0x40024400
- 8101ec8:	08108928 	.word	0x08108928
+ 8101ec8:	0810891c 	.word	0x0810891c
  8101ecc:	10000004 	.word	0x10000004
  8101ed0:	10000000 	.word	0x10000000
 
@@ -7370,7 +7370,7 @@ uint32_t HAL_RCC_GetHCLKFreq(void)
  8102e98:	bd80      	pop	{r7, pc}
  8102e9a:	bf00      	nop
  8102e9c:	58024400 	.word	0x58024400
- 8102ea0:	08108928 	.word	0x08108928
+ 8102ea0:	0810891c 	.word	0x0810891c
  8102ea4:	10000004 	.word	0x10000004
  8102ea8:	10000000 	.word	0x10000000
 
@@ -7404,7 +7404,7 @@ uint32_t HAL_RCC_GetPCLK1Freq(void)
  8102ecc:	4618      	mov	r0, r3
  8102ece:	bd80      	pop	{r7, pc}
  8102ed0:	58024400 	.word	0x58024400
- 8102ed4:	08108928 	.word	0x08108928
+ 8102ed4:	0810891c 	.word	0x0810891c
 
 08102ed8 <HAL_RCC_GetClockConfig>:
   * will be configured.
@@ -12576,7 +12576,7 @@ uint32_t HAL_RCCEx_GetD3PCLK1Freq(void)
  8104f10:	4618      	mov	r0, r3
  8104f12:	bd80      	pop	{r7, pc}
  8104f14:	58024400 	.word	0x58024400
- 8104f18:	08108928 	.word	0x08108928
+ 8104f18:	0810891c 	.word	0x0810891c
 
 08104f1c <HAL_RCCEx_GetPLL2ClockFreq>:
   *         right PLL2CLK value. Otherwise, any configuration based on this function will be incorrect.
@@ -20341,10 +20341,10 @@ TCB_t *pxTCB;
  8107e86:	4798      	blx	r3
  8107e88:	3601      	adds	r6, #1
  8107e8a:	e7f2      	b.n	8107e72 <__libc_init_array+0x1e>
- 8107e8c:	08108974 	.word	0x08108974
- 8107e90:	08108974 	.word	0x08108974
- 8107e94:	08108974 	.word	0x08108974
- 8107e98:	08108978 	.word	0x08108978
+ 8107e8c:	08108968 	.word	0x08108968
+ 8107e90:	08108968 	.word	0x08108968
+ 8107e94:	08108968 	.word	0x08108968
+ 8107e98:	0810896c 	.word	0x0810896c
 
 08107e9c <__retarget_lock_init_recursive>:
  8107e9c:	4770      	bx	lr
@@ -20856,11 +20856,11 @@ TCB_t *pxTCB;
  8108318:	4630      	mov	r0, r6
  810831a:	f000 f879 	bl	8108410 <_printf_i>
  810831e:	e7e4      	b.n	81082ea <_vfiprintf_r+0x1e6>
- 8108320:	08108938 	.word	0x08108938
- 8108324:	08108942 	.word	0x08108942
+ 8108320:	0810892c 	.word	0x0810892c
+ 8108324:	08108936 	.word	0x08108936
  8108328:	00000000 	.word	0x00000000
  810832c:	081080df 	.word	0x081080df
- 8108330:	0810893e 	.word	0x0810893e
+ 8108330:	08108932 	.word	0x08108932
 
 08108334 <_printf_common>:
  8108334:	e92d 47f0 	stmdb	sp!, {r4, r5, r6, r7, r8, r9, sl, lr}
@@ -21189,8 +21189,8 @@ TCB_t *pxTCB;
  810863c:	2500      	movs	r5, #0
  810863e:	f104 0619 	add.w	r6, r4, #25
  8108642:	e7f5      	b.n	8108630 <_printf_i+0x220>
- 8108644:	08108949 	.word	0x08108949
- 8108648:	0810895a 	.word	0x0810895a
+ 8108644:	0810893d 	.word	0x0810893d
+ 8108648:	0810894e 	.word	0x0810894e
 
 0810864c <__sflush_r>:
  810864c:	f9b1 200c 	ldrsh.w	r2, [r1, #12]

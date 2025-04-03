@@ -24,6 +24,8 @@ C_DEPS :=
 SUBDIRS := \
 Common/Src \
 Common/Src/mem \
+Common/Src/motion_control \
+Common/Src/sensors/imu \
 Common/Src/sync \
 Core/Src \
 Core/Startup \
