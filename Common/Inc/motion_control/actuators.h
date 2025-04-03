@@ -37,7 +37,7 @@ typedef struct {
     TIM_HandleTypeDef *pTimerHandle;
     TIM_TypeDef *pTimerRegister;
     uint32_t timerChannelID;
-} PWMInterfaceDescriptor;
+} PWMHandle;
 
 typedef struct {
     uint32_t usMinDutyCycle;
@@ -51,12 +51,12 @@ typedef struct {
     int32_t minAngle;
     int32_t maxAngle;
     int32_t curAngle;
-    PWMInterfaceDescriptor pwmInterface;
+    PWMHandle pwmInterface;
     PWMDescriptor pwmDescriptor;
 } Servo;
 
 typedef struct {
-    PWMInterfaceDescriptor pwmInterface;
+    PWMHandle pwmInterface;
     PWMDescriptor pwmDescriptor;
 } Motor;
 
@@ -67,7 +67,7 @@ typedef struct {
 } AxisMap;
 
 int8_t PID2PWMMixer(Vec3f pidAttitude, float targetThrottle);
-int8_t MotionControlInit(void);
+int8_t MotionControlInit(PWMHandle leftMotorInter, PWMHandle leftServoInter);
 
 // void MotionControlUpdatePWM(
 //     AxisMap axisConf, Vec3 mmVelSteps, Vec3 mmAngVelSteps, void *devs, uint32_t nDevs
