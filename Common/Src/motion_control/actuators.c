@@ -1,8 +1,74 @@
+#include <string.h>
 #include "motion_control/actuators.h"
 
-Vec3 MotionControlPIDUpdateVel(PIDContext pidContext, Vec3 curVel, Vec3 targetVel)
+int8_t PIDUpdateAttitude(
+    PIDContext *pidContext, 
+    Vec3f currentAttitude, 
+    Vec3f targetAttitude, 
+    float dt, 
+    Vec3f *pOutputAttitude
+)
 {
     
+}
+
+/*
+* PWM & Motion Control
+*/
+static Motor leftMotor;
+static Servo leftServo;
+// static Motor rightMotor;
+// static Servo rightServo;
+int8_t PID2PWMMixer(Vec3f pidAttitude, float targetThrottle)
+{
+    leftMotor.pwmDescriptor.scaledDutyCycle;
+
+    return 0;
+}
+
+int8_t MotionControlInit(
+    PWMInterfaceDescriptor leftMotorInter, PWMInterfaceDescriptor leftServoInter
+)
+{
+    memset((void*)&leftMotor, 0, sizeof(Motor));
+    memset((void*)&leftServo, 0, sizeof(Servo));
+    // memset((void*)&rightMotor, 0, sizeof(Motor));
+    // memset((void*)&rightServo, 0, sizeof(Servo));
+
+    PWMDescriptor motorDescriptor;
+    motorDescriptor.usMinDutyCycle = 125;
+    motorDescriptor.usMaxDutyCycle = 250;
+    motorDescriptor.usMaxPWMCycle = 250;
+
+    PWMDescriptor servoDescriptor;
+    servoDescriptor.usMinDutyCycle = 1000;
+    servoDescriptor.usMaxDutyCycle = 2000;
+    servoDescriptor.usMaxPWMCycle = 20000;
+
+    // rightMotor.pwmDescriptor = motorDescriptor;
+    // rightServo.pwmDescriptor = servoDescriptor;
+
+    // PWMInterfaceDescriptor leftMotorInter;
+    // leftMotorInter.pTimerHandle = pLeftMotorHandle;
+    // leftMotorInter.pTimerRegister = pLeftMotorRegister;
+
+    // PWMInterfaceDescriptor leftServoInter;
+    // leftServoInter.pTimerHandle = pLeftServoHandle;
+    // leftServoInter.pTimerRegister = pLeftServoRegister;
+
+    // PWMInterfaceDescriptor rightMotorInter;
+    // PWMInterfaceDescriptor rightServoInter;
+
+    leftMotor.pwmDescriptor = motorDescriptor;
+    leftMotor.pwmInterface = leftMotorInter;
+
+    leftServo.pwmDescriptor = servoDescriptor;
+    leftServo.pwmInterface = leftServoInter;
+    leftServo.minAngle = -90;
+    leftServo.maxAngle = 90;
+    leftServo.curAngle = 0;
+
+    return 0;
 }
 
 void MotionControlUpdatePWM(
