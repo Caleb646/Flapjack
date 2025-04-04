@@ -1,2 +1,5 @@
-C:/Users/caleb/Projects/Drone/Common/Src/motion_control/actuators.c:3:6:MotionControlPIDUpdateVel	1
-C:/Users/caleb/Projects/Drone/Common/Src/motion_control/actuators.c:8:6:MotionControlUpdatePWM	1
+C:/Users/caleb/Projects/Drone/Common/Src/motion_control/actuators.c:5:8:UpdateTargetAttitudeThrottle	1
+C:/Users/caleb/Projects/Drone/Common/Src/motion_control/actuators.c:29:8:PIDUpdateAttitude	1
+C:/Users/caleb/Projects/Drone/Common/Src/motion_control/actuators.c:87:8:PIDInit	1
+C:/Users/caleb/Projects/Drone/Common/Src/motion_control/actuators.c:100:8:PID2PWMMixer	1
+C:/Users/caleb/Projects/Drone/Common/Src/motion_control/actuators.c:107:8:MotionControlInit	1

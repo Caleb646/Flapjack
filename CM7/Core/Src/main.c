@@ -88,16 +88,14 @@ void StartDefaultTask(void *argument);
 IMU gIMU;
 FlightContext gFlightContext;
 FilterMadgwickContext gFilterMadgwickContext;
-PIDContext gPIDVelContext;
-PIDContext gPIDVelAngularContext;
+PIDContext gPIDAngleContext;
 TaskHandle_t gpTaskMotionControlUpdate;
 
 void HAL_GPIO_EXTI_Callback(uint16_t gpioPin)
 {
     if(gpioPin == IMU_INT_Pin) 
     {
-        Vec3 accel = gFlightContext.imuUnFilteredAccel;
-        Vec3 gyro = gFlightContext.imuUnFilteredGyro;
+        Vec3 accel, gyro;
         if(IMU2CPUInterruptHandler(&gIMU, &accel, &gyro) == IMU_OK)
         {
             FlightContextUpdateIMUData(&gFlightContext, accel, gyro);
@@ -108,24 +106,58 @@ void HAL_GPIO_EXTI_Callback(uint16_t gpioPin)
 
 void TaskMotionControlUpdate(void *pvParameters)
 {
+  float startTime = 0.0f;
     while(1)
     {
         ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(1000));
-        Vec3f attitude = gFlightContext.attitude;
-        int8_t status = FilterMadgwick(
+        int8_t status;
+        RadioPWMChannels radio;
+        float dt = HAL_GetTick() - startTime;
+
+        Vec3f currentAttitude = gFlightContext.currentAttitude;
+        status = FilterMadgwick6DOF(
           &gFilterMadgwickContext, 
           gFlightContext.imuUnFilteredAccel, 
           gFlightContext.imuUnFilteredGyro,
-          &attitude 
+          &currentAttitude 
         );
-        if(status > 0) FlightContextUpdateAttitude(&gFlightContext, attitude);
-        // Vec3 velSteps = MotionControlPIDUpdateVel(
-        //     gPIDVelContext, gFlightContext.curVel, gFlightContext.targetVel
-        // );
-        // Vec3 velAngSteps = MotionControlPIDUpdateVel(
-        //     gPIDVelAngularContext, gFlightContext.curAngVel, gFlightContext.targetAngVel
-        // );
-        // MotionControlUpdatePWM(velSteps, velAngSteps, NULL, 0);
+        if(status > 0) 
+        {
+          FlightContextUpdateCurrentAttitude(
+            &gFlightContext, currentAttitude
+          );
+        }
+
+        Vec3f targetAttitude = gFlightContext.targetAttitude;
+        float targetThrottle = gFlightContext.targetThrottle;
+        status = UpdateTargetAttitudeThrottle(
+          &gFlightContext,
+          radio,
+          &targetAttitude,
+          &targetThrottle
+        );
+        if(status > 0) 
+        {
+          FlightContextUpdateTargetAttitudeThrottle(
+            &gFlightContext, targetAttitude, targetThrottle
+          );
+        }
+
+        Vec3f pidAttitude = gFlightContext.pidAttitude;
+        status = PIDUpdateAttitude(
+          &gPIDAngleContext,
+          gFlightContext.imuUnFilteredGyro,
+          gFlightContext.currentAttitude,
+          gFlightContext.targetAttitude,
+          dt,
+          &pidAttitude
+        );
+        if(status > 0) 
+        {
+          FlightContextUpdatePIDAttitude(
+            &gFlightContext, pidAttitude
+          );
+        }
     }
 }
 
@@ -187,6 +219,9 @@ while(__HAL_RCC_GET_FLAG(RCC_FLAG_D2CKRDY) != RESET) { asm("NOP"); }
 
   LoggerInit(&huart1);
   SyncInit();
+  PIDInit(&gPIDAngleContext);
+  FilterMadgwickInit(&gFilterMadgwickContext);
+
   IMUInit(
     &gIMU, 
     &hspi2,

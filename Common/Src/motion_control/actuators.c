@@ -1,15 +1,93 @@
 #include <string.h>
 #include "motion_control/actuators.h"
+#include "flight_context.h"
 
-int8_t PIDUpdateAttitude(
-    PIDContext *pidContext, 
-    Vec3f currentAttitude, 
-    Vec3f targetAttitude, 
-    float dt, 
-    Vec3f *pOutputAttitude
+int8_t UpdateTargetAttitudeThrottle(
+    FlightContext *pFlightContext, 
+    RadioPWMChannels radio, 
+    Vec3f *pOutputTargetAttitude, 
+    float *pOutputThrottle
 )
 {
-    
+    *pOutputThrottle = clipf32((float)radio.channel1, 0.0f, 1.0f);
+
+    pOutputTargetAttitude->roll = clipf32(
+        (float)radio.channel2, -1.0f, 1.0f
+    ) * pFlightContext->maxAttitude.roll;
+
+    pOutputTargetAttitude->pitch = clipf32(
+        (float)radio.channel3, -1.0f, 1.0f
+    ) * pFlightContext->maxAttitude.pitch;
+
+    pOutputTargetAttitude->yaw = clipf32(
+        (float)radio.channel4, -1.0f, 1.0f
+    ) * pFlightContext->maxAttitude.yaw;
+
+    return 1;
+}
+
+int8_t PIDUpdateAttitude(
+    PIDContext *pidContext,
+    Vec3f imuGyro, // degrees per second
+    Vec3f currentAttitude, // degrees
+    Vec3f targetAttitude, // degrees
+    float dt, 
+    Vec3f *pOutputPIDAttitude // degrees
+)
+{
+    float P, I, D;
+
+    P = pidContext->rollP;
+    I = pidContext->rollI;
+    D = pidContext->rollD;
+    float rollError = targetAttitude.roll - currentAttitude.roll;
+    float rollIntegral = clipf32(
+        pidContext->prevIntegral.roll + rollError * dt, 
+        -pidContext->integralLimit, 
+        pidContext->integralLimit
+    );
+    float rollDerivative = imuGyro.x;
+    pOutputPIDAttitude->roll = 0.01f * (P * rollError + I * rollIntegral - D * rollDerivative);
+
+    P = pidContext->pitchP;
+    I = pidContext->pitchI;
+    D = pidContext->pitchD;
+    float pitchError = targetAttitude.pitch - currentAttitude.pitch;
+    float pitchIntegral = clipf32(
+        pidContext->prevIntegral.pitch + pitchError * dt, 
+        -pidContext->integralLimit, 
+        pidContext->integralLimit
+    );
+    float pitchDerivative = imuGyro.y;
+    pOutputPIDAttitude->pitch = 0.01f * (P * pitchError + I * pitchIntegral - D * pitchDerivative);
+
+    P = pidContext->yawP;
+    I = pidContext->yawI;
+    D = pidContext->yawD;
+    float yawError = targetAttitude.yaw - currentAttitude.yaw;
+    float yawIntegral = clipf32(
+        pidContext->prevIntegral.yaw + yawError * dt, 
+        -pidContext->integralLimit, 
+        pidContext->integralLimit
+    );
+    float yawDerivative = imuGyro.z;
+    pOutputPIDAttitude->yaw = 0.01f * (P * yawError + I * yawIntegral - D * yawDerivative);
+
+    pidContext->prevIntegral.roll = rollIntegral;
+    pidContext->prevIntegral.pitch = pitchIntegral;
+    pidContext->prevIntegral.yaw = yawIntegral;
+
+    pidContext->prevError.roll = rollError;
+    pidContext->prevError.pitch = pitchError;
+    pidContext->prevError.yaw = yawError;
+
+    return 1;
+}
+
+int8_t PIDInit(PIDContext *pContext)
+{
+    memset((void*)pContext, 0, sizeof(PIDContext));
+    return 1;
 }
 
 /*
@@ -23,7 +101,7 @@ int8_t PID2PWMMixer(Vec3f pidAttitude, float targetThrottle)
 {
     leftMotor.pwmDescriptor.scaledDutyCycle = targetThrottle - pidAttitude.pitch + pidAttitude.roll + pidAttitude.yaw;
 
-    return 0;
+    return 1;
 }
 
 int8_t MotionControlInit(
@@ -68,7 +146,7 @@ int8_t MotionControlInit(
     leftServo.maxAngle = 90;
     leftServo.curAngle = 0;
 
-    return 0;
+    return 1;
 }
 
 // void MotionControlUpdatePWM(

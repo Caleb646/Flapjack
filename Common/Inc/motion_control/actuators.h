@@ -8,26 +8,48 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "common.h"
-// #include "flight_context.h"
+#include "flight_context.h"
 
-int8_t TargetAttitudeThrottleUpdate(void);
+
+typedef struct {
+    uint32_t channel1;
+    uint32_t channel2;
+    uint32_t channel3;
+    uint32_t channel4;
+    uint32_t channel5;
+    uint32_t channel6;
+} RadioPWMChannels;
+
+int8_t UpdateTargetAttitudeThrottle(    
+    FlightContext *pFlightContext, 
+    RadioPWMChannels radio, 
+    Vec3f *pOutputTargetAttitude, 
+    float *pOutputThrottle
+);
 
 /*
 * PID 
 */
 typedef struct
 {
-	float P, I, D;
-    Vec3f attitudeError;
+	float rollP, rollI, rollD;
+	float pitchP, pitchI, pitchD;
+	float yawP, yawI, yawD;
+    float integralLimit;
+    Vec3f prevError;
+    Vec3f prevIntegral;
 } PIDContext;
 
 int8_t PIDUpdateAttitude(
-    PIDContext *pidContext, 
-    Vec3f currentAttitude, 
-    Vec3f targetAttitude, 
+    PIDContext *pidContext,
+    Vec3f imuGyro, // degrees per second
+    Vec3f currentAttitude, // degrees
+    Vec3f targetAttitude, // degrees
     float dt, 
-    Vec3f *pOutputAttitude
+    Vec3f *pOutputPIDAttitude // degrees
 );
+
+int8_t PIDInit(PIDContext *pContext);
 
 
 /*

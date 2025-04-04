@@ -14,8 +14,8 @@ typedef struct {
     float beta;
 } FilterMadgwickContext;
 
-int8_t FilterMadgwick(FilterMadgwickContext *pContext, Vec3 gyro, Vec3 accel, Vec3f *pOutputAttitude);
-int8_t FilterMadgwickMagnetometer(FilterMadgwickContext *pContext, Vec3 gyro, Vec3 accel, Vec3 magno, Vec3f *pOutputAttitude);
+int8_t FilterMadgwick6DOF(FilterMadgwickContext *pContext, Vec3f gyro, Vec3f accel, Vec3f *pOutputAttitude);
+int8_t FilterMadgwick9DOF(FilterMadgwickContext *pContext, Vec3f gyro, Vec3f accel, Vec3f magno, Vec3f *pOutputAttitude);
 int8_t FilterMadgwickInit(FilterMadgwickContext *pContext);
 
 #endif // FILTER_H

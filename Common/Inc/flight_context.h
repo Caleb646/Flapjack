@@ -14,21 +14,22 @@ typedef enum {
 } FlightMode;
 
 typedef struct FlightContext__ {
-    // millimeters per second ^ 2
-    Vec3 imuUnFilteredAccel;
-    // millimeters per second
-    Vec3 currentVel;
+    // meters per second ^ 2
+    Vec3f imuUnFilteredAccel;
+    // Vec3 currentVel;
     // Vec3 targetVel;
     // Vec3 pidStepVel;
-    // millidegrees per second (1 /1000 of a degree)
-    Vec3 imuUnFilteredGyro;
-    Vec3 currentAngVel;
+    // degrees per second
+    Vec3f imuUnFilteredGyro;
+    // Vec3 currentAngVel;
     // Vec3 targetAngVel;
     // Vec3 pidStepAngVel;
     // Attitude relative to earth frame
-    // in millidegrees
+    // In degrees
     Vec3f currentAttitude;
     Vec3f targetAttitude;
+    Vec3f pidAttitude;
+    Vec3f maxAttitude;
     // percent in range 0 to 1
     float currentThrottle;
     float targetThrottle;
@@ -36,7 +37,8 @@ typedef struct FlightContext__ {
 } FlightContext;
 
 void FlightContextUpdateCurrentAttitude(FlightContext *pContext, Vec3f attitude);
-void FlightContextUpdateTargetAttitude(FlightContext *pContext, Vec3f attitude);
+void FlightContextUpdateTargetAttitudeThrottle(FlightContext *pContext, Vec3f attitude, float throttle);
+void FlightContextUpdatePIDAttitude(FlightContext *pContext, Vec3f attitude);
 void FlightContextUpdateIMUData(FlightContext *pContext, Vec3 accel, Vec3 gyro);
 void FlightContextUpdateFlightMode(FlightContext *pContext, uint32_t flightMode);
 // void FlightContextUpdateCurrentVelocities(FlightContext *pContext, Vec3 vel, Vec3 angVel);

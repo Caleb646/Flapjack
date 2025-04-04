@@ -7,6 +7,8 @@
         "imu.h": "c",
         "bmi270.h": "c",
         "log.h": "c",
-        "stm32h7xx_hal.h": "c"
+        "stm32h7xx_hal.h": "c",
+        "actuators.h": "c",
+        "stm32h7xx_hal_tim.h": "c"
     }
 }
