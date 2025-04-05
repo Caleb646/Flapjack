@@ -104,7 +104,6 @@ void StartDefaultTask(void *argument);
   */
 int main(void)
 {
-
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -156,14 +155,16 @@ int main(void)
 //     NULL                              /* Task handle */
 // );
 
-  LoggerInit(NULL);
-  SyncInit();
+    SyncInit();
+    LoggerInit(NULL);
+  
 
   while (1)
   {
 	  // HAL_GPIO_WritePin(GPIOD, GPIO_PIN_11, GPIO_PIN_RESET);
 	  // HAL_GPIO_WritePin(GPIOD, GPIO_PIN_11, GPIO_PIN_SET);
 	  HAL_Delay(1000);
+	  printf("Hello from CM4 \r\n");
 	  LOG_INFO("Hello from CM4");
   }
 

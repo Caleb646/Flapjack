@@ -169,82 +169,93 @@ void TaskMotionControlUpdate(void *pvParameters)
   */
 int main(void)
 {
+    /* USER CODE BEGIN 1 */
 
-  /* USER CODE BEGIN 1 */
+    /* USER CODE END 1 */
+    /* USER CODE BEGIN Boot_Mode_Sequence_0 */
 
-  /* USER CODE END 1 */
-/* USER CODE BEGIN Boot_Mode_Sequence_0 */
+    /* USER CODE END Boot_Mode_Sequence_0 */
 
-/* USER CODE END Boot_Mode_Sequence_0 */
+    /* USER CODE BEGIN Boot_Mode_Sequence_1 */
 
-/* USER CODE BEGIN Boot_Mode_Sequence_1 */
-  /* Wait until CPU2 boots and enters in stop mode or timeout*/
-  while(__HAL_RCC_GET_FLAG(RCC_FLAG_D2CKRDY) != RESET) { asm("NOP"); }
-/* USER CODE END Boot_Mode_Sequence_1 */
-  /* MCU Configuration--------------------------------------------------------*/
+    /* Wait until CPU2 boots and enters in stop mode or timeout*/
+    while(__HAL_RCC_GET_FLAG(RCC_FLAG_D2CKRDY) != RESET) { asm volatile ("NOP"); }
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+    /* USER CODE END Boot_Mode_Sequence_1 */
+    /* MCU Configuration--------------------------------------------------------*/
 
-  /* USER CODE BEGIN Init */
+    /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+    HAL_Init();
 
-  /* USER CODE END Init */
+    /* USER CODE BEGIN Init */
 
-  /* Configure the system clock */
-  SystemClock_Config();
-/* USER CODE BEGIN Boot_Mode_Sequence_2 */
-/* When system initialization is finished, Cortex-M7 will release Cortex-M4 by means of
-HSEM notification */
-/*HW semaphore Clock enable*/
-__HAL_RCC_HSEM_CLK_ENABLE();
-/*Take HSEM */
-HAL_HSEM_FastTake(HSEM_ID_0);
-/*Release HSEM in order to notify the CPU2(CM4)*/
-HAL_HSEM_Release(HSEM_ID_0,0);
-/* wait until CPU2 wakes up from stop mode */
-while(__HAL_RCC_GET_FLAG(RCC_FLAG_D2CKRDY) != RESET) { asm("NOP"); }
+    SyncInit();
+    LoggerInit(&huart1);
+    
+    /* USER CODE END Init */
+
+    /* Configure the system clock */
+    SystemClock_Config();
+    /* USER CODE BEGIN Boot_Mode_Sequence_2 */
+    /* When system initialization is finished, Cortex-M7 will release Cortex-M4 by means of
+    HSEM notification */
+    /*HW semaphore Clock enable*/
+    __HAL_RCC_HSEM_CLK_ENABLE();
+    // /*Take HSEM */
+    HAL_HSEM_FastTake(HSEM_ID_0);
+    // /*Release HSEM in order to notify the CPU2(CM4)*/
+    HAL_HSEM_Release(HSEM_ID_0, 0);
+    // /* wait until CPU2 wakes up from stop mode */
+    while(__HAL_RCC_GET_FLAG(RCC_FLAG_D2CKRDY) == RESET) { asm volatile ("NOP"); }
 /* USER CODE END Boot_Mode_Sequence_2 */
 
   /* USER CODE BEGIN SysInit */
 
   /* USER CODE END SysInit */
 
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_USART1_UART_Init();
-  MX_SPI2_Init();
-  MX_TIM8_Init();
-  MX_TIM13_Init();
+    /* Initialize all configured peripherals */
+    MX_GPIO_Init();
+    MX_USART1_UART_Init();
+    MX_SPI2_Init();
+    MX_TIM8_Init();
+    MX_TIM13_Init();
   /* USER CODE BEGIN 2 */
 
-  LoggerInit(&huart1);
-  SyncInit();
-  PIDInit(&gPIDAngleContext);
-  FilterMadgwickInit(&gFilterMadgwickContext);
+    // LoggerInit(&huart1);
+    // SyncInit();
+    // PIDInit(&gPIDAngleContext);
+    // FilterMadgwickInit(&gFilterMadgwickContext);
 
-  IMUInit(
-    &gIMU, 
-    &hspi2,
-    IMU_ACC_RANGE_4G,
-    IMU_ACC_ODR_100,
-    IMU_GYRO_RANGE_250,
-    IMU_GYRO_ODR_100
-  );
+    // IMUInit(
+    //   &gIMU, 
+    //   &hspi2,
+    //   IMU_ACC_RANGE_4G,
+    //   IMU_ACC_ODR_100,
+    //   IMU_GYRO_RANGE_250,
+    //   IMU_GYRO_ODR_100
+    // );
+    while (1)
+    {
+        /* USER CODE END WHILE */
+        HAL_Delay(1000);
+        LOG_INFO("Hello from CM7");
+        /* USER CODE BEGIN 3 */
+    }
 
-  vTaskStartScheduler();
+    vTaskStartScheduler();
 
-  /* USER CODE END 2 */
+    /* USER CODE END 2 */
 
-  /* Init scheduler */
-  // osKernelInitialize();
+    /* Init scheduler */
+    // osKernelInitialize();
 
-  while (1)
-  {
-    /* USER CODE END WHILE */
+    while (1)
+    {
+        /* USER CODE END WHILE */
 
-    /* USER CODE BEGIN 3 */
-  }
-  /* USER CODE END 3 */
+        /* USER CODE BEGIN 3 */
+    }
+    /* USER CODE END 3 */
 }
 
 /**

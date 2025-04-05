@@ -9,7 +9,7 @@
 do {                        \
     printf (lvl);           \
     printf (__FILE__);      \
-    printf ("%u", __LINE__);\
+    printf (" [%u] ", __LINE__);\
     printf (__VA_ARGS__);   \
     printf ("\r\n");        \
     } while (0)
