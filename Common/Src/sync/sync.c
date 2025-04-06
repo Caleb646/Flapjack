@@ -9,16 +9,7 @@
 
 task_handler_fn_t handlers[NUM_TASK_TYPES];
 
-// static uint32_t SyncMapCPUID2Index();
-static task_handler_fn_t SyncGetTaskHandler(uint32_t taskID);
-
-// static uint32_t SyncMapCPUID2Index()
-// {
-//     if(HAL_GetCurrentCPUID() == CM7_CPUID)  return 0;
-//     else                                    return 1;
-// }
-
-static task_handler_fn_t SyncGetTaskHandler(uint32_t taskID)
+task_handler_fn_t SyncGetTaskHandler(uint32_t taskID)
 {
     if(taskID > NUM_TASK_TYPES) return NULL;
     return handlers[taskID];
@@ -30,14 +21,14 @@ static task_handler_fn_t SyncGetTaskHandler(uint32_t taskID)
 int8_t SyncInit(void)
 {
     memset(handlers, 0, sizeof(handlers));
-    return 0;
+    return 1;
 }
 
 int8_t SyncRegisterHandler(task_handler_fn_t fn, uint32_t taskID)
 {
     if(taskID > NUM_TASK_TYPES) return -1;
     handlers[taskID] = fn;
-    return 0;
+    return 1;
 }
 
 /*

@@ -94,7 +94,15 @@ void StartDefaultTask(void *argument);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-
+// int8_t LoggerSyncUARTTaskHandler(void)
+// {
+//   if(HAL_GetCurrentCPUID() == CM7_CPUID)
+//   {
+//     LOG_INFO("Sending cm4 buffer to UART");
+//     // LoggerWriteToUART(pCM4RingBuf);
+//     return 1;
+//   }
+// }
 
 /* USER CODE END 0 */
 
@@ -126,7 +134,10 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+  if(HAL_Init() != HAL_OK)
+  {
+    Error_Handler();
+  }
 
   /* USER CODE BEGIN Init */
 
@@ -155,8 +166,10 @@ int main(void)
 //     NULL                              /* Task handle */
 // );
 
-    SyncInit();
-    LoggerInit(NULL);
+    if(SyncInit() != 1 || LoggerInit(NULL) != 1)
+    {
+        Error_Handler();
+    }
   
 
   while (1)
@@ -164,7 +177,6 @@ int main(void)
 	  // HAL_GPIO_WritePin(GPIOD, GPIO_PIN_11, GPIO_PIN_RESET);
 	  // HAL_GPIO_WritePin(GPIOD, GPIO_PIN_11, GPIO_PIN_SET);
 	  HAL_Delay(1000);
-	  printf("Hello from CM4 \r\n");
 	  LOG_INFO("Hello from CM4");
   }
 

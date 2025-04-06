@@ -185,20 +185,32 @@ int main(void)
     /* MCU Configuration--------------------------------------------------------*/
 
     /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-    HAL_Init();
+    if(HAL_Init() != HAL_OK)
+    {
+        Error_Handler();
+    }
 
     /* USER CODE BEGIN Init */
-
-    SyncInit();
-    LoggerInit(&huart1);
     
     /* USER CODE END Init */
 
     /* Configure the system clock */
     SystemClock_Config();
     /* USER CODE BEGIN Boot_Mode_Sequence_2 */
-    /* When system initialization is finished, Cortex-M7 will release Cortex-M4 by means of
-    HSEM notification */
+
+    MX_GPIO_Init();
+    MX_USART1_UART_Init();
+    MX_SPI2_Init();
+    MX_TIM8_Init();
+    MX_TIM13_Init();
+
+    if(SyncInit() != 1 || LoggerInit(&huart1) != 1)
+    {
+        Error_Handler();
+    }
+
+    /* When system initialization is finished, Cortex-M7 will release Cortex-M4 by means of HSEM notification */
+
     /*HW semaphore Clock enable*/
     __HAL_RCC_HSEM_CLK_ENABLE();
     // /*Take HSEM */
@@ -214,11 +226,7 @@ int main(void)
   /* USER CODE END SysInit */
 
     /* Initialize all configured peripherals */
-    MX_GPIO_Init();
-    MX_USART1_UART_Init();
-    MX_SPI2_Init();
-    MX_TIM8_Init();
-    MX_TIM13_Init();
+
   /* USER CODE BEGIN 2 */
 
     // LoggerInit(&huart1);

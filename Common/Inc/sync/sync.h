@@ -13,10 +13,11 @@
 
 // STATIC_ASSERT(sizeof(DefaultSyncTask) == 64, "");
 
-typedef void (*task_handler_fn_t)();
+typedef int8_t (*task_handler_fn_t)();
 
 int8_t SyncInit(void);
 int8_t SyncRegisterHandler(task_handler_fn_t, uint32_t);
+task_handler_fn_t SyncGetTaskHandler(uint32_t taskID);
 
 // typedef struct {
 //     uint32_t taskID;
