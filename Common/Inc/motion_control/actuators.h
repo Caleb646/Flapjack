@@ -63,24 +63,30 @@ typedef struct {
 } PWMHandle;
 
 typedef struct {
-    uint32_t usMinDutyCycle;
-    uint32_t usMaxDutyCycle;
-    uint32_t usMaxPWMCycle;
-    // Between 0 and 1
-    float scaledDutyCycle;
-} PWMDescriptor;
-
-typedef struct {
+    uint32_t usLeftDutyCycle;
+    uint32_t usMiddleDutyCycle;
+    uint32_t usRightDutyCycle;
     int32_t minAngle;
     int32_t maxAngle;
     int32_t curAngle;
-    PWMHandle pwmInterface;
-    PWMDescriptor pwmDescriptor;
+    int32_t targetAngle;
+} ServoDescriptor;
+
+typedef struct {
+    PWMHandle pwmHandle;
+    ServoDescriptor pwmDescriptor;
 } Servo;
 
 typedef struct {
-    PWMHandle pwmInterface;
-    PWMDescriptor pwmDescriptor;
+    uint32_t usMinDutyCycle;
+    uint32_t usMaxDutyCycle;
+    // Between 0 and 1
+    float scaledDutyCycle;
+} MotorDescriptor;
+
+typedef struct {
+    PWMHandle pwmHandle;
+    MotorDescriptor pwmDescriptor;
 } Motor;
 
 typedef struct {

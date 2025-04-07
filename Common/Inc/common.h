@@ -32,12 +32,12 @@ typedef struct {
     union
     {
         float x;
-        float pitch;
+        float roll;
     };
     union
     {
         float y;
-        float roll;
+        float pitch;
     };
     union
     {

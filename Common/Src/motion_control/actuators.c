@@ -99,7 +99,17 @@ static Servo leftServo;
 // static Servo rightServo;
 STATUS_TYPE PID2PWMMixer(Vec3f pidAttitude, float targetThrottle)
 {
+    /*
+    *   NWU coordinate system:
+    *       + x-axis pointing to the North
+    *       + y-axis pointing to the West
+    *       + z-axis pointing away from the surface of the Earth
+    *   + roll (pivot on x axis) right motor is higher
+    *   + pitch (pivot on y axis) nose is higher than tail
+    *   + yaw (pivot on z axis) right wing tip is more forward
+    */
     leftMotor.pwmDescriptor.scaledDutyCycle = targetThrottle - pidAttitude.pitch + pidAttitude.roll + pidAttitude.yaw;
+    leftServo.pwmDescriptor.targetAngle = 0;
 
     return eSTATUS_SUCCESS;
 }
@@ -113,15 +123,20 @@ STATUS_TYPE MotionControlInit(
     // memset((void*)&rightMotor, 0, sizeof(Motor));
     // memset((void*)&rightServo, 0, sizeof(Servo));
 
-    PWMDescriptor motorDescriptor;
+    MotorDescriptor motorDescriptor;
+    memset((void*)&motorDescriptor, 0, sizeof(MotorDescriptor));
     motorDescriptor.usMinDutyCycle = 125;
     motorDescriptor.usMaxDutyCycle = 250;
-    motorDescriptor.usMaxPWMCycle = 250;
+    motorDescriptor.scaledDutyCycle = 0.0f;
 
-    PWMDescriptor servoDescriptor;
-    servoDescriptor.usMinDutyCycle = 1000;
-    servoDescriptor.usMaxDutyCycle = 2000;
-    servoDescriptor.usMaxPWMCycle = 20000;
+    ServoDescriptor servoDescriptor;
+    memset((void*)&servoDescriptor, 0, sizeof(ServoDescriptor));
+    servoDescriptor.usLeftDutyCycle = 1000;
+    servoDescriptor.usMiddleDutyCycle = 1500;
+    servoDescriptor.usRightDutyCycle = 2000;
+    servoDescriptor.minAngle = -90;
+    servoDescriptor.maxAngle = 90;
+    servoDescriptor.curAngle = 0;
 
     // rightMotor.pwmDescriptor = motorDescriptor;
     // rightServo.pwmDescriptor = servoDescriptor;
@@ -138,13 +153,10 @@ STATUS_TYPE MotionControlInit(
     // PWMInterfaceDescriptor rightServoInter;
 
     leftMotor.pwmDescriptor = motorDescriptor;
-    leftMotor.pwmInterface = leftMotorInter;
+    leftMotor.pwmHandle = leftMotorInter;
 
     leftServo.pwmDescriptor = servoDescriptor;
-    leftServo.pwmInterface = leftServoInter;
-    leftServo.minAngle = -90;
-    leftServo.maxAngle = 90;
-    leftServo.curAngle = 0;
+    leftServo.pwmHandle = leftServoInter;
 
     return eSTATUS_SUCCESS;
 }
