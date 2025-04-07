@@ -30,6 +30,7 @@
 #include "semphr.h"
 
 #include "log.h"
+#include "common.h"
 // #include "imu.h"
 // #include "motion_control.h"
 // #include "flight_context.h"
@@ -94,16 +95,6 @@ void StartDefaultTask(void *argument);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-// int8_t LoggerSyncUARTTaskHandler(void)
-// {
-//   if(HAL_GetCurrentCPUID() == CM7_CPUID)
-//   {
-//     LOG_INFO("Sending cm4 buffer to UART");
-//     // LoggerWriteToUART(pCM4RingBuf);
-//     return 1;
-//   }
-// }
-
 /* USER CODE END 0 */
 
 /**
@@ -136,7 +127,7 @@ int main(void)
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   if(HAL_Init() != HAL_OK)
   {
-    Error_Handler();
+    CriticalErrorHandler();
   }
 
   /* USER CODE BEGIN Init */
@@ -168,7 +159,7 @@ int main(void)
 
     if(SyncInit() != 1 || LoggerInit(NULL) != 1)
     {
-        Error_Handler();
+      CriticalErrorHandler();
     }
   
 
@@ -196,6 +187,12 @@ int main(void)
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
+}
+
+void Error_Handler(void)
+{
+  __disable_irq();
+  while (1);
 }
 
 /**
@@ -226,7 +223,7 @@ static void MX_HDMI_CEC_Init(void)
   hcec.Init.RxBuffer = cec_receive_buffer;
   if (HAL_CEC_Init(&hcec) != HAL_OK)
   {
-    Error_Handler();
+    CriticalErrorHandler();
   }
   /* USER CODE BEGIN HDMI_CEC_Init 2 */
 
@@ -264,7 +261,7 @@ static void MX_RTC_Init(void)
   hrtc.Init.OutPutRemap = RTC_OUTPUT_REMAP_NONE;
   if (HAL_RTC_Init(&hrtc) != HAL_OK)
   {
-    Error_Handler();
+    CriticalErrorHandler();
   }
 
   /** Enable the RTC Tamper 1
@@ -280,7 +277,7 @@ static void MX_RTC_Init(void)
   sTamper.TimeStampOnTamperDetection = RTC_TIMESTAMPONTAMPERDETECTION_ENABLE;
   if (HAL_RTCEx_SetTamper(&hrtc, &sTamper) != HAL_OK)
   {
-    Error_Handler();
+    CriticalErrorHandler();
   }
   /* USER CODE BEGIN RTC_Init 2 */
 
@@ -333,7 +330,7 @@ static void MX_SAI1_Init(void)
   hsai_BlockA1.SlotInit.SlotActive = 0x00000000;
   if (HAL_SAI_Init(&hsai_BlockA1) != HAL_OK)
   {
-    Error_Handler();
+    CriticalErrorHandler();
   }
   hsai_BlockB1.Instance = SAI1_Block_B;
   hsai_BlockB1.Init.Protocol = SAI_SPDIF_PROTOCOL;
@@ -351,7 +348,7 @@ static void MX_SAI1_Init(void)
   hsai_BlockB1.Init.PdmInit.ClockEnable = SAI_PDM_CLOCK1_ENABLE;
   if (HAL_SAI_Init(&hsai_BlockB1) != HAL_OK)
   {
-    Error_Handler();
+    CriticalErrorHandler();
   }
   /* USER CODE BEGIN SAI1_Init 2 */
 
@@ -389,7 +386,7 @@ static void MX_SPDIFRX1_Init(void)
   hspdif1.Init.BackupSymbolClockGen = DISABLE;
   if (HAL_SPDIFRX_Init(&hspdif1) != HAL_OK)
   {
-    Error_Handler();
+    CriticalErrorHandler();
   }
   /* USER CODE BEGIN SPDIFRX1_Init 2 */
 
@@ -437,7 +434,7 @@ static void MX_SPI5_Init(void)
   hspi5.Init.IOSwap = SPI_IO_SWAP_DISABLE;
   if (HAL_SPI_Init(&hspi5) != HAL_OK)
   {
-    Error_Handler();
+    CriticalErrorHandler();
   }
   /* USER CODE BEGIN SPI5_Init 2 */
 
@@ -473,19 +470,19 @@ static void MX_SPI5_Init(void)
 //   huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
 //   if (HAL_UART_Init(&huart1) != HAL_OK)
 //   {
-//     Error_Handler();
+//     CriticalErrorHandler();
 //   }
 //   if (HAL_UARTEx_SetTxFifoThreshold(&huart1, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
 //   {
-//     Error_Handler();
+//     CriticalErrorHandler();
 //   }
 //   if (HAL_UARTEx_SetRxFifoThreshold(&huart1, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
 //   {
-//     Error_Handler();
+//     CriticalErrorHandler();
 //   }
 //   if (HAL_UARTEx_DisableFifoMode(&huart1) != HAL_OK)
 //   {
-//     Error_Handler();
+//     CriticalErrorHandler();
 //   }
 //   /* USER CODE BEGIN USART1_Init 2 */
 
@@ -521,7 +518,7 @@ static void MX_USB_OTG_HS_PCD_Init(void)
   hpcd_USB_OTG_HS.Init.use_external_vbus = DISABLE;
   if (HAL_PCD_Init(&hpcd_USB_OTG_HS) != HAL_OK)
   {
-    Error_Handler();
+    CriticalErrorHandler();
   }
   /* USER CODE BEGIN USB_OTG_HS_Init 2 */
 
@@ -791,21 +788,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE BEGIN Callback 1 */
 
   /* USER CODE END Callback 1 */
-}
-
-/**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
-void Error_Handler(void)
-{
-  /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
-  __disable_irq();
-  while (1)
-  {
-  }
-  /* USER CODE END Error_Handler_Debug */
 }
 
 #ifdef  USE_FULL_ASSERT

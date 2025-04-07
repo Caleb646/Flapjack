@@ -32,7 +32,7 @@
  * Author:          Tilen MAJERLE <tilen@majerle.eu>
  * Version:         v1.3.1
  */
-#include "string.h"
+#include <string.h>
 #include "mem/ring_buff.h"
 
 /* Memory set and copy functions */
@@ -73,8 +73,7 @@ RINGBUFF_VOLATILE RingBuff* RingBuffCreate(void* pBuff, size_t size) {
  * \param[in]       buff: Buffer handle
  * \return          `1` if ready, `0` otherwise
  */
-uint8_t
-RingBuffIsReady(RINGBUFF_VOLATILE RingBuff* buff) {
+STATUS_TYPE RingBuffIsValid(RINGBUFF_VOLATILE RingBuff* buff) {
     return BUF_IS_VALID(buff);
 }
 

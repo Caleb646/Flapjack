@@ -2,7 +2,7 @@
 #include "motion_control/actuators.h"
 #include "flight_context.h"
 
-int8_t UpdateTargetAttitudeThrottle(
+STATUS_TYPE UpdateTargetAttitudeThrottle(
     FlightContext *pFlightContext, 
     RadioPWMChannels radio, 
     Vec3f *pOutputTargetAttitude, 
@@ -23,10 +23,10 @@ int8_t UpdateTargetAttitudeThrottle(
         (float)radio.channel4, -1.0f, 1.0f
     ) * pFlightContext->maxAttitude.yaw;
 
-    return 1;
+    return eSTATUS_SUCCESS;
 }
 
-int8_t PIDUpdateAttitude(
+STATUS_TYPE PIDUpdateAttitude(
     PIDContext *pidContext,
     Vec3f imuGyro, // degrees per second
     Vec3f currentAttitude, // degrees
@@ -81,13 +81,13 @@ int8_t PIDUpdateAttitude(
     pidContext->prevError.pitch = pitchError;
     pidContext->prevError.yaw = yawError;
 
-    return 1;
+    return eSTATUS_SUCCESS;
 }
 
-int8_t PIDInit(PIDContext *pContext)
+STATUS_TYPE PIDInit(PIDContext *pContext)
 {
     memset((void*)pContext, 0, sizeof(PIDContext));
-    return 1;
+    return eSTATUS_SUCCESS;
 }
 
 /*
@@ -97,14 +97,14 @@ static Motor leftMotor;
 static Servo leftServo;
 // static Motor rightMotor;
 // static Servo rightServo;
-int8_t PID2PWMMixer(Vec3f pidAttitude, float targetThrottle)
+STATUS_TYPE PID2PWMMixer(Vec3f pidAttitude, float targetThrottle)
 {
     leftMotor.pwmDescriptor.scaledDutyCycle = targetThrottle - pidAttitude.pitch + pidAttitude.roll + pidAttitude.yaw;
 
-    return 1;
+    return eSTATUS_SUCCESS;
 }
 
-int8_t MotionControlInit(
+STATUS_TYPE MotionControlInit(
     PWMHandle leftMotorInter, PWMHandle leftServoInter
 )
 {
@@ -146,7 +146,7 @@ int8_t MotionControlInit(
     leftServo.maxAngle = 90;
     leftServo.curAngle = 0;
 
-    return 1;
+    return eSTATUS_SUCCESS;
 }
 
 // void MotionControlUpdatePWM(

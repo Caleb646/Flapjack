@@ -7,6 +7,7 @@
 #include "stm32h7xx_hal_tim.h"
 #include "FreeRTOS.h"
 #include "task.h"
+
 #include "common.h"
 #include "flight_context.h"
 
@@ -20,7 +21,7 @@ typedef struct {
     uint32_t channel6;
 } RadioPWMChannels;
 
-int8_t UpdateTargetAttitudeThrottle(    
+STATUS_TYPE UpdateTargetAttitudeThrottle(    
     FlightContext *pFlightContext, 
     RadioPWMChannels radio, 
     Vec3f *pOutputTargetAttitude, 
@@ -40,7 +41,7 @@ typedef struct
     Vec3f prevIntegral;
 } PIDContext;
 
-int8_t PIDUpdateAttitude(
+STATUS_TYPE PIDUpdateAttitude(
     PIDContext *pidContext,
     Vec3f imuGyro, // degrees per second
     Vec3f currentAttitude, // degrees
@@ -49,7 +50,7 @@ int8_t PIDUpdateAttitude(
     Vec3f *pOutputPIDAttitude // degrees
 );
 
-int8_t PIDInit(PIDContext *pContext);
+STATUS_TYPE PIDInit(PIDContext *pContext);
 
 
 /*
@@ -88,8 +89,8 @@ typedef struct {
     Vec3 right;
 } AxisMap;
 
-int8_t PID2PWMMixer(Vec3f pidAttitude, float targetThrottle);
-int8_t MotionControlInit(PWMHandle leftMotorInter, PWMHandle leftServoInter);
+STATUS_TYPE PID2PWMMixer(Vec3f pidAttitude, float targetThrottle);
+STATUS_TYPE MotionControlInit(PWMHandle leftMotorInter, PWMHandle leftServoInter);
 
 // void MotionControlUpdatePWM(
 //     AxisMap axisConf, Vec3 mmVelSteps, Vec3 mmAngVelSteps, void *devs, uint32_t nDevs

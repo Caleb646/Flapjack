@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "stm32h7xx_hal_uart.h"
+#include "common.h"
 
 #define LOG_(lvl, ...)      \
 do {                        \
@@ -18,7 +19,7 @@ do {                        \
 #define LOG_WARN(...)   LOG_("[WARN] -- ", __VA_ARGS__)
 #define LOG_ERROR(...)  LOG_("[ERROR] -- ", __VA_ARGS__)
 
-int8_t LoggerInit(UART_HandleTypeDef *pUART);
+STATUS_TYPE LoggerInit(UART_HandleTypeDef *pUART);
 
 
 #endif // LOG_H

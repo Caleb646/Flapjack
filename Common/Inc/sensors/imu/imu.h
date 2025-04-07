@@ -4,8 +4,6 @@
 #include <stdint.h>
 #include "stm32h7xx_hal.h"
 #include "stm32h7xx_hal_spi.h"
-#include "FreeRTOS.h"
-#include "task.h"
 
 #include "common.h"
 
@@ -45,11 +43,6 @@ typedef enum {
 	IMU_GYRO_ODR_800  = 0x0B
 } IMU_GYRO_ODR;
 
-typedef enum {
-	IMU_OK,
-	IMU_ERROR
-} IMU_STATUS;
-
 typedef struct
 {
 	SPI_HandleTypeDef* pSPI;
@@ -67,12 +60,12 @@ typedef struct
 typedef struct FlightContext__ FlightContext;
 // typedef IMU_STATUS (*imu_update_fn)(IMU *pIMU);
 
-IMU_STATUS IMU2CPUInterruptHandler(
+STATUS_TYPE IMU2CPUInterruptHandler(
 	IMU *pIMU, Vec3 *pOutputAccel,Vec3 *pOutputGyro
 );
-IMU_STATUS IMUReadReg(IMU *pIMU, uint8_t reg, uint8_t *pBuf, uint32_t len);
-IMU_STATUS IMUWriteReg(IMU *pIMU, uint8_t reg, uint8_t *pBuf, uint32_t len);
-IMU_STATUS IMUInit(  
+STATUS_TYPE IMUReadReg(IMU *pIMU, uint8_t reg, uint8_t *pBuf, uint32_t len);
+STATUS_TYPE IMUWriteReg(IMU *pIMU, uint8_t reg, uint8_t *pBuf, uint32_t len);
+STATUS_TYPE IMUInit(  
 	IMU *pIMU, 
 	SPI_HandleTypeDef *pSPI,
 	IMU_ACC_RANGE accRange,

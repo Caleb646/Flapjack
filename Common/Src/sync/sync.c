@@ -18,17 +18,17 @@ task_handler_fn_t SyncGetTaskHandler(uint32_t taskID)
 /*
 * \brief Each core needs to call SyncInit
 */
-int8_t SyncInit(void)
+STATUS_TYPE SyncInit(void)
 {
     memset(handlers, 0, sizeof(handlers));
-    return 1;
+    return eSTATUS_SUCCESS;
 }
 
-int8_t SyncRegisterHandler(task_handler_fn_t fn, uint32_t taskID)
+STATUS_TYPE SyncRegisterHandler(task_handler_fn_t fn, uint32_t taskID)
 {
-    if(taskID > NUM_TASK_TYPES) return -1;
+    if(taskID > NUM_TASK_TYPES) return eSTATUS_FAILURE;
     handlers[taskID] = fn;
-    return 1;
+    return eSTATUS_SUCCESS;
 }
 
 /*

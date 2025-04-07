@@ -30,6 +30,7 @@
 #include "semphr.h"
 
 #include "log.h"
+#include "common.h"
 #include "sensors/imu/imu.h"
 #include "filter.h"
 #include "motion_control/actuators.h"
@@ -96,7 +97,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t gpioPin)
     if(gpioPin == IMU_INT_Pin) 
     {
         Vec3 accel, gyro;
-        if(IMU2CPUInterruptHandler(&gIMU, &accel, &gyro) == IMU_OK)
+        if(IS_STATUS_SUCCESS(IMU2CPUInterruptHandler(&gIMU, &accel, &gyro)))
         {
             FlightContextUpdateIMUData(&gFlightContext, accel, gyro);
             if(gpTaskMotionControlUpdate != NULL) xTaskNotifyGive(gpTaskMotionControlUpdate);
@@ -187,7 +188,7 @@ int main(void)
     /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
     if(HAL_Init() != HAL_OK)
     {
-        Error_Handler();
+      CriticalErrorHandler();
     }
 
     /* USER CODE BEGIN Init */
@@ -204,9 +205,9 @@ int main(void)
     MX_TIM8_Init();
     MX_TIM13_Init();
 
-    if(SyncInit() != 1 || LoggerInit(&huart1) != 1)
+    if(IS_STATUS_FAILURE(SyncInit()) || IS_STATUS_FAILURE(LoggerInit(&huart1)))
     {
-        Error_Handler();
+      CriticalErrorHandler();
     }
 
     /* When system initialization is finished, Cortex-M7 will release Cortex-M4 by means of HSEM notification */
@@ -229,8 +230,6 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
 
-    // LoggerInit(&huart1);
-    // SyncInit();
     // PIDInit(&gPIDAngleContext);
     // FilterMadgwickInit(&gFilterMadgwickContext);
 
@@ -264,6 +263,12 @@ int main(void)
         /* USER CODE BEGIN 3 */
     }
     /* USER CODE END 3 */
+}
+
+void Error_Handler(void)
+{
+  __disable_irq();
+  while (1);
 }
 
 /**
@@ -306,7 +311,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLFRACN = 0;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
-    Error_Handler();
+    CriticalErrorHandler();
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
@@ -324,7 +329,7 @@ void SystemClock_Config(void)
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
   {
-    Error_Handler();
+    CriticalErrorHandler();
   }
   HAL_RCC_MCOConfig(RCC_MCO1, RCC_MCO1SOURCE_HSI, RCC_MCODIV_1);
 }
@@ -369,7 +374,7 @@ static void MX_SPI2_Init(void)
   hspi2.Init.IOSwap = SPI_IO_SWAP_DISABLE;
   if (HAL_SPI_Init(&hspi2) != HAL_OK)
   {
-    Error_Handler();
+    CriticalErrorHandler();
   }
   /* USER CODE BEGIN SPI2_Init 2 */
 
@@ -405,14 +410,14 @@ static void MX_TIM8_Init(void)
   htim8.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim8) != HAL_OK)
   {
-    Error_Handler();
+    CriticalErrorHandler();
   }
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterOutputTrigger2 = TIM_TRGO2_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim8, &sMasterConfig) != HAL_OK)
   {
-    Error_Handler();
+    CriticalErrorHandler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
   sConfigOC.Pulse = 0;
@@ -423,7 +428,7 @@ static void MX_TIM8_Init(void)
   sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
   if (HAL_TIM_PWM_ConfigChannel(&htim8, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
   {
-    Error_Handler();
+    CriticalErrorHandler();
   }
   sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
   sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
@@ -438,7 +443,7 @@ static void MX_TIM8_Init(void)
   sBreakDeadTimeConfig.AutomaticOutput = TIM_AUTOMATICOUTPUT_DISABLE;
   if (HAL_TIMEx_ConfigBreakDeadTime(&htim8, &sBreakDeadTimeConfig) != HAL_OK)
   {
-    Error_Handler();
+    CriticalErrorHandler();
   }
   /* USER CODE BEGIN TIM8_Init 2 */
 
@@ -472,11 +477,11 @@ static void MX_TIM13_Init(void)
   htim13.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim13) != HAL_OK)
   {
-    Error_Handler();
+    CriticalErrorHandler();
   }
   if (HAL_TIM_PWM_Init(&htim13) != HAL_OK)
   {
-    Error_Handler();
+    CriticalErrorHandler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
   sConfigOC.Pulse = 0;
@@ -484,7 +489,7 @@ static void MX_TIM13_Init(void)
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim13, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
   {
-    Error_Handler();
+    CriticalErrorHandler();
   }
   /* USER CODE BEGIN TIM13_Init 2 */
 
@@ -521,19 +526,19 @@ static void MX_USART1_UART_Init(void)
   huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
   if (HAL_UART_Init(&huart1) != HAL_OK)
   {
-    Error_Handler();
+    CriticalErrorHandler();
   }
   if (HAL_UARTEx_SetTxFifoThreshold(&huart1, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
   {
-    Error_Handler();
+    CriticalErrorHandler();
   }
   if (HAL_UARTEx_SetRxFifoThreshold(&huart1, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
   {
-    Error_Handler();
+    CriticalErrorHandler();
   }
   if (HAL_UARTEx_DisableFifoMode(&huart1) != HAL_OK)
   {
-    Error_Handler();
+    CriticalErrorHandler();
   }
   /* USER CODE BEGIN USART1_Init 2 */
 
@@ -625,21 +630,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE BEGIN Callback 1 */
 
   /* USER CODE END Callback 1 */
-}
-
-/**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
-void Error_Handler(void)
-{
-  /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
-  __disable_irq();
-  while (1)
-  {
-  }
-  /* USER CODE END Error_Handler_Debug */
 }
 
 #ifdef  USE_FULL_ASSERT

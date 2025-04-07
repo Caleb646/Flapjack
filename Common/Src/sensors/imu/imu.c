@@ -446,7 +446,7 @@ uint8_t const bmi270_config_file[] = {
 };
 
 
-IMU_STATUS IMUReadReg(IMU *pIMU, uint8_t reg, uint8_t *pBuf, uint32_t len)
+STATUS_TYPE IMUReadReg(IMU *pIMU, uint8_t reg, uint8_t *pBuf, uint32_t len)
 {
 	uint8_t pTx[16];
 	memset(pTx, 0, sizeof(pTx));
@@ -464,29 +464,29 @@ IMU_STATUS IMUReadReg(IMU *pIMU, uint8_t reg, uint8_t *pBuf, uint32_t len)
 
 	if(len + 1 > 16)
 	{
-		return IMU_ERROR;
+		return eSTATUS_FAILURE;
 	}
 
 	HAL_StatusTypeDef status = HAL_SPI_TransmitReceive(pIMU->pSPI, pTx, pRx, len + 1, 100);
 
 	if(status != HAL_OK)
 	{
-		return IMU_ERROR;
+		return eSTATUS_FAILURE;
 	}
 	// 1st byte sent by bmi270 is a dummy byte
 	memcpy(pBuf, &pRx[1], len);
 
-	return IMU_OK;
+	return eSTATUS_SUCCESS;
 }
 
-IMU_STATUS IMUWriteReg(IMU *pIMU, uint8_t reg, uint8_t *pBuf, uint32_t len)
+STATUS_TYPE IMUWriteReg(IMU *pIMU, uint8_t reg, uint8_t *pBuf, uint32_t len)
 {
 	uint8_t pTx[16];
 	memset(pTx, 0, sizeof(pTx));
 
 	if(len + 1 > 16)
 	{
-		return IMU_OK;
+		return eSTATUS_FAILURE;
 	}
 
 	pTx[0] = reg;
@@ -496,17 +496,20 @@ IMU_STATUS IMUWriteReg(IMU *pIMU, uint8_t reg, uint8_t *pBuf, uint32_t len)
 
 	if(status != HAL_OK)
 	{
-		return IMU_ERROR;
+		return eSTATUS_FAILURE;
 	}
 
-	return IMU_OK;
+	return eSTATUS_SUCCESS;
 }
 
-IMU_STATUS IMUUpdateGyro(IMU *pIMU, Vec3 curAngularVel, Vec3 *pOutputGyro)
+STATUS_TYPE IMUUpdateGyro(IMU *pIMU, Vec3 curAngularVel, Vec3 *pOutputGyro)
 {
   uint8_t pBuffer[6];
   memset(pBuffer, 0, sizeof(pBuffer));
-  IMU_STATUS status = IMUReadReg(pIMU, BMI2_GYR_X_LSB_ADDR, pBuffer, 6);
+  if(IS_STATUS_FAILURE(IMUReadReg(pIMU, BMI2_GYR_X_LSB_ADDR, pBuffer, 6)))
+  {
+    return eSTATUS_FAILURE;
+  }
 
   pIMU->rawGyro.x = (int32_t)( ((uint16_t)pBuffer[1]) << 8) | ((uint16_t)pBuffer[0]);
   pIMU->rawGyro.y = (int32_t)( ((uint16_t)pBuffer[3]) << 8) | ((uint16_t)pBuffer[2]);
@@ -532,14 +535,17 @@ IMU_STATUS IMUUpdateGyro(IMU *pIMU, Vec3 curAngularVel, Vec3 *pOutputGyro)
 
   pIMU->msLastGyroUpdateTime = HAL_GetTick();
 
-  return status;
+  return eSTATUS_SUCCESS;
 }
 
-IMU_STATUS IMUUpdateAccel(IMU *pIMU, Vec3 curVel, Vec3 *pOutputAccel)
+STATUS_TYPE IMUUpdateAccel(IMU *pIMU, Vec3 curVel, Vec3 *pOutputAccel)
 {
   uint8_t pBuffer[6];
   memset(pBuffer, 0, sizeof(pBuffer));
-  IMU_STATUS status = IMUReadReg(pIMU, BMI2_ACC_X_LSB_ADDR, pBuffer, 6);
+  if(IS_STATUS_FAILURE(IMUReadReg(pIMU, BMI2_ACC_X_LSB_ADDR, pBuffer, 6)))
+  {
+    return eSTATUS_FAILURE;
+  }
 
   pIMU->rawAccel.x = (int32_t)( ((uint16_t)pBuffer[1]) << 8) | ((uint16_t)pBuffer[0]);
   pIMU->rawAccel.y = (int32_t)( ((uint16_t)pBuffer[3]) << 8) | ((uint16_t)pBuffer[2]);
@@ -568,22 +574,27 @@ IMU_STATUS IMUUpdateAccel(IMU *pIMU, Vec3 curVel, Vec3 *pOutputAccel)
   // pOutputVel->y = curVel.y + ((ay * dt) / 1000);
   // pOutputVel->z = curVel.z + ((az * dt) / 1000);
 
-  return status;
+  return eSTATUS_SUCCESS;
 }
 
-IMU_STATUS IMU2CPUInterruptHandler(
+STATUS_TYPE IMU2CPUInterruptHandler(
   IMU *pIMU, Vec3 *pOutputAccel,Vec3 *pOutputGyro
 )
 {
   if(pIMU == NULL || pIMU->pSPI == NULL || pOutputAccel == NULL || pOutputGyro == NULL)
   {
     LOG_ERROR("Invalid arguments");
-    return IMU_ERROR;
+    return eSTATUS_FAILURE;
   }
 
   // read both status registers
   uint8_t pBuf[2] = {0, 0};
-  IMU_STATUS status = IMUReadReg(pIMU, BMI2_INT_STATUS_1_ADDR, pBuf, 2);
+  STATUS_TYPE status = IMUReadReg(pIMU, BMI2_INT_STATUS_1_ADDR, pBuf, 2);
+
+  if(IS_STATUS_FAILURE(status))
+  {
+    return eSTATUS_FAILURE;
+  }
 
   // uint8_t intStatus0 = pBuf[0];
   uint8_t intStatus1 = pBuf[1];
@@ -593,19 +604,19 @@ IMU_STATUS IMU2CPUInterruptHandler(
     status = IMUReadReg(pIMU, BMI2_ERROR_ADDR, pBuf, 1);
     uint8_t errorCode = pBuf[0];
     LOG_ERROR("IMU encountered error [0x%X]", (uint16_t)errorCode);
-    return IMU_ERROR;
+    return eSTATUS_FAILURE;
   }
 
   if(BIT_ISSET(intStatus1, BMI2_INT_STATUS_ACC_RDY_BIT)) status |= IMUUpdateAccel(pIMU, *pOutputAccel, pOutputAccel);
   if(BIT_ISSET(intStatus1, BMI2_INT_STATUS_GYR_RDY_BIT)) status |= IMUUpdateGyro(pIMU, *pOutputGyro, pOutputGyro);
 
-  if(status != IMU_OK) LOG_ERROR("Failed to update IMU position data");
+  if(IS_STATUS_FAILURE(status)) LOG_ERROR("Failed to update IMU position data");
 
   return status;
 }
 
 
-IMU_STATUS IMUInit(
+STATUS_TYPE IMUInit(
   IMU *pIMU, 
   SPI_HandleTypeDef* pSPI,
   IMU_ACC_RANGE accRange,
@@ -624,7 +635,7 @@ IMU_STATUS IMUInit(
   pIMU->msLastGyroUpdateTime = HAL_GetTick();
   pIMU->magic = IMU_MAGIC;
 
-	IMU_STATUS status;
+	STATUS_TYPE status;
 	uint8_t pBuffer[2];
   memset(pBuffer, 0, sizeof(pBuffer));
 
@@ -642,7 +653,7 @@ IMU_STATUS IMUInit(
 	pBuffer[0] = 0;
 	status = IMUWriteReg(pIMU, BMI2_INIT_CTRL_ADDR, pBuffer, 1);
 
-	// I added the data write address directly to the config_file
+	// Added the data write address directly to the config_file
 	HAL_SPI_Transmit(pIMU->pSPI, bmi270_config_file, sizeof(bmi270_config_file), 100);
 
 	pBuffer[0] = 0x01;
@@ -651,9 +662,9 @@ IMU_STATUS IMUInit(
 	HAL_Delay(20);
 
 	status = IMUReadReg(pIMU, BMI2_INTERNAL_STATUS_ADDR, pBuffer, 1);
-	if(status == -1 || (pBuffer[0] & 1) == 0)
+	if(status == eSTATUS_FAILURE || (pBuffer[0] & 1) == 0)
 	{
-		return IMU_ERROR;
+		return eSTATUS_FAILURE;
 	}
 
   /*
@@ -699,5 +710,5 @@ IMU_STATUS IMUInit(
   pBuffer[0] = 1;
   status = IMUWriteReg(pIMU, BMI2_INT_LATCH_ADDR, pBuffer, 1);
 
-	return IMU_OK;
+	return eSTATUS_SUCCESS;
 }

@@ -2,7 +2,7 @@
 #include <string.h>
 #include "filter.h"
 
-int8_t FilterMadgwick6DOF(
+STATUS_TYPE FilterMadgwick6DOF(
     FilterMadgwickContext *pContext, Vec3f gyro, Vec3f accel, Vec3f *pOutputAttitude
 )
 {
@@ -106,15 +106,15 @@ int8_t FilterMadgwick6DOF(
      pOutputAttitude->pitch = -asin(clipf32(-2.0f * (q1 * q3 - q0 * q2), -0.999999f, 0.999999f)) * 57.29577951f;
      pOutputAttitude->yaw = -atan2(q1 * q2 + q0 * q3, 0.5f - q2 * q2 - q3 * q3) * 57.29577951f;
 
-    return 1;
+    return eSTATUS_SUCCESS;
 }
 
-int8_t FilterMadgwick9DOF(FilterMadgwickContext *pContext, Vec3f gyro, Vec3f accel, Vec3f magno, Vec3f *pOutputAttitude)
+STATUS_TYPE FilterMadgwick9DOF(FilterMadgwickContext *pContext, Vec3f gyro, Vec3f accel, Vec3f magno, Vec3f *pOutputAttitude)
 {
-    return 1;
+    return eSTATUS_SUCCESS;
 }
 
-int8_t FilterMadgwickInit(FilterMadgwickContext *pContext)
+STATUS_TYPE FilterMadgwickInit(FilterMadgwickContext *pContext)
 {
     // Initialization values: https://courses.cs.washington.edu/courses/cse474/17wi/labs/l4/madgwick_internal_report.pdf
     memset((void*)pContext, 0, sizeof(FilterMadgwickContext));
@@ -125,5 +125,5 @@ int8_t FilterMadgwickInit(FilterMadgwickContext *pContext)
     pContext->seq2 = 0.0f;
     pContext->seq3 = 0.0f;
     pContext->seq4 = 0.0f;
-    return 1;
+    return eSTATUS_SUCCESS;
 }
