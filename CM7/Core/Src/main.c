@@ -32,7 +32,7 @@
 #include "log.h"
 #include "common.h"
 #include "sensors/imu/imu.h"
-#include "filter.h"
+#include "motion_control/filter.h"
 #include "motion_control/actuators.h"
 #include "flight_context.h"
 #include "sync/sync.h"

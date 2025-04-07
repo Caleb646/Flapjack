@@ -1,4 +1,0 @@
-C:/Users/caleb/Projects/Drone/Common/Src/log.c:24:1:__io_putchar	4
-C:/Users/caleb/Projects/Drone/Common/Src/log.c:51:13:LoggerInit	4
-C:/Users/caleb/Projects/Drone/Common/Src/log.c:73:20:LoggerWriteToUART	2
-C:/Users/caleb/Projects/Drone/Common/Src/log.c:91:20:LoggerSyncUARTTaskHandler	2

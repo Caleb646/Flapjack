@@ -22,7 +22,7 @@ typedef enum {
 } STATUS_TYPE;
 
 #define IS_STATUS_SUCCESS(status) (status == eSTATUS_SUCCESS)
-#define IS_STATUS_FAILURE(status) (status == eSTATUS_FAILURE)
+#define IS_STATUS_FAILURE(status) (status != eSTATUS_SUCCESS)
 
 typedef struct {
     int32_t x, y, z;

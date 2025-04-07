@@ -1,4 +1,0 @@
-C:/Users/caleb/Projects/Drone/Common/Src/common.c:5:9:clipi32	3
-C:/Users/caleb/Projects/Drone/Common/Src/common.c:12:7:clipf32	3
-C:/Users/caleb/Projects/Drone/Common/Src/common.c:19:7:CriticalErrorHandler	1
-C:\ST\STM32CubeIDE_1.18.0\STM32CubeIDE\plugins\com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344\tools\bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/include/assert.h:41:6:__assert_func	1

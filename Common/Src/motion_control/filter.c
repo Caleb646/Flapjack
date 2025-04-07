@@ -1,6 +1,6 @@
 #include <math.h>
 #include <string.h>
-#include "filter.h"
+#include "motion_control/filter.h"
 
 STATUS_TYPE FilterMadgwick6DOF(
     FilterMadgwickContext *pContext, Vec3f gyro, Vec3f accel, Vec3f *pOutputAttitude
