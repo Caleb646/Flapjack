@@ -66,6 +66,13 @@ TIM_HandleTypeDef htim13;
 
 UART_HandleTypeDef huart1;
 
+/* Definitions for defaultTask */
+osThreadId_t defaultTaskHandle;
+const osThreadAttr_t defaultTask_attributes = {
+  .name = "defaultTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -129,36 +136,36 @@ void TaskMotionControlUpdate(void *pvParameters)
           );
         }
 
-        Vec3f targetAttitude = gFlightContext.targetAttitude;
-        float targetThrottle = gFlightContext.targetThrottle;
-        status = UpdateTargetAttitudeThrottle(
-          &gFlightContext,
-          radio,
-          &targetAttitude,
-          &targetThrottle
-        );
-        if(status > 0) 
-        {
-          FlightContextUpdateTargetAttitudeThrottle(
-            &gFlightContext, targetAttitude, targetThrottle
-          );
-        }
+        // Vec3f targetAttitude = gFlightContext.targetAttitude;
+        // float targetThrottle = gFlightContext.targetThrottle;
+        // status = UpdateTargetAttitudeThrottle(
+        //   &gFlightContext,
+        //   radio,
+        //   &targetAttitude,
+        //   &targetThrottle
+        // );
+        // if(status > 0) 
+        // {
+        //   FlightContextUpdateTargetAttitudeThrottle(
+        //     &gFlightContext, targetAttitude, targetThrottle
+        //   );
+        // }
 
-        Vec3f pidAttitude = gFlightContext.pidAttitude;
-        status = PIDUpdateAttitude(
-          &gPIDAngleContext,
-          gFlightContext.imuUnFilteredGyro,
-          gFlightContext.currentAttitude,
-          gFlightContext.targetAttitude,
-          dt,
-          &pidAttitude
-        );
-        if(status > 0) 
-        {
-          FlightContextUpdatePIDAttitude(
-            &gFlightContext, pidAttitude
-          );
-        }
+        // Vec3f pidAttitude = gFlightContext.pidAttitude;
+        // status = PIDUpdateAttitude(
+        //   &gPIDAngleContext,
+        //   gFlightContext.imuUnFilteredGyro,
+        //   gFlightContext.currentAttitude,
+        //   gFlightContext.targetAttitude,
+        //   dt,
+        //   &pidAttitude
+        // );
+        // if(status > 0) 
+        // {
+        //   FlightContextUpdatePIDAttitude(
+        //     &gFlightContext, pidAttitude
+        //   );
+        // }
     }
 }
 
@@ -170,34 +177,32 @@ void TaskMotionControlUpdate(void *pvParameters)
   */
 int main(void)
 {
-    /* USER CODE BEGIN 1 */
 
-    /* USER CODE END 1 */
-    /* USER CODE BEGIN Boot_Mode_Sequence_0 */
+  /* USER CODE BEGIN 1 */
 
-    /* USER CODE END Boot_Mode_Sequence_0 */
+  /* USER CODE END 1 */
+/* USER CODE BEGIN Boot_Mode_Sequence_0 */
 
-    /* USER CODE BEGIN Boot_Mode_Sequence_1 */
+/* USER CODE END Boot_Mode_Sequence_0 */
+
+/* USER CODE BEGIN Boot_Mode_Sequence_1 */
 
     /* Wait until CPU2 boots and enters in stop mode or timeout*/
     while(__HAL_RCC_GET_FLAG(RCC_FLAG_D2CKRDY) != RESET) { asm volatile ("NOP"); }
 
-    /* USER CODE END Boot_Mode_Sequence_1 */
-    /* MCU Configuration--------------------------------------------------------*/
+/* USER CODE END Boot_Mode_Sequence_1 */
+  /* MCU Configuration--------------------------------------------------------*/
 
-    /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-    if(HAL_Init() != HAL_OK)
-    {
-      CriticalErrorHandler();
-    }
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  HAL_Init();
 
-    /* USER CODE BEGIN Init */
+  /* USER CODE BEGIN Init */
     
-    /* USER CODE END Init */
+  /* USER CODE END Init */
 
-    /* Configure the system clock */
-    SystemClock_Config();
-    /* USER CODE BEGIN Boot_Mode_Sequence_2 */
+  /* Configure the system clock */
+  SystemClock_Config();
+/* USER CODE BEGIN Boot_Mode_Sequence_2 */
 
     MX_GPIO_Init();
     MX_USART1_UART_Init();
@@ -226,8 +231,12 @@ int main(void)
 
   /* USER CODE END SysInit */
 
-    /* Initialize all configured peripherals */
-
+  /* Initialize all configured peripherals */
+  MX_GPIO_Init();
+  MX_USART1_UART_Init();
+  MX_SPI2_Init();
+  MX_TIM8_Init();
+  MX_TIM13_Init();
   /* USER CODE BEGIN 2 */
 
     // PIDInit(&gPIDAngleContext);
@@ -251,10 +260,7 @@ int main(void)
 
     vTaskStartScheduler();
 
-    /* USER CODE END 2 */
-
-    /* Init scheduler */
-    // osKernelInitialize();
+  /* USER CODE END 2 */
 
     while (1)
     {
@@ -262,13 +268,7 @@ int main(void)
 
         /* USER CODE BEGIN 3 */
     }
-    /* USER CODE END 3 */
-}
-
-void Error_Handler(void)
-{
-  __disable_irq();
-  while (1);
+  /* USER CODE END 3 */
 }
 
 /**
@@ -311,7 +311,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLFRACN = 0;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
-    CriticalErrorHandler();
+    Error_Handler();
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
@@ -329,7 +329,7 @@ void SystemClock_Config(void)
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
   {
-    CriticalErrorHandler();
+    Error_Handler();
   }
   HAL_RCC_MCOConfig(RCC_MCO1, RCC_MCO1SOURCE_HSI, RCC_MCODIV_1);
 }
@@ -374,7 +374,7 @@ static void MX_SPI2_Init(void)
   hspi2.Init.IOSwap = SPI_IO_SWAP_DISABLE;
   if (HAL_SPI_Init(&hspi2) != HAL_OK)
   {
-    CriticalErrorHandler();
+    Error_Handler();
   }
   /* USER CODE BEGIN SPI2_Init 2 */
 
@@ -394,6 +394,7 @@ static void MX_TIM8_Init(void)
 
   /* USER CODE END TIM8_Init 0 */
 
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
   TIM_OC_InitTypeDef sConfigOC = {0};
   TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = {0};
@@ -408,16 +409,25 @@ static void MX_TIM8_Init(void)
   htim8.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim8.Init.RepetitionCounter = 0;
   htim8.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim8, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
   if (HAL_TIM_PWM_Init(&htim8) != HAL_OK)
   {
-    CriticalErrorHandler();
+    Error_Handler();
   }
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterOutputTrigger2 = TIM_TRGO2_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim8, &sMasterConfig) != HAL_OK)
   {
-    CriticalErrorHandler();
+    Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
   sConfigOC.Pulse = 0;
@@ -428,7 +438,7 @@ static void MX_TIM8_Init(void)
   sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
   if (HAL_TIM_PWM_ConfigChannel(&htim8, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
   {
-    CriticalErrorHandler();
+    Error_Handler();
   }
   sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
   sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
@@ -443,7 +453,7 @@ static void MX_TIM8_Init(void)
   sBreakDeadTimeConfig.AutomaticOutput = TIM_AUTOMATICOUTPUT_DISABLE;
   if (HAL_TIMEx_ConfigBreakDeadTime(&htim8, &sBreakDeadTimeConfig) != HAL_OK)
   {
-    CriticalErrorHandler();
+    Error_Handler();
   }
   /* USER CODE BEGIN TIM8_Init 2 */
 
@@ -477,11 +487,11 @@ static void MX_TIM13_Init(void)
   htim13.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim13) != HAL_OK)
   {
-    CriticalErrorHandler();
+    Error_Handler();
   }
   if (HAL_TIM_PWM_Init(&htim13) != HAL_OK)
   {
-    CriticalErrorHandler();
+    Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
   sConfigOC.Pulse = 0;
@@ -489,7 +499,7 @@ static void MX_TIM13_Init(void)
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim13, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
   {
-    CriticalErrorHandler();
+    Error_Handler();
   }
   /* USER CODE BEGIN TIM13_Init 2 */
 
@@ -526,19 +536,19 @@ static void MX_USART1_UART_Init(void)
   huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
   if (HAL_UART_Init(&huart1) != HAL_OK)
   {
-    CriticalErrorHandler();
+    Error_Handler();
   }
   if (HAL_UARTEx_SetTxFifoThreshold(&huart1, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
   {
-    CriticalErrorHandler();
+    Error_Handler();
   }
   if (HAL_UARTEx_SetRxFifoThreshold(&huart1, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
   {
-    CriticalErrorHandler();
+    Error_Handler();
   }
   if (HAL_UARTEx_DisableFifoMode(&huart1) != HAL_OK)
   {
-    CriticalErrorHandler();
+    Error_Handler();
   }
   /* USER CODE BEGIN USART1_Init 2 */
 
@@ -630,6 +640,21 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE BEGIN Callback 1 */
 
   /* USER CODE END Callback 1 */
+}
+
+/**
+  * @brief  This function is executed in case of error occurrence.
+  * @retval None
+  */
+void Error_Handler(void)
+{
+  /* USER CODE BEGIN Error_Handler_Debug */
+  /* User can add his own implementation to report the HAL error return state */
+  __disable_irq();
+  while (1)
+  {
+  }
+  /* USER CODE END Error_Handler_Debug */
 }
 
 #ifdef  USE_FULL_ASSERT

@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include "stm32h7xx_hal_uart.h"
+#include "stm32h7xx.h"
 #include "common.h"
 
 #define LOG_(lvl, ...)      \

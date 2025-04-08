@@ -2,9 +2,7 @@
 #define MOTION_CONTROL_ACTUATORS_H
 
 #include <stdint.h>
-#include "stm32h747xx.h"
-#include "stm32h7xx_hal.h"
-#include "stm32h7xx_hal_tim.h"
+#include "stm32h7xx.h"
 #include "FreeRTOS.h"
 #include "task.h"
 
@@ -21,8 +19,8 @@ typedef struct {
     uint32_t channel6;
 } RadioPWMChannels;
 
-STATUS_TYPE UpdateTargetAttitudeThrottle(    
-    FlightContext *pFlightContext, 
+STATUS_TYPE UpdateTargetAttitudeThrottle(
+    Vec3f maxAttitude, 
     RadioPWMChannels radio, 
     Vec3f *pOutputTargetAttitude, 
     float *pOutputThrottle
@@ -46,12 +44,12 @@ STATUS_TYPE PIDUpdateAttitude(
     Vec3f imuGyro, // degrees per second
     Vec3f currentAttitude, // degrees
     Vec3f targetAttitude, // degrees
+    Vec3f maxAttitude, // degrees
     float dt, 
     Vec3f *pOutputPIDAttitude // degrees
 );
 
 STATUS_TYPE PIDInit(PIDContext *pContext);
-
 
 /*
 * PWM & Motion Control
@@ -97,7 +95,10 @@ typedef struct {
 } AxisMap;
 
 STATUS_TYPE PID2PWMMixer(Vec3f pidAttitude, float targetThrottle);
-STATUS_TYPE MotionControlInit(PWMHandle leftMotorInter, PWMHandle leftServoInter);
+STATUS_TYPE PWMSend(PWMHandle *pPWM);
+STATUS_TYPE ActuatorsInit(
+    PWMHandle leftMotorInter, PWMHandle leftServoInter
+);
 
 // void MotionControlUpdatePWM(
 //     AxisMap axisConf, Vec3 mmVelSteps, Vec3 mmAngVelSteps, void *devs, uint32_t nDevs

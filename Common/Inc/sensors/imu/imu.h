@@ -2,9 +2,7 @@
 #define SENSORS_IMU_H
 
 #include <stdint.h>
-#include "stm32h7xx_hal.h"
-#include "stm32h7xx_hal_spi.h"
-
+#include "stm32h7xx.h"
 #include "common.h"
 
 #define IMU_MAGIC 0xFAFAAFAF

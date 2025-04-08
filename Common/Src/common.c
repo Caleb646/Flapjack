@@ -1,4 +1,4 @@
-#include "stm32h7xx_hal.h"
+#include "stm32h7xx.h"
 #include "cmsis_os.h"
 #include "common.h"
 

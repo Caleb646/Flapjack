@@ -1,6 +1,4 @@
 #include <string.h>
-#include "stm32h7xx_hal.h"
-
 #include "sync/sync.h"
 #include "sync/mailbox.h"
 #include "mem/mem.h"

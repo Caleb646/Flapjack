@@ -12,6 +12,9 @@
         "stm32h7xx_hal_tim.h": "c",
         "stm32h7xx_hal_uart.h": "c",
         "main.h": "c",
-        "common.h": "c"
+        "common.h": "c",
+        "flight_context.h": "c",
+        "cmsis_os.h": "c",
+        "stdint.h": "c"
     }
 }

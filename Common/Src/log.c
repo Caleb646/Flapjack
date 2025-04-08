@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <string.h>
-#include "stm32h7xx_hal.h"
 
 #include "log.h"
 #include "mem/mem.h"

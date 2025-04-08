@@ -69,11 +69,17 @@ SPDIFRX_HandleTypeDef hspdif1;
 
 SPI_HandleTypeDef hspi5;
 
-// UART_HandleTypeDef huart1;
+UART_HandleTypeDef huart1;
 
 PCD_HandleTypeDef hpcd_USB_OTG_HS;
-  
-uint8_t cec_receive_buffer[16];
+
+/* Definitions for defaultTask */
+osThreadId_t defaultTaskHandle;
+const osThreadAttr_t defaultTask_attributes = {
+  .name = "defaultTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};   uint8_t cec_receive_buffer[16];
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -103,6 +109,7 @@ void StartDefaultTask(void *argument);
   */
 int main(void)
 {
+
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -125,10 +132,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  if(HAL_Init() != HAL_OK)
-  {
-    CriticalErrorHandler();
-  }
+  HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -174,10 +178,7 @@ int main(void)
   vTaskStartScheduler();
 
   /* USER CODE END 2 */
-
-  /* Init scheduler */
-  // osKernelInitialize();
-
+  
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
@@ -187,12 +188,6 @@ int main(void)
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
-}
-
-void Error_Handler(void)
-{
-  __disable_irq();
-  while (1);
 }
 
 /**
@@ -223,7 +218,7 @@ static void MX_HDMI_CEC_Init(void)
   hcec.Init.RxBuffer = cec_receive_buffer;
   if (HAL_CEC_Init(&hcec) != HAL_OK)
   {
-    CriticalErrorHandler();
+    Error_Handler();
   }
   /* USER CODE BEGIN HDMI_CEC_Init 2 */
 
@@ -261,7 +256,7 @@ static void MX_RTC_Init(void)
   hrtc.Init.OutPutRemap = RTC_OUTPUT_REMAP_NONE;
   if (HAL_RTC_Init(&hrtc) != HAL_OK)
   {
-    CriticalErrorHandler();
+    Error_Handler();
   }
 
   /** Enable the RTC Tamper 1
@@ -277,7 +272,7 @@ static void MX_RTC_Init(void)
   sTamper.TimeStampOnTamperDetection = RTC_TIMESTAMPONTAMPERDETECTION_ENABLE;
   if (HAL_RTCEx_SetTamper(&hrtc, &sTamper) != HAL_OK)
   {
-    CriticalErrorHandler();
+    Error_Handler();
   }
   /* USER CODE BEGIN RTC_Init 2 */
 
@@ -330,7 +325,7 @@ static void MX_SAI1_Init(void)
   hsai_BlockA1.SlotInit.SlotActive = 0x00000000;
   if (HAL_SAI_Init(&hsai_BlockA1) != HAL_OK)
   {
-    CriticalErrorHandler();
+    Error_Handler();
   }
   hsai_BlockB1.Instance = SAI1_Block_B;
   hsai_BlockB1.Init.Protocol = SAI_SPDIF_PROTOCOL;
@@ -348,7 +343,7 @@ static void MX_SAI1_Init(void)
   hsai_BlockB1.Init.PdmInit.ClockEnable = SAI_PDM_CLOCK1_ENABLE;
   if (HAL_SAI_Init(&hsai_BlockB1) != HAL_OK)
   {
-    CriticalErrorHandler();
+    Error_Handler();
   }
   /* USER CODE BEGIN SAI1_Init 2 */
 
@@ -386,7 +381,7 @@ static void MX_SPDIFRX1_Init(void)
   hspdif1.Init.BackupSymbolClockGen = DISABLE;
   if (HAL_SPDIFRX_Init(&hspdif1) != HAL_OK)
   {
-    CriticalErrorHandler();
+    Error_Handler();
   }
   /* USER CODE BEGIN SPDIFRX1_Init 2 */
 
@@ -434,7 +429,7 @@ static void MX_SPI5_Init(void)
   hspi5.Init.IOSwap = SPI_IO_SWAP_DISABLE;
   if (HAL_SPI_Init(&hspi5) != HAL_OK)
   {
-    CriticalErrorHandler();
+    Error_Handler();
   }
   /* USER CODE BEGIN SPI5_Init 2 */
 
@@ -447,48 +442,48 @@ static void MX_SPI5_Init(void)
   * @param None
   * @retval None
   */
-// void MX_USART1_UART_Init(void)
-// {
+void MX_USART1_UART_Init(void)
+{
 
-//   /* USER CODE BEGIN USART1_Init 0 */
+  /* USER CODE BEGIN USART1_Init 0 */
 
-//   /* USER CODE END USART1_Init 0 */
+  /* USER CODE END USART1_Init 0 */
 
-//   /* USER CODE BEGIN USART1_Init 1 */
+  /* USER CODE BEGIN USART1_Init 1 */
 
-//   /* USER CODE END USART1_Init 1 */
-//   huart1.Instance = USART1;
-//   huart1.Init.BaudRate = 115200;
-//   huart1.Init.WordLength = UART_WORDLENGTH_8B;
-//   huart1.Init.StopBits = UART_STOPBITS_1;
-//   huart1.Init.Parity = UART_PARITY_NONE;
-//   huart1.Init.Mode = UART_MODE_TX_RX;
-//   huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-//   huart1.Init.OverSampling = UART_OVERSAMPLING_16;
-//   huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-//   huart1.Init.ClockPrescaler = UART_PRESCALER_DIV1;
-//   huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-//   if (HAL_UART_Init(&huart1) != HAL_OK)
-//   {
-//     CriticalErrorHandler();
-//   }
-//   if (HAL_UARTEx_SetTxFifoThreshold(&huart1, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
-//   {
-//     CriticalErrorHandler();
-//   }
-//   if (HAL_UARTEx_SetRxFifoThreshold(&huart1, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
-//   {
-//     CriticalErrorHandler();
-//   }
-//   if (HAL_UARTEx_DisableFifoMode(&huart1) != HAL_OK)
-//   {
-//     CriticalErrorHandler();
-//   }
-//   /* USER CODE BEGIN USART1_Init 2 */
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 115200;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart1.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+  huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_SetTxFifoThreshold(&huart1, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_SetRxFifoThreshold(&huart1, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_DisableFifoMode(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
 
-//   /* USER CODE END USART1_Init 2 */
+  /* USER CODE END USART1_Init 2 */
 
-// }
+}
 
 /**
   * @brief USB_OTG_HS Initialization Function
@@ -518,7 +513,7 @@ static void MX_USB_OTG_HS_PCD_Init(void)
   hpcd_USB_OTG_HS.Init.use_external_vbus = DISABLE;
   if (HAL_PCD_Init(&hpcd_USB_OTG_HS) != HAL_OK)
   {
-    CriticalErrorHandler();
+    Error_Handler();
   }
   /* USER CODE BEGIN USB_OTG_HS_Init 2 */
 
@@ -788,6 +783,21 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE BEGIN Callback 1 */
 
   /* USER CODE END Callback 1 */
+}
+
+/**
+  * @brief  This function is executed in case of error occurrence.
+  * @retval None
+  */
+void Error_Handler(void)
+{
+  /* USER CODE BEGIN Error_Handler_Debug */
+  /* User can add his own implementation to report the HAL error return state */
+  __disable_irq();
+  while (1)
+  {
+  }
+  /* USER CODE END Error_Handler_Debug */
 }
 
 #ifdef  USE_FULL_ASSERT

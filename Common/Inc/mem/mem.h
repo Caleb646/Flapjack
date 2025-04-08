@@ -2,7 +2,6 @@
 #ifndef MEM_H
 #define MEM_H
  
-// #include "stm32h7xx_hal.h"
 #include "stdint.h"
 #include "common.h"
 #include "mem/ring_buff.h"
