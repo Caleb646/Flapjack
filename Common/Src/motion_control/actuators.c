@@ -188,40 +188,51 @@ STATUS_TYPE PID2PWMMixer(Vec3f pidAttitude, float targetThrottle)
 
 STATUS_TYPE PWMSend(PWMHandle *pPWM)
 {
-    uint32_t volatile ccr, arr, psc;
-    switch(pPWM->timerChannelID)
-    {
-        case 1:
-            ccr = pPWM->pTimerRegisters->CCR1;
-            break;
-        case 2:
-            ccr = pPWM->pTimerRegisters->CCR2;
-            break;
-        case 3:
-            ccr = pPWM->pTimerRegisters->CCR3;
-            break;
-        case 4:
-            ccr = pPWM->pTimerRegisters->CCR4;
-            break;
-        case 5:
-            ccr = pPWM->pTimerRegisters->CCR5;
-            break;
-        case 6:
-            ccr = pPWM->pTimerRegisters->CCR6;
-            break;
-        default:
-            LOG_ERROR("Unknown pwm timer channel [%X]", (uint16_t)pPWM->timerChannelID);
-            break;
-    }
+    // uint32_t volatile *pCCR;
+    // uint32_t volatile *pARR;
+    // uint32_t volatile *pPSC;
 
+    // 1,000,000 Hz / ARR = 50Hz --> ARR = 20,000
+    // 1.5ms duty cycle = td (target duty cycle)
+    // td / period = percentage
+    // CCR / ARR = percentage
+    // CCR = ARR * (1500us / 20000us)
 
+    // 1,000,000 Hz / ARR = 2000Hz --> ARR = 500
+    // 250us duty cycle = td (target duty cycle)
+    // td / period = percentage
+    // CCR / ARR = percentage
+    // CCR = ARR * (250us / 500us)
+
+    // *pCCR = (uint16_t)pPWM->usTargetDutyCycle;
+    __HAL_TIM_SET_COMPARE(pPWM->pTimerHandle, pPWM->timerChannelID, pPWM->usTargetDutyCycle);
+    
     return eSTATUS_SUCCESS;
 } 
 
 STATUS_TYPE ActuatorsInit(
-    PWMHandle leftMotorInter, PWMHandle leftServoInter
+    PWMHandle leftMotorPWM, PWMHandle leftServoPWM
 )
 {
+    // Prescale 64MHz clock to 1MHz
+    __HAL_TIM_SET_PRESCALER(leftMotorPWM.pTimerHandle, 64);
+    // Use ARR register to scale clock from 64MHz to 4000Hz (250us)
+    __HAL_TIM_SET_AUTORELOAD(leftMotorPWM.pTimerHandle, 250);
+    // Set duty cycle to 0 percent
+    __HAL_TIM_SET_COMPARE(leftMotorPWM.pTimerHandle, leftMotorPWM.timerChannelID, 0);
+
+    // Prescale 64MHz clock to 1MHz
+    __HAL_TIM_SET_PRESCALER(leftServoPWM.pTimerHandle, 64);
+    // Use ARR register to scale clock from 64MHz to 50Hz
+    // 64MHz / 20,000 = 50Hz
+    __HAL_TIM_SET_AUTORELOAD(leftServoPWM.pTimerHandle, 20000);
+    // Set duty cycle to 0 percent
+    __HAL_TIM_SET_COMPARE(leftServoPWM.pTimerHandle, leftServoPWM.timerChannelID, 0);
+
+    HAL_TIM_PWM_Start(leftMotorPWM.pTimerHandle, leftMotorPWM.timerChannelID);
+    HAL_TIM_PWM_Start(leftServoPWM.pTimerHandle, leftServoPWM.timerChannelID);
+    
+    
     memset((void*)&leftMotor, 0, sizeof(Motor));
     memset((void*)&leftServo, 0, sizeof(Servo));
     // memset((void*)&rightMotor, 0, sizeof(Motor));
@@ -232,9 +243,8 @@ STATUS_TYPE ActuatorsInit(
     motorDescriptor.usMinDutyCycle = 125;
     motorDescriptor.usMaxDutyCycle = 250;
 
-
     leftMotor.pwmDescriptor = motorDescriptor;
-    leftMotor.pwmHandle = leftMotorInter;
+    leftMotor.pwmHandle = leftMotorPWM;
 
     ServoDescriptor servoDescriptor;
     memset((void*)&servoDescriptor, 0, sizeof(ServoDescriptor));
@@ -252,7 +262,7 @@ STATUS_TYPE ActuatorsInit(
 
 
     leftServo.pwmDescriptor = servoDescriptor;
-    leftServo.pwmHandle = leftServoInter;
+    leftServo.pwmHandle = leftServoPWM;
 
     return eSTATUS_SUCCESS;
 }
