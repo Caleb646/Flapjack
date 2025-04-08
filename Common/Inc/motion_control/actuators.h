@@ -58,18 +58,21 @@ STATUS_TYPE PIDInit(PIDContext *pContext);
 */
 typedef struct {
     TIM_HandleTypeDef *pTimerHandle;
-    TIM_TypeDef *pTimerRegister;
+    TIM_TypeDef *pTimerRegisters;
     uint32_t timerChannelID;
+    uint32_t usTargetDutyCycle;
 } PWMHandle;
 
 typedef struct {
     uint32_t usLeftDutyCycle;
     uint32_t usMiddleDutyCycle;
     uint32_t usRightDutyCycle;
-    int32_t minAngle;
     int32_t maxAngle;
+    // Between -max angle and +max angle
     int32_t curAngle;
-    int32_t targetAngle;
+    float pitchMix;
+    float yawMix;
+    float rollMix;
 } ServoDescriptor;
 
 typedef struct {
@@ -80,8 +83,6 @@ typedef struct {
 typedef struct {
     uint32_t usMinDutyCycle;
     uint32_t usMaxDutyCycle;
-    // Between 0 and 1
-    float scaledDutyCycle;
 } MotorDescriptor;
 
 typedef struct {

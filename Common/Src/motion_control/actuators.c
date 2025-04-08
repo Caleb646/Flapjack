@@ -1,9 +1,10 @@
 #include <string.h>
+#include "log.h"
 #include "motion_control/actuators.h"
 #include "flight_context.h"
 
 STATUS_TYPE UpdateTargetAttitudeThrottle(
-    FlightContext *pFlightContext, 
+    Vec3f maxAttitude, 
     RadioPWMChannels radio, 
     Vec3f *pOutputTargetAttitude, 
     float *pOutputThrottle
@@ -13,15 +14,15 @@ STATUS_TYPE UpdateTargetAttitudeThrottle(
 
     pOutputTargetAttitude->roll = clipf32(
         (float)radio.channel2, -1.0f, 1.0f
-    ) * pFlightContext->maxAttitude.roll;
+    ) * maxAttitude.roll;
 
     pOutputTargetAttitude->pitch = clipf32(
         (float)radio.channel3, -1.0f, 1.0f
-    ) * pFlightContext->maxAttitude.pitch;
+    ) * maxAttitude.pitch;
 
     pOutputTargetAttitude->yaw = clipf32(
         (float)radio.channel4, -1.0f, 1.0f
-    ) * pFlightContext->maxAttitude.yaw;
+    ) * maxAttitude.yaw;
 
     return eSTATUS_SUCCESS;
 }
@@ -31,6 +32,7 @@ STATUS_TYPE PIDUpdateAttitude(
     Vec3f imuGyro, // degrees per second
     Vec3f currentAttitude, // degrees
     Vec3f targetAttitude, // degrees
+    Vec3f maxAttitude, // degrees
     float dt, 
     Vec3f *pOutputPIDAttitude // degrees
 )
@@ -47,7 +49,12 @@ STATUS_TYPE PIDUpdateAttitude(
         pidContext->integralLimit
     );
     float rollDerivative = imuGyro.x;
-    pOutputPIDAttitude->roll = 0.01f * (P * rollError + I * rollIntegral - D * rollDerivative);
+    // pOutputPIDAttitude->roll = 0.01f * (P * rollError + I * rollIntegral - D * rollDerivative);
+
+    // Scale PID output between -1 and 1
+    pOutputPIDAttitude->roll = clipf32(
+        (P * rollError + I * rollIntegral - D * rollDerivative), -maxAttitude.roll, maxAttitude.roll
+    ) / maxAttitude.roll;
 
     P = pidContext->pitchP;
     I = pidContext->pitchI;
@@ -59,7 +66,12 @@ STATUS_TYPE PIDUpdateAttitude(
         pidContext->integralLimit
     );
     float pitchDerivative = imuGyro.y;
-    pOutputPIDAttitude->pitch = 0.01f * (P * pitchError + I * pitchIntegral - D * pitchDerivative);
+    // pOutputPIDAttitude->pitch = 0.01f * (P * pitchError + I * pitchIntegral - D * pitchDerivative);
+
+    // Scale PID output between -1 and 1
+    pOutputPIDAttitude->pitch = clipf32(
+        (P * pitchError + I * pitchIntegral - D * pitchDerivative), -maxAttitude.pitch, maxAttitude.pitch
+    ) / maxAttitude.pitch;
 
     P = pidContext->yawP;
     I = pidContext->yawI;
@@ -71,7 +83,12 @@ STATUS_TYPE PIDUpdateAttitude(
         pidContext->integralLimit
     );
     float yawDerivative = imuGyro.z;
-    pOutputPIDAttitude->yaw = 0.01f * (P * yawError + I * yawIntegral - D * yawDerivative);
+    // pOutputPIDAttitude->yaw = 0.01f * (P * yawError + I * yawIntegral - D * yawDerivative);
+
+    // Scale PID output between -1 and 1
+    pOutputPIDAttitude->yaw = clipf32(
+        (P * yawError + I * yawIntegral - D * yawDerivative), -maxAttitude.yaw, maxAttitude.yaw
+    ) / maxAttitude.yaw;
 
     pidContext->prevIntegral.roll = rollIntegral;
     pidContext->prevIntegral.pitch = pitchIntegral;
@@ -93,10 +110,42 @@ STATUS_TYPE PIDInit(PIDContext *pContext)
 /*
 * PWM & Motion Control
 */
+
+static float ServoAngle2PWM(ServoDescriptor *pSer, float targetAngle);
+
+static float ServoAngle2PWM(ServoDescriptor *pSer, float targetAngle)
+{
+    float usMinDutyCycle = 0.0f, usMaxDutyCycle = 0.0f;
+    if(targetAngle < 0)
+    {   
+        usMinDutyCycle = (float)pSer->usLeftDutyCycle;
+        usMaxDutyCycle = (float)pSer->usMiddleDutyCycle;
+    }
+    else if(targetAngle > 0)
+    {
+        usMinDutyCycle = (float)pSer->usMiddleDutyCycle;
+        usMaxDutyCycle = (float)pSer->usRightDutyCycle;
+    }
+    else 
+    {
+        usMinDutyCycle = (float)pSer->usMiddleDutyCycle;
+        usMaxDutyCycle = (float)pSer->usMiddleDutyCycle;
+    }
+
+    return mapf32(
+        targetAngle, -pSer->maxAngle, pSer->maxAngle, usMinDutyCycle, usMaxDutyCycle
+    );
+}
+
+
 static Motor leftMotor;
 static Servo leftServo;
 // static Motor rightMotor;
 // static Servo rightServo;
+
+/*
+* \param pidAttitude roll, pitch, and yaw are between -1 and 1 
+*/
 STATUS_TYPE PID2PWMMixer(Vec3f pidAttitude, float targetThrottle)
 {
     /*
@@ -108,13 +157,68 @@ STATUS_TYPE PID2PWMMixer(Vec3f pidAttitude, float targetThrottle)
     *   + pitch (pivot on y axis) nose is higher than tail
     *   + yaw (pivot on z axis) right wing tip is more forward
     */
-    leftMotor.pwmDescriptor.scaledDutyCycle = targetThrottle - pidAttitude.pitch + pidAttitude.roll + pidAttitude.yaw;
-    leftServo.pwmDescriptor.targetAngle = 0;
+
+    /*
+    *  Left Motor Mixing
+    */
+    float target = 0.0f;
+    PWMHandle *pH = &leftMotor.pwmHandle;
+    MotorDescriptor *pM = &leftMotor.pwmDescriptor;
+    target = targetThrottle - pidAttitude.pitch + pidAttitude.roll + pidAttitude.yaw;
+    pH->usTargetDutyCycle = (uint32_t)mapf32(
+        target, -3.0f, 4.0f, (float)pM->usMinDutyCycle, (float)pM->usMaxDutyCycle
+    );
+
+    /*
+    *  Left Servo Mixing
+    */ 
+    pH = &leftServo.pwmHandle;
+    ServoDescriptor *pSer = &leftServo.pwmDescriptor;
+    target = pSer->pitchMix * pidAttitude.pitch + pSer->rollMix * pidAttitude.roll + pSer->yawMix * pidAttitude.yaw;
+    // NOTE: Maybe Roll should have a negative impact on target angle. Meaning the magnitude of the target angle is closer to 0
+    // the larger pid roll is.
+    // float target = pSer->pitchMix * pidAttitude.pitch + pSer->yawMix * pidAttitude.yaw;
+    // pSer->targetAngle = ( clipf32(target, -1.0f, 1.0f) * pSer->maxAngle ) / ( clipf32(pSer->rollMix * pidAttitude.roll, -1.0f, 1.0f) * pSer->maxAngle );
+    target = clipf32(target, -1.0f, 1.0f) * pSer->maxAngle;
+    pSer->curAngle = target;
+    pH->usTargetDutyCycle = (uint32_t)ServoAngle2PWM(pSer, target);
 
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE MotionControlInit(
+STATUS_TYPE PWMSend(PWMHandle *pPWM)
+{
+    uint32_t volatile ccr, arr, psc;
+    switch(pPWM->timerChannelID)
+    {
+        case 1:
+            ccr = pPWM->pTimerRegisters->CCR1;
+            break;
+        case 2:
+            ccr = pPWM->pTimerRegisters->CCR2;
+            break;
+        case 3:
+            ccr = pPWM->pTimerRegisters->CCR3;
+            break;
+        case 4:
+            ccr = pPWM->pTimerRegisters->CCR4;
+            break;
+        case 5:
+            ccr = pPWM->pTimerRegisters->CCR5;
+            break;
+        case 6:
+            ccr = pPWM->pTimerRegisters->CCR6;
+            break;
+        default:
+            LOG_ERROR("Unknown pwm timer channel [%X]", (uint16_t)pPWM->timerChannelID);
+            break;
+    }
+
+    
+    return eSTATUS_SUCCESS;
+} 
+
+STATUS_TYPE ActuatorsInit(
     PWMHandle leftMotorInter, PWMHandle leftServoInter
 )
 {
@@ -127,33 +231,25 @@ STATUS_TYPE MotionControlInit(
     memset((void*)&motorDescriptor, 0, sizeof(MotorDescriptor));
     motorDescriptor.usMinDutyCycle = 125;
     motorDescriptor.usMaxDutyCycle = 250;
-    motorDescriptor.scaledDutyCycle = 0.0f;
+
+
+    leftMotor.pwmDescriptor = motorDescriptor;
+    leftMotor.pwmHandle = leftMotorInter;
 
     ServoDescriptor servoDescriptor;
     memset((void*)&servoDescriptor, 0, sizeof(ServoDescriptor));
     servoDescriptor.usLeftDutyCycle = 1000;
     servoDescriptor.usMiddleDutyCycle = 1500;
     servoDescriptor.usRightDutyCycle = 2000;
-    servoDescriptor.minAngle = -90;
-    servoDescriptor.maxAngle = 90;
+
+    // servoDescriptor.minAngle = -90;
+    servoDescriptor.maxAngle = 20;
     servoDescriptor.curAngle = 0;
 
-    // rightMotor.pwmDescriptor = motorDescriptor;
-    // rightServo.pwmDescriptor = servoDescriptor;
+    servoDescriptor.rollMix = -0.25f;
+    servoDescriptor.yawMix = 0.5f;
+    servoDescriptor.pitchMix = 0.5f;
 
-    // PWMInterfaceDescriptor leftMotorInter;
-    // leftMotorInter.pTimerHandle = pLeftMotorHandle;
-    // leftMotorInter.pTimerRegister = pLeftMotorRegister;
-
-    // PWMInterfaceDescriptor leftServoInter;
-    // leftServoInter.pTimerHandle = pLeftServoHandle;
-    // leftServoInter.pTimerRegister = pLeftServoRegister;
-
-    // PWMInterfaceDescriptor rightMotorInter;
-    // PWMInterfaceDescriptor rightServoInter;
-
-    leftMotor.pwmDescriptor = motorDescriptor;
-    leftMotor.pwmHandle = leftMotorInter;
 
     leftServo.pwmDescriptor = servoDescriptor;
     leftServo.pwmHandle = leftServoInter;

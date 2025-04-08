@@ -49,5 +49,6 @@ typedef struct {
 void CriticalErrorHandler(void);
 int32_t clipi32(int32_t v, int32_t lower, int32_t upper);
 float clipf32(float v, float lower, float upper);
+float mapf32(float v, float fromMin, float fromMax, float toMin, float toMax);
 
 #endif // COMMON_H

@@ -16,6 +16,12 @@ float clipf32(float v, float lower, float upper)
     else return v;
 }
 
+float mapf32(float v, float fromMin, float fromMax, float toMin, float toMax)
+{
+    if(fromMax == fromMin) return toMin;
+    return toMin + ( (v - fromMin) / (fromMax - fromMin) ) * (toMax - toMin);
+}
+
  void CriticalErrorHandler(void)
  {
    __disable_irq();
