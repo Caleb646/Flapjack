@@ -1,6 +1,6 @@
 #include <string.h>
 #include "sensors/imu/imu.h"
-#include "sensors/imu/bmi270.h"
+#include "sensors/imu/bmixxx.h"
 #include "log.h"
 
 #define BIT_ISSET(v, bit) ((v & bit) == 1)
@@ -471,11 +471,12 @@ STATUS_TYPE IMUReadReg(IMU *pIMU, uint8_t reg, uint8_t *pBuf, uint32_t len)
 
 	if(status != HAL_OK)
 	{
+        LOG_ERROR("HAL failed to transmit to IMU");
 		return eSTATUS_FAILURE;
 	}
 	// 1st byte sent by bmi270 is a dummy byte
 	memcpy(pBuf, &pRx[1], len);
-
+    // LOG_INFO("Successful read from IMU");
 	return eSTATUS_SUCCESS;
 }
 
@@ -496,9 +497,11 @@ STATUS_TYPE IMUWriteReg(IMU *pIMU, uint8_t reg, uint8_t *pBuf, uint32_t len)
 
 	if(status != HAL_OK)
 	{
+        LOG_ERROR("HAL failed to transmit to IMU");
 		return eSTATUS_FAILURE;
 	}
 
+    // LOG_INFO("Successful write to IMU");
 	return eSTATUS_SUCCESS;
 }
 
@@ -615,6 +618,66 @@ STATUS_TYPE IMU2CPUInterruptHandler(
   return status;
 }
 
+STATUS_TYPE IMUSoftReset(IMU *pIMU)
+{
+    /* Send soft reset command to BMI323 */
+    uint8_t cmdBuffer[2] = { 0 };
+    cmdBuffer[0] = (uint8_t)(BMI3_CMD_SOFT_RESET & BMI3_SET_LOW_BYTE);
+    cmdBuffer[1] = (uint8_t)((BMI3_CMD_SOFT_RESET & BMI3_SET_HIGH_BYTE) >> 8);
+    STATUS_TYPE status = IMUWriteReg(pIMU, BMI3_REG_CMD, cmdBuffer, 2);
+
+
+    /* Perform dummy read to switch from I3C/I2C to SPI */
+    if(status == eSTATUS_SUCCESS)
+    {
+        uint8_t dummyBytes[2] = { 0 };
+        status = IMUReadReg(pIMU, BMI3_REG_CHIP_ID, dummyBytes, 2);
+    }
+
+    /* Enable feature engine */
+    if(status == eSTATUS_SUCCESS)
+    {
+        uint8_t featureData[2] = { 0x2c, 0x01 };
+        status = IMUWriteReg(pIMU, BMI3_REG_FEATURE_IO2, featureData, 2);
+    }
+
+    /* Enable feature status bit */
+    if(status == eSTATUS_SUCCESS)
+    {
+        uint8_t featureIOStatus[2] = { BMI3_ENABLE, 0 };
+        status = IMUWriteReg(pIMU, BMI3_REG_FEATURE_IO_STATUS, featureIOStatus, 2);
+    }
+
+    /* Enable feature engine bit */
+    if(status == eSTATUS_SUCCESS)
+    {
+        uint8_t featureEngine[2] = { BMI3_ENABLE, 0 };
+        status = IMUWriteReg(pIMU, BMI3_REG_FEATURE_CTRL, featureEngine, 2);
+    }
+
+    if(status == eSTATUS_SUCCESS)
+    {
+        int16_t loop = 0;
+        uint8_t regData[2] = { 0 };
+
+        while(loop++ <= 10)
+        {
+            HAL_Delay(100);
+            status = IMUReadReg(pIMU, BMI3_REG_FEATURE_IO1, regData, 2);
+            if(status == eSTATUS_SUCCESS)
+            {
+                if(regData[0] & BMI3_FEATURE_ENGINE_ENABLE_MASK)
+                {
+                    status = eSTATUS_SUCCESS;
+                    break;
+                }
+            }
+        }
+    }
+
+    return status;
+}
+
 
 STATUS_TYPE IMUInit(
   IMU *pIMU, 
@@ -625,90 +688,110 @@ STATUS_TYPE IMUInit(
   IMU_GYRO_ODR gyroODR
 )
 {
-  memset(pIMU, 0, sizeof(IMU));
+    memset(pIMU, 0, sizeof(IMU));
 	pIMU->pSPI = pSPI;
-  pIMU->accRange = accRange;
-  pIMU->accODR = accODR;
-  pIMU->gyroRange = gyroRange;
-  pIMU->gyroODR = gyroODR;
-  pIMU->msLastAccUpdateTime = HAL_GetTick();
-  pIMU->msLastGyroUpdateTime = HAL_GetTick();
-  pIMU->magic = IMU_MAGIC;
+    pIMU->accRange = accRange;
+    pIMU->accODR = accODR;
+    pIMU->gyroRange = gyroRange;
+    pIMU->gyroODR = gyroODR;
+    pIMU->msLastAccUpdateTime = HAL_GetTick();
+    pIMU->msLastGyroUpdateTime = HAL_GetTick();
+    pIMU->magic = IMU_MAGIC;
 
-	STATUS_TYPE status;
-	uint8_t pBuffer[2];
-  memset(pBuffer, 0, sizeof(pBuffer));
+	// STATUS_TYPE status;
+	// uint8_t pBuffer[2] = { 0 };
+    // memset(pBuffer, 0, sizeof(pBuffer));
 
 	// Dummy read to initialize SPI
-	status = IMUReadReg(pIMU, BMI2_CHIP_ID_ADDR, pBuffer, 1);
-	status = IMUReadReg(pIMU, BMI2_CHIP_ID_ADDR, pBuffer, 1);
+	// status = IMUReadReg(pIMU, BMI2_CHIP_ID_ADDR, pBuffer, 1);
+	// status = IMUReadReg(pIMU, BMI2_CHIP_ID_ADDR, pBuffer, 1);
+    // LOG_INFO("IMU chip ID [%X]", pBuffer[0]);
 
-	// Disable PWR_CONF advanced power save
-	pBuffer[0] = 0;
-	status = IMUWriteReg(pIMU, BMI2_PWR_CONF_ADDR, pBuffer, 1);
+    STATUS_TYPE status = IMUSoftReset(pIMU);
+    if(status != eSTATUS_SUCCESS)
+    {
+        LOG_ERROR("Failed to soft reset IMU");
+        return status;
+    }
 
-	HAL_Delay(1);
+    uint8_t pChipID[2] = { 0 };
+    status = IMUReadReg(pIMU, BMI3_REG_CHIP_ID, pChipID, 2);
+    if(pChipID != BMI323_CHIP_ID)
+    {
+        LOG_ERROR("Failed to find BMI323. Chip ID [%X] is incorrect", pChipID[0]);
+        return eSTATUS_FAILURE;
+    }
 
-	// Prepare config file
-	pBuffer[0] = 0;
-	status = IMUWriteReg(pIMU, BMI2_INIT_CTRL_ADDR, pBuffer, 1);
 
-	// Added the data write address directly to the config_file
-	HAL_SPI_Transmit(pIMU->pSPI, bmi270_config_file, sizeof(bmi270_config_file), 100);
+	// // Disable PWR_CONF advanced power save
+	// pBuffer[0] = 0;
+	// status = IMUWriteReg(pIMU, BMI2_PWR_CONF_ADDR, pBuffer, 1);
 
-	pBuffer[0] = 0x01;
-	status = IMUWriteReg(pIMU, BMI2_INIT_CTRL_ADDR, pBuffer, 1);
+	// HAL_Delay(1);
 
-	HAL_Delay(20);
+	// // Prepare config file
+	// pBuffer[0] = 0;
+	// status = IMUWriteReg(pIMU, BMI2_INIT_CTRL_ADDR, pBuffer, 1);
 
-	status = IMUReadReg(pIMU, BMI2_INTERNAL_STATUS_ADDR, pBuffer, 1);
-	if(status == eSTATUS_FAILURE || (pBuffer[0] & 1) == 0)
-	{
-		return eSTATUS_FAILURE;
-	}
+	// // Added the data write address directly to the config_file
+	// HAL_SPI_Transmit(pIMU->pSPI, bmi270_config_file, sizeof(bmi270_config_file), 100);
 
-  /*
-  * Device Enable/Disable
-  */
-  // enable acceleration, gyro, and temp but disable auxillary interface
-  pBuffer[0] = 0x0E;
-  status = IMUWriteReg(pIMU, BMI2_PWR_CTRL_ADDR, pBuffer, 1);
+	// pBuffer[0] = 0x01;
+	// status = IMUWriteReg(pIMU, BMI2_INIT_CTRL_ADDR, pBuffer, 1);
 
-  /*
-  * Accelerometer Setup
-  */
-  // enable acc filter perf bit, set acc bwp to normal, and set acc_odr to 100 Hz
-  pBuffer[0] = BMI2_ACC_CONF_PERF_MODE_BIT | BMI2_ACC_CONF_BWP_NORMAL_BIT | pIMU->accODR;
-  // Set acc range to pIMU->accRange
-  pBuffer[1] = pIMU->accRange;
-  status = IMUWriteReg(pIMU, BMI2_ACC_CONF_ADDR, pBuffer, 2);
+	// HAL_Delay(20);
 
-  /*
-  * Gyro Setup
-  */
-  // enable gyro filter perf bit, set gyr bwp to normal, and set gry_odr to 100 Hz
-  pBuffer[0] = BMI2_GYRO_CONF_FILTER_PERF_BIT | BMI2_GYRO_CONF_NOISE_PERF_BIT | BMI2_GYRO_CONF_BWP_NORMAL_BIT | pIMU->gyroODR;
-  // set gyro range
-  pBuffer[1] = pIMU->gyroRange;
-  status = IMUWriteReg(pIMU, BMI2_GYR_CONF_ADDR, pBuffer, 2);
+	// status = IMUReadReg(pIMU, BMI2_INTERNAL_STATUS_ADDR, pBuffer, 1);
+	// if(status == eSTATUS_FAILURE || (pBuffer[0] & 1) == 0)
+	// {
+    //     LOG_ERROR(
+    //     "IMU failed to read status or returned status [%X] is invalid", pBuffer[0]
+    //     );
+	// 	return eSTATUS_FAILURE;
+	// }
 
-  /*
-  * Power Setup
-  */
-  // disable adv power sav and leave fifo self wakeup enabled
-  pBuffer[0] = 0x02;
-  status = IMUWriteReg(pIMU, BMI2_PWR_CONF_ADDR, pBuffer, 1);
+    // /*
+    // * Device Enable/Disable
+    // */
+    // // enable acceleration, gyro, and temp but disable auxillary interface
+    // pBuffer[0] = 0x0E;
+    // status = IMUWriteReg(pIMU, BMI2_PWR_CTRL_ADDR, pBuffer, 1);
 
-  /*
-  * Interrupt Setup
-  */
-  // enable INT1 w input disabled, output enabled, push pull, and active high
-  pBuffer[0] = (0 << 3) | (1 << 2) | (0 << 1) | (1 << 0);
-  status = IMUWriteReg(pIMU, BMI2_INT1_IO_CTRL_ADDR, pBuffer, 1);
-  // interrupts will NOT be cleared automatically. Have to be cleared by the
-  // the host reading the int status registers
-  pBuffer[0] = 1;
-  status = IMUWriteReg(pIMU, BMI2_INT_LATCH_ADDR, pBuffer, 1);
+    // /*
+    // * Accelerometer Setup
+    // */
+    // // enable acc filter perf bit, set acc bwp to normal, and set acc_odr to 100 Hz
+    // pBuffer[0] = BMI2_ACC_CONF_PERF_MODE_BIT | BMI2_ACC_CONF_BWP_NORMAL_BIT | pIMU->accODR;
+    // // Set acc range to pIMU->accRange
+    // pBuffer[1] = pIMU->accRange;
+    // status = IMUWriteReg(pIMU, BMI2_ACC_CONF_ADDR, pBuffer, 2);
+
+    // /*
+    // * Gyro Setup
+    // */
+    // // enable gyro filter perf bit, set gyr bwp to normal, and set gry_odr to 100 Hz
+    // pBuffer[0] = BMI2_GYRO_CONF_FILTER_PERF_BIT | BMI2_GYRO_CONF_NOISE_PERF_BIT | BMI2_GYRO_CONF_BWP_NORMAL_BIT | pIMU->gyroODR;
+    // // set gyro range
+    // pBuffer[1] = pIMU->gyroRange;
+    // status = IMUWriteReg(pIMU, BMI2_GYR_CONF_ADDR, pBuffer, 2);
+
+    // /*
+    // * Power Setup
+    // */
+    // // disable adv power sav and leave fifo self wakeup enabled
+    // pBuffer[0] = 0x02;
+    // status = IMUWriteReg(pIMU, BMI2_PWR_CONF_ADDR, pBuffer, 1);
+
+    // /*
+    // * Interrupt Setup
+    // */
+    // // enable INT1 w input disabled, output enabled, push pull, and active high
+    // pBuffer[0] = (0 << 3) | (1 << 2) | (0 << 1) | (1 << 0);
+    // status = IMUWriteReg(pIMU, BMI2_INT1_IO_CTRL_ADDR, pBuffer, 1);
+    // // interrupts will NOT be cleared automatically. Have to be cleared by the
+    // // the host reading the int status registers
+    // pBuffer[0] = 1;
+    // status = IMUWriteReg(pIMU, BMI2_INT_LATCH_ADDR, pBuffer, 1);
 
 	return eSTATUS_SUCCESS;
 }

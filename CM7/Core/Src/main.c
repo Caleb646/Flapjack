@@ -187,22 +187,22 @@ int main(void)
 
 /* USER CODE BEGIN Boot_Mode_Sequence_1 */
 
-    /* Wait until CPU2 boots and enters in stop mode or timeout*/
+  /* Wait until CPU2 boots and enters in stop mode or timeout*/
     while(__HAL_RCC_GET_FLAG(RCC_FLAG_D2CKRDY) != RESET) { asm volatile ("NOP"); }
 
 /* USER CODE END Boot_Mode_Sequence_1 */
-  /* MCU Configuration--------------------------------------------------------*/
+    /* MCU Configuration--------------------------------------------------------*/
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+    /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+    HAL_Init();
 
-  /* USER CODE BEGIN Init */
-    
-  /* USER CODE END Init */
+    /* USER CODE BEGIN Init */
+        
+    /* USER CODE END Init */
 
-  /* Configure the system clock */
-  SystemClock_Config();
-/* USER CODE BEGIN Boot_Mode_Sequence_2 */
+    /* Configure the system clock */
+    SystemClock_Config();
+    /* USER CODE BEGIN Boot_Mode_Sequence_2 */
 
     MX_GPIO_Init();
     MX_USART1_UART_Init();
@@ -212,7 +212,7 @@ int main(void)
 
     if(IS_STATUS_FAILURE(SyncInit()) || IS_STATUS_FAILURE(LoggerInit(&huart1)))
     {
-      CriticalErrorHandler();
+        CriticalErrorHandler();
     }
 
     /* When system initialization is finished, Cortex-M7 will release Cortex-M4 by means of HSEM notification */
@@ -225,42 +225,48 @@ int main(void)
     HAL_HSEM_Release(HSEM_ID_0, 0);
     // /* wait until CPU2 wakes up from stop mode */
     while(__HAL_RCC_GET_FLAG(RCC_FLAG_D2CKRDY) == RESET) { asm volatile ("NOP"); }
-/* USER CODE END Boot_Mode_Sequence_2 */
+    /* USER CODE END Boot_Mode_Sequence_2 */
 
-  /* USER CODE BEGIN SysInit */
+    /* USER CODE BEGIN SysInit */
 
-  /* USER CODE END SysInit */
+    /* USER CODE END SysInit */
 
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_USART1_UART_Init();
-  MX_SPI2_Init();
-  MX_TIM8_Init();
-  MX_TIM13_Init();
-  /* USER CODE BEGIN 2 */
+    /* Initialize all configured peripherals */
+    MX_GPIO_Init();
+    MX_USART1_UART_Init();
+    MX_SPI2_Init();
+    MX_TIM8_Init();
+    MX_TIM13_Init();
+    /* USER CODE BEGIN 2 */
 
     // PIDInit(&gPIDAngleContext);
     // FilterMadgwickInit(&gFilterMadgwickContext);
 
-    // IMUInit(
-    //   &gIMU, 
-    //   &hspi2,
-    //   IMU_ACC_RANGE_4G,
-    //   IMU_ACC_ODR_100,
-    //   IMU_GYRO_RANGE_250,
-    //   IMU_GYRO_ODR_100
-    // );
+    STATUS_TYPE imuStatus = IMUInit(
+        &gIMU,
+        &hspi2,
+        IMU_ACC_RANGE_4G,
+        IMU_ACC_ODR_100,
+        IMU_GYRO_RANGE_250,
+        IMU_GYRO_ODR_100
+        );
+
+    if(IS_STATUS_FAILURE(imuStatus))
+    {
+        LOG_ERROR("CM7 failed to init IMU");
+    }
+
     while (1)
     {
         /* USER CODE END WHILE */
-        HAL_Delay(1000);
+        HAL_Delay(5000);
         LOG_INFO("Hello from CM7");
         /* USER CODE BEGIN 3 */
     }
 
     vTaskStartScheduler();
 
-  /* USER CODE END 2 */
+    /* USER CODE END 2 */
 
     while (1)
     {
@@ -268,7 +274,7 @@ int main(void)
 
         /* USER CODE BEGIN 3 */
     }
-  /* USER CODE END 3 */
+/* USER CODE END 3 */
 }
 
 /**

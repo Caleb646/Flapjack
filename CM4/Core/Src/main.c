@@ -171,7 +171,7 @@ int main(void)
   {
 	  // HAL_GPIO_WritePin(GPIOD, GPIO_PIN_11, GPIO_PIN_RESET);
 	  // HAL_GPIO_WritePin(GPIOD, GPIO_PIN_11, GPIO_PIN_SET);
-	  HAL_Delay(1000);
+	  HAL_Delay(5000);
 	  LOG_INFO("Hello from CM4");
   }
 
