@@ -450,8 +450,8 @@ STATUS_TYPE IMUReadReg(IMU *pIMU, uint8_t reg, uint8_t *pBuf, uint32_t len)
 {
 	uint8_t pTx[16];
 	memset(pTx, 0, sizeof(pTx));
-	// 0x80 bmi270 read bit
-	pTx[0] = 0x80 | reg;
+	// set read mask for register address
+	pTx[0] = BMI3_SPI_RD_MASK | reg;
 
 	uint8_t pRx[16];
 	memset(pRx, 0, sizeof(pRx));
@@ -462,20 +462,20 @@ STATUS_TYPE IMUReadReg(IMU *pIMU, uint8_t reg, uint8_t *pBuf, uint32_t len)
 	// set NSS high
 	// HAL_GPIO_WritePin(SPI2_NSS_GPIO_Port, SPI2_NSS_Pin, GPIO_PIN_SET);
 
-	if(len + 1 > 16)
+	if(len + pIMU->nDummyBytes > 16)
 	{
 		return eSTATUS_FAILURE;
 	}
 
-	HAL_StatusTypeDef status = HAL_SPI_TransmitReceive(pIMU->pSPI, pTx, pRx, len + 1, 100);
+	HAL_StatusTypeDef status = HAL_SPI_TransmitReceive(pIMU->pSPI, pTx, pRx, len + pIMU->nDummyBytes, 100);
 
 	if(status != HAL_OK)
 	{
         LOG_ERROR("HAL failed to transmit to IMU");
 		return eSTATUS_FAILURE;
 	}
-	// 1st byte sent by bmi270 is a dummy byte
-	memcpy(pBuf, &pRx[1], len);
+	// The first nDummyBytes are dummy bytes
+	memcpy(pBuf, &pRx[pIMU->nDummyBytes], len);
     // LOG_INFO("Successful read from IMU");
 	return eSTATUS_SUCCESS;
 }
@@ -490,7 +490,7 @@ STATUS_TYPE IMUWriteReg(IMU *pIMU, uint8_t reg, uint8_t *pBuf, uint32_t len)
 		return eSTATUS_FAILURE;
 	}
 
-	pTx[0] = reg;
+	pTx[0] = reg | BMI3_SPI_WR_MASK;
 	memcpy(&pTx[1], (void*)pBuf, len);
 
 	HAL_StatusTypeDef status = HAL_SPI_Transmit(pIMU->pSPI, pTx, len + 1, 100);
@@ -696,6 +696,8 @@ STATUS_TYPE IMUInit(
     pIMU->gyroODR = gyroODR;
     pIMU->msLastAccUpdateTime = HAL_GetTick();
     pIMU->msLastGyroUpdateTime = HAL_GetTick();
+    /* SPI reads */
+    pIMU->nDummyBytes = 1;
     pIMU->magic = IMU_MAGIC;
 
 	// STATUS_TYPE status;

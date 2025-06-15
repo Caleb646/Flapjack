@@ -49,6 +49,7 @@ typedef struct
 	int32_t volatile msLastAccUpdateTime;
 	int32_t volatile msLastGyroUpdateTime;
 	uint32_t accRange, accODR, gyroRange, gyroODR;
+	uint32_t nDummyBytes;
 	uint32_t magic;
 } IMU;
 
