@@ -6,13 +6,11 @@
 #define BIT_ISSET(v, bit) ((v & bit) == 1)
 
 STATUS_TYPE IMUReadReg (IMU const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len) {
-    uint8_t pTx[16];
-    memset (pTx, 0, sizeof (pTx));
+    uint8_t pTx[16] = { 0 };
     // set read mask for register address
     pTx[0] = BMI3_SPI_RD_MASK | reg;
 
-    uint8_t pRx[16];
-    memset (pRx, 0, sizeof (pRx));
+    uint8_t pRx[16] = { 0 };
     // set NSS low
     // HAL_GPIO_WritePin(SPI2_NSS_GPIO_Port, SPI2_NSS_Pin, GPIO_PIN_RESET);
     // status = HAL_SPI_Transmit(pIMUSPIRef, pTemp, 1, 100);

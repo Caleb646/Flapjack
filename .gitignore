@@ -2,6 +2,22 @@ Debug/
 Release/
 *.cyclo
 
+!Debug/Makefile
+!Debug/makefile
+!Debug/*.mk
+
+!Debug/**/*.mk
+!Debug/**/Makefile
+!Debug/**/makefile
+
+!Release/Makefile
+!Release/makefile
+!Release/*.mk
+
+!Release/**/*.mk
+!Release/**/Makefile
+!Release/**/makefile
+
 # Prerequisites
 *.d
 

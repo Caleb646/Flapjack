@@ -1,7 +1,13 @@
 {
     "makefile.makefilePath": "${workspaceFolder}/CM4/Debug/makefile",
+
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "xaver.clang-format",
     "clang-format.executable": "/usr/bin/clang-format",
-    "workbench.editor.wrapTabs": true
+    "workbench.editor.wrapTabs": true,
+
+    // "clang-tidy.enabled": true,
+    // "clang-tidy.useBuildPath": false,
+    // "clang-tidy.checks": "readability-braces-around-statements",
+    // "clang-tidy.fixOnSave": true
 }
