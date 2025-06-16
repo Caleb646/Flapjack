@@ -1,2 +1,3 @@
 all:
-	$(MAKE) -C ./Debug
+	$(MAKE) -C ./CM4/Debug
+	$(MAKE) -C ./CM7/Debug
