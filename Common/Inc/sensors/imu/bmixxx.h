@@ -634,33 +634,35 @@ uint8_t const bmi270_config_file[] = {
 #define BMI3_SET_BITS(reg_data, bitname, data) \
     ((reg_data & ~(bitname##_MASK)) | ((data << bitname##_POS) & bitname##_MASK))
 
-#define BMI3_GET_BITS(reg_data, bitname)           ((reg_data & (bitname##_MASK)) >> (bitname##_POS))
+#define BMI3_GET_BITS(reg_data, bitname) \
+    ((reg_data & (bitname##_MASK)) >> (bitname##_POS))
 
-#define BMI3_SET_BIT_POS0(reg_data, bitname, data) ((reg_data & ~(bitname##_MASK)) | (data & bitname##_MASK))
+#define BMI3_SET_BIT_POS0(reg_data, bitname, data) \
+    ((reg_data & ~(bitname##_MASK)) | (data & bitname##_MASK))
 
-#define BMI3_GET_BIT_POS0(reg_data, bitname)       (reg_data & (bitname##_MASK))
-#define BMI3_SET_BIT_VAL0(reg_data, bitname)       (reg_data & ~(bitname##_MASK))
+#define BMI3_GET_BIT_POS0(reg_data, bitname) (reg_data & (bitname##_MASK))
+#define BMI3_SET_BIT_VAL0(reg_data, bitname) (reg_data & ~(bitname##_MASK))
 
 /*! LSB and MSB mask definitions */
-#define BMI3_SET_LOW_BYTE                          UINT16_C (0x00FF)
-#define BMI3_SET_HIGH_BYTE                         UINT16_C (0xFF00)
-#define BMI3_SET_LOW_NIBBLE                        UINT8_C (0x0F)
+#define BMI3_SET_LOW_BYTE                    UINT16_C (0x00FF)
+#define BMI3_SET_HIGH_BYTE                   UINT16_C (0xFF00)
+#define BMI3_SET_LOW_NIBBLE                  UINT8_C (0x0F)
 
 /*! For getting LSB and MSB */
-#define BMI3_GET_LSB(var)                          (uint8_t) (var & BMI3_SET_LOW_BYTE)
-#define BMI3_GET_MSB(var)                          (uint8_t) ((var & BMI3_SET_HIGH_BYTE) >> 8)
+#define BMI3_GET_LSB(var)                    (uint8_t) (var & BMI3_SET_LOW_BYTE)
+#define BMI3_GET_MSB(var)                    (uint8_t) ((var & BMI3_SET_HIGH_BYTE) >> 8)
 
 /*! For enable and disable */
-#define BMI3_ENABLE                                UINT8_C (1)
-#define BMI3_DISABLE                               UINT8_C (0)
+#define BMI3_ENABLE                          UINT8_C (1)
+#define BMI3_DISABLE                         UINT8_C (0)
 
 /*! To define TRUE or FALSE */
-#define BMI3_TRUE                                  UINT8_C (1)
-#define BMI3_FALSE                                 UINT8_C (0)
+#define BMI3_TRUE                            UINT8_C (1)
+#define BMI3_FALSE                           UINT8_C (0)
 
 /*!
- * BMI3_INTF_RET_TYPE is the read/write interface return type which can be overwritten by the build system.
- * The default is set to int8_t.
+ * BMI3_INTF_RET_TYPE is the read/write interface return type which can be
+ * overwritten by the build system. The default is set to int8_t.
  */
 #ifndef BMI3_INTF_RET_TYPE
 #define BMI3_INTF_RET_TYPE int8_t
@@ -833,8 +835,8 @@ uint8_t const bmi270_config_file[] = {
  */
 #define BMI3_REG_INT_STATUS_IBI                     UINT8_C (0x0F)
 
-/*! Feature engine configuration, before setting/changing an active configuration the register must be cleared
-(set to 0) */
+/*! Feature engine configuration, before setting/changing an active
+configuration the register must be cleared (set to 0) */
 #define BMI3_REG_FEATURE_IO0                        UINT8_C (0x10)
 
 /*! Feature engine I/O register 0. */
@@ -909,8 +911,8 @@ uint8_t const bmi270_config_file[] = {
 /*! Status of the feature engine. */
 #define BMI3_REG_FEATURE_ENGINE_STATUS              UINT8_C (0x45)
 
-/*! Register of extended data on feature events. The register content is valid in combination with an active bit
-in INT_STATUS_INT1/2. */
+/*! Register of extended data on feature events. The register content is
+valid in combination with an active bit in INT_STATUS_INT1/2. */
 #define BMI3_REG_FEATURE_EVENT_EXT                  UINT8_C (0x47)
 
 /*! Pull down behavior control */
@@ -992,8 +994,8 @@ in INT_STATUS_INT1/2. */
 #define BMI3_REV_ID_MASK                            UINT8_C (0xF0)
 #define BMI3_REV_ID_POS                             UINT8_C (4)
 
-/*! Fatal Error, chip is not in operational state (Boot-, power-system). This flag will be reset only by power-on-reset
- * or soft-reset. */
+/*! Fatal Error, chip is not in operational state (Boot-, power-system).
+ * This flag will be reset only by power-on-reset or soft-reset. */
 #define BMI3_FATAL_ERR_MASK                         UINT16_C (0x0001)
 
 /*! Overload of the feature engine detected. This flag is clear-on-read. */
@@ -1015,9 +1017,10 @@ in INT_STATUS_INT1/2. */
 #define BMI3_GYR_CONF_ERR_MASK                      UINT16_C (0x0040)
 #define BMI3_GYR_CONF_ERR_POS                       UINT8_C (6)
 
-/*! SDR parity error or read abort condition (maximum clock stall time for I3C Read Trasfer) occurred.
- *  This flag is a clear-on-read type. It is cleared automatically once read.
- *  Refer to the MIPI I3C specification chapter 'Master Clock Stalling' for detail info regarding the read abort
+/*! SDR parity error or read abort condition (maximum clock stall time for
+ * I3C Read Trasfer) occurred. This flag is a clear-on-read type. It is
+ * cleared automatically once read. Refer to the MIPI I3C specification
+ * chapter 'Master Clock Stalling' for detail info regarding the read abort
  * condition.
  */
 #define BMI3_I3C_ERROR0_MASK                        UINT16_C (0x0100)
@@ -1247,8 +1250,8 @@ in INT_STATUS_INT1/2. */
 #define BMI3_GYRO_SC_RESULT_MASK                    UINT16_C (0x0020)
 #define BMI3_GYRO_SC_RESULT_POS                     UINT8_C (5)
 
-/*! Accelerometer and/or gyroscope self-test result (1=OK, 0=Not OK). Bit sc_st_complete should be 1 prior to reading
- * this bit. */
+/*! Accelerometer and/or gyroscope self-test result (1=OK, 0=Not OK). Bit
+ * sc_st_complete should be 1 prior to reading this bit. */
 #define BMI3_ST_RESULT_MASK                         UINT16_C (0x0040)
 #define BMI3_ST_RESULT_POS                          UINT8_C (6)
 
@@ -1256,8 +1259,8 @@ in INT_STATUS_INT1/2. */
 #define BMI3_SAMPLE_RATE_ERR_MASK                   UINT16_C (0x0080)
 #define BMI3_SAMPLE_RATE_ERR_POS                    UINT8_C (7)
 
-/*! User gain/offset update execution status. 0 indicates that the procedure is ongoing. 1 indicates that the procedure
- * is completed */
+/*! User gain/offset update execution status. 0 indicates that the
+ * procedure is ongoing. 1 indicates that the procedure is completed */
 #define BMI3_UGAIN_OFFS_UPD_COMPLETE_MASK           UINT16_C (0x0100)
 #define BMI3_UGAIN_OFFS_UPD_COMPLETE_POS            UINT8_C (8)
 
@@ -1281,20 +1284,23 @@ in INT_STATUS_INT1/2. */
 /*! Step counter value word-1 (high word) */
 #define BMI3_STEP_COUNTER_OUT_1_MASK                UINT16_C (0x0FFFF)
 
-/*! On read: data has been written by the feature engine On write: data written by the host shall be sent to the feature
- * engine. */
+/*! On read: data has been written by the feature engine On write: data
+ * written by the host shall be sent to the feature engine. */
 #define BMI3_FEATURE_IO_STATUS_MASK                 UINT16_C (0x0001)
 
 /*! Current fill level of FIFO buffer
- * An empty FIFO corresponds to 0x000. The word counter may be reset by reading out all frames from the FIFO buffer or
- * when the FIFO is reset through fifo_flush. The word counter is updated each time a complete frame was read or
- * written. */
+ * An empty FIFO corresponds to 0x000. The word counter may be reset by
+ * reading out all frames from the FIFO buffer or when the FIFO is reset
+ * through fifo_flush. The word counter is updated each time a complete
+ * frame was read or written. */
 #define BMI3_FIFO_FILL_LEVEL_MASK                   UINT16_C (0x07FF)
 
 /*! FIFO read data (16 bits)
- * Data format depends on the setting of register FIFO_CONF. The FIFO data are organized in frames. The new data flag is
- * preserved. Read burst access must be used, the address will not increment when the read burst reads at the address of
- * FIFO_DATA. When a frame is only partially read out it is retransmitted including the header at the next readout. */
+ * Data format depends on the setting of register FIFO_CONF. The FIFO data
+ * are organized in frames. The new data flag is preserved. Read burst
+ * access must be used, the address will not increment when the read burst
+ * reads at the address of FIFO_DATA. When a frame is only partially read
+ * out it is retransmitted including the header at the next readout. */
 #define BMI3_FIFO_DATA_MASK                         UINT16_C (0x0FFFF)
 
 /*! ODR in Hz */
@@ -1520,8 +1526,8 @@ in INT_STATUS_INT1/2. */
 #define BMI3_DISABLED_BY_HOST_MASK                  UINT16_C (0x0010)
 #define BMI3_DISABLED_BY_HOST_POS                   UINT8_C (4)
 
-/*! The feature engine did not acknowledge its internal watchdog in time. Perform a soft-reset to re-enable the feature
- * engine. */
+/*! The feature engine did not acknowledge its internal watchdog in time.
+ * Perform a soft-reset to re-enable the feature engine. */
 #define BMI3_WATCHDOG_NOT_ACK_MASK                  UINT16_C (0x0020)
 #define BMI3_WATCHDOG_NOT_ACK_POS                   UINT8_C (5)
 
@@ -1529,8 +1535,8 @@ in INT_STATUS_INT1/2. */
  * */
 #define BMI3_ORIENTATION_PORTRAIT_LANDSCAPE_MASK    UINT16_C (0x0003)
 
-/*! Output value of face down face up orientation (only if ud_en is enabled). Value after device initialization is 0b0
- * i.e. Face up */
+/*! Output value of face down face up orientation (only if ud_en is
+ * enabled). Value after device initialization is 0b0 i.e. Face up */
 #define BMI3_ORIENTATION_FACEUP_DOWN_MASK           UINT16_C (0x0004)
 #define BMI3_ORIENTATION_FACEUP_DOWN_POS            UINT8_C (2)
 
@@ -2144,7 +2150,7 @@ in INT_STATUS_INT1/2. */
 #define BMI3_LANDSCAPE_RIGHT                        UINT8_C (0x03)
 
 /******************************************************************************/
-/*! @name       FIFO Macro Definitions                                        */
+/*! @name       FIFO Macro Definitions */
 /******************************************************************************/
 
 /*! Mask definitions for FIFO frame content configuration */
@@ -2177,14 +2183,14 @@ in INT_STATUS_INT1/2. */
 #define BMI3_FIFO_HEAD_LESS_ALL_FRM                 UINT16_C (0x0F00)
 
 /******************************************************************************/
-/*! @name       CFG RES Macro Definitions                                     */
+/*! @name       CFG RES Macro Definitions */
 /******************************************************************************/
 
 #define BMI3_CFG_RES_VALUE_ONE                      UINT8_C (0x07)
 #define BMI3_CFG_RES_MASK                           UINT8_C (0x80)
 
 /******************************************************************************/
-/*! @name       Alternate configuration macros                                */
+/*! @name       Alternate configuration macros */
 /******************************************************************************/
 
 /*! Enables switching possibility to alternate configuration for accel */
@@ -2217,7 +2223,7 @@ in INT_STATUS_INT1/2. */
 #define BMI3_ALT_GYRO_STATUS_POS                    UINT8_C (4)
 
 /******************************************************************************/
-/*! @name       Status macros                                                 */
+/*! @name       Status macros */
 /******************************************************************************/
 #define BMI3_STATUS_POR                             UINT8_C (0x01)
 #define BMI3_STATUS_DRDY_TEMP                       UINT8_C (0x20)
@@ -2225,7 +2231,7 @@ in INT_STATUS_INT1/2. */
 #define BMI3_STATUS_DRDY_ACC                        UINT8_C (0x80)
 
 /******************************************************************************/
-/*! @name       FOC macros                                                    */
+/*! @name       FOC macros */
 /******************************************************************************/
 
 /* Reference value with positive and negative noise range in lsb */
@@ -2250,70 +2256,78 @@ in INT_STATUS_INT1/2. */
 
 #define BMI3_FOC_SAMPLE_LIMIT                       UINT8_C (128)
 
-#define BMI3_ACC_2G_MAX_NOISE_LIMIT                 (BMI3_ACC_FOC_2G_REF + BMI3_ACC_FOC_2G_OFFSET)
-#define BMI3_ACC_2G_MIN_NOISE_LIMIT                 (BMI3_ACC_FOC_2G_REF - BMI3_ACC_FOC_2G_OFFSET)
-#define BMI3_ACC_4G_MAX_NOISE_LIMIT                 (BMI3_ACC_FOC_4G_REF + BMI3_ACC_FOC_4G_OFFSET)
-#define BMI3_ACC_4G_MIN_NOISE_LIMIT                 (BMI3_ACC_FOC_4G_REF - BMI3_ACC_FOC_4G_OFFSET)
-#define BMI3_ACC_8G_MAX_NOISE_LIMIT                 (BMI3_ACC_FOC_8G_REF + BMI3_ACC_FOC_8G_OFFSET)
-#define BMI3_ACC_8G_MIN_NOISE_LIMIT                 (BMI3_ACC_FOC_8G_REF - BMI3_ACC_FOC_8G_OFFSET)
-#define BMI3_ACC_16G_MAX_NOISE_LIMIT                (BMI3_ACC_FOC_16G_REF + BMI3_ACC_FOC_16G_OFFSET)
-#define BMI3_ACC_16G_MIN_NOISE_LIMIT                (BMI3_ACC_FOC_16G_REF - BMI3_ACC_FOC_16G_OFFSET)
+#define BMI3_ACC_2G_MAX_NOISE_LIMIT \
+    (BMI3_ACC_FOC_2G_REF + BMI3_ACC_FOC_2G_OFFSET)
+#define BMI3_ACC_2G_MIN_NOISE_LIMIT \
+    (BMI3_ACC_FOC_2G_REF - BMI3_ACC_FOC_2G_OFFSET)
+#define BMI3_ACC_4G_MAX_NOISE_LIMIT \
+    (BMI3_ACC_FOC_4G_REF + BMI3_ACC_FOC_4G_OFFSET)
+#define BMI3_ACC_4G_MIN_NOISE_LIMIT \
+    (BMI3_ACC_FOC_4G_REF - BMI3_ACC_FOC_4G_OFFSET)
+#define BMI3_ACC_8G_MAX_NOISE_LIMIT \
+    (BMI3_ACC_FOC_8G_REF + BMI3_ACC_FOC_8G_OFFSET)
+#define BMI3_ACC_8G_MIN_NOISE_LIMIT \
+    (BMI3_ACC_FOC_8G_REF - BMI3_ACC_FOC_8G_OFFSET)
+#define BMI3_ACC_16G_MAX_NOISE_LIMIT \
+    (BMI3_ACC_FOC_16G_REF + BMI3_ACC_FOC_16G_OFFSET)
+#define BMI3_ACC_16G_MIN_NOISE_LIMIT \
+    (BMI3_ACC_FOC_16G_REF - BMI3_ACC_FOC_16G_OFFSET)
 
 /*! Macro to define accelerometer configuration value for FOC */
-#define BMI3_FOC_ACC_CONF_VAL_LSB                   UINT8_C (0xB7)
-#define BMI3_FOC_ACC_CONF_VAL_MSB                   UINT8_C (0x40)
+#define BMI3_FOC_ACC_CONF_VAL_LSB  UINT8_C (0xB7)
+#define BMI3_FOC_ACC_CONF_VAL_MSB  UINT8_C (0x40)
 
 /*! Macro to define X Y and Z axis for an array */
-#define BMI3_X_AXIS                                 UINT8_C (0)
-#define BMI3_Y_AXIS                                 UINT8_C (1)
-#define BMI3_Z_AXIS                                 UINT8_C (2)
+#define BMI3_X_AXIS                UINT8_C (0)
+#define BMI3_Y_AXIS                UINT8_C (1)
+#define BMI3_Z_AXIS                UINT8_C (2)
 
-#define BMI3_FOC_INVERT_VALUE                       INT8_C (-1)
+#define BMI3_FOC_INVERT_VALUE      INT8_C (-1)
 
 /*! For defining absolute values */
-#define BMI3_ABS(a)                                 ((a) > 0 ? (a) : -(a))
+#define BMI3_ABS(a)                ((a) > 0 ? (a) : -(a))
 
 /*! Sensortime resolution in seconds */
-#define BMI3_SENSORTIME_RESOLUTION                  0.0000390625f
+#define BMI3_SENSORTIME_RESOLUTION 0.0000390625f
 
 /*! Maximum available register length */
-#define BMI3_MAX_LEN                                UINT8_C (128)
+#define BMI3_MAX_LEN               UINT8_C (128)
 
-#define BMI3_ACC_2G                                 UINT8_C (2)
-#define BMI3_ACC_4G                                 UINT8_C (4)
-#define BMI3_ACC_8G                                 UINT8_C (8)
-#define BMI3_ACC_16G                                UINT8_C (16)
+#define BMI3_ACC_2G                UINT8_C (2)
+#define BMI3_ACC_4G                UINT8_C (4)
+#define BMI3_ACC_8G                UINT8_C (8)
+#define BMI3_ACC_16G               UINT8_C (16)
 
-#define BMI3_ACC_2G_BIT_POS                         UINT8_C (1)
-#define BMI3_ACC_4G_BIT_POS                         UINT8_C (2)
-#define BMI3_ACC_8G_BIT_POS                         UINT8_C (3)
-#define BMI3_ACC_16G_BIT_POS                        UINT8_C (4)
+#define BMI3_ACC_2G_BIT_POS        UINT8_C (1)
+#define BMI3_ACC_4G_BIT_POS        UINT8_C (2)
+#define BMI3_ACC_8G_BIT_POS        UINT8_C (3)
+#define BMI3_ACC_16G_BIT_POS       UINT8_C (4)
 
 /*! Maximum number of interrupt pins */
-#define BMI3_INT_PIN_MAX_NUM                        UINT8_C (2)
+#define BMI3_INT_PIN_MAX_NUM       UINT8_C (2)
 
 /******************************************************************************/
 /*! @name       Gyro self-calibration/self-test coefficient macros  */
 /******************************************************************************/
-#define BMI3_SC_ST_VALUE_0                          UINT16_C (0x5A2E)
-#define BMI3_SC_ST_VALUE_1                          UINT16_C (0x9219)
-#define BMI3_SC_ST_VALUE_2                          UINT16_C (0x5637)
-#define BMI3_SC_ST_VALUE_3                          UINT16_C (0xFFE8)
-#define BMI3_SC_ST_VALUE_4                          UINT16_C (0xFFEF)
-#define BMI3_SC_ST_VALUE_5                          UINT16_C (0x000D)
-#define BMI3_SC_ST_VALUE_6                          UINT16_C (0x07CA)
-#define BMI3_SC_ST_VALUE_7                          UINT16_C (0xFFCD)
-#define BMI3_SC_ST_VALUE_8                          UINT16_C (0xEF6C)
+#define BMI3_SC_ST_VALUE_0         UINT16_C (0x5A2E)
+#define BMI3_SC_ST_VALUE_1         UINT16_C (0x9219)
+#define BMI3_SC_ST_VALUE_2         UINT16_C (0x5637)
+#define BMI3_SC_ST_VALUE_3         UINT16_C (0xFFE8)
+#define BMI3_SC_ST_VALUE_4         UINT16_C (0xFFEF)
+#define BMI3_SC_ST_VALUE_5         UINT16_C (0x000D)
+#define BMI3_SC_ST_VALUE_6         UINT16_C (0x07CA)
+#define BMI3_SC_ST_VALUE_7         UINT16_C (0xFFCD)
+#define BMI3_SC_ST_VALUE_8         UINT16_C (0xEF6C)
 
-#define BMI3_SC_SENSITIVITY_EN                      UINT8_C (1)
-#define BMI3_SC_OFFSET_EN                           UINT8_C (2)
+#define BMI3_SC_SENSITIVITY_EN     UINT8_C (1)
+#define BMI3_SC_OFFSET_EN          UINT8_C (2)
 
 /*! Self-calibration enable disable macros */
-#define BMI3_SC_APPLY_CORR_DIS                      UINT8_C (0)
-#define BMI3_SC_APPLY_CORR_EN                       UINT8_C (4)
+#define BMI3_SC_APPLY_CORR_DIS     UINT8_C (0)
+#define BMI3_SC_APPLY_CORR_EN      UINT8_C (4)
 
-#define INITIAL_LOW_VALUE                           INT16_C (32767)
-#define INITIAL_HIGH_VALUE                          INT16_C (-32768)
+#define INITIAL_LOW_VALUE          INT16_C (32767)
+#define INITIAL_HIGH_VALUE         INT16_C (-32768)
 
 typedef struct {
     /*! Map interrupt output to either INT1 or INT2 or IBI
@@ -2373,7 +2387,13 @@ typedef struct {
     uint8_t fifo_full_int;
 } bmi3_map_int;
 
-typedef enum { BMI3_INT_NONE, BMI3_INT1, BMI3_INT2, BMI3_I3C_INT, BMI3_INT_PIN_MAX } bmi3_hw_int_pin;
+typedef enum {
+    BMI3_INT_NONE,
+    BMI3_INT1,
+    BMI3_INT2,
+    BMI3_I3C_INT,
+    BMI3_INT_PIN_MAX
+} bmi3_hw_int_pin;
 
 
 #endif // SENSORS_BMIXXX_H

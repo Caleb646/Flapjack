@@ -1,27 +1,23 @@
 #include "flight_context.h"
 
-void FlightContextUpdateCurrentAttitude(FlightContext *pContext, Vec3f attitude)
-{
+void FlightContextUpdateCurrentAttitude (FlightContext* pContext, Vec3f attitude) {
     pContext->currentAttitude = attitude;
 }
 
-void FlightContextUpdateTargetAttitudeThrottle(FlightContext *pContext, Vec3f attitude, float throttle)
-{
+void FlightContextUpdateTargetAttitudeThrottle (FlightContext* pContext, Vec3f attitude, float throttle) {
     pContext->targetAttitude = attitude;
     pContext->targetThrottle = throttle;
 }
 
-void FlightContextUpdatePIDAttitude(FlightContext *pContext, Vec3f attitude)
-{
+void FlightContextUpdatePIDAttitude (FlightContext* pContext, Vec3f attitude) {
     pContext->pidAttitude = attitude;
 }
 
 /*
-* \brief IMU collects it accel and gyro data in millimeters and millidegrees. This is
-* converted to meters and degrees
-*/
-void FlightContextUpdateIMUData(FlightContext *pContext, Vec3 accel, Vec3 gyro)
-{
+ * \brief IMU collects it accel and gyro data in millimeters and
+ * millidegrees. This is converted to meters and degrees
+ */
+void FlightContextUpdateIMUData (FlightContext* pContext, Vec3 accel, Vec3 gyro) {
     pContext->imuUnFilteredAccel.x = ((float)accel.x) / 1000.0f;
     pContext->imuUnFilteredAccel.y = ((float)accel.y) / 1000.0f;
     pContext->imuUnFilteredAccel.z = ((float)accel.z) / 1000.0f;
@@ -31,8 +27,7 @@ void FlightContextUpdateIMUData(FlightContext *pContext, Vec3 accel, Vec3 gyro)
     pContext->imuUnFilteredGyro.z = ((float)gyro.z) / 1000.0f;
 }
 
-void FlightContextUpdateFlightMode(FlightContext *pContext, uint32_t flightMode)
-{
+void FlightContextUpdateFlightMode (FlightContext* pContext, uint32_t flightMode) {
     pContext->flightMode = flightMode;
 }
 // void FlightContextUpdateCurrentVelocities(FlightContext *pContext, Vec3 vel, Vec3 angVel)

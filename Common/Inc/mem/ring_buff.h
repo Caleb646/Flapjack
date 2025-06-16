@@ -35,28 +35,28 @@
 #ifndef RING_BUFF_H
 #define RING_BUFF_H
 
-#include <stdint.h>
 #include "common.h"
+#include <stdint.h>
 
 /**
  * \brief           Enable buffer structure pointer parameter as volatile
  * To use this feature, uncomment keyword below
  */
-#define RINGBUFF_VOLATILE                       volatile
+#define RINGBUFF_VOLATILE  volatile
 
 /**
  * \brief           Adds 2 magic words to make sure if memory is corrupted
  *                  application can detect wrong data pointer and maximum size
  */
-#define RINGBUFF_USE_MAGIC                      1
+#define RINGBUFF_USE_MAGIC 1
 
 /**
  * \brief           Event type for buffer operations
  */
 typedef enum {
-    RINGBUFF_EVT_READ,                          /*!< Read event */
-    RINGBUFF_EVT_WRITE,                         /*!< Write event */
-    RINGBUFF_EVT_RESET,                         /*!< Reset event */
+    RINGBUFF_EVT_READ,  /*!< Read event */
+    RINGBUFF_EVT_WRITE, /*!< Write event */
+    RINGBUFF_EVT_RESET, /*!< Reset event */
 } ringbuff_evt_type_t;
 
 /**
@@ -70,21 +70,21 @@ typedef struct RingBuff_ RingBuff;
  * \param[in]       evt: Event type
  * \param[in]       bp: Number of bytes written or read (when used), depends on event type
  */
-typedef void (*ringbuff_evt_fn)(RINGBUFF_VOLATILE RingBuff* buff, ringbuff_evt_type_t evt, size_t bp);
+typedef void (*ringbuff_evt_fn) (RINGBUFF_VOLATILE RingBuff* buff, ringbuff_evt_type_t evt, size_t bp);
 
 /**
  * \brief           Buffer structure
  */
 typedef struct RingBuff_ {
-    uint32_t magic1;                            
-    uint8_t* buff;                              /*!< Pointer to buffer data.
-                                                    Buffer is considered initialized when `buff != NULL` and `size > 0` */
-    size_t size;                                /*!< Size of buffer data. Size of actual buffer is `1` byte less than value holds */
-    size_t r;                                   /*!< Next read pointer. Buffer is considered empty when `r == w` and full when `w == r - 1` */
-    size_t w;                                   /*!< Next write pointer. Buffer is considered empty when `r == w` and full when `w == r - 1` */
-    ringbuff_evt_fn evt_fn;                     /*!< Pointer to event callback function */
+    uint32_t magic1;
+    uint8_t* buff; /*!< Pointer to buffer data.
+                       Buffer is considered initialized when `buff != NULL` and `size > 0` */
+    size_t size; /*!< Size of buffer data. Size of actual buffer is `1` byte less than value holds */
+    size_t r; /*!< Next read pointer. Buffer is considered empty when `r == w` and full when `w == r - 1` */
+    size_t w; /*!< Next write pointer. Buffer is considered empty when `r == w` and full when `w == r - 1` */
+    ringbuff_evt_fn evt_fn; /*!< Pointer to event callback function */
     uint32_t magic2;
-    // added paddding to ensure that 
+    // added paddding to ensure that
     // uint8_t* buff starts at a 4 byte aligned address
     uint8_t padding_[4];
 } RingBuff;
@@ -96,33 +96,32 @@ typedef struct RingBuff_ {
 
 // #pragma message "content of AAA: " err_msg(AAA)
 
-STATIC_ASSERT(sizeof(RingBuff) == 32, "RingBuff is not 32 bytes");
+STATIC_ASSERT (sizeof (RingBuff) == 32, "RingBuff is not 32 bytes");
 
-RINGBUFF_VOLATILE RingBuff*     RingBuffCreate(void* buffdata, size_t size);
-STATUS_TYPE                     RingBuffIsValid(RINGBUFF_VOLATILE RingBuff* buff);
-void                            RingBuffFree(RINGBUFF_VOLATILE RingBuff* buff);
-void                            RingBuffReset(RINGBUFF_VOLATILE RingBuff* buff);
-void                            RingBuffSetEvtFn(RINGBUFF_VOLATILE RingBuff* buff, ringbuff_evt_fn fn);
+RINGBUFF_VOLATILE RingBuff* RingBuffCreate (void* buffdata, size_t size);
+STATUS_TYPE RingBuffIsValid (RINGBUFF_VOLATILE RingBuff* buff);
+void RingBuffFree (RINGBUFF_VOLATILE RingBuff* buff);
+void RingBuffReset (RINGBUFF_VOLATILE RingBuff* buff);
+void RingBuffSetEvtFn (RINGBUFF_VOLATILE RingBuff* buff, ringbuff_evt_fn fn);
 
 /* Read/Write functions */
-size_t      RingBuffWrite(RINGBUFF_VOLATILE RingBuff* buff, const void* data, size_t btw);
-size_t      RingBuffRead(RINGBUFF_VOLATILE RingBuff* buff, void* data, size_t btr);
-size_t      RingBuffPeek(RINGBUFF_VOLATILE RingBuff* buff, size_t skip_count, void* data, size_t btp);
+size_t RingBuffWrite (RINGBUFF_VOLATILE RingBuff* buff, const void* data, size_t btw);
+size_t RingBuffRead (RINGBUFF_VOLATILE RingBuff* buff, void* data, size_t btr);
+size_t RingBuffPeek (RINGBUFF_VOLATILE RingBuff* buff, size_t skip_count, void* data, size_t btp);
 
 /* Buffer size information */
-size_t      RingBuffGetFree(RINGBUFF_VOLATILE RingBuff* buff);
-size_t      RingBuffGetFull(RINGBUFF_VOLATILE RingBuff* buff);
+size_t RingBuffGetFree (RINGBUFF_VOLATILE RingBuff* buff);
+size_t RingBuffGetFull (RINGBUFF_VOLATILE RingBuff* buff);
 
 /* Read data block management */
-void *      RingBuffGetLinearBlockReadAddress(RINGBUFF_VOLATILE RingBuff* buff);
-size_t      RingBuffGetLinearBlockReadLength(RINGBUFF_VOLATILE RingBuff* buff);
-size_t      RingBuffSkip(RINGBUFF_VOLATILE RingBuff* buff, size_t len);
+void* RingBuffGetLinearBlockReadAddress (RINGBUFF_VOLATILE RingBuff* buff);
+size_t RingBuffGetLinearBlockReadLength (RINGBUFF_VOLATILE RingBuff* buff);
+size_t RingBuffSkip (RINGBUFF_VOLATILE RingBuff* buff, size_t len);
 
 /* Write data block management */
-void *      RingBuffGetLinearBlockWriteAddress(RINGBUFF_VOLATILE RingBuff* buff);
-size_t      RingBuffGetLinearBlockWriteLength(RINGBUFF_VOLATILE RingBuff* buff);
-size_t      RingBuffAdvance(RINGBUFF_VOLATILE RingBuff* buff, size_t len);
-
+void* RingBuffGetLinearBlockWriteAddress (RINGBUFF_VOLATILE RingBuff* buff);
+size_t RingBuffGetLinearBlockWriteLength (RINGBUFF_VOLATILE RingBuff* buff);
+size_t RingBuffAdvance (RINGBUFF_VOLATILE RingBuff* buff, size_t len);
 
 
 #endif // RING_BUFF_H

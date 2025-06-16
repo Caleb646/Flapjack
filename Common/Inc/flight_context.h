@@ -1,8 +1,8 @@
 #ifndef FLIGHT_CONTEXT_H
 #define FLIGHT_CONTEXT_H
 
-#include <stdint.h>
 #include "common.h"
+#include <stdint.h>
 
 #define FLIGHT_CONTEXT_MAX_THROTTLE 1.0f
 #define FLIGHT_CONTEXT_MIN_THROTTLE 0.0f
@@ -36,11 +36,11 @@ typedef struct FlightContext__ {
     FlightMode flightMode;
 } FlightContext;
 
-void FlightContextUpdateCurrentAttitude(FlightContext *pContext, Vec3f attitude);
-void FlightContextUpdateTargetAttitudeThrottle(FlightContext *pContext, Vec3f attitude, float throttle);
-void FlightContextUpdatePIDAttitude(FlightContext *pContext, Vec3f attitude);
-void FlightContextUpdateIMUData(FlightContext *pContext, Vec3 accel, Vec3 gyro);
-void FlightContextUpdateFlightMode(FlightContext *pContext, uint32_t flightMode);
+void FlightContextUpdateCurrentAttitude (FlightContext* pContext, Vec3f attitude);
+void FlightContextUpdateTargetAttitudeThrottle (FlightContext* pContext, Vec3f attitude, float throttle);
+void FlightContextUpdatePIDAttitude (FlightContext* pContext, Vec3f attitude);
+void FlightContextUpdateIMUData (FlightContext* pContext, Vec3 accel, Vec3 gyro);
+void FlightContextUpdateFlightMode (FlightContext* pContext, uint32_t flightMode);
 // void FlightContextUpdateCurrentVelocities(FlightContext *pContext, Vec3 vel, Vec3 angVel);
 // void FlightContextUpdateTargetVelocities(FlightContext *pContext, Vec3 vel, Vec3 angVel);
 

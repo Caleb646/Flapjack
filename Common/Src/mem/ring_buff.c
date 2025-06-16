@@ -32,17 +32,25 @@
  * Author:          Tilen MAJERLE <tilen@majerle.eu>
  * Version:         v1.3.1
  */
-#include <string.h>
 #include "mem/ring_buff.h"
+#include <string.h>
 
 /* Memory set and copy functions */
-#define BUF_MEMSET                      memset
-#define BUF_MEMCPY                      memcpy
+#define BUF_MEMSET memset
+#define BUF_MEMCPY memcpy
 
-#define BUF_IS_VALID(b)                 ((b) != NULL && (b)->magic1 == 0xDEADBEEF && (b)->magic2 == ~0xDEADBEEF && (b)->buff != NULL && (b)->size > 0)
-#define BUF_MIN(x, y)                   ((x) < (y) ? (x) : (y))
-#define BUF_MAX(x, y)                   ((x) > (y) ? (x) : (y))
-#define BUF_SEND_EVT(b, type, bp)       do { if ((b)->evt_fn != NULL) { (b)->evt_fn((b), (type), (bp)); } } while (0)
+#define BUF_IS_VALID(b)                         \
+    (                                           \
+    (b) != NULL && (b)->magic1 == 0xDEADBEEF && \
+    (b)->magic2 == ~0xDEADBEEF && (b)->buff != NULL && (b)->size > 0)
+#define BUF_MIN(x, y) ((x) < (y) ? (x) : (y))
+#define BUF_MAX(x, y) ((x) > (y) ? (x) : (y))
+#define BUF_SEND_EVT(b, type, bp)            \
+    do {                                     \
+        if ((b)->evt_fn != NULL) {           \
+            (b)->evt_fn ((b), (type), (bp)); \
+        }                                    \
+    } while (0)
 
 /**
  * \brief           Initialize buffer handle to default values with size and buffer data array
@@ -51,16 +59,16 @@
  *                      Maximum number of bytes buffer can hold is `size - 1`
  * \return          `1` on success, `0` otherwise
  */
-RINGBUFF_VOLATILE RingBuff* RingBuffCreate(void* pBuff, size_t size) {
-    if (pBuff == NULL || size == 0 || size < (sizeof(RingBuff) + 1)) {
+RINGBUFF_VOLATILE RingBuff* RingBuffCreate (void* pBuff, size_t size) {
+    if (pBuff == NULL || size == 0 || size < (sizeof (RingBuff) + 1)) {
         return NULL;
     }
 
-    RINGBUFF_VOLATILE RingBuff *pRingBuf = (RingBuff*)pBuff;
-    BUF_MEMSET((void *)pRingBuf, 0x00, sizeof(RingBuff));
+    RINGBUFF_VOLATILE RingBuff* pRingBuf = (RingBuff*)pBuff;
+    BUF_MEMSET ((void*)pRingBuf, 0x00, sizeof (RingBuff));
 
-    pRingBuf->size = size - sizeof(RingBuff);
-    pRingBuf->buff = ((uint8_t*) ((uintptr_t)pBuff) + sizeof(RingBuff));
+    pRingBuf->size = size - sizeof (RingBuff);
+    pRingBuf->buff = ((uint8_t*)((uintptr_t)pBuff) + sizeof (RingBuff));
 
     pRingBuf->magic1 = 0xDEADBEEF;
     pRingBuf->magic2 = ~0xDEADBEEF;
@@ -73,8 +81,8 @@ RINGBUFF_VOLATILE RingBuff* RingBuffCreate(void* pBuff, size_t size) {
  * \param[in]       buff: Buffer handle
  * \return          `1` if ready, `0` otherwise
  */
-STATUS_TYPE RingBuffIsValid(RINGBUFF_VOLATILE RingBuff* buff) {
-    return BUF_IS_VALID(buff);
+STATUS_TYPE RingBuffIsValid (RINGBUFF_VOLATILE RingBuff* buff) {
+    return BUF_IS_VALID (buff);
 }
 
 /**
@@ -83,9 +91,8 @@ STATUS_TYPE RingBuffIsValid(RINGBUFF_VOLATILE RingBuff* buff) {
  *                  it just sets buffer handle to `NULL`
  * \param[in]       buff: Buffer handle
  */
-void
-RingBuffFree(RINGBUFF_VOLATILE RingBuff* buff) {
-    if (BUF_IS_VALID(buff)) {
+void RingBuffFree (RINGBUFF_VOLATILE RingBuff* buff) {
+    if (BUF_IS_VALID (buff)) {
         buff->buff = NULL;
     }
 }
@@ -95,49 +102,48 @@ RingBuffFree(RINGBUFF_VOLATILE RingBuff* buff) {
  * \param[in]       buff: Buffer handle
  * \param[in]       evt_fn: Callback function
  */
-void
-RingBuffSetEvtFn(RINGBUFF_VOLATILE RingBuff* buff, ringbuff_evt_fn evt_fn) {
-    if (BUF_IS_VALID(buff)) {
+void RingBuffSetEvtFn (RINGBUFF_VOLATILE RingBuff* buff, ringbuff_evt_fn evt_fn) {
+    if (BUF_IS_VALID (buff)) {
         buff->evt_fn = evt_fn;
     }
 }
 
 /**
  * \brief           Write data to buffer.
- * Copies data from `data` array to buffer and marks buffer as full for maximum `btw` number of bytes
+ * Copies data from `data` array to buffer and marks buffer as full for
+ * maximum `btw` number of bytes
  *
  * \param[in]       buff: Buffer handle
  * \param[in]       data: Pointer to data to write into buffer
  * \param[in]       btw: Number of bytes to write
  * \return          Number of bytes written to buffer.
- *                      When returned value is less than `btw`, there was no enough memory available
- *                      to copy full data array
+ *                      When returned value is less than `btw`, there was
+ * no enough memory available to copy full data array
  */
-size_t
-RingBuffWrite(RINGBUFF_VOLATILE RingBuff* buff, const void* data, size_t btw) {
+size_t RingBuffWrite (RINGBUFF_VOLATILE RingBuff* buff, const void* data, size_t btw) {
     size_t tocopy, free;
     const uint8_t* d = data;
 
-    if (!BUF_IS_VALID(buff) || data == NULL || btw == 0) {
+    if (!BUF_IS_VALID (buff) || data == NULL || btw == 0) {
         return 0;
     }
 
     /* Calculate maximum number of bytes available to write */
-    free = RingBuffGetFree(buff);
-    btw = BUF_MIN(free, btw);
+    free = RingBuffGetFree (buff);
+    btw  = BUF_MIN (free, btw);
     if (btw == 0) {
         return 0;
     }
 
     /* Step 1: Write data to linear part of buffer */
-    tocopy = BUF_MIN(buff->size - buff->w, btw);
-    BUF_MEMCPY(&buff->buff[buff->w], d, tocopy);
+    tocopy = BUF_MIN (buff->size - buff->w, btw);
+    BUF_MEMCPY (&buff->buff[buff->w], d, tocopy);
     buff->w += tocopy;
     btw -= tocopy;
 
     /* Step 2: Write data to beginning of buffer (overflow part) */
     if (btw > 0) {
-        BUF_MEMCPY(buff->buff, &d[tocopy], btw);
+        BUF_MEMCPY (buff->buff, &d[tocopy], btw);
         buff->w = btw;
     }
 
@@ -145,7 +151,7 @@ RingBuffWrite(RINGBUFF_VOLATILE RingBuff* buff, const void* data, size_t btw) {
     if (buff->w >= buff->size) {
         buff->w = 0;
     }
-    BUF_SEND_EVT(buff, RINGBUFF_EVT_WRITE, tocopy + btw);
+    BUF_SEND_EVT (buff, RINGBUFF_EVT_WRITE, tocopy + btw);
     return tocopy + btw;
 }
 
@@ -158,31 +164,30 @@ RingBuffWrite(RINGBUFF_VOLATILE RingBuff* buff, const void* data, size_t btw) {
  * \param[in]       btr: Number of bytes to read
  * \return          Number of bytes read and copied to data array
  */
-size_t
-RingBuffRead(RINGBUFF_VOLATILE RingBuff* buff, void* data, size_t btr) {
+size_t RingBuffRead (RINGBUFF_VOLATILE RingBuff* buff, void* data, size_t btr) {
     size_t tocopy, full;
-    uint8_t *d = data;
+    uint8_t* d = data;
 
-    if (!BUF_IS_VALID(buff) || data == NULL || btr == 0) {
+    if (!BUF_IS_VALID (buff) || data == NULL || btr == 0) {
         return 0;
     }
 
     /* Calculate maximum number of bytes available to read */
-    full = RingBuffGetFull(buff);
-    btr = BUF_MIN(full, btr);
+    full = RingBuffGetFull (buff);
+    btr  = BUF_MIN (full, btr);
     if (btr == 0) {
         return 0;
     }
 
     /* Step 1: Read data from linear part of buffer */
-    tocopy = BUF_MIN(buff->size - buff->r, btr);
-    BUF_MEMCPY(d, &buff->buff[buff->r], tocopy);
+    tocopy = BUF_MIN (buff->size - buff->r, btr);
+    BUF_MEMCPY (d, &buff->buff[buff->r], tocopy);
     buff->r += tocopy;
     btr -= tocopy;
 
     /* Step 2: Read data from beginning of buffer (overflow part) */
     if (btr > 0) {
-        BUF_MEMCPY(&d[tocopy], buff->buff, btr);
+        BUF_MEMCPY (&d[tocopy], buff->buff, btr);
         buff->r = btr;
     }
 
@@ -190,7 +195,7 @@ RingBuffRead(RINGBUFF_VOLATILE RingBuff* buff, void* data, size_t btr) {
     if (buff->r >= buff->size) {
         buff->r = 0;
     }
-    BUF_SEND_EVT(buff, RINGBUFF_EVT_READ, tocopy + btr);
+    BUF_SEND_EVT (buff, RINGBUFF_EVT_READ, tocopy + btr);
     return tocopy + btr;
 }
 
@@ -202,19 +207,18 @@ RingBuffRead(RINGBUFF_VOLATILE RingBuff* buff, void* data, size_t btr) {
  * \param[in]       btp: Number of bytes to peek
  * \return          Number of bytes peeked and written to output array
  */
-size_t
-RingBuffPeek(RINGBUFF_VOLATILE RingBuff* buff, size_t skip_count, void* data, size_t btp) {
+size_t RingBuffPeek (RINGBUFF_VOLATILE RingBuff* buff, size_t skip_count, void* data, size_t btp) {
     size_t full, tocopy, r;
-    uint8_t *d = data;
+    uint8_t* d = data;
 
-    if (!BUF_IS_VALID(buff) || data == NULL || btp == 0) {
+    if (!BUF_IS_VALID (buff) || data == NULL || btp == 0) {
         return 0;
     }
 
     r = buff->r;
 
     /* Calculate maximum number of bytes available to read */
-    full = RingBuffGetFull(buff);
+    full = RingBuffGetFull (buff);
 
     /* Skip beginning of buffer */
     if (skip_count >= full) {
@@ -227,19 +231,19 @@ RingBuffPeek(RINGBUFF_VOLATILE RingBuff* buff, size_t skip_count, void* data, si
     }
 
     /* Check maximum number of bytes available to read after skip */
-    btp = BUF_MIN(full, btp);
+    btp = BUF_MIN (full, btp);
     if (btp == 0) {
         return 0;
     }
 
     /* Step 1: Read data from linear part of buffer */
-    tocopy = BUF_MIN(buff->size - r, btp);
-    BUF_MEMCPY(d, &buff->buff[r], tocopy);
+    tocopy = BUF_MIN (buff->size - r, btp);
+    BUF_MEMCPY (d, &buff->buff[r], tocopy);
     btp -= tocopy;
 
     /* Step 2: Read data from beginning of buffer (overflow part) */
     if (btp > 0) {
-        BUF_MEMCPY(&d[tocopy], buff->buff, btp);
+        BUF_MEMCPY (&d[tocopy], buff->buff, btp);
     }
     return tocopy + btp;
 }
@@ -249,11 +253,10 @@ RingBuffPeek(RINGBUFF_VOLATILE RingBuff* buff, size_t skip_count, void* data, si
  * \param[in]       buff: Buffer handle
  * \return          Number of free bytes in memory
  */
-size_t
-RingBuffGetFree(RINGBUFF_VOLATILE RingBuff* buff) {
+size_t RingBuffGetFree (RINGBUFF_VOLATILE RingBuff* buff) {
     size_t size, w, r;
 
-    if (!BUF_IS_VALID(buff)) {
+    if (!BUF_IS_VALID (buff)) {
         return 0;
     }
 
@@ -277,11 +280,10 @@ RingBuffGetFree(RINGBUFF_VOLATILE RingBuff* buff) {
  * \param[in]       buff: Buffer handle
  * \return          Number of bytes ready to be read
  */
-size_t
-RingBuffGetFull(RINGBUFF_VOLATILE RingBuff* buff) {
+size_t RingBuffGetFull (RINGBUFF_VOLATILE RingBuff* buff) {
     size_t w, r, size;
 
-    if (!BUF_IS_VALID(buff)) {
+    if (!BUF_IS_VALID (buff)) {
         return 0;
     }
 
@@ -299,15 +301,14 @@ RingBuffGetFull(RINGBUFF_VOLATILE RingBuff* buff) {
 }
 
 /**
- * \brief           Resets buffer to default values. Buffer size is not modified
- * \param[in]       buff: Buffer handle
+ * \brief           Resets buffer to default values. Buffer size is not
+ * modified \param[in]       buff: Buffer handle
  */
-void
-RingBuffReset(RINGBUFF_VOLATILE RingBuff* buff) {
-    if (BUF_IS_VALID(buff)) {
+void RingBuffReset (RINGBUFF_VOLATILE RingBuff* buff) {
+    if (BUF_IS_VALID (buff)) {
         buff->w = 0;
         buff->r = 0;
-        BUF_SEND_EVT(buff, RINGBUFF_EVT_RESET, 0);
+        BUF_SEND_EVT (buff, RINGBUFF_EVT_RESET, 0);
     }
 }
 
@@ -316,9 +317,8 @@ RingBuffReset(RINGBUFF_VOLATILE RingBuff* buff) {
  * \param[in]       buff: Buffer handle
  * \return          Linear buffer start address
  */
-void *
-RingBuffGetLinearBlockReadAddress(RINGBUFF_VOLATILE RingBuff* buff) {
-    if (!BUF_IS_VALID(buff)) {
+void* RingBuffGetLinearBlockReadAddress (RINGBUFF_VOLATILE RingBuff* buff) {
+    if (!BUF_IS_VALID (buff)) {
         return NULL;
     }
     return &buff->buff[buff->r];
@@ -329,11 +329,10 @@ RingBuffGetLinearBlockReadAddress(RINGBUFF_VOLATILE RingBuff* buff) {
  * \param[in]       buff: Buffer handle
  * \return          Linear buffer size in units of bytes for read operation
  */
-size_t
-RingBuffGetLinearBlockReadLength(RINGBUFF_VOLATILE RingBuff* buff) {
+size_t RingBuffGetLinearBlockReadLength (RINGBUFF_VOLATILE RingBuff* buff) {
     size_t w, r, len;
 
-    if (!BUF_IS_VALID(buff)) {
+    if (!BUF_IS_VALID (buff)) {
         return 0;
     }
 
@@ -359,21 +358,20 @@ RingBuffGetLinearBlockReadLength(RINGBUFF_VOLATILE RingBuff* buff) {
  * \param[in]       len: Number of bytes to skip and mark as read
  * \return          Number of bytes skipped
  */
-size_t
-RingBuffSkip(RINGBUFF_VOLATILE RingBuff* buff, size_t len) {
+size_t RingBuffSkip (RINGBUFF_VOLATILE RingBuff* buff, size_t len) {
     size_t full;
 
-    if (!BUF_IS_VALID(buff) || len == 0) {
+    if (!BUF_IS_VALID (buff) || len == 0) {
         return 0;
     }
 
-    full = RingBuffGetFull(buff);             /* Get buffer used length */
-    len = BUF_MIN(len, full);                   /* Calculate max skip */
-    buff->r += len;                             /* Advance read pointer */
-    if (buff->r >= buff->size) {                /* Subtract possible overflow */
+    full = RingBuffGetFull (buff); /* Get buffer used length */
+    len  = BUF_MIN (len, full);    /* Calculate max skip */
+    buff->r += len;                /* Advance read pointer */
+    if (buff->r >= buff->size) {   /* Subtract possible overflow */
         buff->r -= buff->size;
     }
-    BUF_SEND_EVT(buff, RINGBUFF_EVT_READ, len);
+    BUF_SEND_EVT (buff, RINGBUFF_EVT_READ, len);
     return len;
 }
 
@@ -382,9 +380,8 @@ RingBuffSkip(RINGBUFF_VOLATILE RingBuff* buff, size_t len) {
  * \param[in]       buff: Buffer handle
  * \return          Linear buffer start address
  */
-void *
-RingBuffGetLinearBlockWriteAddress(RINGBUFF_VOLATILE RingBuff* buff) {
-    if (!BUF_IS_VALID(buff)) {
+void* RingBuffGetLinearBlockWriteAddress (RINGBUFF_VOLATILE RingBuff* buff) {
+    if (!BUF_IS_VALID (buff)) {
         return NULL;
     }
     return &buff->buff[buff->w];
@@ -395,11 +392,10 @@ RingBuffGetLinearBlockWriteAddress(RINGBUFF_VOLATILE RingBuff* buff) {
  * \param[in]       buff: Buffer handle
  * \return          Linear buffer size in units of bytes for write operation
  */
-size_t
-RingBuffGetLinearBlockWriteLength(RINGBUFF_VOLATILE RingBuff* buff) {
+size_t RingBuffGetLinearBlockWriteLength (RINGBUFF_VOLATILE RingBuff* buff) {
     size_t w, r, len;
 
-    if (!BUF_IS_VALID(buff)) {
+    if (!BUF_IS_VALID (buff)) {
         return 0;
     }
 
@@ -437,20 +433,19 @@ RingBuffGetLinearBlockWriteLength(RINGBUFF_VOLATILE RingBuff* buff) {
  * \param[in]       len: Number of bytes to advance
  * \return          Number of bytes advanced for write operation
  */
-size_t
-RingBuffAdvance(RINGBUFF_VOLATILE RingBuff* buff, size_t len) {
+size_t RingBuffAdvance (RINGBUFF_VOLATILE RingBuff* buff, size_t len) {
     size_t free;
 
-    if (!BUF_IS_VALID(buff) || len == 0) {
+    if (!BUF_IS_VALID (buff) || len == 0) {
         return 0;
     }
 
-    free = RingBuffGetFree(buff);             /* Get buffer free length */
-    len = BUF_MIN(len, free);                   /* Calculate max advance */
-    buff->w += len;                             /* Advance write pointer */
-    if (buff->w >= buff->size) {                /* Subtract possible overflow */
+    free = RingBuffGetFree (buff); /* Get buffer free length */
+    len  = BUF_MIN (len, free);    /* Calculate max advance */
+    buff->w += len;                /* Advance write pointer */
+    if (buff->w >= buff->size) {   /* Subtract possible overflow */
         buff->w -= buff->size;
     }
-    BUF_SEND_EVT(buff, RINGBUFF_EVT_WRITE, len);
+    BUF_SEND_EVT (buff, RINGBUFF_EVT_WRITE, len);
     return len;
 }

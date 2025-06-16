@@ -1,10 +1,10 @@
 #ifndef MOTION_CONTROL_ACTUATORS_H
 #define MOTION_CONTROL_ACTUATORS_H
 
-#include <stdint.h>
-#include "stm32h7xx.h"
 #include "FreeRTOS.h"
+#include "stm32h7xx.h"
 #include "task.h"
+#include <stdint.h>
 
 #include "common.h"
 #include "flight_context.h"
@@ -19,44 +19,42 @@ typedef struct {
     uint32_t channel6;
 } RadioPWMChannels;
 
-STATUS_TYPE UpdateTargetAttitudeThrottle(
-    Vec3f maxAttitude, 
-    RadioPWMChannels radio, 
-    Vec3f *pOutputTargetAttitude, 
-    float *pOutputThrottle
-);
+STATUS_TYPE UpdateTargetAttitudeThrottle (
+Vec3f maxAttitude,
+RadioPWMChannels radio,
+Vec3f* pOutputTargetAttitude,
+float* pOutputThrottle);
 
 /*
-* PID 
-*/
-typedef struct
-{
-	float rollP, rollI, rollD;
-	float pitchP, pitchI, pitchD;
-	float yawP, yawI, yawD;
+ * PID
+ */
+typedef struct {
+    float rollP, rollI, rollD;
+    float pitchP, pitchI, pitchD;
+    float yawP, yawI, yawD;
     float integralLimit;
     Vec3f prevError;
     Vec3f prevIntegral;
 } PIDContext;
 
-STATUS_TYPE PIDUpdateAttitude(
-    PIDContext *pidContext,
-    Vec3f imuGyro, // degrees per second
-    Vec3f currentAttitude, // degrees
-    Vec3f targetAttitude, // degrees
-    Vec3f maxAttitude, // degrees
-    float dt, 
-    Vec3f *pOutputPIDAttitude // degrees
+STATUS_TYPE PIDUpdateAttitude (
+PIDContext* pidContext,
+Vec3f imuGyro,         // degrees per second
+Vec3f currentAttitude, // degrees
+Vec3f targetAttitude,  // degrees
+Vec3f maxAttitude,     // degrees
+float dt,
+Vec3f* pOutputPIDAttitude // degrees
 );
 
-STATUS_TYPE PIDInit(PIDContext *pContext);
+STATUS_TYPE PIDInit (PIDContext* pContext);
 
 /*
-* PWM & Motion Control
-*/
+ * PWM & Motion Control
+ */
 typedef struct {
-    TIM_HandleTypeDef *pTimerHandle;
-    TIM_TypeDef *pTimerRegisters;
+    TIM_HandleTypeDef* pTimerHandle;
+    TIM_TypeDef* pTimerRegisters;
     uint32_t timerChannelID;
     uint32_t usTargetDutyCycle;
 } PWMHandle;
@@ -94,11 +92,9 @@ typedef struct {
     Vec3 right;
 } AxisMap;
 
-STATUS_TYPE PID2PWMMixer(Vec3f pidAttitude, float targetThrottle);
-STATUS_TYPE PWMSend(PWMHandle *pPWM);
-STATUS_TYPE ActuatorsInit(
-    PWMHandle leftMotorInter, PWMHandle leftServoInter
-);
+STATUS_TYPE PID2PWMMixer (Vec3f pidAttitude, float targetThrottle);
+STATUS_TYPE PWMSend (PWMHandle* pPWM);
+STATUS_TYPE ActuatorsInit (PWMHandle leftMotorInter, PWMHandle leftServoInter);
 
 // void MotionControlUpdatePWM(
 //     AxisMap axisConf, Vec3 mmVelSteps, Vec3 mmAngVelSteps, void *devs, uint32_t nDevs
