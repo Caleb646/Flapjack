@@ -1,21 +1,27 @@
 {
     "configurations": [
         {
-            "name": "Win32",
+            "name": "Linux WSL DEBUG",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/CM4",
+                "${workspaceFolder}/CM7",
+                "${workspaceFolder}/Drivers",
+                "${workspaceFolder}/Middlewares"
             ],
             "defines": [
-                "_DEBUG",
-                "UNICODE",
-                "_UNICODE"
-            ],
-            "windowsSdkVersion": "10.0.22621.0",
-            "compilerPath": "cl.exe",
+                "DEBUG",
+                "CORE_CM4",
+                "CORE_CM7",
+                "USE_HAL_DRIVER",
+                "STM32H747xx",
+                "USE_PWR_DIRECT_SMPS_SUPPLY"
+        ],
+            "compilerPath": "/usr/bin/arm-none-eabi-gcc",
             "cStandard": "c17",
-            "cppStandard": "c++17",
-            "intelliSenseMode": "windows-msvc-x64",
-            "configurationProvider": "ms-vscode.makefile-tools"
+            "cppStandard": "gnu++17",
+            "intelliSenseMode": "gcc-arm",
+            "configurationProvider": "none"
         }
     ],
     "version": 4
