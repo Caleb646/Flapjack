@@ -1879,4 +1879,72 @@ in INT_STATUS_INT1/2. */
 #define INITIAL_LOW_VALUE             INT16_C(32767)
 #define INITIAL_HIGH_VALUE            INT16_C(-32768)
 
+typedef struct
+{
+    /*! Map interrupt output to either INT1 or INT2 or IBI
+     *  Value   Name        Description
+     *   00   DISABLED   Interrupt disabled
+     *   01   MAP_INT1     Mapped to INT1
+     *   10   MAP_INT2     Mapped to INT2
+     *   11   MAP_IBI     Mapped to I3C IBI
+     */
+
+    /*! Maps no-motion output to either INT1 or INT2 or IBI */
+    uint8_t no_motion_out;
+
+    /*! Maps any-motion output to either INT1 or INT2 or IBI */
+    uint8_t any_motion_out;
+
+    /*! Maps flat output to either INT1 or INT2 or IBI */
+    uint8_t flat_out;
+
+    /*! Maps orientation output to either INT1 or INT2 or IBI */
+    uint8_t orientation_out;
+
+    /*! Maps step detector output to either INT1 or INT2 or IBI */
+    uint8_t step_detector_out;
+
+    /*! Maps step counter output to either INT1 or INT2 or IBI */
+    uint8_t step_counter_out;
+
+    /*! Maps significant motion output to either INT1 or INT2 or IBI */
+    uint8_t sig_motion_out;
+
+    /*! Maps tilt output to either INT1 or INT2 or IBI */
+    uint8_t tilt_out;
+
+    /*! Maps tap output to either INT1 or INT2 or IBI */
+    uint8_t tap_out;
+
+    /*! Maps i3c output to either INT1 or INT2 or IBI  */
+    uint8_t i3c_out;
+
+    /*! Maps feature engine's error or status change to either INT1 or INT2 or IBI */
+    uint8_t err_status;
+
+    /*! Maps temperature data ready interrupt to either INT1 or INT2 or IBI */
+    uint8_t temp_drdy_int;
+
+    /*! Maps gyro data ready interrupt to either INT1 or INT2 or IBI */
+    uint8_t gyr_drdy_int;
+
+    /*! Maps accel data ready interrupt to either INT1 or INT2 or IBI */
+    uint8_t acc_drdy_int;
+
+    /*! Maps FIFO watermark interrupt to either INT1 or INT2 or IBI */
+    uint8_t fifo_watermark_int;
+
+    /*! Maps FIFO full interrupt to either INT1 or INT2 or IBI */
+    uint8_t fifo_full_int;
+} bmi3_map_int;
+
+typedef enum {
+    BMI3_INT_NONE,
+    BMI3_INT1,
+    BMI3_INT2,
+    BMI3_I3C_INT,
+    BMI3_INT_PIN_MAX
+} bmi3_hw_int_pin;
+
+
 #endif // SENSORS_BMIXXX_H
