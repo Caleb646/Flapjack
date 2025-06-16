@@ -210,7 +210,7 @@ int main(void)
     MX_TIM8_Init();
     MX_TIM13_Init();
 
-    if(IS_STATUS_FAILURE(SyncInit()) || IS_STATUS_FAILURE(LoggerInit(&huart1)))
+    if(SyncInit() != eSTATUS_SUCCESS || LoggerInit(&huart1) != eSTATUS_SUCCESS)
     {
         CriticalErrorHandler();
     }
@@ -251,7 +251,7 @@ int main(void)
         IMU_GYRO_ODR_100
         );
 
-    if(IS_STATUS_FAILURE(imuStatus))
+    if(imuStatus != eSTATUS_SUCCESS)
     {
         LOG_ERROR("CM7 failed to init IMU");
     }
