@@ -328,12 +328,12 @@ STATUS_TYPE LoggerInit (UART_HandleTypeDef* pUART_) {
  81004a0:	4a0b      	ldr	r2, [pc, #44]	@ (81004d0 <LoggerInit+0x70>)
  81004a2:	6013      	str	r3, [r2, #0]
 
-    if (SyncRegisterHandler (LoggerSyncUARTTaskHandler, SYNC_TASKID_UART_OUT) != 1) {
+    if (SyncRegisterHandler (LoggerSyncUARTTaskHandler, SYNC_TASKID_UART_OUT) != eSTATUS_SUCCESS) {
  81004a4:	2100      	movs	r1, #0
  81004a6:	480b      	ldr	r0, [pc, #44]	@ (81004d4 <LoggerInit+0x74>)
  81004a8:	f000 fb2c 	bl	8100b04 <SyncRegisterHandler>
  81004ac:	4603      	mov	r3, r0
- 81004ae:	2b01      	cmp	r3, #1
+ 81004ae:	2b00      	cmp	r3, #0
  81004b0:	d001      	beq.n	81004b6 <LoggerInit+0x56>
         return eSTATUS_FAILURE;
  81004b2:	2301      	movs	r3, #1
@@ -424,6 +424,7 @@ static STATUS_TYPE LoggerSyncUARTTaskHandler (void) {
     }
     return eSTATUS_SUCCESS;
  8100540:	2300      	movs	r3, #0
+}
  8100542:	4618      	mov	r0, r3
  8100544:	bd80      	pop	{r7, pc}
  8100546:	bf00      	nop
@@ -1608,15 +1609,15 @@ int main(void)
 //     NULL                              /* Task handle */
 // );
 
-    if(SyncInit() != 1 || LoggerInit(NULL) != 1)
+    if(SyncInit() != eSTATUS_SUCCESS || LoggerInit(NULL) != eSTATUS_SUCCESS)
  8100c1e:	f7ff ff65 	bl	8100aec <SyncInit>
  8100c22:	4603      	mov	r3, r0
- 8100c24:	2b01      	cmp	r3, #1
+ 8100c24:	2b00      	cmp	r3, #0
  8100c26:	d105      	bne.n	8100c34 <main+0x9c>
  8100c28:	2000      	movs	r0, #0
  8100c2a:	f7ff fc19 	bl	8100460 <LoggerInit>
  8100c2e:	4603      	mov	r3, r0
- 8100c30:	2b01      	cmp	r3, #1
+ 8100c30:	2b00      	cmp	r3, #0
  8100c32:	d001      	beq.n	8100c38 <main+0xa0>
     {
       CriticalErrorHandler();

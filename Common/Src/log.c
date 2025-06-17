@@ -55,7 +55,7 @@ STATUS_TYPE LoggerInit (UART_HandleTypeDef* pUART_) {
     pCM7RingBuf =
     RingBuffCreate ((void*)MEM_SHARED_CM7_UART_RINGBUFF_START, MEM_SHARED_CM7_UART_RINGBUFF_TOTAL_LEN);
 
-    if (SyncRegisterHandler (LoggerSyncUARTTaskHandler, SYNC_TASKID_UART_OUT) != 1) {
+    if (SyncRegisterHandler (LoggerSyncUARTTaskHandler, SYNC_TASKID_UART_OUT) != eSTATUS_SUCCESS) {
         return eSTATUS_FAILURE;
     }
 

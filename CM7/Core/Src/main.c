@@ -245,6 +245,12 @@ int main (void) {
         /* USER CODE END WHILE */
         HAL_Delay (5000);
         LOG_INFO ("Hello from CM7");
+
+        // Debugging SPI
+//        if (imuStatus != eSTATUS_SUCCESS) {
+//        	IMUInit (&gIMU, &hspi2, IMU_ACC_RANGE_4G, IMU_ACC_ODR_100, IMU_GYRO_RANGE_250, IMU_GYRO_ODR_100);
+//		}
+
         /* USER CODE BEGIN 3 */
     }
 

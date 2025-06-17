@@ -161,7 +161,7 @@ int main(void)
 //     NULL                              /* Task handle */
 // );
 
-    if(SyncInit() != 1 || LoggerInit(NULL) != 1)
+    if(SyncInit() != eSTATUS_SUCCESS || LoggerInit(NULL) != eSTATUS_SUCCESS)
     {
       CriticalErrorHandler();
     }
