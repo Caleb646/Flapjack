@@ -28,6 +28,7 @@ float mapf32 (float v, float fromMin, float fromMax, float toMin, float toMax) {
 
 void CriticalErrorHandler (void) {
     __disable_irq ();
+    __BKPT (1);
     while (1)
         ;
 }
