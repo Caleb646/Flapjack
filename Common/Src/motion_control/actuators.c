@@ -32,7 +32,6 @@ float dt,
 Vec3f* pOutputPIDAttitude // degrees
 ) {
     float P, I, D;
-
     P                  = pidContext->rollP;
     I                  = pidContext->rollI;
     D                  = pidContext->rollD;
@@ -208,8 +207,12 @@ STATUS_TYPE ActuatorsInit (PWMHandle leftMotorPWM, PWMHandle leftServoPWM) {
     // Set duty cycle to 0 percent
     __HAL_TIM_SET_COMPARE (leftServoPWM.pTimerHandle, leftServoPWM.timerChannelID, 0);
 
-    HAL_TIM_PWM_Start (leftMotorPWM.pTimerHandle, leftMotorPWM.timerChannelID);
-    HAL_TIM_PWM_Start (leftServoPWM.pTimerHandle, leftServoPWM.timerChannelID);
+    if (HAL_TIM_PWM_Start (leftMotorPWM.pTimerHandle, leftMotorPWM.timerChannelID) != HAL_OK) {
+        return eSTATUS_FAILURE;
+    }
+    if (HAL_TIM_PWM_Start (leftServoPWM.pTimerHandle, leftServoPWM.timerChannelID) != HAL_OK) {
+        return eSTATUS_FAILURE;
+    }
 
 
     memset ((void*)&leftMotor, 0, sizeof (Motor));

@@ -120,58 +120,32 @@ void TaskMotionControlUpdate (void* pvParameters) {
         ulTaskNotifyTake (pdTRUE, pdMS_TO_TICKS (1000));
 
         /* Add error handling */
-        if (gIMU.status != eSTATUS_SUCCESS) {
+        STATUS_TYPE cIMUStatus = gIMU.status;
+        if (cIMUStatus != eSTATUS_SUCCESS) {
             IMUErr err;
-            STATUS_TYPE status = IMUGetErr (&gIMU, &err);
-            if (status != eSTATUS_SUCCESS) {
+            if (IMUGetErr (&gIMU, &err) != eSTATUS_SUCCESS) {
                 LOG_ERROR ("Failed to read IMU error codes");
             } else {
-                IMULogErr (&err);
+                IMULogErr (cIMUStatus, &err);
             }
         }
 
         STATUS_TYPE status;
         RadioPWMChannels radio;
-        float dt = HAL_GetTick () - startTime;
-
+        float dt              = HAL_GetTick () - startTime;
         Vec3f currentAttitude = gFlightContext.currentAttitude;
         status                = FilterMadgwick6DOF (
                        &gFilterMadgwickContext, gFlightContext.imuUnFilteredAccel,
                        gFlightContext.imuUnFilteredGyro, &currentAttitude);
-        if (status != eSTATUS_SUCCESS) {
+        if (status == eSTATUS_SUCCESS) {
             FlightContextUpdateCurrentAttitude (&gFlightContext, currentAttitude);
         }
 
-        // Vec3f targetAttitude = gFlightContext.targetAttitude;
-        // float targetThrottle = gFlightContext.targetThrottle;
-        // status = UpdateTargetAttitudeThrottle(
-        //   &gFlightContext,
-        //   radio,
-        //   &targetAttitude,
-        //   &targetThrottle
-        // );
-        // if(status > 0)
-        // {
-        //   FlightContextUpdateTargetAttitudeThrottle(
-        //     &gFlightContext, targetAttitude, targetThrottle
-        //   );
-        // }
-
-        // Vec3f pidAttitude = gFlightContext.pidAttitude;
-        // status = PIDUpdateAttitude(
-        //   &gPIDAngleContext,
-        //   gFlightContext.imuUnFilteredGyro,
-        //   gFlightContext.currentAttitude,
-        //   gFlightContext.targetAttitude,
-        //   dt,
-        //   &pidAttitude
-        // );
-        // if(status > 0)
-        // {
-        //   FlightContextUpdatePIDAttitude(
-        //     &gFlightContext, pidAttitude
-        //   );
-        // }
+        Vec3f pidAttitude;
+        status = PIDUpdateAttitude (
+        &gPIDAngleContext, gFlightContext.imuUnFilteredGyro,
+        gFlightContext.currentAttitude, gFlightContext.targetAttitude,
+        gFlightContext.maxAttitude, dt, &pidAttitude);
     }
 }
 
@@ -247,14 +221,31 @@ int main (void) {
     MX_TIM13_Init ();
     /* USER CODE BEGIN 2 */
 
-    // PIDInit(&gPIDAngleContext);
-    // FilterMadgwickInit(&gFilterMadgwickContext);
-
-    STATUS_TYPE imuStatus =
+    STATUS_TYPE status =
     IMUInit (&gIMU, &hspi2, IMU_ACC_RANGE_4G, IMU_ACC_ODR_100, IMU_GYRO_RANGE_250, IMU_GYRO_ODR_100);
-
-    if (imuStatus != eSTATUS_SUCCESS) {
+    if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("CM7 failed to init IMU");
+    }
+    status = FilterMadgwickInit (&gFilterMadgwickContext);
+    if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("CM7 failed to init Madgewick Filter");
+    }
+    status = PIDInit (&gPIDAngleContext);
+    if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("CM7 failed to init PID");
+    }
+
+    /*
+     *
+     * Setup FreeRTOS Tasks
+     *
+     */
+    BaseType_t taskStatus = xTaskCreate (
+    TaskMotionControlUpdate, "Motion Control Update Task", configMINIMAL_STACK_SIZE,
+    NULL, tskIDLE_PRIORITY, &gpTaskMotionControlUpdate);
+
+    if (taskStatus == pdPASS) {
+        LOG_ERROR ("Failed to create motion control update task because [0x%X]", taskStatus);
     }
 
     while (1) {

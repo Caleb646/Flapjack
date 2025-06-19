@@ -8,31 +8,37 @@
 #define INT_ERR_STATUS_BIT 10
 
 STATUS_TYPE IMUGetErr (IMU* pIMU, IMUErr* pOutErr) {
-    if (pIMU->status == eIMU_HARDWARE_ERR) {
-        uint8_t pBuff[2]   = { 0 };
-        STATUS_TYPE status = IMUReadReg (pIMU, BMI3_REG_ERR_REG, pBuff, 2);
-        uint16_t err      = ((uint16_t)pBuff[1] << 8) | (uint16_t)pBuff[0];
-        pOutErr->fatalErr = err & (1 << 0);
-        pOutErr->featEngOvrld = err & (1 << 2);
-        pOutErr->featEngWd    = err & (1 << 4);
-        pOutErr->accConfErr   = err & (1 << 5);
-        pOutErr->gyrConfErr   = err & (1 << 6);
-        pOutErr->i3cErr0      = err & (1 << 8);
-        pOutErr->i3cErr1      = err & (1 << 11);
-        if (status != eSTATUS_SUCCESS) {
-            return status;
-        }
-    } else {
-        pOutErr->comErr           = pIMU->status == eIMU_COM_FAILURE;
-        pOutErr->rwBufferOverflow = pIMU->status == eIMU_RW_BUFFER_OVERFLOW;
-        pOutErr->nullPtr          = pIMU->status == eIMU_NULL_PTR;
+    uint8_t pBuff[2]      = { 0 };
+    STATUS_TYPE status    = IMUReadReg (pIMU, BMI3_REG_ERR_REG, pBuff, 2);
+    uint16_t err          = ((uint16_t)pBuff[1] << 8) | (uint16_t)pBuff[0];
+    pOutErr->fatalErr     = err & (1 << 0);
+    pOutErr->featEngOvrld = err & (1 << 2);
+    pOutErr->featEngWd    = err & (1 << 4);
+    pOutErr->accConfErr   = err & (1 << 5);
+    pOutErr->gyrConfErr   = err & (1 << 6);
+    pOutErr->i3cErr0      = err & (1 << 8);
+    pOutErr->i3cErr1      = err & (1 << 11);
+    if (status != eSTATUS_SUCCESS) {
+        return status;
     }
     /* Clear IMU error status on successful read */
     pIMU->status = eSTATUS_SUCCESS;
     return eSTATUS_SUCCESS;
 }
 
-void IMULogErr (IMUErr const* pOutErr) {
+void IMULogErr (STATUS_TYPE curImuStatus, IMUErr const* pOutErr) {
+    if (curImuStatus == eIMU_COM_FAILURE) {
+        LOG_ERROR (
+        "IMU Communication failure error. It occurs due to "
+        "read/write operation failure and also due to power failure "
+        "during communication");
+    }
+    if (curImuStatus == eIMU_RW_BUFFER_OVERFLOW) {
+        LOG_ERROR ("IMU register read or write buffer size was exceeded");
+    }
+    if (curImuStatus == eIMU_NULL_PTR) {
+        LOG_ERROR ("IMU received null ptr");
+    }
     if (pOutErr->fatalErr != 0) {
         LOG_ERROR (
         "IMU fatal error, chip is not in operation state (Boot or "
@@ -56,19 +62,6 @@ void IMULogErr (IMUErr const* pOutErr) {
     }
     if (pOutErr->i3cErr1 != 0) {
         LOG_ERROR ("IMU I3C S0/S1 error occurred");
-    }
-
-    if (pOutErr->comErr != 0) {
-        LOG_ERROR (
-        "IMU Communication failure error. It occurs due to "
-        "read/write operation failure and also due to power failure "
-        "during communication");
-    }
-    if (pOutErr->rwBufferOverflow != 0) {
-        LOG_ERROR ("IMU register read or write buffer size was exceeded");
-    }
-    if (pOutErr->nullPtr != 0) {
-        LOG_ERROR ("IMU received null ptr");
     }
 }
 

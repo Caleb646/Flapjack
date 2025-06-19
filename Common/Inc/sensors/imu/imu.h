@@ -51,9 +51,6 @@ typedef enum {
 } IMU_STATUS;
 
 typedef struct {
-    uint8_t comErr;
-    uint8_t rwBufferOverflow;
-    uint8_t nullPtr;
     /* Indicates fatal error */
     uint8_t fatalErr;
     /* Overload of the feature engine detected. */
@@ -89,7 +86,7 @@ typedef struct {
 // typedef IMU_STATUS (*imu_update_fn)(IMU *pIMU);
 
 STATUS_TYPE IMUGetErr (IMU* pIMU, IMUErr* pOutErr);
-void IMULogErr (IMUErr const* pOutErr);
+void IMULogErr (STATUS_TYPE curImuStatus, IMUErr const* pOutErr);
 STATUS_TYPE IMU2CPUInterruptHandler (IMU* pIMU, Vec3* pOutputAccel, Vec3* pOutputGyro);
 STATUS_TYPE IMUReadReg (IMU const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
 STATUS_TYPE IMUWriteReg (IMU const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
