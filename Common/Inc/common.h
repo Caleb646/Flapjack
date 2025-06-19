@@ -17,8 +17,10 @@
 #define MAX_F32(x, y)            ((x > y) ? x : y)
 
 typedef enum {
-    eSTATUS_SUCCESS = 0x00,
-    eSTATUS_FAILURE = 0x01
+    eSTATUS_SUCCESS = 0,
+
+
+    eSTATUS_FAILURE = -127
 } STATUS_TYPE;
 
 // #define IS_STATUS_SUCCESS(status) (status == eSTATUS_SUCCESS)

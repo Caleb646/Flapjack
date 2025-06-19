@@ -102,10 +102,14 @@ TaskHandle_t gpTaskMotionControlUpdate;
 void HAL_GPIO_EXTI_Callback (uint16_t gpioPin) {
     if (gpioPin == IMU_INT_Pin) {
         Vec3 accel, gyro;
-        if (IMU2CPUInterruptHandler (&gIMU, &accel, &gyro) != eSTATUS_SUCCESS) {
+        STATUS_TYPE status = IMU2CPUInterruptHandler (&gIMU, &accel, &gyro);
+        if (status == eSTATUS_SUCCESS) {
             FlightContextUpdateIMUData (&gFlightContext, accel, gyro);
-            if (gpTaskMotionControlUpdate != NULL)
+            if (gpTaskMotionControlUpdate != NULL) {
                 xTaskNotifyGive (gpTaskMotionControlUpdate);
+            }
+        } else {
+            gIMU.status = status;
         }
     }
 }
@@ -114,7 +118,19 @@ void TaskMotionControlUpdate (void* pvParameters) {
     float startTime = 0.0f;
     while (1) {
         ulTaskNotifyTake (pdTRUE, pdMS_TO_TICKS (1000));
-        int8_t status;
+
+        /* Add error handling */
+        if (gIMU.status != eSTATUS_SUCCESS) {
+            IMUErr err;
+            STATUS_TYPE status = IMUGetErr (&gIMU, &err);
+            if (status != eSTATUS_SUCCESS) {
+                LOG_ERROR ("Failed to read IMU error codes");
+            } else {
+                IMULogErr (&err);
+            }
+        }
+
+        STATUS_TYPE status;
         RadioPWMChannels radio;
         float dt = HAL_GetTick () - startTime;
 
@@ -122,7 +138,7 @@ void TaskMotionControlUpdate (void* pvParameters) {
         status                = FilterMadgwick6DOF (
                        &gFilterMadgwickContext, gFlightContext.imuUnFilteredAccel,
                        gFlightContext.imuUnFilteredGyro, &currentAttitude);
-        if (status > 0) {
+        if (status != eSTATUS_SUCCESS) {
             FlightContextUpdateCurrentAttitude (&gFlightContext, currentAttitude);
         }
 
@@ -247,9 +263,9 @@ int main (void) {
         LOG_INFO ("Hello from CM7");
 
         // Debugging SPI
-//        if (imuStatus != eSTATUS_SUCCESS) {
-//        	IMUInit (&gIMU, &hspi2, IMU_ACC_RANGE_4G, IMU_ACC_ODR_100, IMU_GYRO_RANGE_250, IMU_GYRO_ODR_100);
-//		}
+        //        if (imuStatus != eSTATUS_SUCCESS) {
+        //        	IMUInit (&gIMU, &hspi2, IMU_ACC_RANGE_4G, IMU_ACC_ODR_100, IMU_GYRO_RANGE_250, IMU_GYRO_ODR_100);
+        //		}
 
         /* USER CODE BEGIN 3 */
     }

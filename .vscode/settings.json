@@ -5,6 +5,9 @@
     "editor.defaultFormatter": "xaver.clang-format",
     "clang-format.executable": "/usr/bin/clang-format",
     "workbench.editor.wrapTabs": true,
+    "files.associations": {
+        "string.h": "c"
+    },
 
     // "clang-tidy.enabled": true,
     // "clang-tidy.useBuildPath": false,
