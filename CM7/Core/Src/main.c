@@ -245,7 +245,7 @@ int main (void) {
     NULL, tskIDLE_PRIORITY, &gpTaskMotionControlUpdate);
 
     if (taskStatus == pdPASS) {
-        LOG_ERROR ("Failed to create motion control update task because [0x%X]", taskStatus);
+        LOG_ERROR ("Failed to create motion control update task");
     }
 
     while (1) {

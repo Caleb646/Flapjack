@@ -11,13 +11,13 @@ STATUS_TYPE IMUGetErr (IMU* pIMU, IMUErr* pOutErr) {
     uint8_t pBuff[2]      = { 0 };
     STATUS_TYPE status    = IMUReadReg (pIMU, BMI3_REG_ERR_REG, pBuff, 2);
     uint16_t err          = ((uint16_t)pBuff[1] << 8) | (uint16_t)pBuff[0];
-    pOutErr->fatalErr     = err & (1 << 0);
-    pOutErr->featEngOvrld = err & (1 << 2);
-    pOutErr->featEngWd    = err & (1 << 4);
-    pOutErr->accConfErr   = err & (1 << 5);
-    pOutErr->gyrConfErr   = err & (1 << 6);
-    pOutErr->i3cErr0      = err & (1 << 8);
-    pOutErr->i3cErr1      = err & (1 << 11);
+    pOutErr->fatalErr     = (err & (1 << 0)) > 0;
+    pOutErr->featEngOvrld = (err & (1 << 2)) > 0;
+    pOutErr->featEngWd    = (err & (1 << 4)) > 0;
+    pOutErr->accConfErr   = (err & (1 << 5)) > 0;
+    pOutErr->gyrConfErr   = (err & (1 << 6)) > 0;
+    pOutErr->i3cErr0      = (err & (1 << 8)) > 0;
+    pOutErr->i3cErr1      = (err & (1 << 11)) > 0;
     if (status != eSTATUS_SUCCESS) {
         return status;
     }
@@ -27,16 +27,16 @@ STATUS_TYPE IMUGetErr (IMU* pIMU, IMUErr* pOutErr) {
 }
 
 void IMULogErr (STATUS_TYPE curImuStatus, IMUErr const* pOutErr) {
-    if (curImuStatus == eIMU_COM_FAILURE) {
+    if (curImuStatus == (STATUS_TYPE)eIMU_COM_FAILURE) {
         LOG_ERROR (
         "IMU Communication failure error. It occurs due to "
         "read/write operation failure and also due to power failure "
         "during communication");
     }
-    if (curImuStatus == eIMU_RW_BUFFER_OVERFLOW) {
+    if (curImuStatus == (STATUS_TYPE)eIMU_RW_BUFFER_OVERFLOW) {
         LOG_ERROR ("IMU register read or write buffer size was exceeded");
     }
-    if (curImuStatus == eIMU_NULL_PTR) {
+    if (curImuStatus == (STATUS_TYPE)eIMU_NULL_PTR) {
         LOG_ERROR ("IMU received null ptr");
     }
     if (pOutErr->fatalErr != 0) {
@@ -349,7 +349,7 @@ IMU_GYRO_ODR gyroODR) {
 
     uint8_t pChipID[2] = { 0 };
     status             = IMUReadReg (pIMU, BMI3_REG_CHIP_ID, pChipID, 2);
-    if (pChipID != BMI323_CHIP_ID) {
+    if (pChipID[0] != BMI323_CHIP_ID) {
         LOG_ERROR ("Failed to find BMI323. Chip ID [%X] is incorrect", pChipID[0]);
         return eSTATUS_FAILURE;
     }

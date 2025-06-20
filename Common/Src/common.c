@@ -29,12 +29,14 @@ float mapf32 (float v, float fromMin, float fromMax, float toMin, float toMax) {
 void CriticalErrorHandler (void) {
     __disable_irq ();
     __BKPT (1);
-    while (1)
-        ;
+    while (1);
 }
 
 void __assert_func (const char* file, int line, const char* func, const char* failedexpr) {
     __BKPT (1);
     // asm volatile ("bkpt 1");
     CriticalErrorHandler ();
+    while (1);
 }
+
+
