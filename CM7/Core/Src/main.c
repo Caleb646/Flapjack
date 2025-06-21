@@ -102,6 +102,7 @@ TaskHandle_t gpTaskMotionControlUpdate;
 // NOLINTEND
 
 void HAL_GPIO_EXTI_Callback (uint16_t gpioPin) {
+    LOG_INFO("In interrupt");
     if (gpioPin == IMU_INT_Pin) {
         Vec3 accel;
         Vec3 gyro;
@@ -238,23 +239,11 @@ int main (void) {
         LOG_ERROR ("CM7 failed to init PID");
     }
 
-    /*
-     *
-     * Setup FreeRTOS Tasks
-     *
-     */
-    BaseType_t taskStatus = xTaskCreate (
-    TaskMotionControlUpdate, "Motion Control Update Task", configMINIMAL_STACK_SIZE,
-    NULL, tskIDLE_PRIORITY, &gpTaskMotionControlUpdate);
-
-    if (taskStatus == pdPASS) {
-        LOG_ERROR ("Failed to create motion control update task");
-    }
-
     while (1) {
         /* USER CODE END WHILE */
-        HAL_Delay (5000);
         LOG_INFO ("Hello from CM7");
+        HAL_Delay (5000);
+        
 
         // Debugging SPI
         //        if (imuStatus != eSTATUS_SUCCESS) {
@@ -262,6 +251,22 @@ int main (void) {
         //		}
 
         /* USER CODE BEGIN 3 */
+    }
+
+    /*
+     *
+     * Setup FreeRTOS Tasks
+     *
+     * NOTE: Once a FreeRTOS task is created ALL interrupts will be disabled until the scheduler is started. So functions
+     * like HAL_Delay will not work.
+     */
+
+    BaseType_t taskStatus = xTaskCreate (
+    TaskMotionControlUpdate, "Motion Control Update Task", configMINIMAL_STACK_SIZE,
+    NULL, tskIDLE_PRIORITY, &gpTaskMotionControlUpdate);
+
+    if (taskStatus != pdPASS) {
+        LOG_ERROR ("Failed to create motion control update task");
     }
 
     vTaskStartScheduler ();
@@ -359,7 +364,7 @@ static void MX_SPI2_Init (void) {
     hspi2.Init.CLKPolarity                = SPI_POLARITY_LOW;
     hspi2.Init.CLKPhase                   = SPI_PHASE_1EDGE;
     hspi2.Init.NSS                        = SPI_NSS_HARD_OUTPUT;
-    hspi2.Init.BaudRatePrescaler          = SPI_BAUDRATEPRESCALER_8;
+    hspi2.Init.BaudRatePrescaler          = SPI_BAUDRATEPRESCALER_32;
     hspi2.Init.FirstBit                   = SPI_FIRSTBIT_MSB;
     hspi2.Init.TIMode                     = SPI_TIMODE_DISABLE;
     hspi2.Init.CRCCalculation             = SPI_CRCCALCULATION_DISABLE;

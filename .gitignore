@@ -2,21 +2,21 @@ Debug/**
 Release/**
 *.cyclo
 
-!Debug/**/
-!Debug/Makefile
-!Debug/makefile
-!Debug/*.mk
-!Debug/**/*.mk
-!Debug/**/Makefile
-!Debug/**/makefile
+# !Debug/**/
+# !Debug/Makefile
+# !Debug/makefile
+# !Debug/*.mk
+# !Debug/**/*.mk
+# !Debug/**/Makefile
+# !Debug/**/makefile
 
-!Release/**/
-!Release/Makefile
-!Release/makefile
-!Release/*.mk
-!Release/**/*.mk
-!Release/**/Makefile
-!Release/**/makefile
+# !Release/**/
+# !Release/Makefile
+# !Release/makefile
+# !Release/*.mk
+# !Release/**/*.mk
+# !Release/**/Makefile
+# !Release/**/makefile
 
 Drone_CM7.list
 Drone_CM4.list
