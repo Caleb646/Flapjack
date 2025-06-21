@@ -5,26 +5,28 @@
 
 #define NUM_TASK_TYPES 2
 
-task_handler_fn_t handlers[NUM_TASK_TYPES];
+task_handler_fn_t gHandlers[NUM_TASK_TYPES];
 
 task_handler_fn_t SyncGetTaskHandler (uint32_t taskID) {
-    if (taskID > NUM_TASK_TYPES)
+    if (taskID > NUM_TASK_TYPES) {
         return NULL;
-    return handlers[taskID];
+    }
+    return gHandlers[taskID];
 }
 
 /*
  * \brief Each core needs to call SyncInit
  */
 STATUS_TYPE SyncInit (void) {
-    memset (handlers, 0, sizeof (handlers));
+    memset (gHandlers, 0, sizeof (gHandlers));
     return eSTATUS_SUCCESS;
 }
 
 STATUS_TYPE SyncRegisterHandler (task_handler_fn_t fn, uint32_t taskID) {
-    if (taskID > NUM_TASK_TYPES)
+    if (taskID > NUM_TASK_TYPES) {
         return eSTATUS_FAILURE;
-    handlers[taskID] = fn;
+    }
+    gHandlers[taskID] = fn;
     return eSTATUS_SUCCESS;
 }
 

@@ -121,7 +121,8 @@ void RingBuffSetEvtFn (RINGBUFF_VOLATILE RingBuff* buff, ringbuff_evt_fn evt_fn)
  * no enough memory available to copy full data array
  */
 size_t RingBuffWrite (RINGBUFF_VOLATILE RingBuff* buff, const void* data, size_t btw) {
-    size_t tocopy, free;
+    size_t tocopy    = 0U;
+    size_t free      = 0U;
     const uint8_t* d = data;
 
     if (!BUF_IS_VALID (buff) || data == NULL || btw == 0) {
@@ -165,8 +166,9 @@ size_t RingBuffWrite (RINGBUFF_VOLATILE RingBuff* buff, const void* data, size_t
  * \return          Number of bytes read and copied to data array
  */
 size_t RingBuffRead (RINGBUFF_VOLATILE RingBuff* buff, void* data, size_t btr) {
-    size_t tocopy, full;
-    uint8_t* d = data;
+    size_t tocopy = 0U;
+    size_t full   = 0U;
+    uint8_t* d    = data;
 
     if (!BUF_IS_VALID (buff) || data == NULL || btr == 0) {
         return 0;
@@ -208,8 +210,10 @@ size_t RingBuffRead (RINGBUFF_VOLATILE RingBuff* buff, void* data, size_t btr) {
  * \return          Number of bytes peeked and written to output array
  */
 size_t RingBuffPeek (RINGBUFF_VOLATILE RingBuff* buff, size_t skip_count, void* data, size_t btp) {
-    size_t full, tocopy, r;
-    uint8_t* d = data;
+    size_t full   = 0U;
+    size_t tocopy = 0U;
+    size_t r      = 0U;
+    uint8_t* d    = data;
 
     if (!BUF_IS_VALID (buff) || data == NULL || btp == 0) {
         return 0;
@@ -254,7 +258,9 @@ size_t RingBuffPeek (RINGBUFF_VOLATILE RingBuff* buff, size_t skip_count, void* 
  * \return          Number of free bytes in memory
  */
 size_t RingBuffGetFree (RINGBUFF_VOLATILE RingBuff* buff) {
-    size_t size, w, r;
+    size_t w    = 0U;
+    size_t r    = 0U;
+    size_t size = 0U;
 
     if (!BUF_IS_VALID (buff)) {
         return 0;
@@ -281,7 +287,9 @@ size_t RingBuffGetFree (RINGBUFF_VOLATILE RingBuff* buff) {
  * \return          Number of bytes ready to be read
  */
 size_t RingBuffGetFull (RINGBUFF_VOLATILE RingBuff* buff) {
-    size_t w, r, size;
+    size_t w    = 0U;
+    size_t r    = 0U;
+    size_t size = 0U;
 
     if (!BUF_IS_VALID (buff)) {
         return 0;
@@ -330,7 +338,9 @@ void* RingBuffGetLinearBlockReadAddress (RINGBUFF_VOLATILE RingBuff* buff) {
  * \return          Linear buffer size in units of bytes for read operation
  */
 size_t RingBuffGetLinearBlockReadLength (RINGBUFF_VOLATILE RingBuff* buff) {
-    size_t w, r, len;
+    size_t w   = 0U;
+    size_t r   = 0U;
+    size_t len = 0U;
 
     if (!BUF_IS_VALID (buff)) {
         return 0;
@@ -359,7 +369,7 @@ size_t RingBuffGetLinearBlockReadLength (RINGBUFF_VOLATILE RingBuff* buff) {
  * \return          Number of bytes skipped
  */
 size_t RingBuffSkip (RINGBUFF_VOLATILE RingBuff* buff, size_t len) {
-    size_t full;
+    size_t full = 0U;
 
     if (!BUF_IS_VALID (buff) || len == 0) {
         return 0;
@@ -393,7 +403,9 @@ void* RingBuffGetLinearBlockWriteAddress (RINGBUFF_VOLATILE RingBuff* buff) {
  * \return          Linear buffer size in units of bytes for write operation
  */
 size_t RingBuffGetLinearBlockWriteLength (RINGBUFF_VOLATILE RingBuff* buff) {
-    size_t w, r, len;
+    size_t w   = 0U;
+    size_t r   = 0U;
+    size_t len = 0U;
 
     if (!BUF_IS_VALID (buff)) {
         return 0;
@@ -434,7 +446,7 @@ size_t RingBuffGetLinearBlockWriteLength (RINGBUFF_VOLATILE RingBuff* buff) {
  * \return          Number of bytes advanced for write operation
  */
 size_t RingBuffAdvance (RINGBUFF_VOLATILE RingBuff* buff, size_t len) {
-    size_t free;
+    size_t free = 0U;
 
     if (!BUF_IS_VALID (buff) || len == 0) {
         return 0;

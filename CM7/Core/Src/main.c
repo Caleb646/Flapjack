@@ -93,15 +93,18 @@ void StartDefaultTask (void* argument);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+// NOLINTBEGIN
 IMU gIMU;
 FlightContext gFlightContext;
 FilterMadgwickContext gFilterMadgwickContext;
 PIDContext gPIDAngleContext;
 TaskHandle_t gpTaskMotionControlUpdate;
+// NOLINTEND
 
 void HAL_GPIO_EXTI_Callback (uint16_t gpioPin) {
     if (gpioPin == IMU_INT_Pin) {
-        Vec3 accel, gyro;
+        Vec3 accel;
+        Vec3 gyro;
         STATUS_TYPE status = IMU2CPUInterruptHandler (&gIMU, &accel, &gyro);
         if (status == eSTATUS_SUCCESS) {
             FlightContextUpdateIMUData (&gFlightContext, accel, gyro);
@@ -115,7 +118,7 @@ void HAL_GPIO_EXTI_Callback (uint16_t gpioPin) {
 }
 
 void TaskMotionControlUpdate (void* pvParameters) {
-    float startTime = 0.0f;
+    float startTime = 0.0F;
     while (1) {
         ulTaskNotifyTake (pdTRUE, pdMS_TO_TICKS (1000));
 
@@ -132,7 +135,7 @@ void TaskMotionControlUpdate (void* pvParameters) {
 
         STATUS_TYPE status;
         RadioPWMChannels radio;
-        float dt              = HAL_GetTick () - startTime;
+        float dt              = (float)HAL_GetTick () - startTime;
         Vec3f currentAttitude = gFlightContext.currentAttitude;
         status                = FilterMadgwick6DOF (
                        &gFilterMadgwickContext, gFlightContext.imuUnFilteredAccel,

@@ -9,8 +9,10 @@
         "string.h": "c"
     },
 
-    // "clang-tidy.enabled": true,
-    // "clang-tidy.useBuildPath": false,
-    // "clang-tidy.checks": "readability-braces-around-statements",
-    // "clang-tidy.fixOnSave": true
+    "C_Cpp.codeAnalysis.clangTidy.enabled": true,
+    "C_Cpp.codeAnalysis.clangTidy.path": "/usr/bin/clang-tidy",
+    "C_Cpp.codeAnalysis.clangTidy.args": [
+        "--config-file=${workspaceFolder}/.clang-tidy"
+    ], 
+  "C_Cpp.errorSquiggles": "enabled"
 }

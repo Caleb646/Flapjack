@@ -8,16 +8,16 @@ Vec3f maxAttitude,
 RadioPWMChannels radio,
 Vec3f* pOutputTargetAttitude,
 float* pOutputThrottle) {
-    *pOutputThrottle = clipf32 ((float)radio.channel1, 0.0f, 1.0f);
 
+    *pOutputThrottle = clipf32 ((float)radio.channel1, 0.0F, 1.0F);
     pOutputTargetAttitude->roll =
-    clipf32 ((float)radio.channel2, -1.0f, 1.0f) * maxAttitude.roll;
+    clipf32 ((float)radio.channel2, -1.0F, 1.0F) * maxAttitude.roll;
 
     pOutputTargetAttitude->pitch =
-    clipf32 ((float)radio.channel3, -1.0f, 1.0f) * maxAttitude.pitch;
+    clipf32 ((float)radio.channel3, -1.0F, 1.0F) * maxAttitude.pitch;
 
     pOutputTargetAttitude->yaw =
-    clipf32 ((float)radio.channel4, -1.0f, 1.0f) * maxAttitude.yaw;
+    clipf32 ((float)radio.channel4, -1.0F, 1.0F) * maxAttitude.yaw;
 
     return eSTATUS_SUCCESS;
 }
@@ -31,7 +31,9 @@ Vec3f maxAttitude,     // degrees
 float dt,
 Vec3f* pOutputPIDAttitude // degrees
 ) {
-    float P, I, D;
+    float P            = 0.0F;
+    float I            = 0.0F;
+    float D            = 0.0F;
     P                  = pidContext->rollP;
     I                  = pidContext->rollI;
     D                  = pidContext->rollD;
@@ -104,7 +106,8 @@ STATUS_TYPE PIDInit (PIDContext* pContext) {
 static float ServoAngle2PWM (ServoDescriptor* pSer, float targetAngle);
 
 static float ServoAngle2PWM (ServoDescriptor* pSer, float targetAngle) {
-    float usMinDutyCycle = 0.0f, usMaxDutyCycle = 0.0f;
+    float usMinDutyCycle = 0.0F;
+    float usMaxDutyCycle = 0.0F;
     if (targetAngle < 0) {
         usMinDutyCycle = (float)pSer->usLeftDutyCycle;
         usMaxDutyCycle = (float)pSer->usMiddleDutyCycle;
@@ -119,9 +122,11 @@ static float ServoAngle2PWM (ServoDescriptor* pSer, float targetAngle) {
     return mapf32 (targetAngle, -pSer->maxAngle, pSer->maxAngle, usMinDutyCycle, usMaxDutyCycle);
 }
 
+// NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
+static Motor gLeftMotor;
+static Servo gLeftServo;
+// NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
 
-static Motor leftMotor;
-static Servo leftServo;
 // static Motor rightMotor;
 // static Servo rightServo;
 
@@ -142,26 +147,26 @@ STATUS_TYPE PID2PWMMixer (Vec3f pidAttitude, float targetThrottle) {
     /*
      *  Left Motor Mixing
      */
-    float target        = 0.0f;
-    PWMHandle* pH       = &leftMotor.pwmHandle;
-    MotorDescriptor* pM = &leftMotor.pwmDescriptor;
+    float target        = 0.0F;
+    PWMHandle* pH       = &gLeftMotor.pwmHandle;
+    MotorDescriptor* pM = &gLeftMotor.pwmDescriptor;
     target =
     targetThrottle - pidAttitude.pitch + pidAttitude.roll + pidAttitude.yaw;
     pH->usTargetDutyCycle = (uint32_t)mapf32 (
-    target, -3.0f, 4.0f, (float)pM->usMinDutyCycle, (float)pM->usMaxDutyCycle);
+    target, -3.0F, 4.0F, (float)pM->usMinDutyCycle, (float)pM->usMaxDutyCycle);
 
     /*
      *  Left Servo Mixing
      */
-    pH                    = &leftServo.pwmHandle;
-    ServoDescriptor* pSer = &leftServo.pwmDescriptor;
+    pH                    = &gLeftServo.pwmHandle;
+    ServoDescriptor* pSer = &gLeftServo.pwmDescriptor;
     target                = pSer->pitchMix * pidAttitude.pitch +
              pSer->rollMix * pidAttitude.roll + pSer->yawMix * pidAttitude.yaw;
     // NOTE: Maybe Roll should have a negative impact on target angle. Meaning the magnitude of the target angle is closer to 0
     // the larger pid roll is.
     // float target = pSer->pitchMix * pidAttitude.pitch + pSer->yawMix * pidAttitude.yaw;
     // pSer->targetAngle = ( clipf32(target, -1.0f, 1.0f) * pSer->maxAngle ) / ( clipf32(pSer->rollMix * pidAttitude.roll, -1.0f, 1.0f) * pSer->maxAngle );
-    target                = clipf32 (target, -1.0f, 1.0f) * pSer->maxAngle;
+    target                = clipf32 (target, -1.0F, 1.0F) * pSer->maxAngle;
     pSer->curAngle        = target;
     pH->usTargetDutyCycle = (uint32_t)ServoAngle2PWM (pSer, target);
 
@@ -215,8 +220,8 @@ STATUS_TYPE ActuatorsInit (PWMHandle leftMotorPWM, PWMHandle leftServoPWM) {
     }
 
 
-    memset ((void*)&leftMotor, 0, sizeof (Motor));
-    memset ((void*)&leftServo, 0, sizeof (Servo));
+    memset ((void*)&gLeftMotor, 0, sizeof (Motor));
+    memset ((void*)&gLeftServo, 0, sizeof (Servo));
     // memset((void*)&rightMotor, 0, sizeof(Motor));
     // memset((void*)&rightServo, 0, sizeof(Servo));
 
@@ -225,8 +230,8 @@ STATUS_TYPE ActuatorsInit (PWMHandle leftMotorPWM, PWMHandle leftServoPWM) {
     motorDescriptor.usMinDutyCycle = 125;
     motorDescriptor.usMaxDutyCycle = 250;
 
-    leftMotor.pwmDescriptor = motorDescriptor;
-    leftMotor.pwmHandle     = leftMotorPWM;
+    gLeftMotor.pwmDescriptor = motorDescriptor;
+    gLeftMotor.pwmHandle     = leftMotorPWM;
 
     ServoDescriptor servoDescriptor;
     memset ((void*)&servoDescriptor, 0, sizeof (ServoDescriptor));
@@ -238,13 +243,13 @@ STATUS_TYPE ActuatorsInit (PWMHandle leftMotorPWM, PWMHandle leftServoPWM) {
     servoDescriptor.maxAngle = 20;
     servoDescriptor.curAngle = 0;
 
-    servoDescriptor.rollMix  = -0.25f;
-    servoDescriptor.yawMix   = 0.5f;
-    servoDescriptor.pitchMix = 0.5f;
+    servoDescriptor.rollMix  = -0.25F;
+    servoDescriptor.yawMix   = 0.5F;
+    servoDescriptor.pitchMix = 0.5F;
 
 
-    leftServo.pwmDescriptor = servoDescriptor;
-    leftServo.pwmHandle     = leftServoPWM;
+    gLeftServo.pwmDescriptor = servoDescriptor;
+    gLeftServo.pwmHandle     = leftServoPWM;
 
     return eSTATUS_SUCCESS;
 }

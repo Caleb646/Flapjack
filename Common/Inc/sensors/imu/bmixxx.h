@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 /********************************************************* */
-/*!               Common Macros                           */
+/*               Common                                    */
 /********************************************************* */
 
 #if !defined(UINT8_C) && !defined(INT8_C)
@@ -23,7 +23,6 @@
 #define UINT32_C(x) ((uint32_t)x)
 #endif
 
-/*! C standard macros */
 #ifndef NULL
 #ifdef __cplusplus
 #define NULL 0

@@ -13,12 +13,14 @@
 #define PUTCHAR_PROTOTYPE int fputc (int ch, FILE* f)
 #endif
 
+// NOLINTBEGIN
 RingBuff volatile* pCM4RingBuf;
 RingBuff volatile* pCM7RingBuf;
 UART_HandleTypeDef* pUART;
+// NOLINTEND
 
 static STATUS_TYPE LoggerSyncUARTTaskHandler (void);
-static STATUS_TYPE LoggerWriteToUART (RingBuff volatile* pBuff);
+static STATUS_TYPE LoggerWriteToUART (RingBuff volatile* pRingBuf);
 
 PUTCHAR_PROTOTYPE {
     if (HAL_GetCurrentCPUID () == CM7_CPUID) {

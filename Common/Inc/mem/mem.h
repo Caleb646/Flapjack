@@ -11,16 +11,16 @@
  */
 typedef struct RingBuff_ RingBuff;
 
-#define MEM_U32_ALIGN4(addr)         ((uint32_t)(addr) & ((uint32_t)~0x3))
+#define MEM_U32_ALIGN4(addr)         ((uint32_t)(addr) & ((uint32_t)~0x3U))
 
 // SRAM4 = 0x38000000 - 0x3800FFFF
-#define MEM_SRAM_4_START             0x38000000
-#define MEM_SRAM_4_END               0x3800FFFF
+#define MEM_SRAM_4_START             0x38000000U
+#define MEM_SRAM_4_END               0x3800FFFFU
 
 /*
  * Mailbox for each core
  */
-#define MEM_SHARED_MAILBOX_LEN       4
+#define MEM_SHARED_MAILBOX_LEN       4U
 #define MEM_SHARED_MAILBOX_CM7_START MEM_U32_ALIGN4 (MEM_SRAM_4_START)
 #define MEM_SHARED_MAILBOX_CM4_START \
     MEM_U32_ALIGN4 (MEM_SHARED_MAILBOX_CM7_START + MEM_SHARED_MAILBOX_LEN)

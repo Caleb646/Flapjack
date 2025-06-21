@@ -71,8 +71,8 @@ typedef struct {
     SPI_HandleTypeDef* pSPI;
     Vec3 volatile rawAccel;
     Vec3 volatile rawGyro;
-    int32_t volatile msLastAccUpdateTime;
-    int32_t volatile msLastGyroUpdateTime;
+    uint32_t volatile msLastAccUpdateTime;
+    uint32_t volatile msLastGyroUpdateTime;
     uint32_t accRange, accODR, gyroRange, gyroODR;
     STATUS_TYPE volatile status;
     uint32_t nDummyBytes;

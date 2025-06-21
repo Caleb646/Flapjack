@@ -63,9 +63,9 @@ typedef struct {
     uint32_t usLeftDutyCycle;
     uint32_t usMiddleDutyCycle;
     uint32_t usRightDutyCycle;
-    int32_t maxAngle;
+    float maxAngle;
     // Between -max angle and +max angle
-    int32_t curAngle;
+    float curAngle;
     float pitchMix;
     float yawMix;
     float rollMix;
@@ -94,7 +94,7 @@ typedef struct {
 
 STATUS_TYPE PID2PWMMixer (Vec3f pidAttitude, float targetThrottle);
 STATUS_TYPE PWMSend (PWMHandle* pPWM);
-STATUS_TYPE ActuatorsInit (PWMHandle leftMotorInter, PWMHandle leftServoInter);
+STATUS_TYPE ActuatorsInit (PWMHandle leftMotorPWM, PWMHandle leftServoPWM);
 
 // void MotionControlUpdatePWM(
 //     AxisMap axisConf, Vec3 mmVelSteps, Vec3 mmAngVelSteps, void *devs, uint32_t nDevs

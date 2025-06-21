@@ -3,27 +3,28 @@
 #include "sensors/imu/bmixxx.h"
 #include <string.h>
 
-#define BIT_ISSET(v, bit)  ((v & bit) == 1)
-#define RW_BUFFER_SZ       16
-#define INT_ERR_STATUS_BIT 10
+#define BIT_ISSET(v, bit)      (((v) & (bit)) > 0U)
+#define RW_BUFFER_SZ           16U
+#define INT_ERR_STATUS_BIT     10U
+#define SPI_DEFAULT_TIMEOUT_MS 100U
 
 STATUS_TYPE IMUGetErr (IMU* pIMU, IMUErr* pOutErr) {
-    uint8_t pBuff[2]      = { 0 };
-    STATUS_TYPE status    = IMUReadReg (pIMU, BMI3_REG_ERR_REG, pBuff, 2);
-    uint16_t err          = ((uint16_t)pBuff[1] << 8) | (uint16_t)pBuff[0];
-    pOutErr->fatalErr     = (err & (1 << 0)) > 0;
-    pOutErr->featEngOvrld = (err & (1 << 2)) > 0;
-    pOutErr->featEngWd    = (err & (1 << 4)) > 0;
-    pOutErr->accConfErr   = (err & (1 << 5)) > 0;
-    pOutErr->gyrConfErr   = (err & (1 << 6)) > 0;
-    pOutErr->i3cErr0      = (err & (1 << 8)) > 0;
-    pOutErr->i3cErr1      = (err & (1 << 11)) > 0;
+    uint8_t pBuff[2]   = { 0 };
+    STATUS_TYPE status = IMUReadReg (pIMU, BMI3_REG_ERR_REG, pBuff, 2);
+    uint16_t err       = ((uint16_t)pBuff[1] << 8U) | (uint16_t)pBuff[0];
+    pOutErr->fatalErr  = (err & (1U << 0U)) > 0;
+    pOutErr->featEngOvrld = (err & (1U << 2U)) > 0;
+    pOutErr->featEngWd    = (err & (1U << 4U)) > 0;
+    pOutErr->accConfErr   = (err & (1U << 5U)) > 0;
+    pOutErr->gyrConfErr   = (err & (1U << 6U)) > 0;
+    pOutErr->i3cErr0      = (err & (1U << 8U)) > 0;
+    pOutErr->i3cErr1      = (err & (1U << 11U)) > 0;
     if (status != eSTATUS_SUCCESS) {
         return status;
     }
     /* Clear IMU error status on successful read */
     pIMU->status = eSTATUS_SUCCESS;
-    return eSTATUS_SUCCESS;
+    return eSTATUS_SUCCESS; //
 }
 
 void IMULogErr (STATUS_TYPE curImuStatus, IMUErr const* pOutErr) {
@@ -79,11 +80,11 @@ STATUS_TYPE IMUReadReg (IMU const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t le
     // HAL_GPIO_WritePin(SPI2_NSS_GPIO_Port, SPI2_NSS_Pin, GPIO_PIN_SET);
 
     if (len + pIMU->nDummyBytes > RW_BUFFER_SZ) {
-        return eIMU_RW_BUFFER_OVERFLOW;
+        return (STATUS_TYPE)eIMU_RW_BUFFER_OVERFLOW;
     }
 
-    if (HAL_SPI_TransmitReceive (pIMU->pSPI, pTx, pRx, len + pIMU->nDummyBytes, 100) != HAL_OK) {
-        return eIMU_COM_FAILURE;
+    if (HAL_SPI_TransmitReceive (pIMU->pSPI, pTx, pRx, len + pIMU->nDummyBytes, SPI_DEFAULT_TIMEOUT_MS) != HAL_OK) {
+        return (STATUS_TYPE)eIMU_COM_FAILURE;
     }
     // The first nDummyBytes are dummy bytes
     memcpy (pBuf, &pRx[pIMU->nDummyBytes], len);
@@ -94,14 +95,14 @@ STATUS_TYPE IMUWriteReg (IMU const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t l
     uint8_t pTx[RW_BUFFER_SZ] = { 0 };
 
     if (len + 1 > RW_BUFFER_SZ) {
-        return eIMU_RW_BUFFER_OVERFLOW;
+        return (STATUS_TYPE)eIMU_RW_BUFFER_OVERFLOW;
     }
 
     pTx[0] = reg | BMI3_SPI_WR_MASK;
     memcpy (&pTx[1], (void*)pBuf, len);
 
-    if (HAL_SPI_Transmit (pIMU->pSPI, pTx, len + 1, 100) != HAL_OK) {
-        return eIMU_COM_FAILURE;
+    if (HAL_SPI_Transmit (pIMU->pSPI, pTx, len + 1, SPI_DEFAULT_TIMEOUT_MS) != HAL_OK) {
+        return (STATUS_TYPE)eIMU_COM_FAILURE;
     }
     return eSTATUS_SUCCESS;
 }
@@ -114,21 +115,29 @@ STATUS_TYPE IMUUpdateGyro (IMU* pIMU, Vec3 curAngularVel, Vec3* pOutputGyro) {
     }
 
     pIMU->rawGyro.x =
-    (int32_t)(((uint16_t)pBuffer[1]) << 8) | ((uint16_t)pBuffer[0]);
+    (int32_t)(((uint16_t)pBuffer[1]) << 8U) | ((uint16_t)pBuffer[0]);
     pIMU->rawGyro.y =
-    (int32_t)(((uint16_t)pBuffer[3]) << 8) | ((uint16_t)pBuffer[2]);
+    (int32_t)(((uint16_t)pBuffer[3]) << 8U) | ((uint16_t)pBuffer[2]);
     pIMU->rawGyro.z =
-    (int32_t)(((uint16_t)pBuffer[5]) << 8) | ((uint16_t)pBuffer[4]);
+    (int32_t)(((uint16_t)pBuffer[5]) << 8U) | ((uint16_t)pBuffer[4]);
 
     int32_t scale = 125;
-    if (pIMU->gyroRange == IMU_GYRO_RANGE_250)
+    if (pIMU->gyroRange == IMU_GYRO_RANGE_250) {
         scale = 250;
-    if (pIMU->gyroRange == IMU_GYRO_RANGE_500)
+    }
+
+    if (pIMU->gyroRange == IMU_GYRO_RANGE_500) {
         scale = 500;
-    if (pIMU->gyroRange == IMU_GYRO_RANGE_1000)
+    }
+
+    if (pIMU->gyroRange == IMU_GYRO_RANGE_1000) {
         scale = 1000;
-    if (pIMU->gyroRange == IMU_GYRO_RANGE_2000)
+    }
+
+    if (pIMU->gyroRange == IMU_GYRO_RANGE_2000) {
         scale = 2000;
+    }
+
     // scale to milli degrees per second
     pOutputGyro->x = (((int32_t)pIMU->rawGyro.x) * 1000 * scale) / 0x7FFF;
     pOutputGyro->y = (((int32_t)pIMU->rawGyro.y) * 1000 * scale) / 0x7FFF;
@@ -155,19 +164,23 @@ STATUS_TYPE IMUUpdateAccel (IMU* pIMU, Vec3 curVel, Vec3* pOutputAccel) {
     }
 
     pIMU->rawAccel.x =
-    (int32_t)(((uint16_t)pBuffer[1]) << 8) | ((uint16_t)pBuffer[0]);
+    (int32_t)(((uint16_t)pBuffer[1]) << 8U) | ((uint16_t)pBuffer[0]);
     pIMU->rawAccel.y =
-    (int32_t)(((uint16_t)pBuffer[3]) << 8) | ((uint16_t)pBuffer[2]);
+    (int32_t)(((uint16_t)pBuffer[3]) << 8U) | ((uint16_t)pBuffer[2]);
     pIMU->rawAccel.z =
-    (int32_t)(((uint16_t)pBuffer[5]) << 8) | ((uint16_t)pBuffer[4]);
+    (int32_t)(((uint16_t)pBuffer[5]) << 8U) | ((uint16_t)pBuffer[4]);
 
     int32_t scale = 2;
-    if (pIMU->accRange == IMU_ACC_RANGE_4G)
+    if (pIMU->accRange == IMU_ACC_RANGE_4G) {
         scale = 4;
-    if (pIMU->accRange == IMU_ACC_RANGE_8G)
+    }
+    if (pIMU->accRange == IMU_ACC_RANGE_8G) {
         scale = 8;
-    if (pIMU->accRange == IMU_ACC_RANGE_16G)
+    }
+
+    if (pIMU->accRange == IMU_ACC_RANGE_16G) {
         scale = 16;
+    }
     // scale to millimeters per second ^ 2
     int32_t ax = (((int32_t)pIMU->rawAccel.x) * 1000 * scale) / 0x7FFF;
     int32_t ay = (((int32_t)pIMU->rawAccel.y) * 1000 * scale) / 0x7FFF;
@@ -192,7 +205,7 @@ STATUS_TYPE IMUUpdateAccel (IMU* pIMU, Vec3 curVel, Vec3* pOutputAccel) {
 
 STATUS_TYPE IMU2CPUInterruptHandler (IMU* pIMU, Vec3* pOutputAccel, Vec3* pOutputGyro) {
     if (pIMU == NULL || pIMU->pSPI == NULL || pOutputAccel == NULL || pOutputGyro == NULL) {
-        return eIMU_NULL_PTR;
+        return (STATUS_TYPE)eIMU_NULL_PTR;
     }
 
     // read both status registers
@@ -203,28 +216,28 @@ STATUS_TYPE IMU2CPUInterruptHandler (IMU* pIMU, Vec3* pOutputAccel, Vec3* pOutpu
         return status;
     }
 
-    uint16_t intStatus1 = ((uint16_t)pBuf[1]) << 8 | (uint16_t)pBuf[0];
+    uint16_t intStatus1 = ((uint16_t)pBuf[1]) << 8U | ((uint16_t)pBuf[0]);
     /* check if error status bit is set */
-    if (BIT_ISSET (intStatus1, (INT_ERR_STATUS_BIT << 1))) {
-        return eIMU_HARDWARE_ERR;
+    if (BIT_ISSET (intStatus1, (INT_ERR_STATUS_BIT << 1U))) {
+        return (STATUS_TYPE)eIMU_HARDWARE_ERR;
     }
 
     /* check if accel data is ready */
-    if (BIT_ISSET (intStatus1, (13 << 1))) {
+    if (BIT_ISSET (intStatus1, (13U << 1U))) {
         status = IMUUpdateAccel (pIMU, *pOutputAccel, pOutputAccel);
         if (status != eSTATUS_SUCCESS) {
             return status;
         }
     }
     /* check if gyro data is ready */
-    if (BIT_ISSET (intStatus1, (12 << 1))) {
+    if (BIT_ISSET (intStatus1, (12U << 1U))) {
         status = IMUUpdateGyro (pIMU, *pOutputGyro, pOutputGyro);
         if (status != eSTATUS_SUCCESS) {
             return status;
         }
     }
     /* check if temperature data is ready */
-    if (BIT_ISSET (intStatus1, (11 << 1))) {
+    if (BIT_ISSET (intStatus1, (11U << 1U))) {
         if (status != eSTATUS_SUCCESS) {
             return status;
         }
@@ -272,7 +285,7 @@ STATUS_TYPE IMUSoftReset (IMU* pIMU) {
             HAL_Delay (100);
             status = IMUReadReg (pIMU, BMI3_REG_FEATURE_IO1, regData, 2);
             if (status == eSTATUS_SUCCESS) {
-                if (regData[0] & BMI3_FEATURE_ENGINE_ENABLE_MASK) {
+                if (regData[0] & (uint16_t)BMI3_FEATURE_ENGINE_ENABLE_MASK) {
                     status = eSTATUS_SUCCESS;
                     break;
                 }
@@ -287,33 +300,40 @@ STATUS_TYPE IMUSetupInterrupts (IMU const* pIMU) {
     uint8_t pRegData[4] = { 0 };
     uint16_t temp       = 0;
     /* Map all enabled interrupts to pin INT1 */
-    uint8_t enable = BMI3_INT1, disable = BMI3_INT_NONE;
+    uint8_t enable     = BMI3_INT1;
+    uint8_t disable    = BMI3_INT_NONE;
     STATUS_TYPE status = IMUReadReg (pIMU, BMI3_REG_INT_MAP1, pRegData, 4);
 
     if (status == eSTATUS_SUCCESS) {
+        // NOLINTBEGIN(*)
         pRegData[0] = BMI3_SET_BIT_POS0 (pRegData[0], BMI3_NO_MOTION_OUT, disable);
         pRegData[0] = BMI3_SET_BITS (pRegData[0], BMI3_ANY_MOTION_OUT, disable);
         pRegData[0] = BMI3_SET_BITS (pRegData[0], BMI3_FLAT_OUT, disable);
         pRegData[0] = BMI3_SET_BITS (pRegData[0], BMI3_ORIENTATION_OUT, disable);
+        // NOLINTEND(*)
 
-        temp = (uint16_t)(pRegData[1]) << 8;
+        temp = ((uint16_t)(pRegData[1])) << 8U;
+        // NOLINTBEGIN(*)
         temp = BMI3_SET_BITS (temp, BMI3_STEP_DETECTOR_OUT, disable);
         temp = BMI3_SET_BITS (temp, BMI3_STEP_COUNTER_OUT, disable);
         temp = BMI3_SET_BITS (temp, BMI3_SIG_MOTION_OUT, disable);
         temp = BMI3_SET_BITS (temp, BMI3_TILT_OUT, disable);
-        pRegData[1] = (uint8_t)(temp >> 8);
-
+        // NOLINTEND(*)
+        pRegData[1] = (uint8_t)(temp >> 8U);
+        // NOLINTBEGIN(*)
         pRegData[2] = BMI3_SET_BIT_POS0 (pRegData[2], BMI3_TAP_OUT, disable);
         pRegData[2] = BMI3_SET_BITS (pRegData[2], BMI3_I3C_OUT, disable);
         pRegData[2] = BMI3_SET_BITS (pRegData[2], BMI3_ERR_STATUS, disable);
         pRegData[2] = BMI3_SET_BITS (pRegData[2], BMI3_TEMP_DRDY_INT, enable);
-
-        temp = (uint16_t)(pRegData[3]) << 8;
+        // NOLINTEND(*)
+        temp = (uint16_t)(pRegData[3]) << 8U;
+        // NOLINTBEGIN(*)
         temp = BMI3_SET_BITS (temp, BMI3_GYR_DRDY_INT, enable);
         temp = BMI3_SET_BITS (temp, BMI3_ACC_DRDY_INT, enable);
         temp = BMI3_SET_BITS (temp, BMI3_FIFO_WATERMARK_INT, disable);
         temp = BMI3_SET_BITS (temp, BMI3_FIFO_FULL_INT, disable);
-        pRegData[3] = (uint8_t)(temp >> 8);
+        // NOLINTEND(*)
+        pRegData[3] = (uint8_t)(temp >> 8U);
 
         status = IMUWriteReg (pIMU, BMI3_REG_INT_MAP1, pRegData, 4);
     }
@@ -365,12 +385,18 @@ IMU_GYRO_ODR gyroODR) {
     {
 
         uint8_t pRegData[2] = { 0 };
-        uint16_t odr, range, bwp, avgNum, accMode;
+        uint16_t odr        = 0;
+        uint16_t range      = 0;
+        uint16_t bwp        = 0;
+        uint16_t avgNum     = 0;
+        uint16_t accMode    = 0;
+        // NOLINTBEGIN(*)
         odr = BMI3_SET_BIT_POS0 (pRegData[0], BMI3_ACC_ODR, pIMU->accODR);
         /* Set accelerometer range */
         range = BMI3_SET_BITS (pRegData[0], BMI3_ACC_RANGE, pIMU->accRange);
         /* The Accel bandwidth coefficient defines the 3 dB cutoff frequency in relation to the ODR. */
-        bwp = BMI3_SET_BITS (pRegData[0], BMI3_ACC_BW, 0x01);
+        bwp = BMI3_SET_BITS (pRegData[0], BMI3_ACC_BW, 0x01U);
+
         /* Set accelerometer bandwidth
         Value    Name    Description
         *  0b000     avg_1   No averaging; pass sample without filtering
@@ -388,8 +414,9 @@ IMU_GYRO_ODR gyroODR) {
          */
         accMode = BMI3_SET_BITS (pRegData[1], BMI3_ACC_MODE, BMI3_ACC_MODE_NORMAL);
         pRegData[0] = (uint8_t)(odr | range | bwp);
-        pRegData[1] = (uint8_t)((avgNum | accMode) >> 8);
+        pRegData[1] = (uint8_t)((avgNum | accMode) >> 8U);
         status      = IMUWriteReg (pIMU, BMI3_REG_ACC_CONF, pRegData, 2);
+        // NOLINTEND(*)
         if (status != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to configure IMU accelerometer");
             return eSTATUS_FAILURE;
@@ -399,7 +426,12 @@ IMU_GYRO_ODR gyroODR) {
     /* Configure Gyro */
     {
         uint8_t pRegData[2] = { 0 };
-        uint16_t odr, range, bwp, avgNum, accMode;
+        uint16_t odr        = 0;
+        uint16_t range      = 0;
+        uint16_t bwp        = 0;
+        uint16_t avgNum     = 0;
+        uint16_t accMode    = 0;
+        // NOLINTBEGIN(*)
         /* Output Data Rate. By default ODR is set as 100Hz for gyro. */
         odr = BMI3_SET_BIT_POS0 (pRegData[0], BMI3_GYR_ODR, pIMU->gyroODR);
         /* Gyroscope Angular Rate Measurement Range. By default the range is 2000dps. */
@@ -429,6 +461,7 @@ IMU_GYRO_ODR gyroODR) {
         pRegData[0] = (uint8_t)(odr | range | bwp);
         pRegData[1] = (uint8_t)((avgNum | accMode) >> 8);
         status      = IMUWriteReg (pIMU, BMI3_REG_GYR_CONF, pRegData, 2);
+        // NOLINTEND(*)
         if (status != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to configure IMU gyroscope");
             return eSTATUS_FAILURE;
