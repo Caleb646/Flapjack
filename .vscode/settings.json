@@ -3,14 +3,18 @@
 
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "xaver.clang-format",
-    "clang-format.executable": "/usr/bin/clang-format",
+    // "clang-format.executable": "${Env:CLANG_FORMAT_PATH}",
+    // "clang-format.executable": "/usr/bin/clang-format",
+    "clang-format.executable": "C:/Program Files (x86)/LLVM_Clang/bin/clang-format",
     "workbench.editor.wrapTabs": true,
     "files.associations": {
         "string.h": "c"
     },
 
     "C_Cpp.codeAnalysis.clangTidy.enabled": true,
-    "C_Cpp.codeAnalysis.clangTidy.path": "/usr/bin/clang-tidy",
+    // "C_Cpp.codeAnalysis.clangTidy.path": "${Env:CLANG_TIDY_PATH}",
+    // "C_Cpp.codeAnalysis.clangTidy.path": "/usr/bin/clang-tidy",
+    "C_Cpp.codeAnalysis.clangTidy.path": "C:/Program Files (x86)/LLVM_Clang/bin/clang-tidy",
     "C_Cpp.codeAnalysis.clangTidy.args": [
         "--config-file=${workspaceFolder}/.clang-tidy"
     ], 

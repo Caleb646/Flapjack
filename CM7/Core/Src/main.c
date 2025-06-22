@@ -102,7 +102,7 @@ TaskHandle_t gpTaskMotionControlUpdate;
 // NOLINTEND
 
 void HAL_GPIO_EXTI_Callback (uint16_t gpioPin) {
-    LOG_INFO("In interrupt");
+    LOG_INFO ("In interrupt");
     if (gpioPin == IMU_INT_Pin) {
         Vec3 accel;
         Vec3 gyro;
@@ -139,8 +139,8 @@ void TaskMotionControlUpdate (void* pvParameters) {
         float dt              = (float)HAL_GetTick () - startTime;
         Vec3f currentAttitude = gFlightContext.currentAttitude;
         status                = FilterMadgwick6DOF (
-                       &gFilterMadgwickContext, gFlightContext.imuUnFilteredAccel,
-                       gFlightContext.imuUnFilteredGyro, &currentAttitude);
+        &gFilterMadgwickContext, gFlightContext.imuUnFilteredAccel,
+        gFlightContext.imuUnFilteredGyro, &currentAttitude);
         if (status == eSTATUS_SUCCESS) {
             FlightContextUpdateCurrentAttitude (&gFlightContext, currentAttitude);
         }
@@ -172,7 +172,7 @@ int main (void) {
 
     /* Wait until CPU2 boots and enters in stop mode or timeout*/
     while (__HAL_RCC_GET_FLAG (RCC_FLAG_D2CKRDY) != RESET) {
-        asm volatile("NOP");
+        asm volatile ("NOP");
     }
 
     /* USER CODE END Boot_Mode_Sequence_1 */
@@ -209,7 +209,7 @@ int main (void) {
     HAL_HSEM_Release (HSEM_ID_0, 0);
     // /* wait until CPU2 wakes up from stop mode */
     while (__HAL_RCC_GET_FLAG (RCC_FLAG_D2CKRDY) == RESET) {
-        asm volatile("NOP");
+        asm volatile ("NOP");
     }
     /* USER CODE END Boot_Mode_Sequence_2 */
 
@@ -243,7 +243,7 @@ int main (void) {
         /* USER CODE END WHILE */
         LOG_INFO ("Hello from CM7");
         HAL_Delay (5000);
-        
+
 
         // Debugging SPI
         //        if (imuStatus != eSTATUS_SUCCESS) {
@@ -357,24 +357,24 @@ static void MX_SPI2_Init (void) {
 
     /* USER CODE END SPI2_Init 1 */
     /* SPI2 parameter configuration*/
-    hspi2.Instance                        = SPI2;
-    hspi2.Init.Mode                       = SPI_MODE_MASTER;
-    hspi2.Init.Direction                  = SPI_DIRECTION_2LINES;
-    hspi2.Init.DataSize                   = SPI_DATASIZE_8BIT;
-    hspi2.Init.CLKPolarity                = SPI_POLARITY_LOW;
-    hspi2.Init.CLKPhase                   = SPI_PHASE_1EDGE;
-    hspi2.Init.NSS                        = SPI_NSS_HARD_OUTPUT;
-    hspi2.Init.BaudRatePrescaler          = SPI_BAUDRATEPRESCALER_32;
-    hspi2.Init.FirstBit                   = SPI_FIRSTBIT_MSB;
-    hspi2.Init.TIMode                     = SPI_TIMODE_DISABLE;
-    hspi2.Init.CRCCalculation             = SPI_CRCCALCULATION_DISABLE;
-    hspi2.Init.CRCPolynomial              = 0x0;
-    hspi2.Init.NSSPMode                   = SPI_NSS_PULSE_ENABLE;
-    hspi2.Init.NSSPolarity                = SPI_NSS_POLARITY_LOW;
-    hspi2.Init.FifoThreshold              = SPI_FIFO_THRESHOLD_01DATA;
+    hspi2.Instance               = SPI2;
+    hspi2.Init.Mode              = SPI_MODE_MASTER;
+    hspi2.Init.Direction         = SPI_DIRECTION_2LINES;
+    hspi2.Init.DataSize          = SPI_DATASIZE_8BIT;
+    hspi2.Init.CLKPolarity       = SPI_POLARITY_LOW;
+    hspi2.Init.CLKPhase          = SPI_PHASE_1EDGE;
+    hspi2.Init.NSS               = SPI_NSS_HARD_OUTPUT;
+    hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
+    hspi2.Init.FirstBit          = SPI_FIRSTBIT_MSB;
+    hspi2.Init.TIMode            = SPI_TIMODE_DISABLE;
+    hspi2.Init.CRCCalculation    = SPI_CRCCALCULATION_DISABLE;
+    hspi2.Init.CRCPolynomial     = 0x0;
+    hspi2.Init.NSSPMode          = SPI_NSS_PULSE_ENABLE;
+    hspi2.Init.NSSPolarity       = SPI_NSS_POLARITY_LOW;
+    hspi2.Init.FifoThreshold     = SPI_FIFO_THRESHOLD_01DATA;
     hspi2.Init.TxCRCInitializationPattern = SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
     hspi2.Init.RxCRCInitializationPattern = SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
-    hspi2.Init.MasterSSIdleness           = SPI_MASTER_SS_IDLENESS_00CYCLE;
+    hspi2.Init.MasterSSIdleness = SPI_MASTER_SS_IDLENESS_00CYCLE;
     hspi2.Init.MasterInterDataIdleness = SPI_MASTER_INTERDATA_IDLENESS_00CYCLE;
     hspi2.Init.MasterReceiverAutoSusp = SPI_MASTER_RX_AUTOSUSP_DISABLE;
     hspi2.Init.MasterKeepIOState      = SPI_MASTER_KEEP_IO_STATE_DISABLE;

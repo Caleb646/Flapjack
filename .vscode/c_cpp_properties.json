@@ -22,6 +22,29 @@
             "cppStandard": "gnu++17",
             "intelliSenseMode": "gcc-arm",
             "configurationProvider": "none"
+        },
+        {
+            "name": "Windows DEBUG",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/CM4",
+                "${workspaceFolder}/CM7",
+                "${workspaceFolder}/Drivers",
+                "${workspaceFolder}/Middlewares"
+            ],
+            "defines": [
+                "DEBUG",
+                "CORE_CM4",
+                "CORE_CM7",
+                "USE_HAL_DRIVER",
+                "STM32H747xx",
+                "USE_PWR_DIRECT_SMPS_SUPPLY"
+        ],
+            "compilerPath": "C:/Program Files (x86)/GNU Arm Embedded Toolchain/10 2021.10/bin/arm-none-eabi-gcc",
+            "cStandard": "c17",
+            "cppStandard": "gnu++17",
+            "intelliSenseMode": "gcc-arm",
+            "configurationProvider": "none"
         }
     ],
     "version": 4
