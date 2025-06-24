@@ -1,0 +1,6 @@
+pyqt5 
+pyqtgraph 
+numpy
+PyOpenGL_accelerate
+PyOpenGL
+trimesh
