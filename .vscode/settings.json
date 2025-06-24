@@ -5,6 +5,7 @@
     "editor.defaultFormatter": "xaver.clang-format",
     // "clang-format.executable": "${Env:CLANG_FORMAT_PATH}",
     // "clang-format.executable": "/usr/bin/clang-format",
+    // "C_Cpp.clang_format_path": "C:/Program Files (x86)/LLVM_Clang/bin/clang-format",
     "clang-format.executable": "C:/Program Files (x86)/LLVM_Clang/bin/clang-format",
     "workbench.editor.wrapTabs": true,
     "files.associations": {

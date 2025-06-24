@@ -238,11 +238,10 @@ STATUS_TYPE IMU2CPUInterruptHandler (IMU* pIMU, Vec3* pOutputAccel, Vec3* pOutpu
     }
     /* check if temperature data is ready */
     if (BIT_ISSET (intStatus1, (11U << 1U))) {
-        if (status != eSTATUS_SUCCESS) {
-            return status;
-        }
+        // if (status != eSTATUS_SUCCESS) {
+        //     return status;
+        // }
     };
-
     return status;
 }
 
@@ -337,7 +336,6 @@ STATUS_TYPE IMUSetupInterrupts (IMU const* pIMU) {
 
         status = IMUWriteReg (pIMU, BMI3_REG_INT_MAP1, pRegData, 4);
     }
-
     return status;
 }
 
