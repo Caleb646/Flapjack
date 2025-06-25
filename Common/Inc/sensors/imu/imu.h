@@ -8,6 +8,8 @@
 
 
 #define IMU_MAGIC 0xFAFAAFAF
+#define IMU_LOG_CALIB_DATA(rslt, error) \
+    LOG_DATA (LOG_DATA_TYPE_IMU_CALIB, "{\"rslt\":%u,\"error\":%u}", rslt, error)
 
 typedef enum {
     eIMU_ACC_RANGE_2G  = 0x00,
