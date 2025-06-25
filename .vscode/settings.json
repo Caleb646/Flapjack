@@ -9,7 +9,10 @@
     "clang-format.executable": "C:/Program Files (x86)/LLVM_Clang/bin/clang-format",
     "workbench.editor.wrapTabs": true,
     "files.associations": {
-        "string.h": "c"
+        "string.h": "c",
+        "bmixxx.h": "c",
+        "log.h": "c",
+        "common.h": "c"
     },
 
     "C_Cpp.codeAnalysis.clangTidy.enabled": true,

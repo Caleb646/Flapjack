@@ -135,7 +135,7 @@ void TaskMotionControlUpdate (void* pvParameters) {
         }
 
         STATUS_TYPE status;
-        RadioPWMChannels radio;
+        // RadioPWMChannels radio;
         float dt              = (float)HAL_GetTick () - startTime;
         Vec3f currentAttitude = gFlightContext.currentAttitude;
         status                = FilterMadgwick6DOF (
@@ -224,9 +224,19 @@ int main (void) {
     MX_TIM8_Init ();
     MX_TIM13_Init ();
     /* USER CODE BEGIN 2 */
-
-    STATUS_TYPE status =
-    IMUInit (&gIMU, &hspi2, IMU_ACC_RANGE_4G, IMU_ACC_ODR_100, IMU_GYRO_RANGE_250, IMU_GYRO_ODR_100);
+    IMUAccConf aconf   = { 0 };
+    aconf.odr          = eIMU_ACC_ODR_100;
+    aconf.range        = eIMU_ACC_RANGE_4G;
+    aconf.avg          = eIMU_ACC_AVG_32;
+    aconf.bw           = eIMU_ACC_BW_HALF;
+    aconf.mode         = eIMU_ACC_MODE_HIGH_PERF;
+    IMUGyroConf gconf  = { 0 };
+    gconf.odr          = eIMU_GYRO_ODR_100;
+    gconf.range        = eIMU_GYRO_RANGE_250;
+    gconf.avg          = eIMU_GYRO_AVG_16;
+    gconf.bw           = eIMU_GYRO_BW_HALF;
+    gconf.mode         = eIMU_GYRO_MODE_HIGH_PERF;
+    STATUS_TYPE status = IMUInit (&gIMU, &hspi2, aconf, gconf);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("CM7 failed to init IMU");
     }
