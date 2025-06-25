@@ -1,0 +1,61 @@
+cpu_cm7: CPU.CortexM @ sysbus
+    cpuType: "cortex-m7"
+    cpuId: 0
+    // gdbPort: 3333
+    nvic: nvic_cm7
+
+cpu_cm4: CPU.CortexM @ sysbus
+    cpuType: "cortex-m4"
+    cpuId: 1
+    nvic: nvic_cm4 
+    // gdbPort: 3334
+
+nvic_cm7: IRQControllers.NVIC // @ sysbus 0xE000E000
+    systickFrequency: 96_000_000
+    // vectorTableOffset: 0x08000000
+    priorityMask: 0xF0
+    -> cpu_cm7@0
+
+nvic_cm4: IRQControllers.NVIC // @ sysbus 0xE000E000
+    systickFrequency: 96_000_000
+    // vectorTableOffset: 0x08100000
+    priorityMask: 0xF0
+    -> cpu_cm4@0
+
+// ITCMRAM
+itcmram: Memory.MappedMemory @ sysbus 0x00000000
+    size: 0x10000  // 64 KB
+
+// FLASH for M7 core
+cm7_flash: Memory.MappedMemory @ sysbus 0x08000000
+    size: 0x100000  // 1 MB
+
+// FLASH for M4 core
+cm4_flash: Memory.MappedMemory @ sysbus 0x08100000
+    size: 0x100000  // 1 MB
+
+// Core-coupled SRAM
+sram1: Memory.MappedMemory @ sysbus 0x10000000
+    size: 0x48000  // 288 KB
+
+// DTCMRAM (Data TCM) – fast SRAM for M7
+dtcmram: Memory.MappedMemory @ sysbus 0x20000000
+    size: 0x20000  // 128 KB
+
+// AXI SRAM – RAM_D1
+axisram: Memory.MappedMemory @ sysbus 0x24000000
+    size: 0x80000  // 512 KB
+
+// AHB SRAM – RAM_D2
+ahb_sram: Memory.MappedMemory @ sysbus 0x30000000
+    size: 0x48000  // 288 KB
+
+// RAM_D3
+ram_d3: Memory.MappedMemory @ sysbus 0x38000000
+    size: 0x10000  // 64 KB
+
+usart1: UART.STM32F7_USART @ sysbus 0x40011000
+    frequency: 200000000
+
+// uart3: Peripheral.UART @ sysbus 0x40004800
+// uart4: Peripheral.UART @ sysbus 0x40004C00
