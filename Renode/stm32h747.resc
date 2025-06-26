@@ -1,26 +1,24 @@
 using sysbus
 :name: stm32h747
 
+mach create "stm32h747"
+
+machine LoadPlatformDescription @stm32h747.repl
+
+logLevel 0
+logLevel -1 file
+sysbus LogAllPeripheralsAccess true
+sysbus.cpu_cm7 LogFunctionNames true
+sysbus.cpu_cm4 LogFunctionNames true
 logFile @Logs/renode.log
 
-mach create stm32h747
+sysbus LoadELF "C:/Users/c.thomas/STM32CubeIDE/workspace_1.18.0/Drone/CM7/Debug/Drone_CM7.elf"
+sysbus LoadELF "C:/Users/c.thomas/STM32CubeIDE/workspace_1.18.0/Drone/CM4/Debug/Drone_CM4.elf"
 
-# Load platform description (dual-core)
-mach LoadPlatformDescription @stm32h747.repl
+sysbus.cpu_cm7 PC 0x08000000
+sysbus.cpu_cm4 PC 0x08100000
 
-# Load each core's firmware
-cpu_cm7 LoadELF @../CM7/Debug/Drone_C74.elf
-cpu_cm4 LoadELF @../CM4/Debug/Drone_CM4.elf
-
-# Optional: set PC manually
-cpu_cm7 SetRegister pc 0x08000000
-cpu_cm7 SetRegister pc 0x08100000
-
-# Connect UARTs for each core
-emulation CreateUartBackend "uart_m7" "m7_uart.log" true
-# emulation CreateUartBackend "uart_m4" "m4_uart.log" true
-
-sysbus.usart1 Connect uart_m7
-# sysbus.uart4 Connect uart_m4
+cpu_cm7 VectorTableOffset 0x08000000
+cpu_cm4 VectorTableOffset 0x08100000
 
 start

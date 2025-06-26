@@ -1,26 +1,68 @@
 cpu_cm7: CPU.CortexM @ sysbus
     cpuType: "cortex-m7"
-    cpuId: 0
-    // gdbPort: 3333
     nvic: nvic_cm7
 
 cpu_cm4: CPU.CortexM @ sysbus
     cpuType: "cortex-m4"
-    cpuId: 1
     nvic: nvic_cm4 
-    // gdbPort: 3334
 
 nvic_cm7: IRQControllers.NVIC // @ sysbus 0xE000E000
-    systickFrequency: 96_000_000
+    systickFrequency: 64_000_000
     // vectorTableOffset: 0x08000000
     priorityMask: 0xF0
     -> cpu_cm7@0
 
 nvic_cm4: IRQControllers.NVIC // @ sysbus 0xE000E000
-    systickFrequency: 96_000_000
+    systickFrequency: 64_000_000
     // vectorTableOffset: 0x08100000
     priorityMask: 0xF0
     -> cpu_cm4@0
+
+exti: IRQControllers.STM32H7_EXTI @ sysbus 0x58000000
+    [0-4] -> nvic_cm7@[6-10]
+    [5-9] -> nvicInput23@[0-4]
+    [10-15] -> nvicInput40@[0-5]
+    [16-19] -> nvic_cm7@[1, 41, 2, 3]
+    [20, 21] -> nvicInput137@[0-1]
+    [22-24] -> nvic_cm7@[31, 33, 72]
+    [26-29] -> nvic_cm7@[37-39, 71]
+    [30-33] -> nvic_cm7@[52, 53, 82, 83]
+    [34-35] -> nvicInput142@[0-1]
+    [36-40] -> nvic_cm7@[35, 36, 51, 84, 85]
+    41 -> nvicInput86@0
+    [42-44] -> nvic_cm7@[119, 76, 100]
+    [47, 48, 50, 52, 53] -> nvic_cm7@[93, 138-141]
+    54 -> nvic_cm7@115
+    [55-60] -> nvicInput149@[0-5]
+    [61-64] -> nvic_cm7@[5, 95, 96, 142]
+    65 -> nvicInput86@1
+    [66-73] -> nvic_cm7@[129-136]
+    [74-76] -> nvic_cm7@[128, 127, 146]
+    [85, 86] -> nvic_cm7@[94, 61]
+
+nvicInput23: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 5
+    -> nvic_cm7@23
+
+nvicInput40: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 6
+    -> nvic_cm7@40
+
+nvicInput86: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 2
+    -> nvic_cm7@86
+
+nvicInput137: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 2
+    -> nvic_cm7@137
+
+nvicInput142: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 2
+    -> nvic_cm7@142
+
+nvicInput149: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 6
+    -> nvic_cm7@149
 
 // ITCMRAM
 itcmram: Memory.MappedMemory @ sysbus 0x00000000
@@ -54,8 +96,202 @@ ahb_sram: Memory.MappedMemory @ sysbus 0x30000000
 ram_d3: Memory.MappedMemory @ sysbus 0x38000000
     size: 0x10000  // 64 KB
 
-usart1: UART.STM32F7_USART @ sysbus 0x40011000
-    frequency: 200000000
+tim2: Timers.STM32_Timer @ sysbus 0x40000000
+    frequency: 64_000_000
+    initialLimit: 0xFFFF
 
-// uart3: Peripheral.UART @ sysbus 0x40004800
-// uart4: Peripheral.UART @ sysbus 0x40004C00
+tim3: Timers.STM32_Timer @ sysbus 0x40000400
+    frequency: 64_000_000
+    initialLimit: 0xFFFF
+
+tim4: Timers.STM32_Timer @ sysbus 0x40000800
+    frequency: 64_000_000
+    initialLimit: 0xFFFF
+
+tim5: Timers.STM32_Timer @ sysbus 0x40000C00
+    frequency: 64_000_000
+    initialLimit: 0xFFFF
+
+tim6: Timers.STM32_Timer @ sysbus 0x40001000
+    frequency: 64_000_000
+    initialLimit: 0xFFFF
+
+tim7: Timers.STM32_Timer @ sysbus 0x40001400
+    frequency: 64_000_000
+    initialLimit: 0xFFFF
+
+tim12: Timers.STM32_Timer @ sysbus 0x40001800
+    frequency: 64_000_000
+    initialLimit: 0xFFFF
+
+tim13: Timers.STM32_Timer @ sysbus 0x40001C00
+    frequency: 64_000_000
+    initialLimit: 0xFFFF
+
+tim14: Timers.STM32_Timer @ sysbus 0x40002000
+    frequency: 64_000_000
+    initialLimit: 0xFFFF
+
+adc3: Analog.STM32F0_ADC @ sysbus 0x58026000
+    referenceVoltage: 3.3
+    externalEventFrequency: 1000
+    -> exti@75
+
+bdma: DMA.STM32LDMA @ sysbus 0x58025400
+    [0-7] -> exti@[66-73]
+
+gpioPortK: GPIOPort.STM32_GPIOPort @ sysbus <0x58022800, +0x400>
+    numberOfAFs: 16
+    [0-7] -> syscfg#10@[0-7]
+
+gpioPortJ: GPIOPort.STM32_GPIOPort @ sysbus <0x58022400, +0x400>
+    numberOfAFs: 16
+    [0-15] -> syscfg#9@[0-15]
+
+gpioPortI: GPIOPort.STM32_GPIOPort @ sysbus <0x58022000, +0x400>
+    numberOfAFs: 16
+    [0-15] -> syscfg#8@[0-15]
+
+gpioPortH: GPIOPort.STM32_GPIOPort @ sysbus <0x58021C00, +0x400>
+    numberOfAFs: 16
+    [0-15] -> syscfg#7@[0-15]
+
+gpioPortG: GPIOPort.STM32_GPIOPort @ sysbus <0x58021800, +0x400>
+    numberOfAFs: 16
+    [0-15] -> syscfg#6@[0-15]
+
+gpioPortF: GPIOPort.STM32_GPIOPort @ sysbus <0x58021400, +0x400>
+    numberOfAFs: 16
+    [0-15] -> syscfg#5@[0-15]
+
+gpioPortE: GPIOPort.STM32_GPIOPort @ sysbus <0x58021000, +0x400>
+    numberOfAFs: 16
+    [0-15] -> syscfg#4@[0-15]
+
+gpioPortD: GPIOPort.STM32_GPIOPort @ sysbus <0x58020C00, +0x400>
+    numberOfAFs: 16
+    [0-15] -> syscfg#3@[0-15]
+
+gpioPortC: GPIOPort.STM32_GPIOPort @ sysbus <0x58020800, +0x400>
+    numberOfAFs: 16
+    [0-15] -> syscfg#2@[0-15]
+
+gpioPortB: GPIOPort.STM32_GPIOPort @ sysbus <0x58020400, +0x400>
+    numberOfAFs: 16
+    [0-15] -> syscfg#1@[0-15]
+
+gpioPortA: GPIOPort.STM32_GPIOPort @ sysbus <0x58020000, +0x400>
+    numberOfAFs: 16
+    [0-15] -> syscfg#0@[0-15]
+
+rtc: Timers.STM32F4_RTC @ sysbus 0x58004000
+    AlarmIRQ -> exti@17
+    WakeupIRQ -> exti@19
+
+spi4: SPI.STM32H7_SPI @ sysbus 0x40013400
+    DMARecieve -> dma2@4
+
+i2c4: I2C.STM32F7_I2C @ sysbus 0x58001C00
+    EventInterrupt -> exti@62
+    ErrorInterrupt -> exti@63
+
+lpuart1: UART.STM32F7_USART @ sysbus 0x58000C00
+    frequency: 125000000
+    IRQ -> exti@64
+
+syscfg: Miscellaneous.STM32_SYSCFG @ sysbus 0x58000400
+    [0-15] -> exti@[0-15]
+
+dma2d: DMA.STM32DMA2D @ sysbus 0x52001000
+    -> nvic_cm7@90
+
+ltdc: Video.STM32LTDC @ sysbus 0x50001000
+    -> nvic_cm7@88
+
+adcM1S2: Analog.STM32F0_ADC @ sysbus 0x40022000
+    referenceVoltage: 3.3
+    externalEventFrequency: 1000
+    -> nvic_cm7@18
+
+rng: Miscellaneous.STM32F4_RNG @ sysbus 0x48021800
+    -> nvic_cm7@80
+
+dma2: DMA.STM32DMA @ sysbus 0x40020400
+    [0-7] -> nvic_cm7@[56-60, 68-70]
+
+dma1: DMA.STM32DMA @ sysbus 0x40020000
+    [0-7] -> nvic_cm7@[11-17, 47]
+
+rcc: Miscellaneous.STM32H7_RCC @ sysbus 0x58024400
+
+crc: CRC.STM32_CRC @ sysbus 0x58024C00
+    series: STM32Series.F0
+    configurablePoly: true
+
+lptimer1: Timers.STM32L0_LpTimer @ sysbus 0x40002400
+    frequency: 32_000_000
+    -> exti@47
+
+lptimer2: Timers.STM32L0_LpTimer @ sysbus 0x58002400
+    frequency: 32000000
+    -> exti@48
+
+lptimer3: Timers.STM32L0_LpTimer @ sysbus 0x58002800
+    frequency: 32_000_000
+    -> exti@50
+
+lptimer4: Timers.STM32L0_LpTimer @ sysbus 0x58002C00
+    frequency: 32_000_000
+    -> exti@52
+
+lptimer5: Timers.STM32L0_LpTimer @ sysbus 0x58003000
+    frequency: 32_000_000
+    -> exti@53
+
+usart1: UART.STM32F7_USART @ sysbus 0x40011000
+    frequency: 64_000_000
+
+sysbus:
+    init:
+        Tag <0x58027000, 0x580273FF> "RAMECC3"
+        Tag <0x58025800, 0x58025BFF> "DMAMUX2"
+        Tag <0x58024800, 0x58024BFF> "PWR"
+        Tag <0x58024818, 0x58024818> "D3CR" 0x2000  // VOSRDY flag (b13) indicates the voltage was properly set.
+        Tag <0x58005400, 0x580057FF> "SAI4"
+        Tag <0x58003C00, 0x58003FFF> "VREF"
+        Tag <0x58003800, 0x58003BFF> "COMP1_-_COMP2"
+        Tag <0x58001400, 0x580017FF> "SPI6"
+        Tag <0x52009000, 0x520093FF> "RAMECC1"
+        Tag <0x52008000, 0x52008FFF> "Delay_Block_SDMMC1"
+        Tag <0x52007000, 0x52007FFF> "SDMMC1"
+        Tag <0x52006000, 0x52006FFF> "Delay_Block_QUADSPI"
+        Tag <0x52004000, 0x52004FFF> "FMC_control_registers"
+        Tag <0x52003000, 0x52003FFF> "JPEG"
+        Tag <0x52000000, 0x52000FFF> "MDMA"
+        Tag <0x51000000, 0x510FFFFF> "GPV_matrix_(AXIM)"
+        Tag <0x50003000, 0x50003FFF> "WWDG1"
+        Tag <0x48023000, 0x480233FF> "RAMECC2"
+        Tag <0x48022800, 0x48022BFF> "Delay_Block_SDMMC2"
+        Tag <0x48022400, 0x480227FF> "SDMMC2"
+        Tag <0x48021400, 0x480217FF> "HASH"
+        Tag <0x48020000, 0x480203FF> "DCMI"
+        Tag <0x40080000, 0x400BFFFF> "USB2_OTG_FS"
+        Tag <0x40040000, 0x4007FFFF> "USB1_OTG_HS"
+        Tag <0x40020800, 0x40020BFF> "DMAMUX1"
+        Tag <0x40017400, 0x400177FF> "HRTIM"
+        Tag <0x40017000, 0x400173FF> "DFSDM1"
+        Tag <0x40016000, 0x400163FF> "SAI3"
+        Tag <0x40015C00, 0x40015FFF> "SAI2"
+        Tag <0x40015800, 0x40015BFF> "SAI1"
+        Tag <0x40015000, 0x400153FF> "SPI5"
+        Tag <0x40013000, 0x400133FF> "SPI1_/_I2S1"
+        Tag <0x4000A800, 0x4000ABFF> "CAN_CCU"
+        Tag <0x40009400, 0x400097FF> "MDIOS"
+        Tag <0x40009000, 0x400093FF> "OPAMP"
+        Tag <0x40008800, 0x40008BFF> "SWPMI"
+        Tag <0x40008400, 0x400087FF> "CRS"
+        Tag <0x40007400, 0x400077FF> "DAC1"
+        Tag <0x40006C00, 0x40006FFF> "HDMI-CEC"
+        Tag <0x40004000, 0x400043FF> "SPDIFRX1"
+        Tag <0x40003C00, 0x40003FFF> "SPI3_/_I2S3"
+        Tag <0x40003800, 0x40003BFF> "SPI2_/_I2S2"
