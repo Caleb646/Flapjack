@@ -1,0 +1,11 @@
+cpu_cm4: CPU.CortexM @ sysbus
+    cpuType: "cortex-m4"
+    nvic: nvic_cm4 
+
+nvic_cm4: IRQControllers.NVIC @ {
+    sysbus new Bus.BusPointRegistration { address: 0xE000E000; cpu: cpu_cm4 }
+}   
+    -> cpu_cm4@0
+    systickFrequency: 64_000_000
+    priorityMask: 0xF0
+    

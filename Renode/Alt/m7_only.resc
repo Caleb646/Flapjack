@@ -1,0 +1,24 @@
+:name: stm32_cm7
+
+mach create "stm32_cm7"
+
+:include $CWD/Renode/PyStm32PWR.py:
+
+machine LoadPlatformDescription $CWD/Renode/m7.repl
+
+logLevel 2
+logLevel 0 file
+sysbus LogAllPeripheralsAccess true
+sysbus.cpu LogFunctionNames true
+logFile $CWD/Renode/Logs/m7_only.log
+
+sysbus LoadELF $CWD/CM7/Debug/Drone_CM7.elf
+
+:sysbus.cpu PC 0x080035f9:
+sysbus.cpu VectorTableOffset 0x08000000
+
+:sysbus WriteDoubleWord 0x58024804 0x2000:
+
+machine StartGdbServer 3333
+
+:start:
