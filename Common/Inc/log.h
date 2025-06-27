@@ -2,7 +2,7 @@
 #define LOG_H
 
 #include "common.h"
-#include "stm32h7xx.h"
+#include "hal.h"
 #include <stdint.h>
 #include <stdio.h>
 

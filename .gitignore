@@ -18,6 +18,7 @@ Release/**
 # !Release/**/Makefile
 # !Release/**/makefile
 
+Tests/build/**
 Renode/Logs/**
 GUI/venv/**
 Drone_CM7.list

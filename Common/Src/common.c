@@ -1,6 +1,6 @@
 #include "common.h"
-#include "cmsis_os.h"
-#include "stm32h7xx.h"
+#include "hal.h"
+#include <stdint.h>
 
 int32_t clipi32 (int32_t v, int32_t lower, int32_t upper) {
     if (v < lower) {

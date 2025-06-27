@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "log.h"
+#include "hal.h"
 #include "mem/mem.h"
 #include "mem/ring_buff.h"
 #include "sync/mailbox.h"

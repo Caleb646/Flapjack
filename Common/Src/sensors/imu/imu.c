@@ -2,7 +2,7 @@
 #include "common.h"
 #include "log.h"
 #include "sensors/imu/bmixxx.h"
-#include "stm32h7xx.h"
+// #include "stm32h7xx_hal.h"
 #include <stdint.h>
 #include <string.h>
 

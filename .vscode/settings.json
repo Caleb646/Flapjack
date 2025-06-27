@@ -1,12 +1,12 @@
 {
-    "makefile.makefilePath": "${workspaceFolder}/CM4/Debug/makefile",
-
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "xaver.clang-format",
-    // "clang-format.executable": "${Env:CLANG_FORMAT_PATH}",
-    // "clang-format.executable": "/usr/bin/clang-format",
+    //"C_Cpp.formatting": "clangFormat",
     // "C_Cpp.clang_format_path": "C:/Program Files (x86)/LLVM_Clang/bin/clang-format",
     "clang-format.executable": "C:/Program Files (x86)/LLVM_Clang/bin/clang-format",
+    // "clang-format.executable": "${Env:CLANG_FORMAT_PATH}",
+    // "clang-format.executable": "/usr/bin/clang-format", 
+    
     "workbench.editor.wrapTabs": true,
     "files.associations": {
         "string.h": "c",
@@ -14,13 +14,13 @@
         "log.h": "c",
         "common.h": "c"
     },
-
     "C_Cpp.codeAnalysis.clangTidy.enabled": true,
     // "C_Cpp.codeAnalysis.clangTidy.path": "${Env:CLANG_TIDY_PATH}",
     // "C_Cpp.codeAnalysis.clangTidy.path": "/usr/bin/clang-tidy",
     "C_Cpp.codeAnalysis.clangTidy.path": "C:/Program Files (x86)/LLVM_Clang/bin/clang-tidy",
     "C_Cpp.codeAnalysis.clangTidy.args": [
         "--config-file=${workspaceFolder}/.clang-tidy"
-    ], 
-  "C_Cpp.errorSquiggles": "enabled"
+    ],
+    "C_Cpp.errorSquiggles": "enabled",
+    "cmake.ignoreCMakeListsMissing": true
 }

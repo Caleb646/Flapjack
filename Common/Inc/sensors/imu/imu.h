@@ -3,7 +3,7 @@
 
 #include "common.h"
 #include "sensors/imu/bmixxx.h"
-#include "stm32h7xx.h"
+#include "hal.h"
 #include <stdint.h>
 
 
