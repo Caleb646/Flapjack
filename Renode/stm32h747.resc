@@ -6,11 +6,13 @@ mach create "stm32h747"
 machine LoadPlatformDescription $CWD/Renode/stm32h747.repl
 
 logLevel 2
-logLevel 0 file
+logLevel -1 file
+logFile $CWD/Renode/Logs/renode.log
+
 sysbus LogAllPeripheralsAccess true
 sysbus.cpu_cm7 LogFunctionNames true
 sysbus.cpu_cm4 LogFunctionNames true
-logFile $CWD/Renode/Logs/renode.log
+
 
 sysbus LoadELF $CWD/CM7/Debug/Drone_CM7.elf : cpu=cpu_cm7 :
 sysbus LoadELF $CWD/CM4/Debug/Drone_CM4.elf : cpu=cpu_cm4 :
@@ -21,7 +23,7 @@ sysbus LoadELF $CWD/CM4/Debug/Drone_CM4.elf : cpu=cpu_cm4 :
 sysbus.cpu_cm7 VectorTableOffset 0x08000000
 sysbus.cpu_cm4 VectorTableOffset 0x08100000
 
-: machine StartGdbServer 3333 true sysbus.cpu_cm7 :
+: machine StartGdbServer 3333 false sysbus.cpu_cm7 :
 : machine StartGdbServer 3334 false sysbus.cpu_cm4 :
 
 : start :

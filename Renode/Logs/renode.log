@@ -1,9 +1,0 @@
-16:24:40.6764 [INFO] sysbus: Loading segment of 52616 bytes length at 0x8000000.
-16:24:40.6908 [INFO] sysbus: Loading segment of 17920 bytes length at 0x800CD88.
-16:24:40.6908 [INFO] sysbus: Loading segment of 1536 bytes length at 0x800CDF8.
-16:24:40.7157 [INFO] sysbus: Loading segment of 35552 bytes length at 0x8100000.
-16:24:40.7157 [INFO] sysbus: Loading segment of 3632 bytes length at 0x8108AE0.
-16:24:40.7157 [INFO] sysbus: Loading segment of 1536 bytes length at 0x8108B4C.
-16:24:45.9942 [INFO] stm32h747: Disposed.
-16:28:42.7138 [INFO] Including script: C:\Users\caleb\Projects\Drone\Renode\stm32h747.resc
-16:28:42.7138 [INFO] System bus created.
