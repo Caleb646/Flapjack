@@ -171,9 +171,16 @@ int main (void) {
     /* USER CODE BEGIN Boot_Mode_Sequence_1 */
 
     /* Wait until CPU2 boots and enters in stop mode or timeout*/
-    while (__HAL_RCC_GET_FLAG (RCC_FLAG_D2CKRDY) != RESET) {
-        asm volatile ("NOP");
-    }
+    // while (__HAL_RCC_GET_FLAG (RCC_FLAG_D2CKRDY) != RESET) {
+    //     asm volatile ("NOP");
+    // }
+
+    // (((((((((uint8_t)0x2F)) >> 5U) == 1U) ?
+    // ((RCC_TypeDef *) (((0x40000000UL) + 0x18020000UL) + 0x4400UL))->CR :((((((uint8_t)0x2F)) >> 5U) == 2U) ?
+    // ((RCC_TypeDef *) (((0x40000000UL) + 0x18020000UL) + 0x4400UL))->BDCR : ((((((uint8_t)0x2F)) >> 5U) == 3U)?
+    // ((RCC_TypeDef *) (((0x40000000UL) + 0x18020000UL) + 0x4400UL))->CSR : ((((((uint8_t)0x2F)) >> 5U) == 4U)?
+    // ((RCC_TypeDef *) (((0x40000000UL) + 0x18020000UL) + 0x4400UL))->RSR
+    // : ((RCC_TypeDef *) (((0x40000000UL) + 0x18020000UL) + 0x4400UL))->CIFR)))) & (1U << ((((uint8_t)0x2F)) & ((uint8_t)0x1F))))!= 0U)? 1U : 0U)
 
     /* USER CODE END Boot_Mode_Sequence_1 */
     /* MCU Configuration--------------------------------------------------------*/

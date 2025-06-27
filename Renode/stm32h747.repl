@@ -247,7 +247,8 @@ lptimer5: Timers.STM32L0_LpTimer @ sysbus 0x58003000
 watchdog: Timers.STM32_IndependentWatchdog @ sysbus 0x58004800
     frequency: 56000
 
-hsem: Miscellaneous.STM32H7_HardwareSemaphore @ sysbus 0x58026400
+hsem: Miscellaneous.STM32H7_HardwareSemaphore @ sysbus 0x58026400 
+    -> nvic_cm7@125 | nvic_cm4@126
 
 ethernet: Network.SynopsysDWCEthernetQualityOfService @ {
     sysbus 0x40028000;
@@ -263,17 +264,26 @@ usart1: UART.STM32F7_USART @ sysbus 0x40011000
 qspi: SPI.STM32H7_QuadSPI @ sysbus 0x52005000
     -> nvic_cm7@92
 
-pwr_cr1: Python.PythonPeripheral @ sysbus 0x58024800
-    size: 0x4
+pwr: Python.PythonPeripheral @ sysbus 0x58024800
+    size: 16
     initable: true
-    filename: "Renode/Example.py"
+    script: '''
+cache = {}
+if request.isRead: 
+    if request.offset == 0x4: # PWR Status Register
+        request.value = 0x2000
+    if request.offset in cache:
+        request.value = cache[request.offset]
+elif request.isWrite:
+    cache[request.offset] = request.value
+'''
     // filename: "C:/Users/caleb/Projects/Drone/Renode/Example.py"
 
-pwr_csr1: Python.PythonPeripheral @ sysbus 0x58024804
-    size: 0x4
-    initable: false
-    script: "request.value = 0x2000"
-    // filename: "request.value = 0x2000"
+// pwr_csr1: Python.PythonPeripheral @ sysbus 0x58024804
+//     size: 0x4
+//     initable: false
+//     script: "request.value = 0x2000"
+//     // filename: "request.value = 0x2000"
 
 sysbus:
     init:
