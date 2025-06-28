@@ -102,7 +102,7 @@ TaskHandle_t gpTaskMotionControlUpdate;
 // NOLINTEND
 
 void HAL_GPIO_EXTI_Callback (uint16_t gpioPin) {
-    LOG_INFO ("In interrupt");
+    // LOG_INFO ("In interrupt");
     if (gpioPin == IMU_INT_Pin) {
         Vec3 accel;
         Vec3 gyro;
@@ -174,13 +174,6 @@ int main (void) {
     while (__HAL_RCC_GET_FLAG (RCC_FLAG_D2CKRDY) != RESET) {
         asm volatile ("NOP");
     }
-
-    // (((((((((uint8_t)0x2F)) >> 5U) == 1U) ?
-    // ((RCC_TypeDef *) (((0x40000000UL) + 0x18020000UL) + 0x4400UL))->CR :((((((uint8_t)0x2F)) >> 5U) == 2U) ?
-    // ((RCC_TypeDef *) (((0x40000000UL) + 0x18020000UL) + 0x4400UL))->BDCR : ((((((uint8_t)0x2F)) >> 5U) == 3U)?
-    // ((RCC_TypeDef *) (((0x40000000UL) + 0x18020000UL) + 0x4400UL))->CSR : ((((((uint8_t)0x2F)) >> 5U) == 4U)?
-    // ((RCC_TypeDef *) (((0x40000000UL) + 0x18020000UL) + 0x4400UL))->RSR
-    // : ((RCC_TypeDef *) (((0x40000000UL) + 0x18020000UL) + 0x4400UL))->CIFR)))) & (1U << ((((uint8_t)0x2F)) & ((uint8_t)0x1F))))!= 0U)? 1U : 0U)
 
     /* USER CODE END Boot_Mode_Sequence_1 */
     /* MCU Configuration--------------------------------------------------------*/
@@ -260,13 +253,6 @@ int main (void) {
         /* USER CODE END WHILE */
         LOG_INFO ("Hello from CM7");
         HAL_Delay (5000);
-
-
-        // Debugging SPI
-        //        if (imuStatus != eSTATUS_SUCCESS) {
-        //        	IMUInit (&gIMU, &hspi2, IMU_ACC_RANGE_4G, IMU_ACC_ODR_100, IMU_GYRO_RANGE_250, IMU_GYRO_ODR_100);
-        //		}
-
         /* USER CODE BEGIN 3 */
     }
 
@@ -289,11 +275,7 @@ int main (void) {
     vTaskStartScheduler ();
 
     /* USER CODE END 2 */
-
     while (1) {
-        /* USER CODE END WHILE */
-
-        /* USER CODE BEGIN 3 */
     }
     /* USER CODE END 3 */
 }

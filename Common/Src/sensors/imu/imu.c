@@ -623,6 +623,10 @@ STATUS_TYPE IMUSetupInterrupts (IMU const* pIMU) {
 
         status = IMUWriteReg (pIMU, BMI3_REG_INT_MAP1, pRegData, 4);
     }
+    // Enable INT1 and INT2 with active high
+    uint8_t pEnableInterrupts[2] = { (1U << 2U | 1U << 0U), (1U << 2U | 1U << 0U) };
+    status = IMUWriteReg (pIMU, BMI3_REG_IO_INT_CTRL, pEnableInterrupts, 2);
+
     return status;
 }
 
