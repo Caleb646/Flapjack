@@ -8,7 +8,6 @@
 #define __BKPT(arg)
 #define CM7_CPUID ((uint32_t)0x00000003)
 #define CM4_CPUID ((uint32_t)0x00000001)
-
 typedef struct {
     int dummy;
 } SPI_HandleTypeDef;
@@ -22,6 +21,26 @@ typedef enum {
     HAL_TIMEOUT = 0x03
 } HAL_StatusTypeDef;
 
+
+typedef HAL_StatusTypeDef (
+*HAL_SPI_Transmit_CB) (SPI_HandleTypeDef* hspi, uint8_t* pData, uint16_t Size, uint32_t Timeout);
+
+typedef HAL_StatusTypeDef (*HAL_SPI_TransmitReceive_CB) (
+SPI_HandleTypeDef* hspi,
+uint8_t* pTxData,
+uint8_t* pRxData,
+uint16_t Size,
+uint32_t Timeout);
+
+typedef HAL_StatusTypeDef (*HAL_UART_Transmit_CB) (
+UART_HandleTypeDef* huart,
+const uint8_t* pData,
+uint16_t Size,
+uint32_t Timeout);
+
+extern HAL_SPI_Transmit_CB gHAL_SPI_Transmit_CB;
+extern HAL_SPI_TransmitReceive_CB gHAL_SPI_TransmitReceive_CB;
+extern HAL_UART_Transmit_CB gHAL_UART_Transmit_CB;
 
 HAL_StatusTypeDef
 HAL_SPI_Transmit (SPI_HandleTypeDef* hspi, uint8_t* pData, uint16_t Size, uint32_t Timeout);

@@ -144,7 +144,7 @@ class IMUViewer(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot()
     def receive(self):
-        self.buffer += self.serial.readAll()
+        self.buffer += self.serial.readAll().data() # .readAll()
         while START_DELIM in self.buffer and END_DELIM in self.buffer:
             start = self.buffer.find(START_DELIM)
             end = self.buffer.find(END_DELIM, start)

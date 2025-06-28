@@ -19,6 +19,16 @@
 #define LOG_WARN(...)           LOG_ ("[WARN]", __VA_ARGS__)
 #define LOG_ERROR(...)          LOG_ ("[ERROR]", __VA_ARGS__)
 
+// #define LOG_ARRAY(arr, len, fmt)                    \
+//     do {                                                             \
+//         printf("<{\"type\":\"debug\",\"lvl\":\"%s\",\"array\":\"%s\",\"values\":[", "[DEBUG]", #arr);             \
+//         for (uint32_t i = 0; i < (len); ++i) {                      \
+//             printf(fmt, (arr)[i]);                                   \
+//             if (i < (len) - 1) printf(",");                          \
+//         }                                                            \
+//         printf("]}>\r\n");                                           \
+//     } while (0)
+
 #define LOG_DATA_TYPE_ATTITUDE  "attitude"
 #define LOG_DATA_TYPE_IMU_CALIB "imu_calib"
 #define LOG_DATA_TYPE_IMU_DATA  "imu_data"

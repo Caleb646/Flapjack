@@ -33,6 +33,7 @@
                 "${workspaceFolder}/Middlewares"
             ],
             "defines": [
+                "UNIT_TEST", // Uncomment for unit tests
                 "DEBUG",
                 "CORE_CM4",
                 "CORE_CM7",

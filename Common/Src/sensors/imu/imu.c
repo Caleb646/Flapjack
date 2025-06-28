@@ -85,15 +85,22 @@ STATUS_TYPE IMUReadReg (IMU const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t le
     // set NSS high
     // HAL_GPIO_WritePin(SPI2_NSS_GPIO_Port, SPI2_NSS_Pin, GPIO_PIN_SET);
 
-    if (len + pIMU->nDummyBytes > RW_BUFFER_SZ) {
+    /*
+     * NOTE: Position        Sent        Received
+     *       0               addr         0x00
+     *       1               0x00         dummy byte (0x00)
+     *       2               0x00         data byte 0
+     *       N               0x00         data byte N
+     */
+    if (len + pIMU->nDummyBytes + 1 > RW_BUFFER_SZ) {
         return (STATUS_TYPE)eIMU_RW_BUFFER_OVERFLOW;
     }
 
-    if (HAL_SPI_TransmitReceive (pIMU->pSPI, pTx, pRx, len + pIMU->nDummyBytes, SPI_DEFAULT_TIMEOUT_MS) != HAL_OK) {
+    if (HAL_SPI_TransmitReceive (pIMU->pSPI, pTx, pRx, len + pIMU->nDummyBytes + 1, SPI_DEFAULT_TIMEOUT_MS) != HAL_OK) {
         return (STATUS_TYPE)eIMU_COM_FAILURE;
     }
     // The first nDummyBytes are dummy bytes
-    memcpy (pBuf, &pRx[pIMU->nDummyBytes], len);
+    memcpy (pBuf, &(pRx[pIMU->nDummyBytes + 1]), len);
     return eSTATUS_SUCCESS;
 }
 
@@ -104,7 +111,7 @@ STATUS_TYPE IMUWriteReg (IMU const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t l
         return (STATUS_TYPE)eIMU_RW_BUFFER_OVERFLOW;
     }
 
-    pTx[0] = reg | BMI3_SPI_WR_MASK;
+    pTx[0] = reg & BMI3_SPI_WR_MASK;
     memcpy (&pTx[1], (void*)pBuf, len);
 
     if (HAL_SPI_Transmit (pIMU->pSPI, pTx, len + 1, SPI_DEFAULT_TIMEOUT_MS) != HAL_OK) {
@@ -121,11 +128,11 @@ STATUS_TYPE IMUUpdateGyro (IMU* pIMU, Vec3 curAngularVel, Vec3* pOutputGyro) {
     }
 
     pIMU->rawGyro.x =
-    (int32_t)(((uint16_t)pBuffer[1]) << 8U) | ((uint16_t)pBuffer[0]);
+    (int32_t)((((uint16_t)pBuffer[1]) << 8U) | ((uint16_t)pBuffer[0]));
     pIMU->rawGyro.y =
-    (int32_t)(((uint16_t)pBuffer[3]) << 8U) | ((uint16_t)pBuffer[2]);
+    (int32_t)((((uint16_t)pBuffer[3]) << 8U) | ((uint16_t)pBuffer[2]));
     pIMU->rawGyro.z =
-    (int32_t)(((uint16_t)pBuffer[5]) << 8U) | ((uint16_t)pBuffer[4]);
+    (int32_t)((((uint16_t)pBuffer[5]) << 8U) | ((uint16_t)pBuffer[4]));
 
     int32_t scale = 125;
     if (pIMU->gconf.range == eIMU_GYRO_RANGE_250) {
@@ -167,11 +174,11 @@ STATUS_TYPE IMUUpdateAccel (IMU* pIMU, Vec3 curVel, Vec3* pOutputAccel) {
     }
 
     pIMU->rawAccel.x =
-    (int32_t)(((uint16_t)pBuffer[1]) << 8U) | ((uint16_t)pBuffer[0]);
+    (int32_t)((((uint16_t)pBuffer[1]) << 8U) | ((uint16_t)pBuffer[0]));
     pIMU->rawAccel.y =
-    (int32_t)(((uint16_t)pBuffer[3]) << 8U) | ((uint16_t)pBuffer[2]);
+    (int32_t)((((uint16_t)pBuffer[3]) << 8U) | ((uint16_t)pBuffer[2]));
     pIMU->rawAccel.z =
-    (int32_t)(((uint16_t)pBuffer[5]) << 8U) | ((uint16_t)pBuffer[4]);
+    (int32_t)((((uint16_t)pBuffer[5]) << 8U) | ((uint16_t)pBuffer[4]));
 
     int32_t scale = 2;
     if (pIMU->aconf.range == eIMU_ACC_RANGE_4G) {
@@ -643,14 +650,17 @@ STATUS_TYPE IMUInit (IMU* pIMU, SPI_HandleTypeDef* pSPI, IMUAccConf aconf, IMUGy
      */
     status = IMUSetConf (pIMU, &aconf, &gconf);
     if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("IMU failed to configure accel or gyro ");
+        LOG_ERROR ("IMU failed to configure accel or gyro");
         return status;
     }
 
     uint8_t pChipID[2] = { 0 };
     status             = IMUReadReg (pIMU, BMI3_REG_CHIP_ID, pChipID, 2);
     if (pChipID[0] != BMI323_CHIP_ID) {
-        LOG_ERROR ("Failed to find BMI323. Chip ID [%X] is incorrect", pChipID[0]);
+        LOG_ERROR (
+        "Failed to find BMI323. Chip ID [0x%X] [0x%X] is incorrect",
+        pChipID[0], pChipID[1]);
+        // LOG_ARRAY (pChipID, 2, "0x%X");
         return eSTATUS_FAILURE;
     }
 

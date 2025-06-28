@@ -16,7 +16,7 @@
 //     return 0;
 // }
 
-extern uint8_t gIMURegs[256] = { 0 };
+uint8_t gIMURegs[256] = { 0 };
 
 
 HAL_StatusTypeDef
