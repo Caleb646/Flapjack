@@ -7,6 +7,7 @@ from PyQt5.QtSerialPort import QSerialPort
 from pyqtgraph.opengl import GLViewWidget, GLBoxItem, GLGridItem, GLLinePlotItem, GLMeshItem, MeshData
 from pyqtgraph import Vector
 import trimesh
+import os
 
 START_DELIM = b"<"
 END_DELIM = b">"
@@ -108,6 +109,12 @@ class IMUViewer(QtWidgets.QWidget):
         self.message_le = QtWidgets.QLineEdit()
         self.send_btn = QtWidgets.QPushButton("Send", clicked=self.send)
         self.output_te = QtWidgets.QTextEdit(readOnly=True)
+        # Log level filter controls
+        self.log_level_combo = QtWidgets.QComboBox()
+        self.log_level_combo.addItems(["[DEBUG]", "[INFO]", "[WARNING]", "[ERROR]"])
+        self.log_level_combo.setCurrentText("[INFO]")
+        self.log_level_btn = QtWidgets.QPushButton("Set Log Level", clicked=self.apply_log_level)
+        self.current_log_level = "[INFO]"
         self.button = QtWidgets.QPushButton("Connect", checkable=True, toggled=self.on_toggled)
 
         # Layout
@@ -115,6 +122,9 @@ class IMUViewer(QtWidgets.QWidget):
         top_controls = QtWidgets.QHBoxLayout()
         top_controls.addWidget(self.message_le)
         top_controls.addWidget(self.send_btn)
+        # Add log level controls to the top controls
+        top_controls.addWidget(self.log_level_combo)
+        top_controls.addWidget(self.log_level_btn)
         layout.addLayout(top_controls)
         layout.addWidget(self.output_te)
         layout.addWidget(self.view)
@@ -127,6 +137,13 @@ class IMUViewer(QtWidgets.QWidget):
             readyRead=self.receive
         )
         self.buffer = b""
+
+        # Logging setup
+        os.makedirs("./GUI/Logs", exist_ok=True)
+        # Wipe out old logs
+        self.debug_log = open("./GUI/Logs/debug.log", "w", encoding="utf-8")
+        self.flight_data_log = open("./GUI/Logs/flight_data.log", "w", encoding="utf-8")
+        self.max_console_lines = 200
 
     # def rotate_airplane(self):
     #     # self.rotation_angle += 1  # degrees per frame
@@ -142,9 +159,31 @@ class IMUViewer(QtWidgets.QWidget):
     #     # Roll                     
     #     self.airplane.rotate(self.rotation_angle, 1, 0, 0)                        
 
+    def apply_log_level(self):
+        self.current_log_level = self.log_level_combo.currentText()
+        self.output_te.clear()  # Optionally clear console on filter change
+
+    def log_level_value(self, level):
+        # Map log level string to numeric value for comparison
+        levels = {"[DEBUG]": 10, "[INFO]": 20, "[WARNING]": 30, "[ERROR]": 40}
+        return levels.get(level.upper(), 20)
+
+    def append_debug_console(self, text, level="[INFO]"):
+        # Only show messages at or above the selected log level
+        if self.log_level_value(level) >= self.log_level_value(self.current_log_level):
+            self.output_te.append(text)
+            # Limit the number of lines in the debug console
+            doc = self.output_te.document()
+            while doc.blockCount() > self.max_console_lines:
+                cursor = self.output_te.textCursor()
+                cursor.movePosition(cursor.Start)
+                cursor.select(cursor.LineUnderCursor)
+                cursor.removeSelectedText()
+                cursor.deleteChar()  # Remove the newline
+
     @QtCore.pyqtSlot()
     def receive(self):
-        self.buffer += self.serial.readAll().data() # .readAll()
+        self.buffer += self.serial.readAll().data()
         while START_DELIM in self.buffer and END_DELIM in self.buffer:
             start = self.buffer.find(START_DELIM)
             end = self.buffer.find(END_DELIM, start)
@@ -154,10 +193,18 @@ class IMUViewer(QtWidgets.QWidget):
             self.buffer = self.buffer[end + 1:]
             try:
                 data = json.loads(message)
-                if data.get("type") == "imu":
-                    self.update_orientation(data.get("orientation", {}))
-                elif data.get("type") == "debug":
-                    self.output_te.append(f"{data.get('msg')}")
+                if data.get("type") == "debug":
+                    msg = json.dumps(data)
+                    self.debug_log.write(msg + "\n")
+                    self.debug_log.flush()
+                    self.append_debug_console(
+                        msg, level=data.get("lvl", "[INFO]")
+                        )
+                else:
+                    self.flight_data_log.write(json.dumps(data) + "\n")
+                    self.flight_data_log.flush()
+                    if data.get("type") == "orientation":
+                        self.update_orientation(data.get("data", {}))
             except json.JSONDecodeError:
                 continue
 
@@ -188,10 +235,24 @@ class IMUViewer(QtWidgets.QWidget):
         self.airplane.rotate(pitch_deg, 0, 1, 0)  # Pitch (Y axis)
         self.airplane.rotate(roll_deg, 1, 0, 0)   # Roll (X axis)
 
+    def closeEvent(self, event):
+        # Ensure log files are closed on exit
+        try:
+            self.debug_log.close()
+        except Exception:
+            pass
+        try:
+            self.flight_data_log.close()
+        except Exception:
+            pass
+        super().closeEvent(event)
+
 def main():
     app = QApplication(sys.argv)
     viewer = IMUViewer()
     viewer.show()
+    # Ensure log files are closed on app exit (redundant with closeEvent, but extra safe)
+    app.aboutToQuit.connect(viewer.close)
     sys.exit(app.exec())
 
 
