@@ -15,9 +15,9 @@ typedef struct {
 } FilterMadgwickContext;
 
 STATUS_TYPE
-FilterMadgwick6DOF (FilterMadgwickContext* pContext, Vec3f gyro, Vec3f accel, Vec3f* pOutputAttitude);
+FilterMadgwick6DOF (FilterMadgwickContext* pContext, Vec3f accel, Vec3f gyro, Vec3f* pOutputAttitude);
 STATUS_TYPE
-FilterMadgwick9DOF (FilterMadgwickContext* pContext, Vec3f gyro, Vec3f accel, Vec3f magno, Vec3f* pOutputAttitude);
+FilterMadgwick9DOF (FilterMadgwickContext* pContext, Vec3f accel, Vec3f gyro, Vec3f magno, Vec3f* pOutputAttitude);
 STATUS_TYPE FilterMadgwickInit (FilterMadgwickContext* pContext);
 
 #endif // MOTION_CONTROL_FILTER_H

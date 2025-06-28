@@ -203,9 +203,10 @@ class IMUViewer(QtWidgets.QWidget):
                 else:
                     self.flight_data_log.write(json.dumps(data) + "\n")
                     self.flight_data_log.flush()
-                    if data.get("type") == "orientation":
+                    if data.get("type") == "attidude":
                         self.update_orientation(data.get("data", {}))
             except json.JSONDecodeError:
+                print(f"Failed to decode JSON: {message}")
                 continue
 
     @QtCore.pyqtSlot()
@@ -251,7 +252,7 @@ def main():
     app = QApplication(sys.argv)
     viewer = IMUViewer()
     viewer.show()
-    # Ensure log files are closed on app exit (redundant with closeEvent, but extra safe)
+    # Ensure log files are closed on app exit
     app.aboutToQuit.connect(viewer.close)
     sys.exit(app.exec())
 

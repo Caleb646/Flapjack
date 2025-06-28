@@ -3,7 +3,7 @@
 #include <string.h>
 
 STATUS_TYPE
-FilterMadgwick6DOF (FilterMadgwickContext* pContext, Vec3f gyro, Vec3f accel, Vec3f* pOutputAttitude) {
+FilterMadgwick6DOF (FilterMadgwickContext* pContext, Vec3f accel, Vec3f gyro, Vec3f* pOutputAttitude) {
     // Source: https://courses.cs.washington.edu/courses/cse474/17wi/labs/l4/madgwick_internal_report.pdf
 
     // convert degrees per second to radians per second
@@ -126,7 +126,7 @@ FilterMadgwick6DOF (FilterMadgwickContext* pContext, Vec3f gyro, Vec3f accel, Ve
 }
 
 STATUS_TYPE
-FilterMadgwick9DOF (FilterMadgwickContext* pContext, Vec3f gyro, Vec3f accel, Vec3f magno, Vec3f* pOutputAttitude) {
+FilterMadgwick9DOF (FilterMadgwickContext* pContext, Vec3f accel, Vec3f gyro, Vec3f magno, Vec3f* pOutputAttitude) {
     return eSTATUS_SUCCESS;
 }
 

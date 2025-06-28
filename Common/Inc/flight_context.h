@@ -41,6 +41,7 @@ void FlightContextUpdateTargetAttitudeThrottle (FlightContext* pContext, Vec3f a
 void FlightContextUpdatePIDAttitude (FlightContext* pContext, Vec3f attitude);
 void FlightContextUpdateIMUData (FlightContext* pContext, Vec3 accel, Vec3 gyro);
 void FlightContextUpdateFlightMode (FlightContext* pContext, uint32_t flightMode);
+STATUS_TYPE FlightContextInit (FlightContext* pContext);
 // void FlightContextUpdateCurrentVelocities(FlightContext *pContext, Vec3 vel, Vec3 angVel);
 // void FlightContextUpdateTargetVelocities(FlightContext *pContext, Vec3 vel, Vec3 angVel);
 

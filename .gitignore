@@ -21,6 +21,7 @@ Release/**
 Tests/build/**
 Renode/Logs/**
 GUI/venv/**
+GUI/Logs/**
 Drone_CM7.list
 Drone_CM4.list
 

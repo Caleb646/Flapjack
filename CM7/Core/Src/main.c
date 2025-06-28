@@ -23,6 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include <string.h>
 
 #include "FreeRTOS.h"
 #include "semphr.h"
@@ -104,13 +105,14 @@ TaskHandle_t gpTaskMotionControlUpdate;
 void HAL_GPIO_EXTI_Callback (uint16_t gpioPin) {
     // LOG_INFO ("In interrupt");
     if (gpioPin == IMU_INT_Pin) {
-        Vec3 accel;
-        Vec3 gyro;
-        STATUS_TYPE status = IMU2CPUInterruptHandler (&gIMU, &accel, &gyro);
+        STATUS_TYPE status = IMU2CPUInterruptHandler (&gIMU);
         if (status == eSTATUS_SUCCESS) {
-            FlightContextUpdateIMUData (&gFlightContext, accel, gyro);
+            // FlightContextUpdateIMUData (
+            // &gFlightContext, gIMU.rawAccel, gIMU.rawGyro);
             if (gpTaskMotionControlUpdate != NULL) {
-                xTaskNotifyGive (gpTaskMotionControlUpdate);
+                // LOG_INFO ("Notifying TaskMotionControlUpdate");
+                // xTaskNotifyGive (gpTaskMotionControlUpdate);
+                xTaskNotifyFromISR (gpTaskMotionControlUpdate, 0, eSetBits, NULL);
             }
         } else {
             gIMU.status = status;
@@ -119,10 +121,12 @@ void HAL_GPIO_EXTI_Callback (uint16_t gpioPin) {
 }
 
 void TaskMotionControlUpdate (void* pvParameters) {
-    float startTime = 0.0F;
+    float startTime   = 0.0F;
+    uint32_t logStart = xTaskGetTickCount ();
+    uint32_t logStep  = 1000;
     while (1) {
         ulTaskNotifyTake (pdTRUE, pdMS_TO_TICKS (1000));
-
+        // LOG_INFO ("Inside TaskMotionControlUpdate");
         /* Add error handling */
         STATUS_TYPE cIMUStatus = gIMU.status;
         if (cIMUStatus != eSTATUS_SUCCESS) {
@@ -132,24 +136,54 @@ void TaskMotionControlUpdate (void* pvParameters) {
             } else {
                 IMULogErr (cIMUStatus, &err);
             }
+            continue;
         }
 
-        STATUS_TYPE status;
+        STATUS_TYPE status = eSTATUS_SUCCESS;
+        Vec3f accel        = { 0.0F, 0.0F, 0.0F };
+        Vec3f gyro         = { 0.0F, 0.0F, 0.0F };
+        status             = IMUConvertRaw (
+        gIMU.aconf.range, gIMU.rawAccel, gIMU.gconf.range, gIMU.rawGyro, &accel, &gyro);
+
+        if (status != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to convert IMU raw data");
+            continue;
+        }
+
         // RadioPWMChannels radio;
-        float dt              = (float)HAL_GetTick () - startTime;
+        float dt              = (float)xTaskGetTickCount () - startTime;
         Vec3f currentAttitude = gFlightContext.currentAttitude;
-        status                = FilterMadgwick6DOF (
-        &gFilterMadgwickContext, gFlightContext.imuUnFilteredAccel,
-        gFlightContext.imuUnFilteredGyro, &currentAttitude);
+        status = FilterMadgwick6DOF (&gFilterMadgwickContext, accel, gyro, &currentAttitude);
         if (status == eSTATUS_SUCCESS) {
             FlightContextUpdateCurrentAttitude (&gFlightContext, currentAttitude);
         }
 
-        Vec3f pidAttitude;
-        status = PIDUpdateAttitude (
-        &gPIDAngleContext, gFlightContext.imuUnFilteredGyro,
-        gFlightContext.currentAttitude, gFlightContext.targetAttitude,
-        gFlightContext.maxAttitude, dt, &pidAttitude);
+        Vec3f pidAttitude = { 0.0F, 0.0F, 0.0F };
+        status            = PIDUpdateAttitude (
+        &gPIDAngleContext, gyro, gFlightContext.currentAttitude,
+        gFlightContext.targetAttitude, gFlightContext.maxAttitude, dt, &pidAttitude);
+
+        if ((xTaskGetTickCount () - logStart) >= logStep) {
+            logStart = xTaskGetTickCount ();
+            // LOG_DATA (
+            // LOG_DATA_TYPE_ATTITUDE, "{\"roll\":%.2f,\"pitch\":%.2f,\"yaw\":%.2f}",
+            // gFlightContext.currentAttitude.roll,
+            // gFlightContext.currentAttitude.pitch,
+            // gFlightContext.currentAttitude.yaw);
+
+            Vec3f a  = accel;
+            Vec3f g  = gyro;
+            Vec3f ca = gFlightContext.currentAttitude;
+
+            LOG_DATA (
+            LOG_DATA_TYPE_IMU_DATA, "{\"ax\":%d,\"ay\":%d,\"az\":%d, \"gx\":%d,\"gy\":%d,\"gz\":%d}",
+            (int16_t)a.x, (int16_t)a.y, (int16_t)a.z, (int16_t)g.x,
+            (int16_t)g.y, (int16_t)g.z);
+
+            LOG_DATA (
+            LOG_DATA_TYPE_ATTITUDE, "{\"roll\":%d,\"pitch\":%d,\"yaw\":%d}",
+            (int16_t)ca.roll, (int16_t)ca.pitch, (int16_t)ca.yaw);
+        }
     }
 }
 
@@ -225,13 +259,13 @@ int main (void) {
     MX_TIM13_Init ();
     /* USER CODE BEGIN 2 */
     IMUAccConf aconf   = { 0 };
-    aconf.odr          = eIMU_ACC_ODR_100;
-    aconf.range        = eIMU_ACC_RANGE_4G;
-    aconf.avg          = eIMU_ACC_AVG_32;
+    aconf.odr          = eIMU_ACC_ODR_50;
+    aconf.range        = eIMU_ACC_RANGE_2G;
+    aconf.avg          = eIMU_ACC_AVG_16;
     aconf.bw           = eIMU_ACC_BW_HALF;
     aconf.mode         = eIMU_ACC_MODE_HIGH_PERF;
     IMUGyroConf gconf  = { 0 };
-    gconf.odr          = eIMU_GYRO_ODR_100;
+    gconf.odr          = eIMU_GYRO_ODR_50;
     gconf.range        = eIMU_GYRO_RANGE_250;
     gconf.avg          = eIMU_GYRO_AVG_16;
     gconf.bw           = eIMU_GYRO_BW_HALF;
@@ -240,21 +274,28 @@ int main (void) {
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("CM7 failed to init IMU");
     }
+
     status = FilterMadgwickInit (&gFilterMadgwickContext);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("CM7 failed to init Madgewick Filter");
     }
+
     status = PIDInit (&gPIDAngleContext);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("CM7 failed to init PID");
     }
 
-    while (1) {
-        /* USER CODE END WHILE */
-        LOG_INFO ("Hello from CM7");
-        HAL_Delay (5000);
-        /* USER CODE BEGIN 3 */
+    status = FlightContextInit (&gFlightContext);
+    if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("CM7 failed to init Flight Context");
     }
+
+    // while (1) {
+    //     /* USER CODE END WHILE */
+    //     LOG_INFO ("Hello from CM7");
+    //     HAL_Delay (5000);
+    //     /* USER CODE BEGIN 3 */
+    // }
 
     /*
      *
@@ -263,7 +304,7 @@ int main (void) {
      * NOTE: Once a FreeRTOS task is created ALL interrupts will be disabled until the scheduler is started. So functions
      * like HAL_Delay will not work.
      */
-
+    LOG_DEBUG ("CM7 starting FreeRTOS");
     BaseType_t taskStatus = xTaskCreate (
     TaskMotionControlUpdate, "Motion Control Update Task", configMINIMAL_STACK_SIZE,
     NULL, tskIDLE_PRIORITY, &gpTaskMotionControlUpdate);

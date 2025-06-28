@@ -32,7 +32,7 @@
 #define LOG_DATA_TYPE_ATTITUDE  "attitude"
 #define LOG_DATA_TYPE_IMU_CALIB "imu_calib"
 #define LOG_DATA_TYPE_IMU_DATA  "imu_data"
-#define LOG_DATA_TYPE_ORIENT  "orientation"
+#define LOG_DATA_TYPE_RAW_IMU_DATA  "imu_raw_data"
 // Example usage: LOG_DATA("imu", "{\"roll\":%.2f,\"pitch\":%.2f,\"yaw\":%.2f}", roll, pitch, yaw);
 #define LOG_DATA(type, fmt, ...)                      \
     do {                                              \

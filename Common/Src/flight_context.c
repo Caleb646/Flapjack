@@ -1,4 +1,5 @@
 #include "flight_context.h"
+#include <string.h>
 
 void FlightContextUpdateCurrentAttitude (FlightContext* pContext, Vec3f attitude) {
     pContext->currentAttitude = attitude;
@@ -29,6 +30,11 @@ void FlightContextUpdateIMUData (FlightContext* pContext, Vec3 accel, Vec3 gyro)
 
 void FlightContextUpdateFlightMode (FlightContext* pContext, uint32_t flightMode) {
     pContext->flightMode = flightMode;
+}
+
+STATUS_TYPE FlightContextInit (FlightContext* pContext) {
+    memset (pContext, 0, sizeof (FlightContext));
+    return eSTATUS_SUCCESS;
 }
 // void FlightContextUpdateCurrentVelocities(FlightContext *pContext, Vec3 vel, Vec3 angVel)
 // {

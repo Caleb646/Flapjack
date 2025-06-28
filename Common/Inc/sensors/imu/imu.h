@@ -2,8 +2,8 @@
 #define SENSORS_IMU_H
 
 #include "common.h"
-#include "sensors/imu/bmixxx.h"
 #include "hal.h"
+#include "sensors/imu/bmixxx.h"
 #include <stdint.h>
 
 
@@ -100,6 +100,7 @@ typedef enum {
 } IMU_STATUS;
 
 typedef struct {
+    uint16_t err;
     /* Indicates fatal error */
     uint8_t fatalErr;
     /* Overload of the feature engine detected. */
@@ -160,7 +161,17 @@ typedef struct {
 
 STATUS_TYPE IMUGetErr (IMU* pIMU, IMUErr* pOutErr);
 void IMULogErr (STATUS_TYPE curImuStatus, IMUErr const* pOutErr);
-STATUS_TYPE IMU2CPUInterruptHandler (IMU* pIMU, Vec3* pOutputAccel, Vec3* pOutputGyro);
+STATUS_TYPE IMUGetConf (IMU* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf);
+STATUS_TYPE IMUGetAltConf (IMU* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf);
+STATUS_TYPE
+IMUConvertRaw (IMU_ACC_RANGE aRange, Vec3 ra, IMU_GYRO_RANGE gRange, Vec3 rg, Vec3f* pAccelOut, Vec3f* pGyroOut);
+STATUS_TYPE
+IMUSetConf (IMU* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf);
+STATUS_TYPE
+IMUSetAltConf (IMU* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf);
+STATUS_TYPE
+IMUCompareConfs (IMUAccConf aconf, IMUGyroConf gconf, IMUAccConf aconf2, IMUGyroConf gconf2);
+STATUS_TYPE IMU2CPUInterruptHandler (IMU* pIMU);
 STATUS_TYPE IMUReadReg (IMU const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
 STATUS_TYPE IMUWriteReg (IMU const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
 STATUS_TYPE IMUInit (IMU* pIMU, SPI_HandleTypeDef* pSPI, IMUAccConf aconf, IMUGyroConf gconf);
