@@ -113,7 +113,9 @@ class IMUViewer(QtWidgets.QWidget):
         self.log_level_combo = QtWidgets.QComboBox()
         self.log_level_combo.addItems(["[DEBUG]", "[INFO]", "[WARNING]", "[ERROR]"])
         self.log_level_combo.setCurrentText("[INFO]")
-        self.log_level_btn = QtWidgets.QPushButton("Set Log Level", clicked=self.apply_log_level)
+        self.log_level_combo.currentTextChanged.connect(self.apply_log_level)
+
+        # self.log_level_btn = QtWidgets.QPushButton("Set Log Level", clicked=self.apply_log_level)
         self.current_log_level = "[INFO]"
         self.button = QtWidgets.QPushButton("Connect", checkable=True, toggled=self.on_toggled)
 
@@ -122,9 +124,8 @@ class IMUViewer(QtWidgets.QWidget):
         top_controls = QtWidgets.QHBoxLayout()
         top_controls.addWidget(self.message_le)
         top_controls.addWidget(self.send_btn)
-        # Add log level controls to the top controls
         top_controls.addWidget(self.log_level_combo)
-        top_controls.addWidget(self.log_level_btn)
+        # top_controls.addWidget(self.log_level_btn)
         layout.addLayout(top_controls)
         layout.addWidget(self.output_te)
         layout.addWidget(self.view)
