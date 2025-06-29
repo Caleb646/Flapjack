@@ -91,7 +91,7 @@ STATUS_TYPE IMUReadReg (IMU const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t le
      *       0               addr         0x00
      *       1               0x00         dummy byte (0x00)
      *       2               0x00         data byte 0
-     *       N               0x00         data byte N
+     *       N               0x00         data byte N - 1
      */
     if (len + pIMU->nDummyBytes + 1 > RW_BUFFER_SZ) {
         return (STATUS_TYPE)eIMU_RW_BUFFER_OVERFLOW;
@@ -129,11 +129,11 @@ STATUS_TYPE IMUUpdateGyro (IMU* pIMU) { // , Vec3 curAngularVel, Vec3* pOutputGy
     }
 
     pIMU->rawGyro.x =
-    (int32_t)((((uint16_t)pBuffer[1]) << 8U) | ((uint16_t)pBuffer[0]));
+    (int16_t)((((uint16_t)pBuffer[1]) << 8U) | ((uint16_t)pBuffer[0]));
     pIMU->rawGyro.y =
-    (int32_t)((((uint16_t)pBuffer[3]) << 8U) | ((uint16_t)pBuffer[2]));
+    (int16_t)((((uint16_t)pBuffer[3]) << 8U) | ((uint16_t)pBuffer[2]));
     pIMU->rawGyro.z =
-    (int32_t)((((uint16_t)pBuffer[5]) << 8U) | ((uint16_t)pBuffer[4]));
+    (int16_t)((((uint16_t)pBuffer[5]) << 8U) | ((uint16_t)pBuffer[4]));
 
     // int32_t scale = 125;
     // if (pIMU->gconf.range == eIMU_GYRO_RANGE_250) {
@@ -175,11 +175,11 @@ STATUS_TYPE IMUUpdateAccel (IMU* pIMU) { // , Vec3 curVel, Vec3* pOutputAccel) {
     }
 
     pIMU->rawAccel.x =
-    (int32_t)((((uint16_t)pBuffer[1]) << 8U) | ((uint16_t)pBuffer[0]));
+    (int16_t)((((uint16_t)pBuffer[1]) << 8U) | ((uint16_t)pBuffer[0]));
     pIMU->rawAccel.y =
-    (int32_t)((((uint16_t)pBuffer[3]) << 8U) | ((uint16_t)pBuffer[2]));
+    (int16_t)((((uint16_t)pBuffer[3]) << 8U) | ((uint16_t)pBuffer[2]));
     pIMU->rawAccel.z =
-    (int32_t)((((uint16_t)pBuffer[5]) << 8U) | ((uint16_t)pBuffer[4]));
+    (int16_t)((((uint16_t)pBuffer[5]) << 8U) | ((uint16_t)pBuffer[4]));
 
     // int32_t scale = 2;
     // if (pIMU->aconf.range == eIMU_ACC_RANGE_4G) {
