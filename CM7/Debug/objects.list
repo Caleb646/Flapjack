@@ -2,6 +2,7 @@
 "./Common/Src/flight_context.o"
 "./Common/Src/log.o"
 "./Common/Src/system_stm32h7xx_dualcore_boot_cm4_cm7.o"
+"./Common/Src/uart.o"
 "./Common/Src/mem/ring_buff.o"
 "./Common/Src/motion_control/actuators.o"
 "./Common/Src/motion_control/filter.o"

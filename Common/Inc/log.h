@@ -19,7 +19,9 @@
 #define LOG_WARN(...)           LOG_ ("[WARN]", __VA_ARGS__)
 #define LOG_ERROR(...)          LOG_ ("[ERROR]", __VA_ARGS__)
 
-// #define LOG_ARRAY(arr, len, fmt)                    \
+/* 
+
+#define LOG_ARRAY(arr, len, fmt)                    \
 //     do {                                                             \
 //         printf("<{\"type\":\"debug\",\"lvl\":\"%s\",\"array\":\"%s\",\"values\":[", "[DEBUG]", #arr);             \
 //         for (uint32_t i = 0; i < (len); ++i) {                      \
@@ -28,6 +30,8 @@
 //         }                                                            \
 //         printf("]}>\r\n");                                           \
 //     } while (0)
+
+*/
 
 #define LOG_DATA_TYPE_ATTITUDE  "attitude"
 #define LOG_DATA_TYPE_IMU_CALIB "imu_calib"
@@ -43,7 +47,7 @@
 
 // clang-format on
 
-STATUS_TYPE LoggerInit (UART_HandleTypeDef* pUART);
+STATUS_TYPE LoggerInit (USART_TypeDef* pUARTInstance, UART_HandleTypeDef* pOutUARTHandle);
 
 
 #endif // LOG_H

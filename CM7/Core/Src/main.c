@@ -65,7 +65,7 @@ SPI_HandleTypeDef hspi2;
 TIM_HandleTypeDef htim8;
 TIM_HandleTypeDef htim13;
 
-UART_HandleTypeDef huart1;
+// UART_HandleTypeDef huart1;
 
 /* Definitions for defaultTask */
 // osThreadId_t defaultTaskHandle;
@@ -81,7 +81,6 @@ UART_HandleTypeDef huart1;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config (void);
 static void MX_GPIO_Init (void);
-static void MX_USART1_UART_Init (void);
 static void MX_SPI2_Init (void);
 static void MX_TIM8_Init (void);
 static void MX_TIM13_Init (void);
@@ -140,8 +139,8 @@ void TaskMotionControlUpdate (void* pvParameters) {
         }
 
         STATUS_TYPE status = eSTATUS_SUCCESS;
-        Vec3f accel        = { 0.0F, 0.0F, 0.0F };
-        Vec3f gyro         = { 0.0F, 0.0F, 0.0F };
+        Vec3f accel        = { 0.0F };
+        Vec3f gyro         = { 0.0F };
         status             = IMUConvertRaw (
         gIMU.aconf.range, gIMU.rawAccel, gIMU.gconf.range, gIMU.rawGyro, &accel, &gyro);
 
@@ -158,7 +157,7 @@ void TaskMotionControlUpdate (void* pvParameters) {
             FlightContextUpdateCurrentAttitude (&gFlightContext, currentAttitude);
         }
 
-        Vec3f pidAttitude = { 0.0F, 0.0F, 0.0F };
+        Vec3f pidAttitude = { 0.0F };
         status            = PIDUpdateAttitude (
         &gPIDAngleContext, gyro, gFlightContext.currentAttitude,
         gFlightContext.targetAttitude, gFlightContext.maxAttitude, dt, &pidAttitude);
@@ -194,17 +193,9 @@ void TaskMotionControlUpdate (void* pvParameters) {
  * @retval int
  */
 int main (void) {
-
-    /* USER CODE BEGIN 1 */
-
-    /* USER CODE END 1 */
-    /* USER CODE BEGIN Boot_Mode_Sequence_0 */
-
-    /* USER CODE END Boot_Mode_Sequence_0 */
-
     /* USER CODE BEGIN Boot_Mode_Sequence_1 */
 
-    /* Wait until CPU2 boots and enters in stop mode or timeout*/
+    /* Wait until CPU2 boots and enters in stop mode */
     while (__HAL_RCC_GET_FLAG (RCC_FLAG_D2CKRDY) != RESET) {
         asm volatile ("NOP");
     }
@@ -224,14 +215,9 @@ int main (void) {
     /* USER CODE BEGIN Boot_Mode_Sequence_2 */
 
     MX_GPIO_Init ();
-    MX_USART1_UART_Init ();
     MX_SPI2_Init ();
     MX_TIM8_Init ();
     MX_TIM13_Init ();
-
-    if (SyncInit () != eSTATUS_SUCCESS || LoggerInit (&huart1) != eSTATUS_SUCCESS) {
-        CriticalErrorHandler ();
-    }
 
     /* When system initialization is finished, Cortex-M7 will release Cortex-M4 by means of HSEM notification */
 
@@ -247,33 +233,40 @@ int main (void) {
     }
     /* USER CODE END Boot_Mode_Sequence_2 */
 
-    /* USER CODE BEGIN SysInit */
-
-    /* USER CODE END SysInit */
-
-    /* Initialize all configured peripherals */
-    MX_GPIO_Init ();
-    MX_USART1_UART_Init ();
-    MX_SPI2_Init ();
-    MX_TIM8_Init ();
-    MX_TIM13_Init ();
-    /* USER CODE BEGIN 2 */
-    IMUAccConf aconf   = { 0 };
-    aconf.odr          = eIMU_ACC_ODR_50;
-    aconf.range        = eIMU_ACC_RANGE_2G;
-    aconf.avg          = eIMU_ACC_AVG_16;
-    aconf.bw           = eIMU_ACC_BW_HALF;
-    aconf.mode         = eIMU_ACC_MODE_HIGH_PERF;
-    IMUGyroConf gconf  = { 0 };
-    gconf.odr          = eIMU_GYRO_ODR_50;
-    gconf.range        = eIMU_GYRO_RANGE_250;
-    gconf.avg          = eIMU_GYRO_AVG_16;
-    gconf.bw           = eIMU_GYRO_BW_HALF;
-    gconf.mode         = eIMU_GYRO_MODE_HIGH_PERF;
-    STATUS_TYPE status = IMUInit (&gIMU, &hspi2, aconf, gconf);
-    if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("CM7 failed to init IMU");
+    if (SyncInit () != eSTATUS_SUCCESS) {
+        CriticalErrorHandler ();
     }
+
+    if (LoggerInit (NULL, NULL) != eSTATUS_SUCCESS) {
+        CriticalErrorHandler ();
+    }
+    // Wait for CM4 to initialize UART
+    HAL_Delay (1000);
+
+    STATUS_TYPE status = eSTATUS_SUCCESS;
+    /*
+     * Init IMU
+     */
+    {
+        IMUAccConf aconf  = { 0 };
+        aconf.odr         = eIMU_ACC_ODR_50;
+        aconf.range       = eIMU_ACC_RANGE_2G;
+        aconf.avg         = eIMU_ACC_AVG_16;
+        aconf.bw          = eIMU_ACC_BW_HALF;
+        aconf.mode        = eIMU_ACC_MODE_HIGH_PERF;
+        IMUGyroConf gconf = { 0 };
+        gconf.odr         = eIMU_GYRO_ODR_50;
+        gconf.range       = eIMU_GYRO_RANGE_250;
+        gconf.avg         = eIMU_GYRO_AVG_16;
+        gconf.bw          = eIMU_GYRO_BW_HALF;
+        gconf.mode        = eIMU_GYRO_MODE_HIGH_PERF;
+        status            = IMUInit (&gIMU, &hspi2, aconf, gconf);
+        if (status != eSTATUS_SUCCESS) {
+            LOG_ERROR ("CM7 failed to init IMU");
+        }
+    }
+
+    /* USER CODE BEGIN 2 */
 
     status = FilterMadgwickInit (&gFilterMadgwickContext);
     if (status != eSTATUS_SUCCESS) {
@@ -545,42 +538,42 @@ static void MX_TIM13_Init (void) {
  * @param None
  * @retval None
  */
-static void MX_USART1_UART_Init (void) {
+// static void MX_USART1_UART_Init (void) {
 
-    /* USER CODE BEGIN USART1_Init 0 */
+//     /* USER CODE BEGIN USART1_Init 0 */
 
-    /* USER CODE END USART1_Init 0 */
+//     /* USER CODE END USART1_Init 0 */
 
-    /* USER CODE BEGIN USART1_Init 1 */
+//     /* USER CODE BEGIN USART1_Init 1 */
 
-    /* USER CODE END USART1_Init 1 */
-    huart1.Instance                    = USART1;
-    huart1.Init.BaudRate               = 115200;
-    huart1.Init.WordLength             = UART_WORDLENGTH_8B;
-    huart1.Init.StopBits               = UART_STOPBITS_1;
-    huart1.Init.Parity                 = UART_PARITY_NONE;
-    huart1.Init.Mode                   = UART_MODE_TX_RX;
-    huart1.Init.HwFlowCtl              = UART_HWCONTROL_NONE;
-    huart1.Init.OverSampling           = UART_OVERSAMPLING_16;
-    huart1.Init.OneBitSampling         = UART_ONE_BIT_SAMPLE_DISABLE;
-    huart1.Init.ClockPrescaler         = UART_PRESCALER_DIV1;
-    huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-    if (HAL_UART_Init (&huart1) != HAL_OK) {
-        Error_Handler ();
-    }
-    if (HAL_UARTEx_SetTxFifoThreshold (&huart1, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK) {
-        Error_Handler ();
-    }
-    if (HAL_UARTEx_SetRxFifoThreshold (&huart1, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK) {
-        Error_Handler ();
-    }
-    if (HAL_UARTEx_DisableFifoMode (&huart1) != HAL_OK) {
-        Error_Handler ();
-    }
-    /* USER CODE BEGIN USART1_Init 2 */
+//     /* USER CODE END USART1_Init 1 */
+//     huart1.Instance                    = USART1;
+//     huart1.Init.BaudRate               = 115200;
+//     huart1.Init.WordLength             = UART_WORDLENGTH_8B;
+//     huart1.Init.StopBits               = UART_STOPBITS_1;
+//     huart1.Init.Parity                 = UART_PARITY_NONE;
+//     huart1.Init.Mode                   = UART_MODE_TX_RX;
+//     huart1.Init.HwFlowCtl              = UART_HWCONTROL_NONE;
+//     huart1.Init.OverSampling           = UART_OVERSAMPLING_16;
+//     huart1.Init.OneBitSampling         = UART_ONE_BIT_SAMPLE_DISABLE;
+//     huart1.Init.ClockPrescaler         = UART_PRESCALER_DIV1;
+//     huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+//     if (HAL_UART_Init (&huart1) != HAL_OK) {
+//         Error_Handler ();
+//     }
+//     if (HAL_UARTEx_SetTxFifoThreshold (&huart1, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK) {
+//         Error_Handler ();
+//     }
+//     if (HAL_UARTEx_SetRxFifoThreshold (&huart1, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK) {
+//         Error_Handler ();
+//     }
+//     if (HAL_UARTEx_DisableFifoMode (&huart1) != HAL_OK) {
+//         Error_Handler ();
+//     }
+//     /* USER CODE BEGIN USART1_Init 2 */
 
-    /* USER CODE END USART1_Init 2 */
-}
+//     /* USER CODE END USART1_Init 2 */
+// }
 
 /**
  * @brief GPIO Initialization Function

@@ -30,8 +30,8 @@ STATUS_TYPE SyncMailBoxWriteNotify (uint32_t mbID, uint8_t* pBuffer, uint32_t le
     if (status != eSTATUS_SUCCESS) {
         return eSTATUS_FAILURE;
     }
-    asm volatile("dsb");
-    asm volatile("sev");
+    asm volatile ("dsb");
+    asm volatile ("sev");
     return eSTATUS_SUCCESS;
 }
 
