@@ -79,13 +79,6 @@ STATUS_TYPE LoggerInit (USART_TypeDef* pUARTInstance, UART_HandleTypeDef* pOutUA
         if (pOutUARTHandle != NULL) {
             *pOutUARTHandle = gUART;
         }
-
-        // while (1) {
-        //     uint8_t pUARTName[] = { 'H', 'A', 'L', '\r', '\n' };
-        //     if (HAL_UART_Transmit (&gUART, pUARTName, sizeof (pUARTName), 1000) != HAL_OK) {
-        //         uint8_t pError[] = { 'E', 'R', 'R', 'O', 'R', '\r', '\n' };
-        //     };
-        // }
     }
 
     ASSERT (gLoggerUARTRole == CM7_CPUID || gLoggerUARTRole == CM4_CPUID);

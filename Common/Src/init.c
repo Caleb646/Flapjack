@@ -1,4 +1,5 @@
-#include "uart.h"
+#include "init.h"
+#include "common.h"
 #include "hal.h"
 
 #define STLINK_TX_Pin       GPIO_PIN_10
@@ -6,6 +7,9 @@
 #define STLINK_RX_Pin       GPIO_PIN_9
 #define STLINK_RX_GPIO_Port GPIOA
 
+/*
+ * Called by HAL_UART_Init()
+ */
 void HAL_UART_MspInit (UART_HandleTypeDef* huart) {
     GPIO_InitTypeDef GPIO_InitStruct             = { 0 };
     RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = { 0 };
@@ -15,7 +19,7 @@ void HAL_UART_MspInit (UART_HandleTypeDef* huart) {
         PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_USART1;
         PeriphClkInitStruct.Usart16ClockSelection = RCC_USART16CLKSOURCE_D2PCLK2;
         if (HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct) != HAL_OK) {
-            Error_Handler ();
+            CriticalErrorHandler ();
         }
 
         /* Peripheral clock enable */

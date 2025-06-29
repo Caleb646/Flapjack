@@ -63,7 +63,11 @@ RINGBUFF_VOLATILE RingBuff* RingBuffCreate (void* pBuff, size_t size) {
     if (pBuff == NULL || size == 0 || size < (sizeof (RingBuff) + 1)) {
         return NULL;
     }
-
+    // TODO: setting the ring buffer to zero is a bug
+    // If another core already initialized and wrote to the buffer
+    // then this will overwrite the data.
+    // Should check if magic1 and magic2 are set to valid values
+    // before setting the buffer to zero.
     RINGBUFF_VOLATILE RingBuff* pRingBuf = (RingBuff*)pBuff;
     BUF_MEMSET ((void*)pRingBuf, 0x00, sizeof (RingBuff));
 
