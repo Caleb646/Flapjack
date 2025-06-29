@@ -176,7 +176,7 @@ void TaskMotionControlUpdate (void* pvParameters) {
             Vec3f ca = gFlightContext.currentAttitude;
 
             LOG_DATA (
-            LOG_DATA_TYPE_IMU_DATA, "{\"ax\":%d,\"ay\":%d,\"az\":%d, \"gx\":%d,\"gy\":%d,\"gz\":%d}",
+            LOG_DATA_TYPE_IMU_DATA, "{\"ax\":%d,\"ay\":%d,\"az\":%d,\"gx\":%d,\"gy\":%d,\"gz\":%d}",
             (int16_t)a.x, (int16_t)a.y, (int16_t)a.z, (int16_t)g.x,
             (int16_t)g.y, (int16_t)g.z);
 
