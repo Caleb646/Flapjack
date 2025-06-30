@@ -16,6 +16,9 @@
 #define MAX_U32(x, y)            ((x > y) ? x : y)
 #define MAX_F32(x, y)            ((x > y) ? x : y)
 
+#define DEG2RAD(x)               (((float)x) * 0.017453292519943295F) // (π / 180)
+#define RAD2DEG(x)               (((float)x) * 57.29577951308232F) // (180 / π)
+
 typedef enum {
     eSTATUS_SUCCESS = 0,
 
@@ -44,6 +47,29 @@ typedef struct {
         float yaw;
     };
 } Vec3f;
+
+typedef struct {
+    union {
+        float x;
+        float roll;
+        float q1;
+    };
+    union {
+        float y;
+        float pitch;
+        float q2;
+    };
+    union {
+        float z;
+        float yaw;
+        float q3;
+    };
+    union {
+        float w;
+        float thrust;
+        float q4;
+    };
+} Vec4f;
 
 void CriticalErrorHandler (void);
 int32_t clipi32 (int32_t v, int32_t lower, int32_t upper);

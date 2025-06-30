@@ -3,25 +3,28 @@
 #include <string.h>
 
 STATUS_TYPE
-FilterMadgwick6DOF (FilterMadgwickContext* pContext, Vec3f accel, Vec3f gyro, Vec3f* pOutputAttitude) {
+FilterMadgwick6DOF (
+Vec4f* pCurEstimate,
+Vec3f const* pAccel,
+Vec3f const* pGyroDegs,
+float beta,
+float dt,
+Vec3f* pOutputAttitude) {
     // Source: https://courses.cs.washington.edu/courses/cse474/17wi/labs/l4/madgwick_internal_report.pdf
 
     // convert degrees per second to radians per second
-    float w_x = gyro.x * 0.017453F;
-    float w_y = gyro.y * 0.017453F;
-    float w_z = gyro.z * 0.017453F;
+    float w_x = DEG2RAD (pGyroDegs->x);
+    float w_y = DEG2RAD (pGyroDegs->y);
+    float w_z = DEG2RAD (pGyroDegs->z);
 
-    float a_x = accel.x;
-    float a_y = accel.y;
-    float a_z = accel.z;
+    float a_x = pAccel->x;
+    float a_y = pAccel->y;
+    float a_z = pAccel->z;
 
-    float dt   = pContext->dt;
-    float beta = pContext->beta;
-
-    float SEq_1 = pContext->seq1;
-    float SEq_2 = pContext->seq2;
-    float SEq_3 = pContext->seq3;
-    float SEq_4 = pContext->seq4;
+    float SEq_1 = pCurEstimate->q1;
+    float SEq_2 = pCurEstimate->q2;
+    float SEq_3 = pCurEstimate->q3;
+    float SEq_4 = pCurEstimate->q4;
 
     float norm           = 0.0F;
     float SEqDot_omega_1 = 0.0F;
@@ -99,15 +102,15 @@ FilterMadgwick6DOF (FilterMadgwickContext* pContext, Vec3f accel, Vec3f gyro, Ve
     SEq_3 *= norm;
     SEq_4 *= norm;
 
-    pContext->seq1 = SEq_1;
-    pContext->seq2 = SEq_2;
-    pContext->seq3 = SEq_3;
-    pContext->seq4 = SEq_4;
+    pCurEstimate->q1 = SEq_1;
+    pCurEstimate->q2 = SEq_2;
+    pCurEstimate->q3 = SEq_3;
+    pCurEstimate->q4 = SEq_4;
 
-    float q0 = SEq_1;
-    float q1 = SEq_2;
-    float q2 = SEq_3;
-    float q3 = SEq_4;
+    float q1 = SEq_1;
+    float q2 = SEq_2;
+    float q3 = SEq_3;
+    float q4 = SEq_4;
 
     // Compute quaternion angles.
     // Then convert angles in radians to degrees.
@@ -115,12 +118,13 @@ FilterMadgwick6DOF (FilterMadgwickContext* pContext, Vec3f accel, Vec3f gyro, Ve
     // x-axis pointing to the North
     // y-axis pointing to the West
     // z-axis pointing away from the surface of the Earth
+    // NOTE: page 6 of Madgwick report
     pOutputAttitude->roll =
-    atan2 (q0 * q1 + q2 * q3, 0.5F - q1 * q1 - q2 * q2) * 57.29577951F;
+    RAD2DEG (atan2 (q1 * q2 + q3 * q4, 0.5F - q2 * q2 - q3 * q3));
     pOutputAttitude->pitch =
-    -asin (clipf32 (-2.0F * (q1 * q3 - q0 * q2), -0.999999F, 0.999999F)) * 57.29577951F;
+    RAD2DEG (-asin (clipf32 (-2.0F * (q2 * q4 - q1 * q3), -0.999999F, 0.999999F)));
     pOutputAttitude->yaw =
-    -atan2 (q1 * q2 + q0 * q3, 0.5F - q2 * q2 - q3 * q3) * 57.29577951F;
+    RAD2DEG (-atan2 (q2 * q3 + q1 * q4, 0.5F - q3 * q3 - q4 * q4));
 
     return eSTATUS_SUCCESS;
 }
@@ -133,7 +137,7 @@ FilterMadgwick9DOF (FilterMadgwickContext* pContext, Vec3f accel, Vec3f gyro, Ve
 STATUS_TYPE FilterMadgwickInit (FilterMadgwickContext* pContext) {
     // Initialization values: https://courses.cs.washington.edu/courses/cse474/17wi/labs/l4/madgwick_internal_report.pdf
     memset ((void*)pContext, 0, sizeof (FilterMadgwickContext));
-    pContext->dt               = 0.001F;
+    // pContext->dt               = 0.001F;
     pContext->gyroMeasureError = M_PI * (5.0F / 180.0F);
     pContext->beta = sqrt (3.0F / 4.0F) * pContext->gyroMeasureError;
     pContext->seq1 = 1.0F;
