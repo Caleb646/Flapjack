@@ -150,7 +150,9 @@ void TaskMotionControlUpdate (void* pvParameters) {
         }
 
         // RadioPWMChannels radio;
-        float dt              = (float)xTaskGetTickCount () - startTime;
+        float dt  = (float)xTaskGetTickCount () - startTime;
+        startTime = (float)xTaskGetTickCount ();
+
         Vec3f currentAttitude = gFlightContext.currentAttitude;
         status = FilterMadgwick6DOF (&gFilterMadgwickContext, accel, gyro, &currentAttitude);
         if (status == eSTATUS_SUCCESS) {
@@ -204,10 +206,6 @@ int main (void) {
 
     /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
     HAL_Init ();
-
-    /* USER CODE BEGIN Init */
-
-    /* USER CODE END Init */
 
     /* Configure the system clock */
     SystemClock_Config ();
