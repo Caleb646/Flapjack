@@ -164,20 +164,19 @@ void TaskMotionControlUpdate (void* pvParameters) {
 
         if ((xTaskGetTickCount () - logStart) >= logStep) {
             logStart = xTaskGetTickCount ();
-            // LOG_DATA (
-            // LOG_DATA_TYPE_ATTITUDE, "{\"roll\":%.2f,\"pitch\":%.2f,\"yaw\":%.2f}",
-            // gFlightContext.currentAttitude.roll,
-            // gFlightContext.currentAttitude.pitch,
-            // gFlightContext.currentAttitude.yaw);
 
             Vec3f a  = accel;
             Vec3f g  = gyro;
             Vec3f ca = gFlightContext.currentAttitude;
 
+            /*
+             * Convert from meters per second squared to milli meters per second squared
+             */
             LOG_DATA (
             LOG_DATA_TYPE_IMU_DATA, "{\"ax\":%d,\"ay\":%d,\"az\":%d,\"gx\":%d,\"gy\":%d,\"gz\":%d}",
-            (int16_t)a.x, (int16_t)a.y, (int16_t)a.z, (int16_t)g.x,
-            (int16_t)g.y, (int16_t)g.z);
+            (int16_t)(a.x * 1000.0F), (int16_t)(a.y * 1000.0F),
+            (int16_t)(a.z * 1000.0F), (int16_t)(g.x * 1000.0F),
+            (int16_t)(g.y * 1000.0F), (int16_t)(g.z * 1000.0F));
 
             LOG_DATA (
             LOG_DATA_TYPE_ATTITUDE, "{\"roll\":%d,\"pitch\":%d,\"yaw\":%d}",

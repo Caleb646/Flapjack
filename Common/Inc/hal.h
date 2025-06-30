@@ -14,6 +14,10 @@ typedef struct {
 typedef struct {
     int dummy;
 } UART_HandleTypeDef;
+
+typedef struct {
+    int dummy;
+} USART_TypeDef;
 typedef enum {
     HAL_OK      = 0x00,
     HAL_ERROR   = 0x01,

@@ -667,9 +667,9 @@ IMUConvertRaw (IMU_ACC_RANGE aRange, Vec3 ra, IMU_GYRO_RANGE gRange, Vec3 rg, Ve
     } else if (aRange == eIMU_ACC_RANGE_16G) {
         scale = 16.0F;
     }
-    pAccelOut->x = ((float)ra.x * scale) / 32768.0F;
-    pAccelOut->y = ((float)ra.y * scale) / 32768.0F;
-    pAccelOut->z = ((float)ra.z * scale) / 32768.0F;
+    pAccelOut->x = ((float)ra.x * scale * 9.81F) / 32768.0F;
+    pAccelOut->y = ((float)ra.y * scale * 9.81F) / 32768.0F;
+    pAccelOut->z = ((float)ra.z * scale * 9.81F) / 32768.0F;
 
     scale = 125.0F;
     if (gRange == eIMU_GYRO_RANGE_250) {

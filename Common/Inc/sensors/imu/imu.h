@@ -161,6 +161,8 @@ typedef struct {
 
 STATUS_TYPE IMUGetErr (IMU* pIMU, IMUErr* pOutErr);
 void IMULogErr (STATUS_TYPE curImuStatus, IMUErr const* pOutErr);
+STATUS_TYPE IMUUpdateAccel (IMU* pIMU);
+STATUS_TYPE IMUUpdateGyro (IMU* pIMU);
 STATUS_TYPE IMUGetConf (IMU* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf);
 STATUS_TYPE IMUGetAltConf (IMU* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf);
 STATUS_TYPE
