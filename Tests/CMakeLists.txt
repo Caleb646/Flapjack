@@ -17,16 +17,22 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/../Common/Inc
 )
 
-set(TEST_SOURCES
+# Combined test sources including all test files and their dependencies
+set(ALL_TEST_SOURCES
+    test_runner.c
     test_imu.c
+    test_filter.c
     ./stubs/hal_stub.c
     ../Common/Src/sensors/imu/imu.c
+    ../Common/Src/motion_control/filter.c
     ../Common/Src/common.c
 )
 
-add_executable(test_imu ${TEST_SOURCES})
-target_compile_definitions(test_imu PRIVATE UNIT_TEST)
-target_include_directories(test_imu PRIVATE ${unity_SOURCE_DIR}/src)
-target_sources(test_imu PRIVATE ${unity_SOURCE_DIR}/src/unity.c)
+# Build single test executable that includes all tests
+add_executable(test_runner ${ALL_TEST_SOURCES})
+target_compile_definitions(test_runner PRIVATE UNIT_TEST)
+target_include_directories(test_runner PRIVATE ${unity_SOURCE_DIR}/src)
+target_sources(test_runner PRIVATE ${unity_SOURCE_DIR}/src/unity.c)
 
-add_test(NAME IMU_Tests COMMAND test_imu)
+# Add single test that runs all tests
+add_test(NAME All_Tests COMMAND test_runner)

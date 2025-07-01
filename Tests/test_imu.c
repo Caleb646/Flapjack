@@ -3,6 +3,7 @@
 #include "sensors/imu/bmixxx.h"
 #include "sensors/imu/imu.h"
 #include "unity/unity.h"
+#include <math.h>
 
 #include <stdio.h>
 
@@ -10,15 +11,6 @@
 #error "UNIT_TEST should be defined in this file"
 #endif
 
-// Simple absolute value function for floats
-static inline float fabs_simple (float x) {
-    return (x < 0.0F) ? -x : x;
-}
-
-// // LOG_ERROR stub for host build
-// int LOG_ERROR (const char* fmt, ...) {
-//     return 0;
-// }
 
 uint16_t gIMURegs[256] = { 0 };
 
@@ -64,16 +56,18 @@ SPITransmitReceiveCB (SPI_HandleTypeDef* hspi, uint8_t* pTxData, uint8_t* pRxDat
     return HAL_OK;
 }
 
-void setUp (void) {
+// void setUp (void) {
+
+// }
+
+// void tearDown (void) {
+// }
+
+void test_IMUInit (void) {
     gIMURegs[BMI3_REG_CHIP_ID]  = BMI323_CHIP_ID;
     gHAL_SPI_Transmit_CB        = SPITransmitCB;
     gHAL_SPI_TransmitReceive_CB = SPITransmitReceiveCB;
-}
 
-void tearDown (void) {
-}
-
-void test_IMUInit (void) {
     IMU imu;
     SPI_HandleTypeDef spi;
     IMUAccConf aconf  = { 0 };
@@ -130,6 +124,10 @@ void test_IMUInit (void) {
 }
 
 void test_IMUConf (void) {
+    gIMURegs[BMI3_REG_CHIP_ID]  = BMI323_CHIP_ID;
+    gHAL_SPI_Transmit_CB        = SPITransmitCB;
+    gHAL_SPI_TransmitReceive_CB = SPITransmitReceiveCB;
+
     STATUS_TYPE status = eSTATUS_SUCCESS;
     IMU imu            = { .nDummyBytes = 1U };
     {
@@ -324,20 +322,14 @@ void test_IMUUpdate (void) {
     TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
 
     // 2G range should give smaller acceleration values than 4G for same raw data
-    TEST_ASSERT_TRUE (
-    fabs_simple (convertedAccel2G.x) < fabs_simple (convertedAccel.x));
-    TEST_ASSERT_TRUE (
-    fabs_simple (convertedAccel2G.y) < fabs_simple (convertedAccel.y));
-    TEST_ASSERT_TRUE (
-    fabs_simple (convertedAccel2G.z) < fabs_simple (convertedAccel.z));
+    TEST_ASSERT_TRUE (fabs (convertedAccel2G.x) < fabs (convertedAccel.x));
+    TEST_ASSERT_TRUE (fabs (convertedAccel2G.y) < fabs (convertedAccel.y));
+    TEST_ASSERT_TRUE (fabs (convertedAccel2G.z) < fabs (convertedAccel.z));
 
     // 125 dps range should give smaller angular velocity values than 250 dps
-    TEST_ASSERT_TRUE (
-    fabs_simple (convertedGyro125.x) < fabs_simple (convertedGyro.x));
-    TEST_ASSERT_TRUE (
-    fabs_simple (convertedGyro125.y) < fabs_simple (convertedGyro.y));
-    TEST_ASSERT_TRUE (
-    fabs_simple (convertedGyro125.z) < fabs_simple (convertedGyro.z));
+    TEST_ASSERT_TRUE (fabs (convertedGyro125.x) < fabs (convertedGyro.x));
+    TEST_ASSERT_TRUE (fabs (convertedGyro125.y) < fabs (convertedGyro.y));
+    TEST_ASSERT_TRUE (fabs (convertedGyro125.z) < fabs (convertedGyro.z));
 
     // Test with zero raw values
     Vec3 zeroRaw    = { .x = 0, .y = 0, .z = 0 };
@@ -349,12 +341,12 @@ void test_IMUUpdate (void) {
     TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
 
     // Zero raw values should produce zero or near-zero converted values
-    TEST_ASSERT_TRUE (fabs_simple (zeroAccel.x) < 0.1F);
-    TEST_ASSERT_TRUE (fabs_simple (zeroAccel.y) < 0.1F);
-    TEST_ASSERT_TRUE (fabs_simple (zeroAccel.z) < 0.1F);
-    TEST_ASSERT_TRUE (fabs_simple (zeroGyro.x) < 0.1F);
-    TEST_ASSERT_TRUE (fabs_simple (zeroGyro.y) < 0.1F);
-    TEST_ASSERT_TRUE (fabs_simple (zeroGyro.z) < 0.1F);
+    TEST_ASSERT_TRUE (fabs (zeroAccel.x) < 0.1F);
+    TEST_ASSERT_TRUE (fabs (zeroAccel.y) < 0.1F);
+    TEST_ASSERT_TRUE (fabs (zeroAccel.z) < 0.1F);
+    TEST_ASSERT_TRUE (fabs (zeroGyro.x) < 0.1F);
+    TEST_ASSERT_TRUE (fabs (zeroGyro.y) < 0.1F);
+    TEST_ASSERT_TRUE (fabs (zeroGyro.z) < 0.1F);
 
     // Test with maximum positive and negative values
     Vec3 maxRaw    = { .x = 32767, .y = -32768, .z = 32767 };
@@ -367,12 +359,12 @@ void test_IMUUpdate (void) {
 
     // Maximum values should be within the expected range limits
     // 16G = ~157 m/s², 2000 dps should be close to limits
-    TEST_ASSERT_TRUE (fabs_simple (maxAccel.x) < 200.0F); // Should be close to ~157 m/s²
-    TEST_ASSERT_TRUE (fabs_simple (maxAccel.y) < 200.0F);
-    TEST_ASSERT_TRUE (fabs_simple (maxAccel.z) < 200.0F);
-    TEST_ASSERT_TRUE (fabs_simple (maxGyro.x) < 2100.0F); // Should be close to 2000 dps
-    TEST_ASSERT_TRUE (fabs_simple (maxGyro.y) < 2100.0F);
-    TEST_ASSERT_TRUE (fabs_simple (maxGyro.z) < 2100.0F);
+    TEST_ASSERT_TRUE (fabs (maxAccel.x) < 200.0F); // Should be close to ~157 m/s²
+    TEST_ASSERT_TRUE (fabs (maxAccel.y) < 200.0F);
+    TEST_ASSERT_TRUE (fabs (maxAccel.z) < 200.0F);
+    TEST_ASSERT_TRUE (fabs (maxGyro.x) < 2100.0F); // Should be close to 2000 dps
+    TEST_ASSERT_TRUE (fabs (maxGyro.y) < 2100.0F);
+    TEST_ASSERT_TRUE (fabs (maxGyro.z) < 2100.0F);
 
     // Test exact conversion values
     // Testing with known raw values to verify exact conversion math
@@ -476,13 +468,4 @@ void test_IMUUpdate (void) {
     TEST_ASSERT_FLOAT_WITHIN (0.01F, 0.061F, lsbGyro.x);
     TEST_ASSERT_FLOAT_WITHIN (0.01F, -0.061F, lsbGyro.y);
     TEST_ASSERT_FLOAT_WITHIN (0.01F, 0.122F, lsbGyro.z); // 2 LSB
-}
-
-
-int main (void) {
-    UNITY_BEGIN ();
-    RUN_TEST (test_IMUInit);
-    RUN_TEST (test_IMUConf);
-    RUN_TEST (test_IMUUpdate);
-    return UNITY_END ();
 }
