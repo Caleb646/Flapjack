@@ -123,6 +123,7 @@ void TaskMotionControlUpdate (void* pvParameters) {
     float startTime   = 0.0F;
     uint32_t logStart = xTaskGetTickCount ();
     uint32_t logStep  = 1000;
+
     while (1) {
         ulTaskNotifyTake (pdTRUE, pdMS_TO_TICKS (1000));
         // LOG_INFO ("Inside TaskMotionControlUpdate");
@@ -154,7 +155,8 @@ void TaskMotionControlUpdate (void* pvParameters) {
         startTime = (float)xTaskGetTickCount ();
 
         Vec3f currentAttitude = gFlightContext.currentAttitude;
-        status = FilterMadgwick6DOF (&gFilterMadgwickContext, accel, gyro, &currentAttitude);
+        status =
+        FilterMadgwick6DOF (&gFilterMadgwickContext, &accel, &gyro, dt, &currentAttitude);
         if (status == eSTATUS_SUCCESS) {
             FlightContextUpdateCurrentAttitude (&gFlightContext, currentAttitude);
         }

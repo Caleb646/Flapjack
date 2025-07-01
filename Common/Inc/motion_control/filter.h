@@ -4,21 +4,25 @@
 #include "common.h"
 #include <stdint.h>
 
+// #define DEG2RAD(degrees) ((degrees) * (3.14159265359F / 180.0F))
+// #define RAD2DEG(radians) ((radians) * (180.0F / 3.14159265359F))
+
 typedef struct {
     // estimated orientation quaternion elements with initial conditions
-    float seq1, seq2, seq3, seq4;
-    // sampling period in seconds
-    // float dt;
-    // gyroscope measurement error in rad/s
-    float gyroMeasureError;
+    Vec4f est;
     // Gamma_t (γt)
     float beta;
 } FilterMadgwickContext;
 
 STATUS_TYPE
-FilterMadgwick6DOF (FilterMadgwickContext* pContext, Vec3f accel, Vec3f gyro, float dt, Vec3f* pOutputAttitude);
-STATUS_TYPE
-FilterMadgwick9DOF (FilterMadgwickContext* pContext, Vec3f accel, Vec3f gyro, Vec3f magno, float dt, Vec3f* pOutputAttitude);
-STATUS_TYPE FilterMadgwickInit (FilterMadgwickContext* pContext);
+FilterMadgwick6DOF (
+FilterMadgwickContext* pContext,
+Vec3f const* pAccel,
+Vec3f const* pGyroDegs,
+float dt,
+Vec3f* pOutputAttitude);
+// STATUS_TYPE
+// FilterMadgwick9DOF (FilterMadgwickContext* pContext, Vec3f accel, Vec3f gyro, Vec3f magno, float dt, Vec3f* pOutputAttitude);
+STATUS_TYPE FilterMadgwickInit (FilterMadgwickContext* pContext, float gyroMeasureErrorDegs);
 
 #endif // MOTION_CONTROL_FILTER_H
