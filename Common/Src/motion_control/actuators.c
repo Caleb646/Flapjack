@@ -41,7 +41,7 @@ Vec3f* pOutputPIDAttitude // degrees
     float rollIntegral = clipf32 (
     pidContext->prevIntegral.roll + rollError * dt,
     -pidContext->integralLimit, pidContext->integralLimit);
-    float rollDerivative = imuGyro.x;
+    float rollDerivative = (rollError - pidContext->prevError.roll) / dt;
     // pOutputPIDAttitude->roll = 0.01f * (P * rollError + I * rollIntegral - D * rollDerivative);
 
     // Scale PID output between -1 and 1
@@ -57,7 +57,7 @@ Vec3f* pOutputPIDAttitude // degrees
     float pitchIntegral = clipf32 (
     pidContext->prevIntegral.pitch + pitchError * dt,
     -pidContext->integralLimit, pidContext->integralLimit);
-    float pitchDerivative = imuGyro.y;
+    float pitchDerivative = (pitchError - pidContext->prevError.pitch) / dt;
     // pOutputPIDAttitude->pitch = 0.01f * (P * pitchError + I * pitchIntegral - D * pitchDerivative);
 
     // Scale PID output between -1 and 1
@@ -74,7 +74,7 @@ Vec3f* pOutputPIDAttitude // degrees
     float yawIntegral = clipf32 (
     pidContext->prevIntegral.yaw + yawError * dt,
     -pidContext->integralLimit, pidContext->integralLimit);
-    float yawDerivative = imuGyro.z;
+    float yawDerivative = (yawError - pidContext->prevError.yaw) / dt;
     // pOutputPIDAttitude->yaw = 0.01f * (P * yawError + I * yawIntegral - D * yawDerivative);
 
     // Scale PID output between -1 and 1

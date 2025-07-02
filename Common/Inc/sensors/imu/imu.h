@@ -159,8 +159,9 @@ typedef struct {
 // typedef struct FlightContext__ FlightContext;
 // typedef IMU_STATUS (*imu_update_fn)(IMU *pIMU);
 
-STATUS_TYPE IMUGetErr (IMU* pIMU, IMUErr* pOutErr);
-void IMULogErr (STATUS_TYPE curImuStatus, IMUErr const* pOutErr);
+STATUS_TYPE IMUGetDeviceErr (IMU* pIMU, IMUErr* pOutErr);
+void IMULogDeviceErr (IMU* pIMU, IMUErr const* pErr);
+STATUS_TYPE IMUHandleErr (IMU* pIMU);
 STATUS_TYPE IMUUpdateAccel (IMU* pIMU);
 STATUS_TYPE IMUUpdateGyro (IMU* pIMU);
 STATUS_TYPE IMUGetConf (IMU* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf);

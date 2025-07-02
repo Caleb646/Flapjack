@@ -102,15 +102,10 @@ TaskHandle_t gpTaskMotionControlUpdate;
 // NOLINTEND
 
 void HAL_GPIO_EXTI_Callback (uint16_t gpioPin) {
-    // LOG_INFO ("In interrupt");
     if (gpioPin == IMU_INT_Pin) {
         STATUS_TYPE status = IMU2CPUInterruptHandler (&gIMU);
         if (status == eSTATUS_SUCCESS) {
-            // FlightContextUpdateIMUData (
-            // &gFlightContext, gIMU.rawAccel, gIMU.rawGyro);
             if (gpTaskMotionControlUpdate != NULL) {
-                // LOG_INFO ("Notifying TaskMotionControlUpdate");
-                // xTaskNotifyGive (gpTaskMotionControlUpdate);
                 xTaskNotifyFromISR (gpTaskMotionControlUpdate, 0, eSetBits, NULL);
             }
         } else {
@@ -120,23 +115,18 @@ void HAL_GPIO_EXTI_Callback (uint16_t gpioPin) {
 }
 
 void TaskMotionControlUpdate (void* pvParameters) {
-    float startTime   = 0.0F;
-    uint32_t logStart = xTaskGetTickCount ();
-    uint32_t logStep  = 1000;
+    float startTime        = 0.0F;
+    uint32_t logStart      = xTaskGetTickCount ();
+    uint32_t const logStep = 1000;
 
     while (1) {
         ulTaskNotifyTake (pdTRUE, pdMS_TO_TICKS (1000));
-        // LOG_INFO ("Inside TaskMotionControlUpdate");
         /* Add error handling */
-        STATUS_TYPE cIMUStatus = gIMU.status;
-        if (cIMUStatus != eSTATUS_SUCCESS) {
-            IMUErr err;
-            if (IMUGetErr (&gIMU, &err) != eSTATUS_SUCCESS) {
-                LOG_ERROR ("Failed to read IMU error codes");
-            } else {
-                IMULogErr (cIMUStatus, &err);
+        if (gIMU.status != eSTATUS_SUCCESS) {
+            if (IMUHandleErr (&gIMU) != eSTATUS_SUCCESS) {
+                LOG_ERROR ("Failed to handle IMU error");
+                continue;
             }
-            continue;
         }
 
         STATUS_TYPE status = eSTATUS_SUCCESS;

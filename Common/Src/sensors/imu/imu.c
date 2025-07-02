@@ -15,7 +15,7 @@ enum {
     SPI_DEFAULT_TIMEOUT_MS = 100U
 };
 
-STATUS_TYPE IMUGetErr (IMU* pIMU, IMUErr* pOutErr) {
+STATUS_TYPE IMUGetDeviceErr (IMU* pIMU, IMUErr* pOutErr) {
     uint8_t pBuff[2]   = { 0U };
     STATUS_TYPE status = IMUReadReg (pIMU, BMI3_REG_ERR_REG, pBuff, 2);
     uint16_t err       = ((uint16_t)pBuff[1] << 8U) | (uint16_t)pBuff[0];
@@ -30,47 +30,68 @@ STATUS_TYPE IMUGetErr (IMU* pIMU, IMUErr* pOutErr) {
     if (status != eSTATUS_SUCCESS) {
         return status;
     }
-    /* Clear IMU error status on successful read */
-    pIMU->status = eSTATUS_SUCCESS;
+    // /* Clear IMU error status on successful read */
+    // pIMU->status = eSTATUS_SUCCESS;
     return eSTATUS_SUCCESS; //
 }
 
-void IMULogErr (STATUS_TYPE curImuStatus, IMUErr const* pOutErr) {
-    if (curImuStatus == (STATUS_TYPE)eIMU_COM_FAILURE) {
-        LOG_ERROR (
-        "IMU Communication failure error. It occurs due to "
-        "read/write operation failure and also due to power failure "
-        "during communication");
+void IMULogDeviceErr (IMU* pIMU, IMUErr const* pErr) {
+    IMUErr err;
+    if (pErr == NULL) {
+        if (IMUGetDeviceErr (pIMU, &err) != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to read IMU error codes");
+            return;
+        }
+    } else {
+        err = *pErr;
     }
-    if (curImuStatus == (STATUS_TYPE)eIMU_RW_BUFFER_OVERFLOW) {
-        LOG_ERROR ("IMU register read or write buffer size was exceeded");
-    }
-    if (curImuStatus == (STATUS_TYPE)eIMU_NULL_PTR) {
-        LOG_ERROR ("IMU received null ptr");
-    }
-    if (pOutErr->fatalErr != 0) {
+
+    if (err.fatalErr != 0) {
         LOG_ERROR (
         "IMU fatal error, chip is not in operation state (Boot or "
         "Power-System). Power on reset or soft reset required");
     }
-    if (pOutErr->featEngOvrld != 0) {
+    if (err.featEngOvrld != 0) {
         LOG_ERROR ("IMU overload of the feature engine detected");
     }
-    if (pOutErr->featEngWd != 0) {
+    if (err.featEngWd != 0) {
         LOG_ERROR ("IMU watchdog timer of the feature engine triggered");
     }
-    if (pOutErr->accConfErr != 0) {
+    if (err.accConfErr != 0) {
         LOG_ERROR ("IMU unsupported accelerometer configuration set by user");
     }
-    if (pOutErr->gyrConfErr != 0) {
+    if (err.gyrConfErr != 0) {
         LOG_ERROR ("IMU unsupported gyroscope configuration set by user");
     }
-    if (pOutErr->i3cErr0 != 0) {
+    if (err.i3cErr0 != 0) {
         LOG_ERROR ("IMU I3C SDR parity error occurred");
     }
-    if (pOutErr->i3cErr1 != 0) {
+    if (err.i3cErr1 != 0) {
         LOG_ERROR ("IMU I3C S0/S1 error occurred");
     }
+}
+
+/*
+ * Attempts to handle IMU errors via soft reset
+ */
+STATUS_TYPE IMUHandleErr (IMU* pIMU) {
+    IMUErr err = { 0 };
+    if (IMUGetDeviceErr (pIMU, &err) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to read IMU error codes");
+        pIMU->status = eSTATUS_FAILURE;
+        return eSTATUS_FAILURE;
+    }
+
+    // if (err.fatalErr != 0) {
+    //     LOG_ERROR (
+    //     "IMU fatal error, chip is not in operation state."
+    //     " Power on reset or soft reset required");
+    //     pIMU->status = eSTATUS_FAILURE;
+    //     return eSTATUS_FAILURE;
+    // }
+
+    IMULogDeviceErr (pIMU, &err);
+    return eSTATUS_FAILURE;
 }
 
 STATUS_TYPE IMUReadReg (IMU const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len) {
@@ -755,29 +776,23 @@ STATUS_TYPE IMUInit (IMU* pIMU, SPI_HandleTypeDef* pSPI, IMUAccConf aconf, IMUGy
         IMUGyroConf gconf2;
         status = IMUGetConf (pIMU, &aconf2, &gconf2);
         if (status != eSTATUS_SUCCESS) {
-            IMUErr err;
-            status = IMUGetErr (pIMU, &err);
-            IMULogErr (status, &err);
-            LOG_ERROR (
-            "Failed to read back IMU configuration. Error Register: "
-            "[0x%02X]",
-            err.err);
+            if (IMUHandleErr (pIMU) != eSTATUS_SUCCESS) {
+                LOG_ERROR ("Failed to read back IMU configuration");
+                return status;
+            }
             return status;
         }
 
         status = IMUCompareConfs (aconf, gconf, aconf2, gconf2);
         if (status != eSTATUS_SUCCESS) {
-            IMUErr err;
-            status = IMUGetErr (pIMU, &err);
-            IMULogErr (status, &err);
+            IMULogDeviceErr (pIMU, NULL);
             LOG_ERROR (
-            "IMU configuration mismatch after setting. Error Register: "
-            "[0x%02X] "
+            "IMU configuration mismatch after setting. "
             "Expected: Accel [%d %d %d %d] Gyro [%d %d %d %d] "
             "Got: Accel [%d %d %d %d] Gyro [%d %d %d %d]",
-            err.err, aconf.mode, aconf.odr, aconf.range, aconf.avg,
-            gconf.mode, gconf.odr, gconf.range, gconf.avg, aconf2.mode,
-            aconf2.odr, aconf2.range, aconf2.avg, gconf2.mode, gconf2.odr,
+            aconf.mode, aconf.odr, aconf.range, aconf.avg, gconf.mode,
+            gconf.odr, gconf.range, gconf.avg, aconf2.mode, aconf2.odr,
+            aconf2.range, aconf2.avg, gconf2.mode, gconf2.odr,
             gconf2.range, gconf2.avg);
             return status;
         }
