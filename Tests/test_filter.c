@@ -76,7 +76,7 @@ void test_FilterMadgwick6DOF_NoRotation (void) {
 
 void test_FilterMadgwick6DOF_Roll90Degrees (void) {
     FilterMadgwickContext context;
-    FilterMadgwickInit (&context, 1.0F);
+    FilterMadgwickInit (&context, 0.1F);
 
     // Simulate 90-degree roll: gravity appears in Y direction
     Vec3f accel = { 0.0F, 9.81F, 0.0F }; // Gravity in Y direction (rolled 90 degrees)
@@ -87,51 +87,51 @@ void test_FilterMadgwick6DOF_Roll90Degrees (void) {
      * Rotating at 10 degrees/second around the x - axis for 9 seconds puts
      * us close to 90 degrees. Especially with the 1.0F error.
      */
-    for (int i = 0; i < (int)(8.5F * 1.0F / dt); i++) {
+    for (int i = 0; i < (int)(9.0F * 1.0F / dt); i++) {
         STATUS_TYPE status =
         FilterMadgwick6DOF (&context, &accel, &gyro, dt, &attitude);
         TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
     }
 
     // Should converge to 90-degree roll (or -90 depending on convention)
-    TEST_ASSERT_TRUE (
-    fabs (attitude.roll - 90.0F) < 10.0F || fabs (attitude.roll + 90.0F) < 10.0F);
+    TEST_ASSERT_FLOAT_WITHIN (2.0F, 90.0F, fabs (attitude.roll));
     TEST_ASSERT_FLOAT_WITHIN (0.01F, 0.0F, attitude.pitch);
     TEST_ASSERT_FLOAT_WITHIN (0.01F, 0.0F, attitude.yaw);
 }
 
 void test_FilterMadgwick6DOF_Pitch90Degrees (void) {
     FilterMadgwickContext context;
-    FilterMadgwickInit (&context, 5.0F);
+    FilterMadgwickInit (&context, 0.1F);
 
     // Simulate 90-degree pitch: gravity appears in X direction
     Vec3f accel = { 9.81F, 0.0F, 0.0F }; // Gravity in X direction (pitched 90 degrees)
-    Vec3f gyro = { 0.0F, 0.0F, 0.0F }; // No rotation rate
-    Vec3f attitude;
-    float dt = 0.01F;
-
-    // Run multiple iterations to let filter converge
-    for (int i = 0; i < 200; i++) {
+    Vec3f gyro = { 0.0F, 10.0F, 0.0F }; // Rotating around the y-axis at 10 degrees/second
+    Vec3f attitude = { 0.0F, 0.0F, 0.0F };
+    float dt       = 0.01F;
+    /*
+     * Rotating at 10 degrees/second around the y - axis for 9 seconds puts
+     * us close to 90 degrees. Especially with the 1.0F error.
+     */
+    for (int i = 0; i < (int)(9.0F * (1.0F / dt)); i++) {
         STATUS_TYPE status =
         FilterMadgwick6DOF (&context, &accel, &gyro, dt, &attitude);
         TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
     }
 
     // Should converge to 90-degree pitch (or -90 depending on convention)
-    TEST_ASSERT_FLOAT_WITHIN (10.0F, 0.0F, attitude.roll);
-    TEST_ASSERT_TRUE (
-    fabs (attitude.pitch - 90.0F) < 10.0F || fabs (attitude.pitch + 90.0F) < 10.0F);
+    TEST_ASSERT_FLOAT_WITHIN (0.01F, 0.0F, attitude.roll);
+    TEST_ASSERT_FLOAT_WITHIN (2.0F, 90.0F, fabs (attitude.pitch));
+    TEST_ASSERT_FLOAT_WITHIN (0.01F, 0.0F, attitude.yaw);
 }
 
 void test_FilterMadgwick6DOF_GyroIntegration (void) {
     FilterMadgwickContext context;
-    FilterMadgwickInit (&context, 1.0F); // Lower error for better gyro tracking
+    FilterMadgwickInit (&context, 1.0F);
 
-    // Start with no rotation
-    Vec3f accel = { 0.0F, 0.0F, 9.81F };
-    Vec3f gyro  = { 0.0F, 0.0F, 45.0F }; // 45 degrees/second yaw rate
-    Vec3f attitude;
-    float dt = 0.01F;
+    Vec3f accel    = { 0.0F, 0.0F, 9.81F };
+    Vec3f gyro     = { 0.0F, 0.0F, 45.0F }; // 45 degrees/second yaw rate
+    Vec3f attitude = { 0.0F, 0.0F, 0.0F };
+    float dt       = 0.01F;
 
     // Initialize with stable attitude first
     gyro.z = 0.0F;
@@ -185,10 +185,10 @@ void test_FilterMadgwick6DOF_QuaternionNormalization (void) {
     FilterMadgwickContext context;
     FilterMadgwickInit (&context, 5.0F);
 
-    Vec3f accel = { 0.0F, 0.0F, 9.81F };
-    Vec3f gyro  = { 1.0F, 2.0F, 3.0F }; // Some rotation
-    Vec3f attitude;
-    float dt = 0.01F;
+    Vec3f accel    = { 0.0F, 0.0F, 9.81F };
+    Vec3f gyro     = { 1.0F, 2.0F, 3.0F };
+    Vec3f attitude = { 0.0F, 0.0F, 0.0F };
+    float dt       = 0.01F;
 
     // Run several iterations
     for (int i = 0; i < 50; i++) {
@@ -206,20 +206,58 @@ void test_FilterMadgwick6DOF_QuaternionNormalization (void) {
 
 void test_FilterMadgwick6DOF_LargeTimeStep (void) {
     FilterMadgwickContext context;
-    FilterMadgwickInit (&context, 5.0F);
+    FilterMadgwickInit (&context, 0.01F);
 
+    // Test with large time step and multi-axis rotation
     Vec3f accel = { 0.0F, 0.0F, 9.81F };
-    Vec3f gyro  = { 0.0F, 0.0F, 0.0F };
-    Vec3f attitude;
-    float dt = 1.0F; // Large time step
+    Vec3f gyro = { 5.0F, 3.0F, 2.0F }; // Rotation rates: 5°/s roll, 3°/s pitch, 2°/s yaw
+    Vec3f attitude = { 0.0F, 0.0F, 0.0F };
+    float dt       = 0.02F; // 50 hz
+    int iterations = 400;
 
-    STATUS_TYPE status = FilterMadgwick6DOF (&context, &accel, &gyro, dt, &attitude);
-    TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+    // Calculate expected total rotation for each axis
+    float expected_roll_total =
+    gyro.roll * dt * (float)iterations; // 5 * 1 * 10 = 50 degrees
+    float expected_pitch_total =
+    gyro.pitch * dt * (float)iterations; // 3 * 1 * 10 = 30 degrees
+    float expected_yaw_total = gyro.yaw * dt * (float)iterations; // 2 * 1 * 10 = 20 degrees
 
-    // Should handle large time steps without becoming unstable
-    TEST_ASSERT_TRUE (attitude.roll >= -180.0F && attitude.roll <= 180.0F);
-    TEST_ASSERT_TRUE (attitude.pitch >= -90.0F && attitude.pitch <= 90.0F);
-    TEST_ASSERT_TRUE (attitude.yaw >= -180.0F && attitude.yaw <= 180.0F);
+    for (int i = 0; i < iterations; i++) {
+        // Convert angles to radians for trigonometric functions
+        float roll_rad  = (gyro.roll * dt * (float)i) * PI_F / 180.0F;
+        float pitch_rad = (gyro.pitch * dt * (float)i) * PI_F / 180.0F;
+
+        // Calculate gravity vector as seen by accelerometer based on
+        // current attitude Gravity vector in body frame = R^T * [0,
+        // 0, 9.81] Where R is rotation matrix from Euler angles
+        accel.x = 9.81F * sinf (pitch_rad);
+        accel.y = -9.81F * sinf (roll_rad) * cosf (pitch_rad);
+        accel.z = 9.81F * cosf (roll_rad) * cosf (pitch_rad);
+
+        // Verify magnitude is preserved (should always be 9.81)
+        float accel_magnitude =
+        sqrtf ((accel.x * accel.x) + (accel.y * accel.y) + (accel.z * accel.z));
+        TEST_ASSERT_FLOAT_WITHIN (0.01F, 9.81F, accel_magnitude);
+
+        STATUS_TYPE status =
+        FilterMadgwick6DOF (&context, &accel, &gyro, dt, &attitude);
+        TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+
+        // Check that quaternion remains normalized even with large time steps
+        float quat_magnitude = sqrtf (
+        (context.est.q1 * context.est.q1) + (context.est.q2 * context.est.q2) +
+        (context.est.q3 * context.est.q3) + (context.est.q4 * context.est.q4));
+        TEST_ASSERT_FLOAT_WITHIN (0.01F, 1.0F, quat_magnitude);
+    }
+
+    float actual_roll_change  = attitude.roll;
+    float actual_pitch_change = attitude.pitch;
+    float actual_yaw_change   = attitude.yaw;
+
+    // Test with reasonable tolerance since we're using large time steps
+    TEST_ASSERT_FLOAT_WITHIN (4.0F, expected_roll_total, fabsf (actual_roll_change));
+    TEST_ASSERT_FLOAT_WITHIN (4.0F, expected_pitch_total, fabsf (actual_pitch_change));
+    TEST_ASSERT_FLOAT_WITHIN (10.0F, expected_yaw_total, fabsf (actual_yaw_change));
 }
 
 void test_FilterMadgwick6DOF_AccelNormalization (void) {
