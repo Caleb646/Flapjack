@@ -2,6 +2,9 @@
 #include "hal.h"
 #include <stdint.h>
 
+// Global variable to store assertion information when printf is not
+// available AssertionInfo_t AssertionInfo = { 0 };
+
 int32_t clipi32 (int32_t v, int32_t lower, int32_t upper) {
     if (v < lower) {
         return lower;

@@ -118,6 +118,9 @@ void TaskMotionControlUpdate (void* pvParameters) {
     float startTime        = 0.0F;
     uint32_t logStart      = xTaskGetTickCount ();
     uint32_t const logStep = 1000;
+    Vec3f currentAttitude  = { 0.0F };
+    Vec3f targetAttitude   = { 0.0F };
+    Vec3f maxAttitude = { .roll = 45.0F, .pitch = 45.0F, .yaw = 180.0F };
 
     while (1) {
         ulTaskNotifyTake (pdTRUE, pdMS_TO_TICKS (1000));
@@ -144,24 +147,34 @@ void TaskMotionControlUpdate (void* pvParameters) {
         float dt  = (float)xTaskGetTickCount () - startTime;
         startTime = (float)xTaskGetTickCount ();
 
-        Vec3f currentAttitude = gFlightContext.currentAttitude;
+        // Vec3f currentAttitude = gFlightContext.currentAttitude;
         status =
         FilterMadgwick6DOF (&gFilterMadgwickContext, &accel, &gyro, dt, &currentAttitude);
-        if (status == eSTATUS_SUCCESS) {
-            FlightContextUpdateCurrentAttitude (&gFlightContext, currentAttitude);
+        if (status != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to filter IMU data with Madgwick filter");
+            continue;
         }
 
         Vec3f pidAttitude = { 0.0F };
         status            = PIDUpdateAttitude (
-        &gPIDAngleContext, gyro, gFlightContext.currentAttitude,
-        gFlightContext.targetAttitude, gFlightContext.maxAttitude, dt, &pidAttitude);
+        &gPIDAngleContext, currentAttitude, targetAttitude, maxAttitude, dt, &pidAttitude);
+        if (status != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to update PID attitude");
+            continue;
+        }
+
+        status = PWMMixPIDnSend (pidAttitude, gFlightContext.targetThrottle);
+        if (status != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to send PWM mix");
+            continue;
+        }
 
         if ((xTaskGetTickCount () - logStart) >= logStep) {
             logStart = xTaskGetTickCount ();
 
             Vec3f a  = accel;
             Vec3f g  = gyro;
-            Vec3f ca = gFlightContext.currentAttitude;
+            Vec3f ca = currentAttitude;
 
             /*
              * Convert from meters per second squared to milli meters per second squared
@@ -251,25 +264,42 @@ int main (void) {
         gconf.mode        = eIMU_GYRO_MODE_HIGH_PERF;
         status            = IMUInit (&gIMU, &hspi2, aconf, gconf);
         if (status != eSTATUS_SUCCESS) {
-            LOG_ERROR ("CM7 failed to init IMU");
+            LOG_ERROR ("Failed to init IMU");
         }
     }
 
     /* USER CODE BEGIN 2 */
 
-    status = FilterMadgwickInit (&gFilterMadgwickContext);
+    status = FilterMadgwickInit (&gFilterMadgwickContext, 1.0F);
     if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("CM7 failed to init Madgewick Filter");
+        LOG_ERROR ("Failed to init Madgewick Filter");
     }
 
     status = PIDInit (&gPIDAngleContext);
     if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("CM7 failed to init PID");
+        LOG_ERROR ("Failed to init PID");
     }
 
     status = FlightContextInit (&gFlightContext);
     if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("CM7 failed to init Flight Context");
+        LOG_ERROR ("Failed to init Flight Context");
+    }
+
+    PWMHandle leftMotorPwmHandle = {
+        .pTimerHandle      = &htim8,
+        .pTimerRegisters   = TIM8,
+        .timerChannelID    = TIM_CHANNEL_1,
+        .usTargetDutyCycle = 20 * 1000, // 20 ms
+    };
+    PWMHandle leftServoPwmHandle = {
+        .pTimerHandle      = &htim13,
+        .pTimerRegisters   = TIM13,
+        .timerChannelID    = TIM_CHANNEL_1,
+        .usTargetDutyCycle = 1500, // 1.5 ms
+    };
+    status = ActuatorsInit (leftServoPwmHandle, leftMotorPwmHandle);
+    if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to init Actuators");
     }
 
     // while (1) {
@@ -286,7 +316,7 @@ int main (void) {
      * NOTE: Once a FreeRTOS task is created ALL interrupts will be disabled until the scheduler is started. So functions
      * like HAL_Delay will not work.
      */
-    LOG_DEBUG ("CM7 starting FreeRTOS");
+    LOG_DEBUG ("Starting FreeRTOS");
     BaseType_t taskStatus = xTaskCreate (
     TaskMotionControlUpdate, "Motion Control Update Task", configMINIMAL_STACK_SIZE,
     NULL, tskIDLE_PRIORITY, &gpTaskMotionControlUpdate);

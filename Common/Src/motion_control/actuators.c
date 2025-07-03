@@ -3,6 +3,68 @@
 #include "log.h"
 #include <string.h>
 
+#define CHECK_PWM_OK(pPwmHandle)          \
+    (                                     \
+    (pPwmHandle)->pTimerHandle != NULL && \
+    (pPwmHandle)->pTimerRegisters != NULL && (pPwmHandle)->timerChannelID != 0U)
+
+#define CHECK_SERVO_DESCRIPTOR_OK(pServoDesc)                      \
+    (                                                              \
+    (pServoDesc) != NULL && (pServoDesc)->usLeftDutyCycle != 0U && \
+    (pServoDesc)->usMiddleDutyCycle != 0U && (pServoDesc)->usRightDutyCycle != 0U)
+
+#define CHECK_SERVO_OK(pServo) \
+    ((pServo) != NULL && CHECK_PWM_OK (&((pServo)->pwmHandle)))
+
+
+STATIC_TESTABLE_DECL float ServoAngle2PWM (ServoDescriptor* pServo, float targetAngle) {
+    if (CHECK_SERVO_DESCRIPTOR_OK (pServo) != TRUE) {
+        LOG_ERROR ("ServoDescriptor is not valid");
+        return 0.0F;
+    }
+
+    // Handle asymmetric servo ranges: map negative angles to
+    // [usLeftDutyCycle, usMiddleDutyCycle], positive to [usMiddleDutyCycle, usRightDutyCycle]
+    if (targetAngle < 0) {
+        return mapf32 (
+        targetAngle, -pServo->maxAngle, 0.0F,
+        (float)pServo->usLeftDutyCycle, (float)pServo->usMiddleDutyCycle);
+    } else if (targetAngle > 0) {
+        return mapf32 (
+        targetAngle, 0.0F, pServo->maxAngle,
+        (float)pServo->usMiddleDutyCycle, (float)pServo->usRightDutyCycle);
+    } else {
+        return (float)pServo->usMiddleDutyCycle;
+    }
+}
+
+STATIC_TESTABLE_DECL STATUS_TYPE PWMSend (PWMHandle const* pPWM) {
+    // uint32_t volatile *pCCR;
+    // uint32_t volatile *pARR;
+    // uint32_t volatile *pPSC;
+
+    // 1,000,000 Hz / ARR = 50Hz --> ARR = 20,000
+    // 1.5ms duty cycle = td (target duty cycle)
+    // td / period = percentage
+    // CCR / ARR = percentage
+    // CCR = ARR * (1500us / 20000us)
+
+    // 1,000,000 Hz / ARR = 2000Hz --> ARR = 500
+    // 250us duty cycle = td (target duty cycle)
+    // td / period = percentage
+    // CCR / ARR = percentage
+    // CCR = ARR * (250us / 500us)
+
+    // *pCCR = (uint16_t)pPWM->usTargetDutyCycle;
+    if (CHECK_PWM_OK (pPWM) != TRUE) {
+        LOG_ERROR ("Received invalid PWM pointer");
+        return eSTATUS_FAILURE;
+    }
+    __HAL_TIM_SET_COMPARE (pPWM->pTimerHandle, pPWM->timerChannelID, pPWM->usTargetDutyCycle);
+
+    return eSTATUS_SUCCESS;
+}
+
 STATUS_TYPE UpdateTargetAttitudeThrottle (
 Vec3f maxAttitude,
 RadioPWMChannels radio,
@@ -24,7 +86,6 @@ float* pOutputThrottle) {
 
 STATUS_TYPE PIDUpdateAttitude (
 PIDContext* pidContext,
-Vec3f imuGyro,         // degrees per second
 Vec3f currentAttitude, // degrees
 Vec3f targetAttitude,  // degrees
 Vec3f maxAttitude,     // degrees
@@ -41,7 +102,8 @@ Vec3f* pOutputPIDAttitude // degrees
     float rollIntegral = clipf32 (
     pidContext->prevIntegral.roll + rollError * dt,
     -pidContext->integralLimit, pidContext->integralLimit);
-    float rollDerivative = (rollError - pidContext->prevError.roll) / dt;
+    float rollDerivative =
+    (dt != 0.0F) ? (rollError - pidContext->prevError.roll) / dt : 0.0F;
     // pOutputPIDAttitude->roll = 0.01f * (P * rollError + I * rollIntegral - D * rollDerivative);
 
     // Scale PID output between -1 and 1
@@ -57,7 +119,8 @@ Vec3f* pOutputPIDAttitude // degrees
     float pitchIntegral = clipf32 (
     pidContext->prevIntegral.pitch + pitchError * dt,
     -pidContext->integralLimit, pidContext->integralLimit);
-    float pitchDerivative = (pitchError - pidContext->prevError.pitch) / dt;
+    float pitchDerivative =
+    (dt != 0.0F) ? (pitchError - pidContext->prevError.pitch) / dt : 0.0F;
     // pOutputPIDAttitude->pitch = 0.01f * (P * pitchError + I * pitchIntegral - D * pitchDerivative);
 
     // Scale PID output between -1 and 1
@@ -74,7 +137,8 @@ Vec3f* pOutputPIDAttitude // degrees
     float yawIntegral = clipf32 (
     pidContext->prevIntegral.yaw + yawError * dt,
     -pidContext->integralLimit, pidContext->integralLimit);
-    float yawDerivative = (yawError - pidContext->prevError.yaw) / dt;
+    float yawDerivative =
+    (dt != 0.0F) ? (yawError - pidContext->prevError.yaw) / dt : 0.0F;
     // pOutputPIDAttitude->yaw = 0.01f * (P * yawError + I * yawIntegral - D * yawDerivative);
 
     // Scale PID output between -1 and 1
@@ -99,27 +163,19 @@ STATUS_TYPE PIDInit (PIDContext* pContext) {
     return eSTATUS_SUCCESS;
 }
 
-/*
- * PWM & Motion Control
- */
-
-static float ServoAngle2PWM (ServoDescriptor* pSer, float targetAngle);
-
-static float ServoAngle2PWM (ServoDescriptor* pSer, float targetAngle) {
-    float usMinDutyCycle = 0.0F;
-    float usMaxDutyCycle = 0.0F;
-    if (targetAngle < 0) {
-        usMinDutyCycle = (float)pSer->usLeftDutyCycle;
-        usMaxDutyCycle = (float)pSer->usMiddleDutyCycle;
-    } else if (targetAngle > 0) {
-        usMinDutyCycle = (float)pSer->usMiddleDutyCycle;
-        usMaxDutyCycle = (float)pSer->usRightDutyCycle;
-    } else {
-        usMinDutyCycle = (float)pSer->usMiddleDutyCycle;
-        usMaxDutyCycle = (float)pSer->usMiddleDutyCycle;
+STATUS_TYPE ServoMove2Angle (Servo* pServo, float targetAngle) {
+    if (CHECK_SERVO_OK (pServo) != TRUE) {
+        LOG_ERROR ("Received invalid Servo pointer");
+        return eSTATUS_FAILURE;
     }
 
-    return mapf32 (targetAngle, -pSer->maxAngle, pSer->maxAngle, usMinDutyCycle, usMaxDutyCycle);
+    targetAngle = clipf32 (
+    targetAngle, -pServo->pwmDescriptor.maxAngle, pServo->pwmDescriptor.maxAngle);
+
+    pServo->pwmHandle.usTargetDutyCycle =
+    (uint32_t)ServoAngle2PWM (&pServo->pwmDescriptor, targetAngle);
+
+    return PWMSend (&pServo->pwmHandle);
 }
 
 // NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
@@ -133,7 +189,7 @@ static Servo gLeftServo;
 /*
  * \param pidAttitude roll, pitch, and yaw are between -1 and 1
  */
-STATUS_TYPE PID2PWMMixer (Vec3f pidAttitude, float targetThrottle) {
+STATUS_TYPE PWMMixPIDnSend (Vec3f pidAttitude, float targetThrottle) {
     /*
      *   NWU coordinate system:
      *       + x-axis pointing to the North
@@ -173,49 +229,28 @@ STATUS_TYPE PID2PWMMixer (Vec3f pidAttitude, float targetThrottle) {
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE PWMSend (PWMHandle* pPWM) {
-    // uint32_t volatile *pCCR;
-    // uint32_t volatile *pARR;
-    // uint32_t volatile *pPSC;
-
-    // 1,000,000 Hz / ARR = 50Hz --> ARR = 20,000
-    // 1.5ms duty cycle = td (target duty cycle)
-    // td / period = percentage
-    // CCR / ARR = percentage
-    // CCR = ARR * (1500us / 20000us)
-
-    // 1,000,000 Hz / ARR = 2000Hz --> ARR = 500
-    // 250us duty cycle = td (target duty cycle)
-    // td / period = percentage
-    // CCR / ARR = percentage
-    // CCR = ARR * (250us / 500us)
-
-    // *pCCR = (uint16_t)pPWM->usTargetDutyCycle;
-    __HAL_TIM_SET_COMPARE (pPWM->pTimerHandle, pPWM->timerChannelID, pPWM->usTargetDutyCycle);
-
-    return eSTATUS_SUCCESS;
-}
-
 STATUS_TYPE ActuatorsInit (PWMHandle leftMotorPWM, PWMHandle leftServoPWM) {
     // Prescale 64MHz clock to 1MHz
     __HAL_TIM_SET_PRESCALER (leftMotorPWM.pTimerHandle, 64);
-    // Use ARR register to scale clock from 64MHz to 4000Hz (250us)
+    // Use ARR register to scale clock from 1MHz to 4000Hz (250us)
     __HAL_TIM_SET_AUTORELOAD (leftMotorPWM.pTimerHandle, 250);
     // Set duty cycle to 0 percent
     __HAL_TIM_SET_COMPARE (leftMotorPWM.pTimerHandle, leftMotorPWM.timerChannelID, 0);
 
     // Prescale 64MHz clock to 1MHz
     __HAL_TIM_SET_PRESCALER (leftServoPWM.pTimerHandle, 64);
-    // Use ARR register to scale clock from 64MHz to 50Hz
-    // 64MHz / 20,000 = 50Hz
+    // Use ARR register to scale clock from 1MHz to 50Hz
+    // 1MHz / 20,000 = 50Hz
     __HAL_TIM_SET_AUTORELOAD (leftServoPWM.pTimerHandle, 20000);
     // Set duty cycle to 0 percent
     __HAL_TIM_SET_COMPARE (leftServoPWM.pTimerHandle, leftServoPWM.timerChannelID, 0);
 
     if (HAL_TIM_PWM_Start (leftMotorPWM.pTimerHandle, leftMotorPWM.timerChannelID) != HAL_OK) {
+        LOG_ERROR ("Failed to start left motor PWM");
         return eSTATUS_FAILURE;
     }
     if (HAL_TIM_PWM_Start (leftServoPWM.pTimerHandle, leftServoPWM.timerChannelID) != HAL_OK) {
+        LOG_ERROR ("Failed to start left servo PWM");
         return eSTATUS_FAILURE;
     }
 
@@ -239,7 +274,6 @@ STATUS_TYPE ActuatorsInit (PWMHandle leftMotorPWM, PWMHandle leftServoPWM) {
     servoDescriptor.usMiddleDutyCycle = 1500;
     servoDescriptor.usRightDutyCycle  = 2000;
 
-    // servoDescriptor.minAngle = -90;
     servoDescriptor.maxAngle = 20;
     servoDescriptor.curAngle = 0;
 

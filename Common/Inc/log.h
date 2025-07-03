@@ -5,12 +5,31 @@
 #include "hal.h"
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
+
+// Macro to extract filename from __FILE__ at compile time
+#ifdef _WIN32
+#define __FILENAME__ \
+    (strrchr (__FILE__, '\\') ? strrchr (__FILE__, '\\') + 1 : __FILE__)
+#else
+#define __FILENAME__ \
+    (strrchr (__FILE__, '/') ? strrchr (__FILE__, '/') + 1 : __FILE__)
+#endif
 
 // clang-format off
+
+#ifdef CORE_CM4
+#define __CORE_NAME__ "CM4"
+#elif defined CORE_CM7
+#define __CORE_NAME__ "CM7"
+#else
+#define __CORE_NAME__ "Unknown"
+#endif
+
 /* < and > delimit a message */
 #define LOG_(lvl, ...)                                                                                                  \
     do {                                                                                                                \
-        printf ("<{\"type\":\"debug\",\"lvl\":\"%s\",\"file\":\"%s\",\"line\":%u,\"msg\":\"", lvl, __FILE__, __LINE__); \
+        printf ("<{\"type\":\"debug\",\"lvl\":\"%s\",\"core\":\"%s\",\"file\":\"%s\",\"function\":\"%s\",\"line\":%u,\"msg\":\"", lvl, __CORE_NAME__, __FILENAME__, __func__, __LINE__); \
         printf (__VA_ARGS__);                                                                                           \
         printf ("\"}>\r\n");                                                                                            \
     } while (0)
@@ -40,7 +59,7 @@
 // Example usage: LOG_DATA("imu", "{\"roll\":%.2f,\"pitch\":%.2f,\"yaw\":%.2f}", roll, pitch, yaw);
 #define LOG_DATA(type, fmt, ...)                      \
     do {                                              \
-        printf ("<{\"type\":\"%s\",\"data\":", type); \
+        printf ("<{\"type\":\"%s\",\"core\":\"%s\",\"data\":", type, __CORE_NAME__); \
         printf (fmt, __VA_ARGS__);                      \
         printf ("}>\r\n");                            \
     } while (0)
@@ -48,6 +67,7 @@
 // clang-format on
 
 STATUS_TYPE LoggerInit (USART_TypeDef* pUARTInstance, UART_HandleTypeDef* pOutUARTHandle);
+// void LogStackTrace (void);
 
 
 #endif // LOG_H

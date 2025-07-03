@@ -121,7 +121,7 @@ STATUS_TYPE IMUReadReg (IMU const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t le
     if (HAL_SPI_TransmitReceive (pIMU->pSPI, pTx, pRx, len + pIMU->nDummyBytes + 1, SPI_DEFAULT_TIMEOUT_MS) != HAL_OK) {
         return (STATUS_TYPE)eIMU_COM_FAILURE;
     }
-    // The first nDummyBytes are dummy bytes
+    // The first nDummyBytes + 1 (for the register address) are dummy bytes
     memcpy (pBuf, &(pRx[pIMU->nDummyBytes + 1]), len);
     return eSTATUS_SUCCESS;
 }
@@ -776,16 +776,17 @@ STATUS_TYPE IMUInit (IMU* pIMU, SPI_HandleTypeDef* pSPI, IMUAccConf aconf, IMUGy
         IMUGyroConf gconf2;
         status = IMUGetConf (pIMU, &aconf2, &gconf2);
         if (status != eSTATUS_SUCCESS) {
-            if (IMUHandleErr (pIMU) != eSTATUS_SUCCESS) {
-                LOG_ERROR ("Failed to read back IMU configuration");
-                return status;
-            }
+            // if (IMUHandleErr (pIMU) != eSTATUS_SUCCESS) {
+            //     LOG_ERROR ("Failed to read back IMU configuration");
+            //     return status;
+            // }
+            LOG_ERROR ("Failed to read back IMU configuration");
+            IMULogDeviceErr (pIMU, NULL);
             return status;
         }
 
         status = IMUCompareConfs (aconf, gconf, aconf2, gconf2);
         if (status != eSTATUS_SUCCESS) {
-            IMULogDeviceErr (pIMU, NULL);
             LOG_ERROR (
             "IMU configuration mismatch after setting. "
             "Expected: Accel [%d %d %d %d] Gyro [%d %d %d %d] "
@@ -794,6 +795,7 @@ STATUS_TYPE IMUInit (IMU* pIMU, SPI_HandleTypeDef* pSPI, IMUAccConf aconf, IMUGy
             gconf.odr, gconf.range, gconf.avg, aconf2.mode, aconf2.odr,
             aconf2.range, aconf2.avg, gconf2.mode, gconf2.odr,
             gconf2.range, gconf2.avg);
+            IMULogDeviceErr (pIMU, NULL);
             return status;
         }
     }

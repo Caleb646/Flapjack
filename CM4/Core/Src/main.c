@@ -144,8 +144,8 @@ int main (void) {
         CriticalErrorHandler ();
     }
 
-    UART_HandleTypeDef* pUART;
-    if (LoggerInit (USART1, pUART) != eSTATUS_SUCCESS) {
+    // UART_HandleTypeDef* pUART;
+    if (LoggerInit (USART1, NULL) != eSTATUS_SUCCESS) {
         CriticalErrorHandler ();
     }
     HAL_Delay (1000);
