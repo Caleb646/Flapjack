@@ -134,6 +134,15 @@ typedef struct {
 } IMUGyroConf;
 
 typedef struct {
+    uint8_t errStatus;
+    uint8_t selfCalibComplete;
+    uint8_t gyroSelfCalibResult;
+    uint8_t selfTestResult;
+    uint8_t axisRemapComplete;
+    uint8_t systemState;
+} IMUFeatureStatus;
+
+typedef struct {
     SPI_HandleTypeDef* pSPI;
     Vec3 volatile rawAccel;
     Vec3 volatile rawGyro;
@@ -148,7 +157,7 @@ typedef struct {
 
 typedef struct {
     /*! Stores the self-calibration result */
-    uint8_t result;
+    int8_t result;
     /*! Stores the self-calibration error codes status */
     uint8_t error;
 } IMUSelfCalibResult;
@@ -161,6 +170,7 @@ typedef struct {
 
 STATUS_TYPE IMUGetDeviceErr (IMU* pIMU, IMUErr* pOutErr);
 void IMULogDeviceErr (IMU* pIMU, IMUErr const* pErr);
+STATUS_TYPE IMUEnableInterrupts (IMU const* pIMU);
 STATUS_TYPE IMUHandleErr (IMU* pIMU);
 STATUS_TYPE IMUUpdateAccel (IMU* pIMU);
 STATUS_TYPE IMUUpdateGyro (IMU* pIMU);

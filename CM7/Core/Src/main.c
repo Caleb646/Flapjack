@@ -115,12 +115,16 @@ void HAL_GPIO_EXTI_Callback (uint16_t gpioPin) {
 }
 
 void TaskMotionControlUpdate (void* pvParameters) {
-    float startTime        = 0.0F;
+    float startTime        = (float)xTaskGetTickCount ();
     uint32_t logStart      = xTaskGetTickCount ();
-    uint32_t const logStep = 1000;
+    uint32_t const logStep = 500;
     Vec3f currentAttitude  = { 0.0F };
     Vec3f targetAttitude   = { 0.0F };
     Vec3f maxAttitude = { .roll = 45.0F, .pitch = 45.0F, .yaw = 180.0F };
+
+    if (IMUEnableInterrupts (&gIMU) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to enable IMU interrupts");
+    }
 
     while (1) {
         ulTaskNotifyTake (pdTRUE, pdMS_TO_TICKS (1000));
@@ -251,13 +255,13 @@ int main (void) {
      */
     {
         IMUAccConf aconf  = { 0 };
-        aconf.odr         = eIMU_ACC_ODR_50;
+        aconf.odr         = eIMU_ACC_ODR_100;
         aconf.range       = eIMU_ACC_RANGE_2G;
         aconf.avg         = eIMU_ACC_AVG_16;
         aconf.bw          = eIMU_ACC_BW_HALF;
         aconf.mode        = eIMU_ACC_MODE_HIGH_PERF;
         IMUGyroConf gconf = { 0 };
-        gconf.odr         = eIMU_GYRO_ODR_50;
+        gconf.odr         = eIMU_GYRO_ODR_100;
         gconf.range       = eIMU_GYRO_RANGE_250;
         gconf.avg         = eIMU_GYRO_AVG_16;
         gconf.bw          = eIMU_GYRO_BW_HALF;
@@ -270,7 +274,7 @@ int main (void) {
 
     /* USER CODE BEGIN 2 */
 
-    status = FilterMadgwickInit (&gFilterMadgwickContext, 1.0F);
+    status = FilterMadgwickInit (&gFilterMadgwickContext, 0.1F);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to init Madgewick Filter");
     }
@@ -316,7 +320,7 @@ int main (void) {
      * NOTE: Once a FreeRTOS task is created ALL interrupts will be disabled until the scheduler is started. So functions
      * like HAL_Delay will not work.
      */
-    LOG_DEBUG ("Starting FreeRTOS");
+    LOG_INFO ("Starting FreeRTOS");
     BaseType_t taskStatus = xTaskCreate (
     TaskMotionControlUpdate, "Motion Control Update Task", configMINIMAL_STACK_SIZE,
     NULL, tskIDLE_PRIORITY, &gpTaskMotionControlUpdate);

@@ -8,12 +8,60 @@
 
 
 #define BIT_ISSET(v, bit) (((v) & (bit)) > 0U)
+#define CHECK_INT_ERR_STATUS(u16IntStatus) \
+    BIT_ISSET (u16IntStatus, (1U << 10U))
 
 enum {
     RW_BUFFER_SZ           = 16U,
     INT_ERR_STATUS_BIT     = 10U,
     SPI_DEFAULT_TIMEOUT_MS = 100U
 };
+
+STATUS_TYPE IMUSendCmd (IMU const* pIMU, uint16_t cmd) {
+    uint8_t pRegData[2] = { 0 };
+    pRegData[0]         = (uint8_t)(cmd & BMI3_SET_LOW_BYTE);
+    pRegData[1]         = (uint8_t)((cmd & BMI3_SET_HIGH_BYTE) >> 8U);
+    STATUS_TYPE status  = IMUWriteReg (pIMU, BMI3_REG_CMD, pRegData, 2);
+    if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to send IMU command 0x%04X", cmd);
+        return status;
+    }
+    return eSTATUS_SUCCESS;
+}
+
+STATUS_TYPE
+IMUGetFeatureStatus (IMU const* pIMU, uint16_t featureRegAddr, IMUFeatureStatus* pResultOut) {
+    uint8_t pData[2]   = { 0 };
+    STATUS_TYPE status = IMUReadReg (pIMU, featureRegAddr, pData, 2);
+    if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to read IMU feature status register [0x%04X]", featureRegAddr);
+        return status;
+    }
+
+    uint16_t featureIO = ((uint16_t)pData[1] << 8U) | (uint16_t)pData[0];
+    if (featureRegAddr == BMI3_REG_FEATURE_IO1) {
+        pResultOut->errStatus           = featureIO & (0xFU << 0U);
+        pResultOut->selfCalibComplete   = (featureIO & (1U << 4U)) > 0;
+        pResultOut->gyroSelfCalibResult = (featureIO & (1U << 5U)) > 0;
+        pResultOut->selfTestResult      = (featureIO & (1U << 6U)) > 0;
+        pResultOut->axisRemapComplete   = (featureIO & (1U << 7U)) > 0;
+        pResultOut->systemState         = (featureIO & (3U << 11U)) >> 11U;
+        return eSTATUS_SUCCESS;
+    }
+    LOG_ERROR ("Trying read from unsupported feature status register [0x%04X]", featureRegAddr);
+    return eSTATUS_FAILURE;
+}
+
+STATUS_TYPE IMUGetINTStatus (IMU const* pIMU, uint16_t* pOutStatus) {
+    uint8_t pBuff[2] = { 0U };
+    STATUS_TYPE status = IMUReadReg (pIMU, BMI3_REG_INT_STATUS_INT1, pBuff, 2);
+    if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to read IMU interrupt status register");
+        return status;
+    }
+    *pOutStatus = ((uint16_t)pBuff[1] << 8U) | (uint16_t)pBuff[0];
+    return eSTATUS_SUCCESS;
+}
 
 STATUS_TYPE IMUGetDeviceErr (IMU* pIMU, IMUErr* pOutErr) {
     uint8_t pBuff[2]   = { 0U };
@@ -28,6 +76,7 @@ STATUS_TYPE IMUGetDeviceErr (IMU* pIMU, IMUErr* pOutErr) {
     pOutErr->i3cErr0      = (err & (1U << 8U)) > 0;
     pOutErr->i3cErr1      = (err & (1U << 11U)) > 0;
     if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to read IMU error register");
         return status;
     }
     // /* Clear IMU error status on successful read */
@@ -68,6 +117,8 @@ void IMULogDeviceErr (IMU* pIMU, IMUErr const* pErr) {
     }
     if (err.i3cErr1 != 0) {
         LOG_ERROR ("IMU I3C S0/S1 error occurred");
+    } else {
+        LOG_ERROR ("Did NOT find any IMU device errors");
     }
 }
 
@@ -279,51 +330,62 @@ STATUS_TYPE IMU2CPUInterruptHandler (IMU* pIMU) {
 
 STATUS_TYPE IMUSoftReset (IMU* pIMU) {
     /* Send soft reset command to BMI323 */
-    uint8_t cmdBuffer[2] = { 0 };
-    cmdBuffer[0] = (uint8_t)(BMI3_CMD_SOFT_RESET & BMI3_SET_LOW_BYTE);
-    cmdBuffer[1] = (uint8_t)((BMI3_CMD_SOFT_RESET & BMI3_SET_HIGH_BYTE) >> 8);
-    STATUS_TYPE status = IMUWriteReg (pIMU, BMI3_REG_CMD, cmdBuffer, 2);
+    STATUS_TYPE status = IMUSendCmd (pIMU, BMI3_CMD_SOFT_RESET);
 
+    if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to send soft reset command to IMU");
+        return status;
+    }
+
+    HAL_Delay (100);
     /* Perform dummy read to switch from I3C/I2C to SPI */
     if (status == eSTATUS_SUCCESS) {
         uint8_t dummyBytes[2] = { 0 };
         status = IMUReadReg (pIMU, BMI3_REG_CHIP_ID, dummyBytes, 2);
     }
 
+    HAL_Delay (100);
     /* Enable feature engine */
     if (status == eSTATUS_SUCCESS) {
-        uint8_t featureData[2] = { 0x2c, 0x01 };
+        uint8_t featureData[2] = { 0x2C, 0x01 };
         status = IMUWriteReg (pIMU, BMI3_REG_FEATURE_IO2, featureData, 2);
     }
 
+    HAL_Delay (100);
     /* Enable feature status bit */
     if (status == eSTATUS_SUCCESS) {
         uint8_t featureIOStatus[2] = { BMI3_ENABLE, 0 };
         status = IMUWriteReg (pIMU, BMI3_REG_FEATURE_IO_STATUS, featureIOStatus, 2);
     }
 
+    HAL_Delay (100);
     /* Enable feature engine bit */
     if (status == eSTATUS_SUCCESS) {
         uint8_t featureEngine[2] = { BMI3_ENABLE, 0 };
         status = IMUWriteReg (pIMU, BMI3_REG_FEATURE_CTRL, featureEngine, 2);
     }
 
+    uint8_t featEnabled = FALSE;
     if (status == eSTATUS_SUCCESS) {
         int16_t loop       = 0;
         uint8_t regData[2] = { 0 };
 
-        while (loop++ <= 10) {
+        while (loop++ <= 20) {
             HAL_Delay (100);
             status = IMUReadReg (pIMU, BMI3_REG_FEATURE_IO1, regData, 2);
             if (status == eSTATUS_SUCCESS) {
                 if (regData[0] & (uint16_t)BMI3_FEATURE_ENGINE_ENABLE_MASK) {
-                    status = eSTATUS_SUCCESS;
+                    featEnabled = TRUE;
                     break;
                 }
             }
         }
     }
-
+    if (featEnabled != TRUE) {
+        LOG_ERROR ("Failed to enable feature engine after soft reset");
+        IMULogDeviceErr (pIMU, NULL);
+        return eSTATUS_FAILURE;
+    }
     return status;
 }
 
@@ -425,7 +487,7 @@ IMUSetConf_ (IMU* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf, uin
         avgNum = BMI3_SET_BITS (pRegData[1], BMI3_ACC_AVG_NUM, pAConf->avg);
         accMode = BMI3_SET_BITS (pRegData[1], BMI3_ACC_MODE, pAConf->mode);
 
-        if (altConfFlag == 1) {
+        if (altConfFlag == TRUE) {
             regAddr = BMI3_REG_ALT_ACC_CONF;
             odr = BMI3_SET_BIT_POS0 (pRegData[0], BMI3_ALT_ACC_ODR, pAConf->odr);
             avgNum =
@@ -462,7 +524,7 @@ IMUSetConf_ (IMU* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf, uin
         avgNum = BMI3_SET_BITS (pRegData[1], BMI3_GYR_AVG_NUM, pGConf->avg);
         accMode = BMI3_SET_BITS (pRegData[1], BMI3_GYR_MODE, pGConf->mode);
 
-        if (altConfFlag == 1) {
+        if (altConfFlag == TRUE) {
             regAddr = BMI3_REG_ALT_GYR_CONF;
             odr = BMI3_SET_BIT_POS0 (pRegData[0], BMI3_ALT_GYR_ODR, pGConf->odr);
             avgNum =
@@ -492,7 +554,7 @@ IMUSetConf (IMU* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf) {
 
 STATUS_TYPE
 IMUSetAltConf (IMU* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf) {
-    return IMUSetConf_ (pIMU, pAConf, pGConf, 1);
+    return IMUSetConf_ (pIMU, pAConf, pGConf, TRUE);
 }
 
 STATUS_TYPE
@@ -516,31 +578,46 @@ IMUCompareConfs (IMUAccConf aconf, IMUGyroConf gconf, IMUAccConf aconf2, IMUGyro
 STATUS_TYPE
 IMUCalibrate (IMU* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSelfCalibResult* pResultOut) {
 
+    if (pIMU == NULL || pResultOut == NULL) {
+        LOG_ERROR ("IMU or result pointer is NULL");
+        return (STATUS_TYPE)eIMU_NULL_PTR;
+    }
+
+    pResultOut->result = FALSE;
+
     /* Save the current configs */
     IMUAccConf aconf;
     IMUGyroConf gconf;
     STATUS_TYPE status = IMUGetConf (pIMU, &aconf, &gconf);
     if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to get IMU configuration to save before calibration");
         return status;
     }
+    HAL_Delay (100);
 
     /* Set the ACC config to be what the self calibration expects */
     IMUAccConf calibAConf = { 0 };
     calibAConf.mode       = eIMU_ACC_MODE_HIGH_PERF;
     calibAConf.odr        = eIMU_ACC_ODR_100;
-    calibAConf.range      = eIMU_ACC_RANGE_8G;
-    calibAConf.avg        = eIMU_ACC_AVG_1;
-    calibAConf.bw         = eIMU_ACC_BW_HALF;
-    status                = IMUSetConf (pIMU, &calibAConf, NULL);
+    calibAConf.range      = aconf.range;
+    calibAConf.avg        = aconf.avg;
+    calibAConf.bw         = aconf.bw;
+    // calibAConf.range      = eIMU_ACC_RANGE_8G;
+    // calibAConf.avg        = eIMU_ACC_AVG_1;
+    // calibAConf.bw         = eIMU_ACC_BW_HALF;
+    status = IMUSetConf (pIMU, &calibAConf, NULL);
     if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to set IMU accelerometer configuration for calibration");
         return status;
     }
+    HAL_Delay (100);
 
     /* Store alt configs and then disable them */
     IMUAccConf altAConf;
     IMUGyroConf altGConf;
     status = IMUGetAltConf (pIMU, &altAConf, &altGConf);
     if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to get IMU alternate configuration to save before calibration");
         return status;
     }
 
@@ -548,80 +625,79 @@ IMUCalibrate (IMU* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSel
     altGConf.mode = eIMU_GYRO_MODE_DISABLE;
     status        = IMUSetAltConf (pIMU, &altAConf, &altGConf);
     if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to disable IMU alternate configuration before calibration");
         return status;
     }
-
-    /* Set the calibration mode in the dma register */
-    {
-        uint8_t pRegData[2]      = { 0 };
-        uint8_t calibBaseAddr[2] = { BMI3_BASE_ADDR_GYRO_SC_SELECT, 0 };
-        status = IMUWriteReg (pIMU, BMI3_REG_FEATURE_DATA_ADDR, calibBaseAddr, 2);
-        if (status != eSTATUS_SUCCESS) {
-            return status;
-        }
-        status = IMUReadReg (pIMU, BMI3_REG_FEATURE_DATA_TX, pRegData, 2);
-        pRegData[0] = (applyCorrection | calibSelection);
-        if (status != eSTATUS_SUCCESS) {
-            return status;
-        }
-        status = IMUWriteReg (pIMU, BMI3_REG_FEATURE_DATA_ADDR, calibBaseAddr, 2);
-        if (status != eSTATUS_SUCCESS) {
-            return status;
-        }
-        status = IMUWriteReg (pIMU, BMI3_REG_FEATURE_DATA_TX, pRegData, 2);
-        if (status != eSTATUS_SUCCESS) {
-            return status;
-        }
-    }
+    HAL_Delay (100);
 
     /* Trigger the self calibration */
+    status = IMUSendCmd (pIMU, BMI3_CMD_SELF_CALIB_TRIGGER);
+    if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to trigger IMU self-calibration");
+        return status;
+    }
+    HAL_Delay (100);
+
+    /* Check that the self calibration has started */
     {
-        uint8_t pRegData[2] = { 0 };
-        pRegData[0] = (uint8_t)(BMI3_CMD_SELF_CALIB_TRIGGER & BMI3_SET_LOW_BYTE);
-        pRegData[1] =
-        (uint8_t)((BMI3_CMD_SELF_CALIB_TRIGGER & BMI3_SET_HIGH_BYTE) >> 8U);
-        status = IMUWriteReg (pIMU, BMI3_REG_CMD, pRegData, 2);
+        IMUFeatureStatus featureStatus = { 0 };
+        status = IMUGetFeatureStatus (pIMU, BMI3_REG_FEATURE_IO1, &featureStatus);
         if (status != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to get IMU feature status");
             return status;
         }
+        if (featureStatus.systemState != 0x1U) {
+            LOG_ERROR (
+            "IMU has not started the self calibration. System state "
+            "[0x%X]",
+            featureStatus.systemState);
+            IMULogDeviceErr (pIMU, NULL);
+            return eSTATUS_FAILURE;
+        }
     }
+
     /* Get self calibration result */
     {
-        STATUS_TYPE status = eSTATUS_SUCCESS;
-        uint8_t idx        = 0;
-        uint8_t limit      = 10;
-        uint8_t sc_status  = 0;
-        uint8_t pData[2];
-        uint8_t sc_complete_flag = 0;
-        // uint8_t feature_engine_err_reg_lsb, feature_engine_err_reg_msb;
-        pResultOut->error = 0;
-
-        for (idx = 0; idx < limit; idx++) {
-            /* A delay of 430ms (43ms * 10(limit)) is required to perform self calibration */
-            HAL_Delay (43);
-            status = IMUReadReg (pIMU, BMI3_REG_FEATURE_IO1, pData, 2);
-            sc_status = (pData[0] & BMI3_SC_ST_STATUS_MASK) >> BMI3_SC_ST_COMPLETE_POS;
-
-            if ((sc_status == BMI3_TRUE) && (status == eSTATUS_SUCCESS)) {
-                /*Bail early if the self-calibration is completed * / */
-                sc_complete_flag = BMI3_TRUE;
+        for (uint8_t idx = 0; idx < 10U; idx++) {
+            /* A delay of 1000ms (100ms * 10(limit)) is required to perform self calibration */
+            HAL_Delay (100);
+            uint16_t intStatus = 0;
+            status             = IMUGetINTStatus (pIMU, &intStatus);
+            if (status != eSTATUS_SUCCESS) {
+                LOG_ERROR ("Failed to read IMU interrupt status");
+                return status;
+            }
+            if (CHECK_INT_ERR_STATUS (intStatus)) {
                 break;
             }
         }
 
-        if (sc_complete_flag == BMI3_TRUE) {
-            pResultOut->result =
-            (pData[0] & BMI3_GYRO_SC_RESULT_MASK) >> BMI3_GYRO_SC_RESULT_POS;
-            pResultOut->error = pData[0];
-        } else {
-            /* If limit elapses returning the error code, error status is returned */
-            // rslt = bmi3_get_feature_engine_error_status (
-            // &feature_engine_err_reg_lsb, &feature_engine_err_reg_msb,
-            // dev); sc_rslt->sc_error_status = feature_engine_err_reg_lsb;
+        IMUFeatureStatus featureStatus = { 0 };
+        status = IMUGetFeatureStatus (pIMU, BMI3_REG_FEATURE_IO1, &featureStatus);
+        if (status != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to get IMU feature status");
+            return status;
         }
+        uint16_t scErrStatus = featureStatus.errStatus;
+        uint16_t scComplete  = featureStatus.selfCalibComplete;
+        uint16_t scResult    = featureStatus.gyroSelfCalibResult;
+        uint16_t systemState = featureStatus.systemState;
+
+        if (scComplete > 0 && scResult > 0 && scErrStatus == 0x5U && systemState == 0x00) {
+            pResultOut->result = TRUE;
+            pResultOut->error  = 0;
+            return status;
+        }
+
+        pResultOut->result = FALSE;
+        pResultOut->error  = (uint8_t)scErrStatus;
+        LOG_ERROR ("IMU self-calibration failed. SC Err Status [0x%X] System State [0x%X]", scErrStatus, systemState);
+        IMULogDeviceErr (pIMU, NULL);
     }
+    HAL_Delay (20);
     /* Restore configs */
     status = IMUSetConf (pIMU, &aconf, &gconf);
+    HAL_Delay (100);
     return status;
 }
 
@@ -666,9 +742,18 @@ STATUS_TYPE IMUSetupInterrupts (IMU const* pIMU) {
 
         status = IMUWriteReg (pIMU, BMI3_REG_INT_MAP1, pRegData, 4);
     }
+    return status;
+}
+
+STATUS_TYPE IMUEnableInterrupts (IMU const* pIMU) {
+    if (pIMU == NULL || pIMU->pSPI == NULL) {
+        return (STATUS_TYPE)eIMU_NULL_PTR;
+    }
+
     // Enable INT1 and INT2 with active high
     uint8_t pEnableInterrupts[2] = { (1U << 2U | 1U << 0U), (1U << 2U | 1U << 0U) };
-    status = IMUWriteReg (pIMU, BMI3_REG_IO_INT_CTRL, pEnableInterrupts, 2);
+    STATUS_TYPE status =
+    IMUWriteReg (pIMU, BMI3_REG_IO_INT_CTRL, pEnableInterrupts, 2);
 
     return status;
 }
@@ -763,11 +848,16 @@ STATUS_TYPE IMUInit (IMU* pIMU, SPI_HandleTypeDef* pSPI, IMUAccConf aconf, IMUGy
             LOG_ERROR ("Failed to self calibrate IMU");
             return status;
         }
-        if (calibResult.error != 0) {
-            LOG_ERROR ("Self calibration error: 0x%02X", calibResult.error);
+        if (
+        calibResult.result != TRUE ||
+        calibResult.error !=
+        ((calibResult.error & BMI3_SET_LOW_NIBBLE) == BMI3_NO_ERROR_MASK)) {
+            LOG_ERROR (
+            "Self calibration result: [%d], error: [0x%02X]",
+            calibResult.result, calibResult.error);
             return eSTATUS_FAILURE;
         }
-        LOG_INFO ("Self calibration result: 0x%02X", calibResult.result);
+        LOG_INFO ("Self calibration result: [%d]", calibResult.result);
     }
 
     /* Double check that the given confs stuck */
@@ -776,10 +866,6 @@ STATUS_TYPE IMUInit (IMU* pIMU, SPI_HandleTypeDef* pSPI, IMUAccConf aconf, IMUGy
         IMUGyroConf gconf2;
         status = IMUGetConf (pIMU, &aconf2, &gconf2);
         if (status != eSTATUS_SUCCESS) {
-            // if (IMUHandleErr (pIMU) != eSTATUS_SUCCESS) {
-            //     LOG_ERROR ("Failed to read back IMU configuration");
-            //     return status;
-            // }
             LOG_ERROR ("Failed to read back IMU configuration");
             IMULogDeviceErr (pIMU, NULL);
             return status;
