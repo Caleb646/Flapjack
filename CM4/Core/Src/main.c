@@ -144,7 +144,8 @@ int main (void) {
         CriticalErrorHandler ();
     }
 
-    // UART_HandleTypeDef* pUART;
+    // UART_HandleTypeDef* pUart;
+    // if (LoggerInit (USART1, &pUart) != eSTATUS_SUCCESS) {
     if (LoggerInit (USART1, NULL) != eSTATUS_SUCCESS) {
         CriticalErrorHandler ();
     }

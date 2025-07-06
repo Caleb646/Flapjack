@@ -65,7 +65,7 @@ Vec3f* pOutputAttitude) {
     float twoSEq_3  = 2.0F * SEq_3;
 
     if (!((a_x == 0.0F) && (a_y == 0.0F) && (a_z == 0.0F))) {
-        norm = 1.0F / (float)sqrt (a_x * a_x + a_y * a_y + a_z * a_z);
+        norm = 1.0F / sqrtf (a_x * a_x + a_y * a_y + a_z * a_z);
         a_x *= norm;
         a_y *= norm;
         a_z *= norm;
@@ -88,7 +88,7 @@ Vec3f* pOutputAttitude) {
     SEqHatDot_3 = J_12or23 * f_2 - J_33 * f_3 - J_13or22 * f_1;
     SEqHatDot_4 = J_14or21 * f_1 + J_11or24 * f_2;
 
-    float factor = (float)sqrt (
+    float factor = sqrtf (
     SEqHatDot_1 * SEqHatDot_1 + SEqHatDot_2 * SEqHatDot_2 +
     SEqHatDot_3 * SEqHatDot_3 + SEqHatDot_4 * SEqHatDot_4);
     if (factor > 0.0F) {
@@ -110,8 +110,7 @@ Vec3f* pOutputAttitude) {
     SEq_3 += (SEqDot_omega_3 - (beta * SEqHatDot_3)) * dt;
     SEq_4 += (SEqDot_omega_4 - (beta * SEqHatDot_4)) * dt;
 
-    norm =
-    1.0F / (float)sqrt (SEq_1 * SEq_1 + SEq_2 * SEq_2 + SEq_3 * SEq_3 + SEq_4 * SEq_4);
+    norm = 1.0F / sqrtf (SEq_1 * SEq_1 + SEq_2 * SEq_2 + SEq_3 * SEq_3 + SEq_4 * SEq_4);
     SEq_1 *= norm;
     SEq_2 *= norm;
     SEq_3 *= norm;
@@ -134,12 +133,12 @@ Vec3f* pOutputAttitude) {
     // Pitch is about the y axis, represented as theta
     // Yaw is about the z axis, represented as psi
     pOutputAttitude->yaw = RAD2DEG (
-    atan2 (2.0F * q2 * q3 - 2.0F * q1 * q4, 2.0F * q1 * q1 + 2.0F * q2 * q2 - 1));
+    atan2f (2.0F * q2 * q3 - 2.0F * q1 * q4, 2.0F * q1 * q1 + 2.0F * q2 * q2 - 1));
 
-    pOutputAttitude->pitch = RAD2DEG (-asin (2.0F * q2 * q4 + 2.0F * q1 * q3));
+    pOutputAttitude->pitch = RAD2DEG (-asinf (2.0F * q2 * q4 + 2.0F * q1 * q3));
 
     pOutputAttitude->roll = RAD2DEG (
-    atan2 (2.0F * q3 * q4 - 2.0F * q1 * q2, 2.0F * q1 * q1 + 2.0F * q4 * q4 - 1.0F));
+    atan2f (2.0F * q3 * q4 - 2.0F * q1 * q2, 2.0F * q1 * q1 + 2.0F * q4 * q4 - 1.0F));
 
     return eSTATUS_SUCCESS;
 }
@@ -152,7 +151,7 @@ Vec3f* pOutputAttitude) {
 STATUS_TYPE FilterMadgwickInit (FilterMadgwickContext* pContext, float gyroMeasureErrorDegs) {
     // Initialization values: https://courses.cs.washington.edu/courses/cse474/17wi/labs/l4/madgwick_internal_report.pdf
     memset ((void*)pContext, 0, sizeof (FilterMadgwickContext));
-    pContext->beta   = sqrt (3.0F / 4.0F) * DEG2RAD (gyroMeasureErrorDegs);
+    pContext->beta = sqrtf (3.0F / 4.0F) * DEG2RAD (gyroMeasureErrorDegs);
     pContext->est.q1 = 1.0F;
     pContext->est.q2 = 0.0F;
     pContext->est.q3 = 0.0F;

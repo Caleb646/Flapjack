@@ -46,3 +46,21 @@ void __assert_func (const char* file, int line, const char* func, const char* fa
     while (1) {
     };
 }
+
+// Microsecond delay function
+// This is a simple loop-based implementation
+// For more precise timing, DWT (Data Watchpoint and Trace) unit could be used
+void DelayMicroseconds (uint32_t us) {
+    // Approximate loop count for microsecond delay
+    // This assumes system clock around 480 MHz
+    // Each loop iteration takes approximately 4-5 cycles
+    // So for 1 microsecond: 480 MHz / 1 MHz = 480 cycles
+    // 480 cycles / 4 cycles per loop = ~120 loops per microsecond
+
+    volatile int32_t loops  = us * 120;
+    volatile uint32_t dummy = 0;
+
+    while (loops-- > 0) {
+        dummy++; // Prevent compiler optimization
+    }
+}

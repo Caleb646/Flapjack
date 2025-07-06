@@ -37,15 +37,13 @@ def load_mesh(filename, translate=(0, 0, 0), color=(0.8, 0.8, 0.8, 1.0)):
     vertices = mesh.vertices - mesh.centroid
     faces = mesh.faces
 
-    
-
     mesh_data = MeshData(vertexes=vertices, faces=faces)
     mesh_item = GLMeshItem(meshdata=mesh_data, color=color, smooth=True) #, drawEdges=True)
 
     x, y, z = translate
     mesh_item.translate(x, y, z)
     mesh_item.scale(1.0 / mesh.scale, 1.0 / mesh.scale, 1.0 / mesh.scale)  # normalize size
-    return mesh_item
+    return mesh_item, mesh.scale
 
 def make_letter(points, offset=(0, 0, 0), color=(1, 1, 1)):
     """Create a GLLinePlotItem shaped like a letter from 3D point pairs."""
@@ -138,7 +136,8 @@ class IMUViewer(QtWidgets.QWidget):
         self.view.addItem(self.label_y)
         self.view.addItem(self.label_z)
 
-        self.airplane = load_mesh("./GUI/data/mesh/plane.stl")
+        self.airplane, self.airplane_scale = load_mesh("./GUI/data/mesh/plane.stl")
+        self.airplane_scale = 1.0 / self.airplane_scale # normalize scale
         self.view.addItem(self.airplane)
         
         layout.addWidget(self.view)
@@ -261,8 +260,9 @@ class IMUViewer(QtWidgets.QWidget):
         roll_deg = orientation.get("roll", 0)
         pitch_deg = orientation.get("pitch", 0)
         yaw_deg = orientation.get("yaw", 0)
-
-        # self.airplane.resetTransform()
+ 
+        self.airplane.resetTransform()
+        self.airplane.scale(self.airplane_scale, self.airplane_scale, self.airplane_scale)  # Reset scale
         self.airplane.rotate(yaw_deg, 0, 0, 1)    # Yaw (Z axis)
         self.airplane.rotate(pitch_deg, 0, 1, 0)  # Pitch (Y axis)
         self.airplane.rotate(roll_deg, 1, 0, 0)   # Roll (X axis)

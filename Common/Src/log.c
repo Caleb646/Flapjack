@@ -53,7 +53,7 @@ PUTCHAR_PROTOTYPE {
     return ch;
 }
 
-STATUS_TYPE LoggerInit (USART_TypeDef* pUARTInstance, UART_HandleTypeDef* pOutUARTHandle) {
+STATUS_TYPE LoggerInit (USART_TypeDef* pUARTInstance, UART_HandleTypeDef** pOutUARTHandle) {
 
     STATUS_TYPE status = eSTATUS_SUCCESS;
     /*
@@ -81,7 +81,7 @@ STATUS_TYPE LoggerInit (USART_TypeDef* pUARTInstance, UART_HandleTypeDef* pOutUA
         }
 
         if (pOutUARTHandle != NULL) {
-            *pOutUARTHandle = gUART;
+            *pOutUARTHandle = &gUART;
         }
     }
 

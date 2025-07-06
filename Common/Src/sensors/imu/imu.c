@@ -172,6 +172,10 @@ STATUS_TYPE IMUReadReg (IMU const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t le
     if (HAL_SPI_TransmitReceive (pIMU->pSPI, pTx, pRx, len + pIMU->nDummyBytes + 1, SPI_DEFAULT_TIMEOUT_MS) != HAL_OK) {
         return (STATUS_TYPE)eIMU_COM_FAILURE;
     }
+
+    // Add 2 microsecond delay after IMU read operation
+    DelayMicroseconds (2);
+
     // The first nDummyBytes + 1 (for the register address) are dummy bytes
     memcpy (pBuf, &(pRx[pIMU->nDummyBytes + 1]), len);
     return eSTATUS_SUCCESS;
@@ -190,6 +194,10 @@ STATUS_TYPE IMUWriteReg (IMU const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t l
     if (HAL_SPI_Transmit (pIMU->pSPI, pTx, len + 1, SPI_DEFAULT_TIMEOUT_MS) != HAL_OK) {
         return (STATUS_TYPE)eIMU_COM_FAILURE;
     }
+
+    // Add 2 microsecond delay after IMU write operation
+    DelayMicroseconds (2);
+
     return eSTATUS_SUCCESS;
 }
 

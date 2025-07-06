@@ -148,8 +148,13 @@ void TaskMotionControlUpdate (void* pvParameters) {
         }
 
         // RadioPWMChannels radio;
-        float dt  = (float)xTaskGetTickCount () - startTime;
-        startTime = (float)xTaskGetTickCount ();
+        float currentTime = (float)xTaskGetTickCount ();
+        float dt = (currentTime - startTime) / 1000.0F; // Convert milliseconds to seconds
+        startTime = currentTime;
+
+        if (dt <= 0.0F) {
+            continue;
+        }
 
         // Vec3f currentAttitude = gFlightContext.currentAttitude;
         status =
@@ -274,7 +279,7 @@ int main (void) {
 
     /* USER CODE BEGIN 2 */
 
-    status = FilterMadgwickInit (&gFilterMadgwickContext, 0.1F);
+    status = FilterMadgwickInit (&gFilterMadgwickContext, 1.5F);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to init Madgewick Filter");
     }
@@ -305,13 +310,6 @@ int main (void) {
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to init Actuators");
     }
-
-    // while (1) {
-    //     /* USER CODE END WHILE */
-    //     LOG_INFO ("Hello from CM7");
-    //     HAL_Delay (5000);
-    //     /* USER CODE BEGIN 3 */
-    // }
 
     /*
      *
