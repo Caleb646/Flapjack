@@ -11,12 +11,15 @@
     BIT_ISSET (u16IntStatus, (1U << 10U))
 
 enum {
-    RW_BUFFER_SZ           = 16U,
-    INT_ERR_STATUS_BIT     = 10U,
-    SPI_DEFAULT_TIMEOUT_MS = 100U,
-    ACCEL_DATA_RDY_BIT     = (1U << 13U),
-    GYRO_DATA_RDY_BIT      = (1U << 12U),
-    TEMP_DATA_RDY_BIT      = (1U << 11U)
+    RW_BUFFER_SZ              = 16U,
+    INT_ERR_STATUS_BIT        = 10U,
+    SPI_DEFAULT_TIMEOUT_MS    = 100U,
+    INT1_ACCEL_DATA_RDY_BIT   = (1U << 13U),
+    INT1_GYRO_DATA_RDY_BIT    = (1U << 12U),
+    INT1_TEMP_DATA_RDY_BIT    = (1U << 11U),
+    STATUS_ACCEL_DATA_RDY_BIT = (1U << 7U),
+    STATUS_GYRO_DATA_RDY_BIT  = (1U << 6U),
+    STATUS_TEMP_DATA_RDY_BIT  = (1U << 5U)
 };
 
 STATUS_TYPE IMUSendCmd (IMU const* pIMU, uint16_t cmd) {
@@ -59,6 +62,17 @@ STATUS_TYPE IMUGetINTStatus (IMU const* pIMU, uint16_t* pOutStatus) {
     STATUS_TYPE status = IMUReadReg (pIMU, BMI3_REG_INT_STATUS_INT1, pBuff, 2);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to read IMU interrupt status register");
+        return status;
+    }
+    *pOutStatus = ((uint16_t)pBuff[1] << 8U) | (uint16_t)pBuff[0];
+    return eSTATUS_SUCCESS;
+}
+
+STATUS_TYPE IMUGetStatusReg (IMU const* pIMU, uint16_t* pOutStatus) {
+    uint8_t pBuff[2]   = { 0U };
+    STATUS_TYPE status = IMUReadReg (pIMU, BMI3_REG_STATUS, pBuff, 2);
+    if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to read IMU status register");
         return status;
     }
     *pOutStatus = ((uint16_t)pBuff[1] << 8U) | (uint16_t)pBuff[0];
@@ -315,7 +329,7 @@ STATUS_TYPE IMU2CPUInterruptHandler (IMU* pIMU) {
     }
     // LOG_INFO ("IMU interrupt status: 0x%04X", intStatus1);
     /* check if accel data is ready */
-    if (BIT_ISSET (intStatus1, ACCEL_DATA_RDY_BIT)) {
+    if (BIT_ISSET (intStatus1, INT1_ACCEL_DATA_RDY_BIT)) {
         // LOG_INFO ("IMU accel data ready");
         status = IMUUpdateAccel (pIMU);
         if (status != eSTATUS_SUCCESS) {
@@ -324,14 +338,14 @@ STATUS_TYPE IMU2CPUInterruptHandler (IMU* pIMU) {
     }
 
     /* check if gyro data is ready */
-    if (BIT_ISSET (intStatus1, GYRO_DATA_RDY_BIT)) {
+    if (BIT_ISSET (intStatus1, INT1_GYRO_DATA_RDY_BIT)) {
         status = IMUUpdateGyro (pIMU);
         if (status != eSTATUS_SUCCESS) {
             return status;
         }
     }
     /* check if temperature data is ready */
-    if (BIT_ISSET (intStatus1, TEMP_DATA_RDY_BIT)) {
+    if (BIT_ISSET (intStatus1, INT1_TEMP_DATA_RDY_BIT)) {
         // if (status != eSTATUS_SUCCESS) {
         //     return status;
         // }
@@ -347,16 +361,16 @@ STATUS_TYPE IMUPollData (IMU* pIMU, Vec3f* pOutputAccel, Vec3f* pOutputGyro) {
     STATUS_TYPE status = eSTATUS_SUCCESS;
     uint8_t accelRdy   = FALSE;
     uint8_t gyroRdy    = FALSE;
-    int32_t timeout    = 100; // 100ms
+    int32_t timeout    = 1000; // 1000ms
     while (timeout-- > 0) {
-        uint16_t intStatus = 0;
-        status             = IMUGetINTStatus (pIMU, &intStatus);
+        uint16_t intStatus = 0; // BMI3_REG_STATUS
+        status             = IMUGetStatusReg (pIMU, &intStatus);
         if (status != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to read IMU interrupt status");
             return status;
         }
 
-        if (BIT_ISSET (intStatus, ACCEL_DATA_RDY_BIT) == TRUE && accelRdy == FALSE) {
+        if (BIT_ISSET (intStatus, STATUS_ACCEL_DATA_RDY_BIT) == TRUE && accelRdy == FALSE) {
             status = IMUUpdateAccel (pIMU);
             if (status != eSTATUS_SUCCESS) {
                 LOG_ERROR ("Failed to update accelerometer data");
@@ -365,13 +379,16 @@ STATUS_TYPE IMUPollData (IMU* pIMU, Vec3f* pOutputAccel, Vec3f* pOutputGyro) {
             accelRdy = TRUE;
         }
 
-        if (BIT_ISSET (intStatus, GYRO_DATA_RDY_BIT) == TRUE && gyroRdy == FALSE) {
+        if (BIT_ISSET (intStatus, STATUS_GYRO_DATA_RDY_BIT) == TRUE && gyroRdy == FALSE) {
             status = IMUUpdateGyro (pIMU);
             if (status != eSTATUS_SUCCESS) {
                 LOG_ERROR ("Failed to update gyroscope data");
                 return status;
             }
             gyroRdy = TRUE;
+        }
+        if (accelRdy && gyroRdy) {
+            break;
         }
         HAL_Delay (1);
     }
