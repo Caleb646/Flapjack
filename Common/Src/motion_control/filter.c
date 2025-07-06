@@ -1,6 +1,10 @@
 #include "motion_control/filter.h"
+#include "hal.h"
+#include "log.h"
+#include "sensors/imu/imu.h"
 #include <math.h>
 #include <string.h>
+
 
 /*
  *  The initial sensor frame (x, y, z) needs to be aligned with the
@@ -148,13 +152,71 @@ Vec3f* pOutputAttitude) {
 //     return eSTATUS_SUCCESS;
 // }
 
-STATUS_TYPE FilterMadgwickInit (FilterMadgwickContext* pContext, float gyroMeasureErrorDegs) {
-    // Initialization values: https://courses.cs.washington.edu/courses/cse474/17wi/labs/l4/madgwick_internal_report.pdf
-    memset ((void*)pContext, 0, sizeof (FilterMadgwickContext));
-    pContext->beta = sqrtf (3.0F / 4.0F) * DEG2RAD (gyroMeasureErrorDegs);
-    pContext->est.q1 = 1.0F;
-    pContext->est.q2 = 0.0F;
-    pContext->est.q3 = 0.0F;
-    pContext->est.q4 = 0.0F;
+STATUS_TYPE
+FilterMadgwickWarmUp (
+uint32_t iterations,
+IMU* pIMU,
+float expectedGyroErrorDegs,
+float warmUpBeta,
+FilterMadgwickContext* pOutContext) {
+
+    FilterMadgwickContext context = { 0 };
+    context.beta                  = warmUpBeta;
+    context.est.q1                = 1.0F;
+    context.est.q2                = 0.0F;
+    context.est.q3                = 0.0F;
+    context.est.q4                = 0.0F;
+    Vec3f attitude                = { 0.0F };
+    float startTime               = (float)HAL_GetTick ();
+
+    if (pIMU == NULL || pOutContext == NULL) {
+        LOG_ERROR ("Invalid parameters: pIMU or pOutContext is NULL");
+        return eSTATUS_FAILURE;
+    }
+
+    for (uint32_t i = 0U; i < iterations; ++i) {
+        Vec3f accel        = { 0.0F };
+        Vec3f gyro         = { 0.0F };
+        STATUS_TYPE status = IMUPollData (pIMU, &accel, &gyro);
+
+        if (status != eSTATUS_SUCCESS) {
+            LOG_ERROR ("IMUPollData failed with status: %d", status);
+            return status;
+        }
+
+        float dt = (HAL_GetTick () - startTime) / 1000.0F; // Convert ms to seconds
+
+        if (dt <= 0.0F) {
+            continue;
+        }
+
+        startTime = HAL_GetTick ();
+
+        status = FilterMadgwick6DOF (&context, &accel, &gyro, dt, &attitude);
+        if (status != eSTATUS_SUCCESS) {
+            LOG_ERROR ("FilterMadgwick6DOF failed with status: %d", status);
+            return status;
+        }
+    }
+
+    // Copy the final filter estimate to the output context
+    pOutContext->beta = sqrtf (3.0F / 4.0F) * DEG2RAD (expectedGyroErrorDegs);
+    pOutContext->est.q1 = context.est.q1;
+    pOutContext->est.q2 = context.est.q2;
+    pOutContext->est.q3 = context.est.q3;
+    pOutContext->est.q4 = context.est.q4;
+    LOG_INFO ("Madgwick finished warmup");
+    LOG_DATA_CURRENT_ATTITUDE (attitude);
     return eSTATUS_SUCCESS;
 }
+
+// STATUS_TYPE FilterMadgwickInit (FilterMadgwickContext* pContext, float gyroMeasureErrorDegs) {
+//     // Initialization values: https://courses.cs.washington.edu/courses/cse474/17wi/labs/l4/madgwick_internal_report.pdf
+//     memset ((void*)pContext, 0, sizeof (FilterMadgwickContext));
+//     pContext->beta = sqrtf (3.0F / 4.0F) * DEG2RAD (gyroMeasureErrorDegs);
+//     pContext->est.q1 = 1.0F;
+//     pContext->est.q2 = 0.0F;
+//     pContext->est.q3 = 0.0F;
+//     pContext->est.q4 = 0.0F;
+//     return eSTATUS_SUCCESS;
+// }

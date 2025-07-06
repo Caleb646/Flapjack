@@ -185,18 +185,8 @@ void TaskMotionControlUpdate (void* pvParameters) {
             Vec3f g  = gyro;
             Vec3f ca = currentAttitude;
 
-            /*
-             * Convert from meters per second squared to milli meters per second squared
-             */
-            LOG_DATA (
-            LOG_DATA_TYPE_IMU_DATA, "{\"ax\":%d,\"ay\":%d,\"az\":%d,\"gx\":%d,\"gy\":%d,\"gz\":%d}",
-            (int16_t)(a.x * 1000.0F), (int16_t)(a.y * 1000.0F),
-            (int16_t)(a.z * 1000.0F), (int16_t)(g.x * 1000.0F),
-            (int16_t)(g.y * 1000.0F), (int16_t)(g.z * 1000.0F));
-
-            LOG_DATA (
-            LOG_DATA_TYPE_ATTITUDE, "{\"roll\":%d,\"pitch\":%d,\"yaw\":%d}",
-            (int16_t)ca.roll, (int16_t)ca.pitch, (int16_t)ca.yaw);
+            LOG_DATA_IMU_DATA (a, g);
+            LOG_DATA_CURRENT_ATTITUDE (ca);
         }
     }
 }
@@ -260,13 +250,13 @@ int main (void) {
      */
     {
         IMUAccConf aconf  = { 0 };
-        aconf.odr         = eIMU_ACC_ODR_100;
+        aconf.odr         = eIMU_ACC_ODR_200;
         aconf.range       = eIMU_ACC_RANGE_2G;
         aconf.avg         = eIMU_ACC_AVG_16;
         aconf.bw          = eIMU_ACC_BW_HALF;
         aconf.mode        = eIMU_ACC_MODE_HIGH_PERF;
         IMUGyroConf gconf = { 0 };
-        gconf.odr         = eIMU_GYRO_ODR_100;
+        gconf.odr         = eIMU_GYRO_ODR_200;
         gconf.range       = eIMU_GYRO_RANGE_250;
         gconf.avg         = eIMU_GYRO_AVG_16;
         gconf.bw          = eIMU_GYRO_BW_HALF;
@@ -278,11 +268,14 @@ int main (void) {
     }
 
     /* USER CODE BEGIN 2 */
-
-    status = FilterMadgwickInit (&gFilterMadgwickContext, 1.5F);
+    /* With an ODR of 100 Hz on the IMU 1000 iterations will take 10 seconds */
+    /* With an ODR of 200 Hz on the IMU 1000 iterations will take 5 seconds */
+    status = FilterMadgwickWarmUp (500U, &gIMU, 1.5F, 3.0F, &gFilterMadgwickContext);
     if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to init Madgewick Filter");
+        LOG_ERROR ("Failed to warm up Madgwick Filter");
     }
+    // LOG_INFO ("Madgwick calibrated attitude");
+    // LOG_DATA_CURRENT_ATTITUDE ()
 
     status = PIDInit (&gPIDAngleContext);
     if (status != eSTATUS_SUCCESS) {

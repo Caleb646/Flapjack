@@ -6,7 +6,6 @@
 #include <stdint.h>
 #include <string.h>
 
-
 #define BIT_ISSET(v, bit) (((v) & (bit)) > 0U)
 #define CHECK_INT_ERR_STATUS(u16IntStatus) \
     BIT_ISSET (u16IntStatus, (1U << 10U))
@@ -14,7 +13,10 @@
 enum {
     RW_BUFFER_SZ           = 16U,
     INT_ERR_STATUS_BIT     = 10U,
-    SPI_DEFAULT_TIMEOUT_MS = 100U
+    SPI_DEFAULT_TIMEOUT_MS = 100U,
+    ACCEL_DATA_RDY_BIT     = (1U << 13U),
+    GYRO_DATA_RDY_BIT      = (1U << 12U),
+    TEMP_DATA_RDY_BIT      = (1U << 11U)
 };
 
 STATUS_TYPE IMUSendCmd (IMU const* pIMU, uint16_t cmd) {
@@ -313,27 +315,83 @@ STATUS_TYPE IMU2CPUInterruptHandler (IMU* pIMU) {
     }
     // LOG_INFO ("IMU interrupt status: 0x%04X", intStatus1);
     /* check if accel data is ready */
-    if (BIT_ISSET (intStatus1, (1U << 13U))) {
+    if (BIT_ISSET (intStatus1, ACCEL_DATA_RDY_BIT)) {
         // LOG_INFO ("IMU accel data ready");
         status = IMUUpdateAccel (pIMU);
         if (status != eSTATUS_SUCCESS) {
             return status;
         }
     }
+
     /* check if gyro data is ready */
-    if (BIT_ISSET (intStatus1, (1U << 12U))) {
+    if (BIT_ISSET (intStatus1, GYRO_DATA_RDY_BIT)) {
         status = IMUUpdateGyro (pIMU);
         if (status != eSTATUS_SUCCESS) {
             return status;
         }
     }
     /* check if temperature data is ready */
-    if (BIT_ISSET (intStatus1, (1U << 11U))) {
+    if (BIT_ISSET (intStatus1, TEMP_DATA_RDY_BIT)) {
         // if (status != eSTATUS_SUCCESS) {
         //     return status;
         // }
     };
     return status;
+}
+
+STATUS_TYPE IMUPollData (IMU* pIMU, Vec3f* pOutputAccel, Vec3f* pOutputGyro) {
+    if (pIMU == NULL || pOutputAccel == NULL || pOutputGyro == NULL) {
+        return (STATUS_TYPE)eIMU_NULL_PTR;
+    }
+
+    STATUS_TYPE status = eSTATUS_SUCCESS;
+    uint8_t accelRdy   = FALSE;
+    uint8_t gyroRdy    = FALSE;
+    int32_t timeout    = 100; // 100ms
+    while (timeout-- > 0) {
+        uint16_t intStatus = 0;
+        status             = IMUGetINTStatus (pIMU, &intStatus);
+        if (status != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to read IMU interrupt status");
+            return status;
+        }
+
+        if (BIT_ISSET (intStatus, ACCEL_DATA_RDY_BIT) == TRUE && accelRdy == FALSE) {
+            status = IMUUpdateAccel (pIMU);
+            if (status != eSTATUS_SUCCESS) {
+                LOG_ERROR ("Failed to update accelerometer data");
+                return status;
+            }
+            accelRdy = TRUE;
+        }
+
+        if (BIT_ISSET (intStatus, GYRO_DATA_RDY_BIT) == TRUE && gyroRdy == FALSE) {
+            status = IMUUpdateGyro (pIMU);
+            if (status != eSTATUS_SUCCESS) {
+                LOG_ERROR ("Failed to update gyroscope data");
+                return status;
+            }
+            gyroRdy = TRUE;
+        }
+        HAL_Delay (1);
+    }
+
+    if (timeout > 0) {
+        status = IMUConvertRaw (
+        pIMU->aconf.range, pIMU->rawAccel, pIMU->gconf.range,
+        pIMU->rawGyro, pOutputAccel, pOutputGyro);
+
+        if (status != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to convert raw IMU data");
+            return status;
+        }
+    } else {
+        LOG_ERROR ("IMU data not ready");
+        return eSTATUS_FAILURE;
+    }
+
+
+    return eSTATUS_SUCCESS;
 }
 
 STATUS_TYPE IMUSoftReset (IMU* pIMU) {

@@ -100,11 +100,11 @@ class IMUViewer(QtWidgets.QWidget):
         )
         self.buffer = b""
 
-        # Logging setup
-        os.makedirs("./GUI/Logs", exist_ok=True)
-        # Wipe out old logs
-        self.debug_log = open("./GUI/Logs/debug.log", "w", encoding="utf-8")
-        self.flight_data_log = open("./GUI/Logs/flight_data.log", "w", encoding="utf-8")
+        # Logging setup - initially no files open
+        os.makedirs("./GUI/Logs", exist_ok=True)  # Ensure base logs directory exists
+        self.debug_log = None
+        self.flight_data_log = None
+        self.current_session_folder = None
         self.max_console_lines = 200
         
     def setup_3d_viewer(self, parent_widget):
@@ -166,21 +166,7 @@ class IMUViewer(QtWidgets.QWidget):
         top_controls.addWidget(self.log_level_combo)
         main_layout.addLayout(top_controls)
         main_layout.addWidget(self.output_te)
-        main_layout.addWidget(self.button)
-
-    # def rotate_airplane(self):
-    #     # self.rotation_angle += 1  # degrees per frame
-    #     if self.rotation_angle >= 360:
-    #         self.rotation_angle = 0
-
-    #     # NOTE: Removes scale if the mesh is scaled
-    #     # self.airplane.resetTransform()
-    #     # Yaw
-    #     self.airplane.rotate(self.rotation_angle, 0, 0, 1)
-    #     # Pitch
-    #     self.airplane.rotate(self.rotation_angle, 0, 1, 0)   
-    #     # Roll                     
-    #     self.airplane.rotate(self.rotation_angle, 1, 0, 0)                        
+        main_layout.addWidget(self.button)                    
 
     def apply_log_level(self):
         self.current_log_level = self.log_level_combo.currentText()
@@ -218,14 +204,16 @@ class IMUViewer(QtWidgets.QWidget):
                 data = json.loads(message)
                 if data.get("type") == "debug":
                     msg = json.dumps(data)
-                    self.debug_log.write(msg + "\n")
-                    self.debug_log.flush()
+                    if self.debug_log:  # Only write if file is open
+                        self.debug_log.write(msg + "\n")
+                        self.debug_log.flush()
                     self.append_debug_console(
                         msg, level=data.get("lvl", "[INFO]")
                         )
                 else:
-                    self.flight_data_log.write(json.dumps(data) + "\n")
-                    self.flight_data_log.flush()
+                    if self.flight_data_log:  # Only write if file is open
+                        self.flight_data_log.write(json.dumps(data) + "\n")
+                        self.flight_data_log.flush()
                     if data.get("type") == "attitude":  # Fixed typo from "attidude"
                         attitude_data = data.get("data", {})
                         self.update_orientation(attitude_data)
@@ -250,10 +238,16 @@ class IMUViewer(QtWidgets.QWidget):
         self.button.setText("Disconnect" if checked else "Connect")
         if checked:
             if not self.serial.isOpen():
+                # Create session folder and open log files
+                self.create_session_folder()
                 if not self.serial.open(QtCore.QIODevice.ReadWrite):
                     self.output_te.append("Failed to open serial port.")
                     self.button.setChecked(False)
+                    # Close the log files since connection failed
+                    self.close_session_files()
         else:
+            # Close session files and serial port
+            self.close_session_files()
             self.serial.close()
 
     def update_orientation(self, orientation):
@@ -268,16 +262,57 @@ class IMUViewer(QtWidgets.QWidget):
         self.airplane.rotate(roll_deg, 1, 0, 0)   # Roll (X axis)
 
     def closeEvent(self, event):
-        # Ensure log files are closed on exit
-        try:
-            self.debug_log.close()
-        except Exception:
-            pass
-        try:
-            self.flight_data_log.close()
-        except Exception:
-            pass
+        # Ensure session files are properly closed on exit
+        self.close_session_files()
         super().closeEvent(event)
+
+    def create_session_folder(self):
+        """Create a timestamped folder for the current session and open log files"""
+        # Create timestamp in format: Month_Day_Hour_Minutes_Seconds
+        timestamp = datetime.now().strftime("%m_%d_%H_%M_%S")
+        self.current_session_folder = f"./GUI/Logs/Session_{timestamp}"
+        
+        # Create the session directory
+        os.makedirs(self.current_session_folder, exist_ok=True)
+        
+        # Open new log files in the session folder
+        debug_path = os.path.join(self.current_session_folder, "debug.log")
+        flight_data_path = os.path.join(self.current_session_folder, "flight_data.log")
+        
+        self.debug_log = open(debug_path, "w", encoding="utf-8")
+        self.flight_data_log = open(flight_data_path, "w", encoding="utf-8")
+        
+        # Log session start
+        session_start_msg = f"Session started at {datetime.now().isoformat()}"
+        self.debug_log.write(f"{{\"type\":\"debug\",\"lvl\":\"[INFO]\",\"msg\":\"{session_start_msg}\"}}\n")
+        self.debug_log.flush()
+        
+        self.append_debug_console(f"Created session folder: {self.current_session_folder}", "[INFO]")
+    
+    def close_session_files(self):
+        """Close log files and flush any remaining data"""
+        if self.debug_log:
+            try:
+                # Log session end
+                session_end_msg = f"Session ended at {datetime.now().isoformat()}"
+                self.debug_log.write(f"{{\"type\":\"debug\",\"lvl\":\"[INFO]\",\"msg\":\"{session_end_msg}\"}}\n")
+                self.debug_log.flush()
+                self.debug_log.close()
+                self.debug_log = None
+            except Exception as e:
+                print(f"Error closing debug log: {e}")
+        
+        if self.flight_data_log:
+            try:
+                self.flight_data_log.flush()
+                self.flight_data_log.close()
+                self.flight_data_log = None
+            except Exception as e:
+                print(f"Error closing flight data log: {e}")
+        
+        if self.current_session_folder:
+            self.append_debug_console(f"Session files saved to: {self.current_session_folder}", "[INFO]")
+            self.current_session_folder = None
 
 class AttitudePlotter(QtWidgets.QWidget):
     def __init__(self):
@@ -663,16 +698,27 @@ class AttitudePlotter(QtWidgets.QWidget):
         self.gz_curve.setData([], [])
         
     def load_from_file(self):
-        """Load attitude and IMU data from flight_data.log file"""
+        """Load attitude and IMU data from a selected flight_data.log file"""
         try:
-            log_file_path = "./GUI/Logs/flight_data.log"
-            if not os.path.exists(log_file_path):
-                QtWidgets.QMessageBox.warning(self, "Warning", "No flight data log file found!")
+            # Open file dialog to select flight_data.log file
+            logs_dir = "./GUI/Logs"
+            file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
+                self, 
+                "Select Flight Data Log File", 
+                logs_dir,
+                "Log Files (*.log);;All Files (*)"
+            )
+            
+            if not file_path:
+                return  # User cancelled
+                
+            if not os.path.exists(file_path):
+                QtWidgets.QMessageBox.warning(self, "Warning", "Selected file does not exist!")
                 return
                 
             self.clear_data()
             
-            with open(log_file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
                 
             if not lines:
@@ -727,9 +773,9 @@ class AttitudePlotter(QtWidgets.QWidget):
                         gz = imu_data.get("gz", 0)
                         
                         self.time_data.append(time_seconds)
-                        self.ax_data.append(ax)
-                        self.ay_data.append(ay)
-                        self.az_data.append(az)
+                        self.ax_data.append(ax / 1000.0)
+                        self.ay_data.append(ay / 1000.0)
+                        self.az_data.append(az / 1000.0)
                         self.gx_data.append(gx / 1000.0)  # Convert to °/s
                         self.gy_data.append(gy / 1000.0)
                         self.gz_data.append(gz / 1000.0)

@@ -172,6 +172,7 @@ STATUS_TYPE IMUGetDeviceErr (IMU* pIMU, IMUErr* pOutErr);
 void IMULogDeviceErr (IMU* pIMU, IMUErr const* pErr);
 STATUS_TYPE IMUEnableInterrupts (IMU const* pIMU);
 STATUS_TYPE IMUHandleErr (IMU* pIMU);
+STATUS_TYPE IMUPollData (IMU* pIMU, Vec3f* pOutputAccel, Vec3f* pOutputGyro);
 STATUS_TYPE IMUUpdateAccel (IMU* pIMU);
 STATUS_TYPE IMUUpdateGyro (IMU* pIMU);
 STATUS_TYPE IMUGetConf (IMU* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf);

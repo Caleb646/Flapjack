@@ -64,6 +64,20 @@
         printf ("}>\r\n");                            \
     } while (0)
 
+#define LOG_DATA_IMU_CALIB(calib) \
+    LOG_DATA (LOG_DATA_TYPE_IMU_CALIB, "{\"rslt\":%d,\"err\":%d}", (calib).result, (calib).err, (calib).gyro.z)
+
+/* accel data is in meters per second squared and gyro is in degrees per second */
+#define LOG_DATA_IMU_DATA(accel, gyro) \
+    LOG_DATA (LOG_DATA_TYPE_IMU_DATA, "{\"ax\":%d,\"ay\":%d,\"az\":%d,\"gx\":%d,\"gy\":%d,\"gz\":%d}", \
+              (int16_t)(accel.x * 1000.0F), (int16_t)(accel.y * 1000.0F), (int16_t)(accel.z * 1000.0F), \
+              (int16_t)(gyro.x * 1000.0F), (int16_t)(gyro.y * 1000.0F), (int16_t)(gyro.z * 1000.0F))
+              
+/* attitude is in degrees */
+#define LOG_DATA_CURRENT_ATTITUDE(attitude) \
+    LOG_DATA (LOG_DATA_TYPE_ATTITUDE, "{\"roll\":%d,\"pitch\":%d,\"yaw\":%d}", \
+              (int16_t)(attitude.roll), (int16_t)(attitude.pitch), (int16_t)(attitude.yaw))
+
 // clang-format on
 
 STATUS_TYPE LoggerInit (USART_TypeDef* pUARTInstance, UART_HandleTypeDef** pOutUARTHandle);
