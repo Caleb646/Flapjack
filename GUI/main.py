@@ -762,7 +762,7 @@ class AttitudePlotter(QtWidgets.QWidget):
                         imu_data = data.get("data", {})
                         
                         # Use line number as time for file data
-                        time_seconds = i * 0.1  # Assume 10Hz data rate
+                        time_seconds = i / 100  # Assume 100Hz data rate
                         
                         # Extract IMU values
                         ax = imu_data.get("ax", 0)
