@@ -354,7 +354,9 @@ STATUS_TYPE IMU2CPUInterruptHandler (IMU* pIMU) {
 }
 
 STATUS_TYPE IMUPollData (IMU* pIMU, Vec3f* pOutputAccel, Vec3f* pOutputGyro) {
+
     if (pIMU == NULL || pOutputAccel == NULL || pOutputGyro == NULL) {
+        LOG_ERROR ("IMU or output pointers are NULL");
         return (STATUS_TYPE)eIMU_NULL_PTR;
     }
 
