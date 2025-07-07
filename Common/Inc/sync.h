@@ -2,6 +2,7 @@
 #define SYNC_SYNC_H
 
 #include "common.h"
+#include "mem/mem.h"
 #include <stdint.h>
 
 #define MAILBOX_CM4_ID (0U)
@@ -15,38 +16,44 @@ typedef enum {
 } eSYNC_TASKID_TYPE;
 
 typedef struct {
-    union {
-        uint32_t unused;
-        uint8_t taskID;
-        uint16_t magic;
-    };
+    uint64_t padding;
+} DefaultTask;
+
+STATIC_ASSERT (sizeof (DefaultTask) == MEM_SHARED_MAILBOX_LEN, "");
+
+typedef struct {
+    uint8_t unused;
+    uint8_t taskID;
+    uint16_t magic;
 } SyncTaskHeader;
+
+STATIC_ASSERT (sizeof (SyncTaskHeader) == 4U, "");
 
 typedef struct {
     SyncTaskHeader header;
     uint16_t len;
 } SyncTaskUartOut;
 
-STATIC_ASSERT (sizeof (SyncTaskUartOut) <= 8U, "");
 
-typedef STATUS_TYPE (*task_handler_fn_t) ();
+STATIC_ASSERT (sizeof (SyncTaskUartOut) <= MEM_SHARED_MAILBOX_LEN, "");
+
+typedef STATUS_TYPE (*task_handler_fn_t) (DefaultTask const* pTask);
 
 STATUS_TYPE SyncInit (void);
 STATUS_TYPE SyncRegisterHandler (eSYNC_TASKID_TYPE taskID, task_handler_fn_t);
+STATUS_TYPE SyncProcessTasks (void);
+STATUS_TYPE SyncNotifyTaskUartOut (uint16_t len);
+
 
 #ifdef UNIT_TEST
-void SyncTaskQueue_Init (SyncTaskQueue* q);
-int SyncTaskQueue_IsEmpty (const SyncTaskQueue* q);
-int SyncTaskQueue_IsFull (const SyncTaskQueue* q);
-int SyncTaskQueue_Enqueue (SyncTaskQueue* q, const SyncTaskHeader* task);
-int SyncTaskQueue_Dequeue (SyncTaskQueue* q, SyncTaskHeader* out_task);
-int SyncTaskQueue_Peek (const SyncTaskQueue* q, SyncTaskHeader* out_task);
 
 STATUS_TYPE SyncMailBoxWrite (uint32_t mbID, uint8_t* pBuffer, uint32_t len);
 STATUS_TYPE SyncMailBoxWriteNotify (uint32_t mbID, uint8_t* pBuffer, uint32_t len);
 STATUS_TYPE SyncMailBoxRead (uint32_t mbID, uint8_t* pBuffer, uint32_t len);
-
+uint16_t SyncGetOtherCoresMailBoxID (void);
+uint8_t SyncTaskIsValid (DefaultTask const* pTask);
 task_handler_fn_t SyncGetTaskHandler (uint32_t taskID);
+
 #endif
 
 // typedef struct {

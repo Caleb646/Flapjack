@@ -1,69 +1,35 @@
 #include "sync.h"
 #include "common.h"
+#include "hal.h"
 #include "mem/mem.h"
+#include "mem/queue.h"
 #include <string.h>
 
-#define NUM_TASK_TYPES       (2U)
-#define NUM_TASK_PER_TYPE    (4U)
-#define SYNC_TASK_QUEUE_SIZE (16U)
-#define TASK_MAGIC           (0xBEEF)
 
-typedef struct {
-    uint64_t padding;
-} DefaultTask;
+typedef enum {
+    NUM_TASK_TYPES       = 2U,
+    SYNC_TASK_QUEUE_SIZE = 16U,
+    TASK_MAGIC           = 0xBEEF
+} SyncConstants;
 
-STATIC_ASSERT (sizeof (DefaultTask) == 8U, "");
+static DefaultTask gSyncTaskBuffer[SYNC_TASK_QUEUE_SIZE] = { 0 };
+static Queue gSyncTaskQueue                              = { 0 };
+static task_handler_fn_t gHandlers[NUM_TASK_TYPES]       = { 0 };
 
-typedef struct {
-    DefaultTask tasks[SYNC_TASK_QUEUE_SIZE];
-    uint8_t head;
-    uint8_t tail;
-    uint8_t count;
-} SyncTaskQueue;
-
-task_handler_fn_t gHandlers[NUM_TASK_TYPES] = { 0 };
-SyncTaskQueue gSyncTaskQueue                = { 0 };
-
-STATIC_TESTABLE_DECL void SyncTaskQueue_Init (SyncTaskQueue* q) {
-    q->head  = 0;
-    q->tail  = 0;
-    q->count = 0;
-}
-
-STATIC_TESTABLE_DECL uint8_t SyncTaskQueue_IsEmpty (SyncTaskQueue const* q) {
-    return q->count == 0;
-}
-
-STATIC_TESTABLE_DECL uint8_t SyncTaskQueue_IsFull (SyncTaskQueue const* q) {
-    return q->count == SYNC_TASK_QUEUE_SIZE;
-}
-
-STATIC_TESTABLE_DECL STATUS_TYPE SyncTaskQueue_Enqueue (SyncTaskQueue* q, DefaultTask const* task) {
-    if (SyncTaskQueue_IsFull (q)) {
-        return eSTATUS_FAILURE;
+STATIC_TESTABLE_DECL uint8_t SyncTaskIsValid (DefaultTask const* pTask) {
+    if (pTask == NULL) {
+        return FALSE;
     }
-    q->tasks[q->tail] = *task;
-    q->tail = ((uint8_t)(q->tail + 1)) & (uint8_t)(SYNC_TASK_QUEUE_SIZE - 1);
-    q->count++;
-    return eSTATUS_SUCCESS;
+    SyncTaskHeader const* pHeader = (SyncTaskHeader const*)pTask;
+    // Check if the task ID is valid
+    return pHeader->magic == TASK_MAGIC && pHeader->taskID < NUM_TASK_TYPES;
 }
 
-STATIC_TESTABLE_DECL STATUS_TYPE SyncTaskQueue_Dequeue (SyncTaskQueue* q, DefaultTask* out_task) {
-    if (SyncTaskQueue_IsEmpty (q)) {
-        return eSTATUS_FAILURE;
+STATIC_TESTABLE_DECL uint16_t SyncGetOtherCoresMailBoxID (void) {
+    if (HAL_GetCurrentCPUID () == CM7_CPUID) {
+        return MAILBOX_CM4_ID;
     }
-    *out_task = q->tasks[q->head];
-    q->head = ((uint8_t)(q->head + 1)) & (uint8_t)(SYNC_TASK_QUEUE_SIZE - 1);
-    q->count--;
-    return eSTATUS_SUCCESS;
-}
-
-STATIC_TESTABLE_DECL STATUS_TYPE SyncTaskQueue_Peek (SyncTaskQueue const* q, DefaultTask* out_task) {
-    if (SyncTaskQueue_IsEmpty (q)) {
-        return eSTATUS_FAILURE;
-    }
-    *out_task = q->tasks[q->head];
-    return eSTATUS_SUCCESS;
+    return MAILBOX_CM7_ID;
 }
 
 STATIC_TESTABLE_DECL uint8_t volatile* SyncMailBoxGet (uint32_t mbID) {
@@ -113,20 +79,64 @@ STATIC_TESTABLE_DECL task_handler_fn_t SyncGetTaskHandler (uint32_t taskID) {
     return gHandlers[taskID];
 }
 
+STATIC_TESTABLE_DECL void SyncIRQHandler (uint16_t myCPUMailBoxId) {
+    DefaultTask task = { 0 };
+    STATUS_TYPE status =
+    SyncMailBoxRead (myCPUMailBoxId, (uint8_t*)&task, sizeof (DefaultTask));
+
+    if (SyncTaskIsValid (&task) == FALSE || status != eSTATUS_SUCCESS) {
+        // Invalid task, return early
+        return;
+    }
+    QueueEnqueue (&gSyncTaskQueue, &task);
+}
+
 /*
  * \brief Each core needs to call SyncInit
  */
 STATUS_TYPE SyncInit (void) {
-    // memset (gHandlers, 0, sizeof (gHandlers));
+    // Initialize the task queue
+    QueueInit (&gSyncTaskQueue, gSyncTaskBuffer, SYNC_TASK_QUEUE_SIZE, sizeof (DefaultTask));
     return eSTATUS_SUCCESS;
 }
 
 STATUS_TYPE SyncRegisterHandler (eSYNC_TASKID_TYPE taskID, task_handler_fn_t fn) {
-    if (taskID > NUM_TASK_TYPES || fn == NULL) {
+    if ((int32_t)taskID > (int32_t)NUM_TASK_TYPES || fn == NULL) {
         return eSTATUS_FAILURE;
     }
     gHandlers[taskID] = fn;
     return eSTATUS_SUCCESS;
+}
+
+STATUS_TYPE SyncProcessTasks (void) {
+    if (QueueIsEmpty (&gSyncTaskQueue)) {
+        // No tasks to process
+        return eSTATUS_SUCCESS;
+    }
+
+    DefaultTask task = { 0 };
+    while (QueueDequeue (&gSyncTaskQueue, &task) == eSTATUS_SUCCESS) {
+        if (SyncTaskIsValid (&task) == FALSE) {
+            // Invalid task, skip processing
+            continue;
+        }
+        SyncTaskHeader const* pHeader = (SyncTaskHeader const*)&task;
+        task_handler_fn_t fn = SyncGetTaskHandler (pHeader->taskID);
+        if (fn != NULL) {
+            fn (&task);
+        }
+    }
+    return eSTATUS_SUCCESS;
+}
+
+STATUS_TYPE SyncNotifyTaskUartOut (uint16_t len) {
+    SyncTaskUartOut task = { 0 };
+    task.header.taskID   = eSYNC_TASKID_UART_OUT;
+    task.header.magic    = TASK_MAGIC;
+    task.len             = len;
+
+    return SyncMailBoxWriteNotify (
+    SyncGetOtherCoresMailBoxID (), (uint8_t*)&task, sizeof (SyncTaskUartOut));
 }
 
 /*
@@ -137,12 +147,7 @@ STATUS_TYPE SyncRegisterHandler (eSYNC_TASKID_TYPE taskID, task_handler_fn_t fn)
  */
 void CM7_SEV_IRQHandler (void) {
     // CPUID == CM4
-    uint32_t taskID = 0;
-    SyncMailBoxRead (MAILBOX_CM4_ID, (uint8_t*)&taskID, sizeof (uint32_t));
-    task_handler_fn_t fn = SyncGetTaskHandler (taskID);
-    if (fn != NULL) {
-        fn ();
-    }
+    SyncIRQHandler (MAILBOX_CM4_ID);
 }
 
 /*
@@ -153,10 +158,5 @@ void CM7_SEV_IRQHandler (void) {
  */
 void CM4_SEV_IRQHandler (void) {
     // CPUID == CM7
-    uint32_t taskID = 0;
-    SyncMailBoxRead (MAILBOX_CM7_ID, (uint8_t*)&taskID, sizeof (uint32_t));
-    task_handler_fn_t fn = SyncGetTaskHandler (taskID);
-    if (fn != NULL) {
-        fn ();
-    }
+    SyncIRQHandler (MAILBOX_CM7_ID);
 }

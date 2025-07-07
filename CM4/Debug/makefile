@@ -13,7 +13,6 @@ RM := rm -rf
 -include Drivers/STM32H7xx_HAL_Driver/subdir.mk
 -include Core/Startup/subdir.mk
 -include Core/Src/subdir.mk
--include Common/Src/sync/subdir.mk
 -include Common/Src/sensors/imu/subdir.mk
 -include Common/Src/motion_control/subdir.mk
 -include Common/Src/mem/subdir.mk

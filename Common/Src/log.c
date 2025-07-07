@@ -5,8 +5,7 @@
 #include "log.h"
 #include "mem/mem.h"
 #include "mem/ring_buff.h"
-#include "sync/mailbox.h"
-#include "sync/sync.h"
+#include "sync.h"
 
 
 #ifdef __GNUC__
@@ -22,8 +21,8 @@ static UART_HandleTypeDef gUART        = { 0 };
 static uint32_t gLoggerUARTRole        = 0; // Default to invalid
 // NOLINTEND
 
-static STATUS_TYPE LoggerSyncUARTTaskHandler (void);
-static STATUS_TYPE LoggerWriteToUART (RingBuff volatile* pRingBuf);
+static STATUS_TYPE LoggerSyncUARTTaskHandler (DefaultTask const* pTask);
+static STATUS_TYPE LoggerWriteToUART (RingBuff volatile* pRingBuf, int32_t totalLen);
 static STATUS_TYPE LoggerUARTInit (UART_HandleTypeDef* huart1, USART_TypeDef* pUARTInstance);
 
 PUTCHAR_PROTOTYPE {
@@ -42,12 +41,9 @@ PUTCHAR_PROTOTYPE {
     RingBuffWrite (pMyRingBuf, (void*)&ch, 1);
     if ((char)ch == '\n') {
         if (HAL_GetCurrentCPUID () == gLoggerUARTRole) {
-            LoggerWriteToUART (pMyRingBuf);
+            LoggerWriteToUART (pMyRingBuf, RingBuffGetFull (pMyRingBuf));
         } else {
-            uint32_t taskID = SYNC_TASKID_UART_OUT;
-            uint32_t mailboxID =
-            (gLoggerUARTRole == CM7_CPUID) ? MAILBOX_CM7_ID : MAILBOX_CM4_ID;
-            SyncMailBoxWriteNotify (mailboxID, (uint8_t*)&taskID, sizeof (uint32_t));
+            SyncNotifyTaskUartOut (RingBuffGetFull (pMyRingBuf));
         }
     }
     return ch;
@@ -99,7 +95,7 @@ STATUS_TYPE LoggerInit (USART_TypeDef* pUARTInstance, UART_HandleTypeDef** pOutU
         return eSTATUS_FAILURE;
     }
 
-    status = SyncRegisterHandler (LoggerSyncUARTTaskHandler, SYNC_TASKID_UART_OUT);
+    status = SyncRegisterHandler (eSYNC_TASKID_UART_OUT, LoggerSyncUARTTaskHandler);
     if (status != eSTATUS_SUCCESS) {
         return status;
     }
@@ -107,7 +103,7 @@ STATUS_TYPE LoggerInit (USART_TypeDef* pUARTInstance, UART_HandleTypeDef** pOutU
     return status;
 }
 
-static STATUS_TYPE LoggerWriteToUART (RingBuff volatile* pRingBuf) {
+static STATUS_TYPE LoggerWriteToUART (RingBuff volatile* pRingBuf, int32_t totalLen) {
     uint32_t len         = 0;
     void* pBufToTransmit = NULL;
 
@@ -117,25 +113,27 @@ static STATUS_TYPE LoggerWriteToUART (RingBuff volatile* pRingBuf) {
 
 send:
     len = RingBuffGetLinearBlockReadLength (pRingBuf);
-    if (len > 0) {
+    if (totalLen > 0) {
         pBufToTransmit = RingBuffGetLinearBlockReadAddress (pRingBuf);
         if (HAL_UART_Transmit (&gUART, pBufToTransmit, len, 1000) != HAL_OK) {
             return eSTATUS_FAILURE;
         }
         RingBuffSkip (pRingBuf, len);
+        totalLen -= (int32_t)len;
         /* Check for anything in the overflow buffer */
         goto send;
     }
     return eSTATUS_SUCCESS;
 }
 
-static STATUS_TYPE LoggerSyncUARTTaskHandler (void) {
+static STATUS_TYPE LoggerSyncUARTTaskHandler (DefaultTask const* pTask) {
     // Write the other core's ring buffer out to the UART
     if (HAL_GetCurrentCPUID () == gLoggerUARTRole) {
+        SyncTaskUartOut const* pSyncTaskUartOut = (SyncTaskUartOut const*)pTask;
         if (gLoggerUARTRole == CM7_CPUID) {
-            LoggerWriteToUART (gpCM4RingBuf);
+            LoggerWriteToUART (gpCM4RingBuf, pSyncTaskUartOut->len);
         } else {
-            LoggerWriteToUART (gpCM7RingBuf);
+            LoggerWriteToUART (gpCM7RingBuf, pSyncTaskUartOut->len);
         }
     }
     return eSTATUS_SUCCESS;

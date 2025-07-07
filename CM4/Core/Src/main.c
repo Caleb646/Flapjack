@@ -36,7 +36,7 @@
 // #include "imu.h"
 // #include "motion_control.h"
 // #include "flight_context.h"
-#include "sync/sync.h"
+#include "sync.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -104,6 +104,18 @@ void StartDefaultTask (void* argument);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+void TaskMainLoop (void* pvParameters) {
+    uint32_t startTime = xTaskGetTickCount ();
+    uint32_t logStep   = 5000;
+    while (1) {
+        SyncProcessTasks ();
+        if ((xTaskGetTickCount () - startTime) >= logStep) {
+            startTime = xTaskGetTickCount ();
+            LOG_INFO ("Main loop running");
+        }
+    }
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -151,9 +163,12 @@ int main (void) {
     }
     HAL_Delay (1000);
 
-    while (1) {
-        LOG_INFO ("Hello from CM4");
-        HAL_Delay (5000);
+    BaseType_t taskStatus = xTaskCreate (
+    TaskMainLoop, "Motion Control Update Task", configMINIMAL_STACK_SIZE,
+    NULL, tskIDLE_PRIORITY, NULL);
+
+    if (taskStatus != pdPASS) {
+        LOG_ERROR ("Failed to create motion control update task");
     }
 
     vTaskStartScheduler ();

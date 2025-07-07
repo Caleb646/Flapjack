@@ -36,7 +36,7 @@
 #include "motion_control/actuators.h"
 #include "motion_control/filter.h"
 #include "sensors/imu/imu.h"
-#include "sync/sync.h"
+#include "sync.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/

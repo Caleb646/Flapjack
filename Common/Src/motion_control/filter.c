@@ -180,7 +180,7 @@ FilterMadgwickContext* pOutContext) {
         STATUS_TYPE status = IMUPollData (pIMU, &accel, &gyro);
 
         if (status != eSTATUS_SUCCESS) {
-            LOG_ERROR ("IMUPollData failed with status: [%d] at iteration [%d]", status, i);
+            LOG_ERROR ("IMUPollData failed with status: [%d] at iteration [%u]", status, (uint16_t)i);
             return status;
         }
 

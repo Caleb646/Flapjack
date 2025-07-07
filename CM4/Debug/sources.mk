@@ -26,7 +26,6 @@ Common/Src \
 Common/Src/mem \
 Common/Src/motion_control \
 Common/Src/sensors/imu \
-Common/Src/sync \
 Core/Src \
 Core/Startup \
 Drivers/STM32H7xx_HAL_Driver \
