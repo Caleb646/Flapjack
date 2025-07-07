@@ -14,7 +14,7 @@ void test_FilterMadgwickInit (void) {
     FilterMadgwickContext context;
     float gyroMeasureErrorDegs = 5.0F;
 
-    STATUS_TYPE status = FilterMadgwickInit (&context, gyroMeasureErrorDegs);
+    STATUS_TYPE status = FilterMadgwickInit (&context, gyroMeasureErrorDegs, NULL);
     TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
 
     // Check that quaternion is initialized to identity (no rotation)
@@ -55,7 +55,7 @@ void test_FilterMadgwick6DOF_NullPointers (void) {
 
 void test_FilterMadgwick6DOF_NoRotation (void) {
     FilterMadgwickContext context;
-    FilterMadgwickInit (&context, 5.0F);
+    FilterMadgwickInit (&context, 5.0F, NULL);
 
     // Stationary case: no gyro movement, gravity pointing down (Z-axis)
     Vec3f accel    = { 0.0F, 0.0F, 9.81F }; // Gravity in Z direction
@@ -76,7 +76,7 @@ void test_FilterMadgwick6DOF_NoRotation (void) {
 
 void test_FilterMadgwick6DOF_Roll90Degrees (void) {
     FilterMadgwickContext context;
-    FilterMadgwickInit (&context, 0.1F);
+    FilterMadgwickInit (&context, 0.1F, NULL);
 
     // Simulate 90-degree roll: gravity appears in Y direction
     Vec3f accel = { 0.0F, 9.81F, 0.0F }; // Gravity in Y direction (rolled 90 degrees)
@@ -101,7 +101,7 @@ void test_FilterMadgwick6DOF_Roll90Degrees (void) {
 
 void test_FilterMadgwick6DOF_Pitch90Degrees (void) {
     FilterMadgwickContext context;
-    FilterMadgwickInit (&context, 0.1F);
+    FilterMadgwickInit (&context, 0.1F, NULL);
 
     // Simulate 90-degree pitch: gravity appears in X direction
     Vec3f accel = { 9.81F, 0.0F, 0.0F }; // Gravity in X direction (pitched 90 degrees)
@@ -126,7 +126,7 @@ void test_FilterMadgwick6DOF_Pitch90Degrees (void) {
 
 void test_FilterMadgwick6DOF_GyroIntegration (void) {
     FilterMadgwickContext context;
-    FilterMadgwickInit (&context, 1.0F);
+    FilterMadgwickInit (&context, 1.0F, NULL);
 
     Vec3f accel    = { 0.0F, 0.0F, 9.81F };
     Vec3f gyro     = { 0.0F, 0.0F, 45.0F }; // 45 degrees/second yaw rate
@@ -164,7 +164,7 @@ void test_FilterMadgwick6DOF_GyroIntegration (void) {
 
 void test_FilterMadgwick6DOF_ZeroAcceleration (void) {
     FilterMadgwickContext context;
-    FilterMadgwickInit (&context, 5.0F);
+    FilterMadgwickInit (&context, 5.0F, NULL);
 
     // Test with zero acceleration (should handle gracefully)
     Vec3f accel = { 0.0F, 0.0F, 0.0F };  // No acceleration
@@ -183,7 +183,7 @@ void test_FilterMadgwick6DOF_ZeroAcceleration (void) {
 
 void test_FilterMadgwick6DOF_QuaternionNormalization (void) {
     FilterMadgwickContext context;
-    FilterMadgwickInit (&context, 5.0F);
+    FilterMadgwickInit (&context, 5.0F, NULL);
 
     Vec3f accel    = { 0.0F, 0.0F, 9.81F };
     Vec3f gyro     = { 1.0F, 2.0F, 3.0F };
@@ -206,7 +206,7 @@ void test_FilterMadgwick6DOF_QuaternionNormalization (void) {
 
 void test_FilterMadgwick6DOF_LargeTimeStep (void) {
     FilterMadgwickContext context;
-    FilterMadgwickInit (&context, 0.01F);
+    FilterMadgwickInit (&context, 0.01F, NULL);
 
     // Test with large time step and multi-axis rotation
     Vec3f accel = { 0.0F, 0.0F, 9.81F };
@@ -262,7 +262,7 @@ void test_FilterMadgwick6DOF_LargeTimeStep (void) {
 
 void test_FilterMadgwick6DOF_AccelNormalization (void) {
     FilterMadgwickContext context;
-    FilterMadgwickInit (&context, 5.0F);
+    FilterMadgwickInit (&context, 5.0F, NULL);
 
     // Test with different acceleration magnitudes (should be normalized internally)
     Vec3f accel1 = { 0.0F, 0.0F, 9.81F };  // Standard gravity
@@ -275,17 +275,17 @@ void test_FilterMadgwick6DOF_AccelNormalization (void) {
     float dt = 0.01F;
 
     // Test with different acceleration magnitudes
-    FilterMadgwickInit (&context, 5.0F);
+    FilterMadgwickInit (&context, 5.0F, NULL);
     for (int i = 0; i < 100; i++) {
         FilterMadgwick6DOF (&context, &accel1, &gyro, dt, &attitude1);
     }
 
-    FilterMadgwickInit (&context, 5.0F);
+    FilterMadgwickInit (&context, 5.0F, NULL);
     for (int i = 0; i < 100; i++) {
         FilterMadgwick6DOF (&context, &accel2, &gyro, dt, &attitude2);
     }
 
-    FilterMadgwickInit (&context, 5.0F);
+    FilterMadgwickInit (&context, 5.0F, NULL);
     for (int i = 0; i < 100; i++) {
         FilterMadgwick6DOF (&context, &accel3, &gyro, dt, &attitude3);
     }

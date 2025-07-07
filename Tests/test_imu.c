@@ -20,15 +20,20 @@ SPITransmitCB (SPI_HandleTypeDef* hspi, uint8_t* pData, uint16_t size, uint32_t 
     uint8_t reg = pData[0U] & 0x7FU;
     // printf ("pData[0U] = 0x%02X\n", pData[0U]);
     // printf ("reg = 0x%02X\n", reg);
-    TEST_ASSERT_TRUE ((pData[0U] & BMI3_SPI_WR_MASK) > 0);
+    TEST_ASSERT_TRUE ((pData[0U] & BMI3_SPI_WR_MASK) > 0U);
     uint16_t regIdx = 0;
-    for (int16_t i = 1; i < size; i += 2) {
+    for (uint16_t i = 1; i < size; i += 2) {
         if (i + 1 < size) {
-            gIMURegs[reg + regIdx++] = ((uint16_t)pData[i + 1] << 8U) | pData[i];
+            gIMURegs[reg + regIdx++] = ((uint16_t)pData[i + 1U] << 8U) | pData[i];
         } else {
             gIMURegs[reg + regIdx++] = pData[i];
         }
     }
+
+    if (reg == BMI3_REG_FEATURE_CTRL && pData[1U] & BMI3_ENABLE) {
+        gIMURegs[BMI3_REG_FEATURE_IO1] = BMI3_ENABLE;
+    }
+
     return HAL_OK;
 }
 
