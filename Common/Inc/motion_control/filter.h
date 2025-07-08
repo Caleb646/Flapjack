@@ -28,5 +28,7 @@ Vec3f* pOutputAttitude);
 
 STATUS_TYPE
 FilterMadgwickWarmUp (uint32_t iterations, IMU* pIMU, float expectedGyroErrorDegs, float beta, FilterMadgwickContext* pOutContext);
+STATUS_TYPE
+FilterMadgwickInit (FilterMadgwickContext* pContext, float gyroMeasureErrorDegs, Vec4f* pInitialQuaternion);
 
 #endif // MOTION_CONTROL_FILTER_H

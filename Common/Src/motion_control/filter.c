@@ -199,24 +199,31 @@ FilterMadgwickContext* pOutContext) {
         }
     }
 
-    // Copy the final filter estimate to the output context
-    pOutContext->beta = sqrtf (3.0F / 4.0F) * DEG2RAD (expectedGyroErrorDegs);
-    pOutContext->est.q1 = context.est.q1;
-    pOutContext->est.q2 = context.est.q2;
-    pOutContext->est.q3 = context.est.q3;
-    pOutContext->est.q4 = context.est.q4;
+    // // Copy the final filter estimate to the output context
+    // pOutContext->beta = sqrtf (3.0F / 4.0F) * DEG2RAD (expectedGyroErrorDegs);
+    // pOutContext->est.q1 = context.est.q1;
+    // pOutContext->est.q2 = context.est.q2;
+    // pOutContext->est.q3 = context.est.q3;
+    // pOutContext->est.q4 = context.est.q4;
     LOG_INFO ("Madgwick finished warmup");
     LOG_DATA_CURRENT_ATTITUDE (attitude);
-    return eSTATUS_SUCCESS;
+    return FilterMadgwickInit (pOutContext, expectedGyroErrorDegs, &context.est);
 }
 
-// STATUS_TYPE FilterMadgwickInit (FilterMadgwickContext* pContext, float gyroMeasureErrorDegs) {
-//     // Initialization values: https://courses.cs.washington.edu/courses/cse474/17wi/labs/l4/madgwick_internal_report.pdf
-//     memset ((void*)pContext, 0, sizeof (FilterMadgwickContext));
-//     pContext->beta = sqrtf (3.0F / 4.0F) * DEG2RAD (gyroMeasureErrorDegs);
-//     pContext->est.q1 = 1.0F;
-//     pContext->est.q2 = 0.0F;
-//     pContext->est.q3 = 0.0F;
-//     pContext->est.q4 = 0.0F;
-//     return eSTATUS_SUCCESS;
-// }
+STATUS_TYPE
+FilterMadgwickInit (FilterMadgwickContext* pContext, float gyroMeasureErrorDegs, Vec4f* pInitialQuaternion) {
+    // Initialization values: https://courses.cs.washington.edu/courses/cse474/17wi/labs/l4/madgwick_internal_report.pdf
+    memset ((void*)pContext, 0, sizeof (FilterMadgwickContext));
+    pContext->beta = sqrtf (3.0F / 4.0F) * DEG2RAD (gyroMeasureErrorDegs);
+    pContext->est.q1 = 1.0F;
+    pContext->est.q2 = 0.0F;
+    pContext->est.q3 = 0.0F;
+    pContext->est.q4 = 0.0F;
+    if (pInitialQuaternion != NULL) {
+        pContext->est.q1 = pInitialQuaternion->q1;
+        pContext->est.q2 = pInitialQuaternion->q2;
+        pContext->est.q3 = pInitialQuaternion->q3;
+        pContext->est.q4 = pInitialQuaternion->q4;
+    }
+    return eSTATUS_SUCCESS;
+}
