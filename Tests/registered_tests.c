@@ -25,6 +25,7 @@ void register_all_tests(void) {
     extern void test_QueueInit_NullQueue(void);
     extern void test_QueueInit_NullBuffer(void);
     extern void test_QueueInit_ZeroCapacity(void);
+    extern void test_QueueInit_NonPowerOf2Capacity(void);
     extern void test_QueueInit_ZeroElementSize(void);
     extern void test_QueueEnqueueDequeue_Basic(void);
     extern void test_QueueEnqueue_NullQueue(void);
@@ -65,6 +66,7 @@ void register_all_tests(void) {
     register_test("test_QueueInit_NullQueue", test_QueueInit_NullQueue);
     register_test("test_QueueInit_NullBuffer", test_QueueInit_NullBuffer);
     register_test("test_QueueInit_ZeroCapacity", test_QueueInit_ZeroCapacity);
+    register_test("test_QueueInit_NonPowerOf2Capacity", test_QueueInit_NonPowerOf2Capacity);
     register_test("test_QueueInit_ZeroElementSize", test_QueueInit_ZeroElementSize);
     register_test("test_QueueEnqueueDequeue_Basic", test_QueueEnqueueDequeue_Basic);
     register_test("test_QueueEnqueue_NullQueue", test_QueueEnqueue_NullQueue);

@@ -16,22 +16,22 @@ typedef struct {
 } TestStruct;
 
 // Test buffer and queue instances
-static uint8_t test_buffer_uint8[10];
+static uint8_t test_buffer_uint8[8];
 static Queue test_queue_uint8;
 
-static uint32_t test_buffer_uint32[5];
+static uint32_t test_buffer_uint32[4];
 static Queue test_queue_uint32;
 
-static TestStruct test_buffer_struct[3];
+static TestStruct test_buffer_struct[2];
 static Queue test_queue_struct;
 
 // Test: Queue initialization with valid parameters
 void test_QueueInit_ValidParameters (void) {
     STATUS_TYPE result =
-    QueueInit (&test_queue_uint8, test_buffer_uint8, 10, sizeof (uint8_t));
+    QueueInit (&test_queue_uint8, test_buffer_uint8, 8, sizeof (uint8_t));
 
     TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result);
-    TEST_ASSERT_EQUAL (10, QueueCapacity (&test_queue_uint8));
+    TEST_ASSERT_EQUAL (8, QueueCapacity (&test_queue_uint8));
     TEST_ASSERT_EQUAL (0, QueueCount (&test_queue_uint8));
     TEST_ASSERT_TRUE (QueueIsEmpty (&test_queue_uint8));
     TEST_ASSERT_FALSE (QueueIsFull (&test_queue_uint8));
@@ -39,13 +39,13 @@ void test_QueueInit_ValidParameters (void) {
 
 // Test: Queue initialization with NULL queue pointer
 void test_QueueInit_NullQueue (void) {
-    STATUS_TYPE result = QueueInit (NULL, test_buffer_uint8, 10, sizeof (uint8_t));
+    STATUS_TYPE result = QueueInit (NULL, test_buffer_uint8, 8, sizeof (uint8_t));
     TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
 }
 
 // Test: Queue initialization with NULL buffer pointer
 void test_QueueInit_NullBuffer (void) {
-    STATUS_TYPE result = QueueInit (&test_queue_uint8, NULL, 10, sizeof (uint8_t));
+    STATUS_TYPE result = QueueInit (&test_queue_uint8, NULL, 8, sizeof (uint8_t));
     TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
 }
 
@@ -56,15 +56,39 @@ void test_QueueInit_ZeroCapacity (void) {
     TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
 }
 
+// Test: Queue initialization with non-power-of-2 capacity
+void test_QueueInit_NonPowerOf2Capacity (void) {
+    // Test with capacity 3 (not a power of 2)
+    STATUS_TYPE result =
+    QueueInit (&test_queue_uint8, test_buffer_uint8, 3, sizeof (uint8_t));
+    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
+
+    // Test with capacity 5 (not a power of 2)
+    result = QueueInit (&test_queue_uint8, test_buffer_uint8, 5, sizeof (uint8_t));
+    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
+
+    // Test with capacity 6 (not a power of 2)
+    result = QueueInit (&test_queue_uint8, test_buffer_uint8, 6, sizeof (uint8_t));
+    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
+
+    // Test with capacity 7 (not a power of 2)
+    result = QueueInit (&test_queue_uint8, test_buffer_uint8, 7, sizeof (uint8_t));
+    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
+
+    // Test with capacity 9 (not a power of 2)
+    result = QueueInit (&test_queue_uint8, test_buffer_uint8, 9, sizeof (uint8_t));
+    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
+}
+
 // Test: Queue initialization with zero element size
 void test_QueueInit_ZeroElementSize (void) {
-    STATUS_TYPE result = QueueInit (&test_queue_uint8, test_buffer_uint8, 10, 0);
+    STATUS_TYPE result = QueueInit (&test_queue_uint8, test_buffer_uint8, 8, 0);
     TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
 }
 
 // Test: Basic enqueue and dequeue operations
 void test_QueueEnqueueDequeue_Basic (void) {
-    QueueInit (&test_queue_uint8, test_buffer_uint8, 10, sizeof (uint8_t));
+    QueueInit (&test_queue_uint8, test_buffer_uint8, 8, sizeof (uint8_t));
 
     uint8_t input_value  = 42;
     uint8_t output_value = 0;
@@ -94,7 +118,7 @@ void test_QueueEnqueue_NullQueue (void) {
 
 // Test: Enqueue with NULL element pointer
 void test_QueueEnqueue_NullElement (void) {
-    QueueInit (&test_queue_uint8, test_buffer_uint8, 10, sizeof (uint8_t));
+    QueueInit (&test_queue_uint8, test_buffer_uint8, 8, sizeof (uint8_t));
     STATUS_TYPE result = QueueEnqueue (&test_queue_uint8, NULL);
     TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
 }
@@ -108,14 +132,14 @@ void test_QueueDequeue_NullQueue (void) {
 
 // Test: Dequeue with NULL element pointer
 void test_QueueDequeue_NullElement (void) {
-    QueueInit (&test_queue_uint8, test_buffer_uint8, 10, sizeof (uint8_t));
+    QueueInit (&test_queue_uint8, test_buffer_uint8, 8, sizeof (uint8_t));
     STATUS_TYPE result = QueueDequeue (&test_queue_uint8, NULL);
     TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
 }
 
 // Test: Dequeue from empty queue
 void test_QueueDequeue_EmptyQueue (void) {
-    QueueInit (&test_queue_uint8, test_buffer_uint8, 10, sizeof (uint8_t));
+    QueueInit (&test_queue_uint8, test_buffer_uint8, 8, sizeof (uint8_t));
 
     uint8_t value;
     STATUS_TYPE result = QueueDequeue (&test_queue_uint8, &value);
@@ -124,10 +148,10 @@ void test_QueueDequeue_EmptyQueue (void) {
 
 // Test: Fill queue to capacity
 void test_QueueFillToCapacity (void) {
-    QueueInit (&test_queue_uint8, test_buffer_uint8, 10, sizeof (uint8_t));
+    QueueInit (&test_queue_uint8, test_buffer_uint8, 8, sizeof (uint8_t));
 
     // Fill the queue
-    for (uint8_t i = 0; i < 10; i++) {
+    for (uint8_t i = 0; i < 8; i++) {
         STATUS_TYPE result = QueueEnqueue (&test_queue_uint8, &i);
         TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result);
         TEST_ASSERT_EQUAL (i + 1, QueueCount (&test_queue_uint8));
@@ -135,15 +159,15 @@ void test_QueueFillToCapacity (void) {
 
     TEST_ASSERT_TRUE (QueueIsFull (&test_queue_uint8));
     TEST_ASSERT_FALSE (QueueIsEmpty (&test_queue_uint8));
-    TEST_ASSERT_EQUAL (10, QueueCount (&test_queue_uint8));
+    TEST_ASSERT_EQUAL (8, QueueCount (&test_queue_uint8));
 }
 
 // Test: Enqueue to full queue
 void test_QueueEnqueue_FullQueue (void) {
-    QueueInit (&test_queue_uint8, test_buffer_uint8, 10, sizeof (uint8_t));
+    QueueInit (&test_queue_uint8, test_buffer_uint8, 8, sizeof (uint8_t));
 
     // Fill the queue
-    for (uint8_t i = 0; i < 10; i++) {
+    for (uint8_t i = 0; i < 8; i++) {
         QueueEnqueue (&test_queue_uint8, &i);
     }
 
@@ -151,20 +175,20 @@ void test_QueueEnqueue_FullQueue (void) {
     uint8_t extra_value = 99;
     STATUS_TYPE result  = QueueEnqueue (&test_queue_uint8, &extra_value);
     TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
-    TEST_ASSERT_EQUAL (10, QueueCount (&test_queue_uint8));
+    TEST_ASSERT_EQUAL (8, QueueCount (&test_queue_uint8));
 }
 
 // Test: FIFO ordering
 void test_QueueFIFOOrdering (void) {
-    QueueInit (&test_queue_uint8, test_buffer_uint8, 10, sizeof (uint8_t));
+    QueueInit (&test_queue_uint8, test_buffer_uint8, 8, sizeof (uint8_t));
 
-    // Enqueue values 0-9
-    for (uint8_t i = 0; i < 10; i++) {
+    // Enqueue values 0-7
+    for (uint8_t i = 0; i < 8; i++) {
         QueueEnqueue (&test_queue_uint8, &i);
     }
 
     // Dequeue and verify FIFO order
-    for (uint8_t i = 0; i < 10; i++) {
+    for (uint8_t i = 0; i < 8; i++) {
         uint8_t value;
         STATUS_TYPE result = QueueDequeue (&test_queue_uint8, &value);
         TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result);
@@ -176,10 +200,10 @@ void test_QueueFIFOOrdering (void) {
 
 // Test: Circular buffer behavior
 void test_QueueCircularBehavior (void) {
-    QueueInit (&test_queue_uint8, test_buffer_uint8, 5, sizeof (uint8_t));
+    QueueInit (&test_queue_uint8, test_buffer_uint8, 4, sizeof (uint8_t));
 
     // Fill queue
-    for (uint8_t i = 0; i < 5; i++) {
+    for (uint8_t i = 0; i < 4; i++) {
         QueueEnqueue (&test_queue_uint8, &i);
     }
 
@@ -200,8 +224,6 @@ void test_QueueCircularBehavior (void) {
     QueueDequeue (&test_queue_uint8, &value);
     TEST_ASSERT_EQUAL (3, value);
     QueueDequeue (&test_queue_uint8, &value);
-    TEST_ASSERT_EQUAL (4, value);
-    QueueDequeue (&test_queue_uint8, &value);
     TEST_ASSERT_EQUAL (10, value);
     QueueDequeue (&test_queue_uint8, &value);
     TEST_ASSERT_EQUAL (11, value);
@@ -211,7 +233,7 @@ void test_QueueCircularBehavior (void) {
 
 // Test: Peek functionality
 void test_QueuePeek_Basic (void) {
-    QueueInit (&test_queue_uint8, test_buffer_uint8, 10, sizeof (uint8_t));
+    QueueInit (&test_queue_uint8, test_buffer_uint8, 8, sizeof (uint8_t));
 
     uint8_t input_value = 42;
     uint8_t peek_value  = 0;
@@ -235,7 +257,7 @@ void test_QueuePeek_Basic (void) {
 
 // Test: Peek from empty queue
 void test_QueuePeek_EmptyQueue (void) {
-    QueueInit (&test_queue_uint8, test_buffer_uint8, 10, sizeof (uint8_t));
+    QueueInit (&test_queue_uint8, test_buffer_uint8, 8, sizeof (uint8_t));
 
     uint8_t value;
     STATUS_TYPE result = QueuePeek (&test_queue_uint8, &value);
@@ -244,7 +266,7 @@ void test_QueuePeek_EmptyQueue (void) {
 
 // Test: Peek with NULL parameters
 void test_QueuePeek_NullParameters (void) {
-    QueueInit (&test_queue_uint8, test_buffer_uint8, 10, sizeof (uint8_t));
+    QueueInit (&test_queue_uint8, test_buffer_uint8, 8, sizeof (uint8_t));
 
     uint8_t value = 42;
     QueueEnqueue (&test_queue_uint8, &value);
@@ -260,7 +282,7 @@ void test_QueuePeek_NullParameters (void) {
 
 // Test: Clear queue
 void test_QueueClear (void) {
-    QueueInit (&test_queue_uint8, test_buffer_uint8, 10, sizeof (uint8_t));
+    QueueInit (&test_queue_uint8, test_buffer_uint8, 8, sizeof (uint8_t));
 
     // Add some elements
     for (uint8_t i = 0; i < 5; i++) {
@@ -291,20 +313,19 @@ void test_QueueClear_NullQueue (void) {
 
 // Test: Different data types - uint32_t
 void test_QueueUint32 (void) {
-    QueueInit (&test_queue_uint32, test_buffer_uint32, 5, sizeof (uint32_t));
+    QueueInit (&test_queue_uint32, test_buffer_uint32, 4, sizeof (uint32_t));
 
-    uint32_t input_values[] = { 0x12345678, 0xABCDEF00, 0xDEADBEEF,
-                                0xCAFEBABE, 0x00FF00FF };
+    uint32_t input_values[] = { 0x12345678, 0xABCDEF00, 0xDEADBEEF, 0xCAFEBABE };
     uint32_t output_value;
 
     // Enqueue all values
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 4; i++) {
         STATUS_TYPE result = QueueEnqueue (&test_queue_uint32, &input_values[i]);
         TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result);
     }
 
     // Dequeue and verify
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 4; i++) {
         STATUS_TYPE result = QueueDequeue (&test_queue_uint32, &output_value);
         TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result);
         TEST_ASSERT_EQUAL (input_values[i], output_value);
@@ -313,21 +334,20 @@ void test_QueueUint32 (void) {
 
 // Test: Different data types - struct
 void test_QueueStruct (void) {
-    QueueInit (&test_queue_struct, test_buffer_struct, 3, sizeof (TestStruct));
+    QueueInit (&test_queue_struct, test_buffer_struct, 2, sizeof (TestStruct));
 
     TestStruct input_structs[] = { { .id = 1, .value = 100, .flag = 0xAA },
-                                   { .id = 2, .value = 200, .flag = 0xBB },
-                                   { .id = 3, .value = 300, .flag = 0xCC } };
+                                   { .id = 2, .value = 200, .flag = 0xBB } };
     TestStruct output_struct;
 
     // Enqueue all structs
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 2; i++) {
         STATUS_TYPE result = QueueEnqueue (&test_queue_struct, &input_structs[i]);
         TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result);
     }
 
     // Dequeue and verify
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 2; i++) {
         STATUS_TYPE result = QueueDequeue (&test_queue_struct, &output_struct);
         TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result);
         TEST_ASSERT_EQUAL (input_structs[i].id, output_struct.id);
@@ -346,12 +366,12 @@ void test_QueueUtilities_NullQueue (void) {
 
 // Test: Multiple enqueue/dequeue cycles
 void test_QueueMultipleCycles (void) {
-    QueueInit (&test_queue_uint8, test_buffer_uint8, 5, sizeof (uint8_t));
+    QueueInit (&test_queue_uint8, test_buffer_uint8, 4, sizeof (uint8_t));
 
     // Perform multiple cycles of fill/empty
     for (int cycle = 0; cycle < 3; cycle++) {
         // Fill queue
-        for (uint8_t i = 0; i < 5; i++) {
+        for (uint8_t i = 0; i < 4; i++) {
             uint8_t value      = (cycle * 10) + i;
             STATUS_TYPE result = QueueEnqueue (&test_queue_uint8, &value);
             TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result);
@@ -360,7 +380,7 @@ void test_QueueMultipleCycles (void) {
         TEST_ASSERT_TRUE (QueueIsFull (&test_queue_uint8));
 
         // Empty queue
-        for (uint8_t i = 0; i < 5; i++) {
+        for (uint8_t i = 0; i < 4; i++) {
             uint8_t expected_value = (cycle * 10) + i;
             uint8_t actual_value;
             STATUS_TYPE result = QueueDequeue (&test_queue_uint8, &actual_value);
@@ -374,7 +394,7 @@ void test_QueueMultipleCycles (void) {
 
 // Test: Peek with multiple elements
 void test_QueuePeekMultiple (void) {
-    QueueInit (&test_queue_uint8, test_buffer_uint8, 10, sizeof (uint8_t));
+    QueueInit (&test_queue_uint8, test_buffer_uint8, 8, sizeof (uint8_t));
 
     // Add multiple elements
     for (uint8_t i = 0; i < 5; i++) {

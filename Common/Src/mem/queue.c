@@ -5,6 +5,11 @@ STATUS_TYPE QueueInit (Queue* pQueue, void* pBuffer, uint16_t capacity, uint16_t
     if (pQueue == NULL || pBuffer == NULL || capacity == 0 || elementSize == 0) {
         return eSTATUS_FAILURE;
     }
+    // Check if capacity is a power of 2
+    if ((capacity & (capacity - 1U)) != 0U) {
+        // Not a power of 2
+        return eSTATUS_FAILURE;
+    }
 
     pQueue->pData       = pBuffer;
     pQueue->capacity    = capacity;
@@ -55,7 +60,7 @@ STATUS_TYPE QueueEnqueue (Queue* pQueue, void const* pElement) {
 
     // Calculate the memory location for the tail element
     uint8_t* pDataBytes = (uint8_t*)pQueue->pData;
-    uint8_t* pTailLocation = pDataBytes + (pQueue->tail * pQueue->elementSize);
+    uint8_t* pTailLocation = pDataBytes + (size_t)(pQueue->tail * pQueue->elementSize);
 
     // Copy the element to the tail position
     memcpy (pTailLocation, pElement, pQueue->elementSize);
@@ -79,7 +84,7 @@ STATUS_TYPE QueueDequeue (Queue* pQueue, void* pOutElement) {
 
     // Calculate the memory location for the head element
     uint8_t* pDataBytes = (uint8_t*)pQueue->pData;
-    uint8_t* pHeadLocation = pDataBytes + (pQueue->head * pQueue->elementSize);
+    uint8_t* pHeadLocation = pDataBytes + (size_t)(pQueue->head * pQueue->elementSize);
 
     // Copy the element from the head position
     memcpy (pOutElement, pHeadLocation, pQueue->elementSize);
@@ -103,7 +108,8 @@ STATUS_TYPE QueuePeek (Queue const* pQueue, void* pOutElement) {
 
     // Calculate the memory location for the head element
     uint8_t const* pDataBytes = (uint8_t const*)pQueue->pData;
-    uint8_t const* pHeadLocation = pDataBytes + (pQueue->head * pQueue->elementSize);
+    uint8_t const* pHeadLocation =
+    pDataBytes + (size_t)(pQueue->head * pQueue->elementSize);
 
     // Copy the element from the head position without removing it
     memcpy (pOutElement, pHeadLocation, pQueue->elementSize);

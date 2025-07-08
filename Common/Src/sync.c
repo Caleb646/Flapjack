@@ -96,8 +96,7 @@ STATIC_TESTABLE_DECL void SyncIRQHandler (uint16_t myCPUMailBoxId) {
  */
 STATUS_TYPE SyncInit (void) {
     // Initialize the task queue
-    QueueInit (&gSyncTaskQueue, gSyncTaskBuffer, SYNC_TASK_QUEUE_SIZE, sizeof (DefaultTask));
-    return eSTATUS_SUCCESS;
+    return QueueInit (&gSyncTaskQueue, gSyncTaskBuffer, SYNC_TASK_QUEUE_SIZE, sizeof (DefaultTask));
 }
 
 STATUS_TYPE SyncRegisterHandler (eSYNC_TASKID_TYPE taskID, task_handler_fn_t fn) {

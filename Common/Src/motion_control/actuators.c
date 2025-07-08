@@ -33,9 +33,8 @@ STATIC_TESTABLE_DECL float ServoAngle2PWM (ServoDescriptor* pServo, float target
         return mapf32 (
         targetAngle, 0.0F, pServo->maxAngle,
         (float)pServo->usMiddleDutyCycle, (float)pServo->usRightDutyCycle);
-    } else {
-        return (float)pServo->usMiddleDutyCycle;
     }
+    return (float)pServo->usMiddleDutyCycle;
 }
 
 STATIC_TESTABLE_DECL STATUS_TYPE PWMSend (PWMHandle const* pPWM) {
