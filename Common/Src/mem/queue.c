@@ -1,6 +1,7 @@
 #include "mem/queue.h"
 #include <string.h>
 
+
 STATUS_TYPE QueueInit (Queue* pQueue, void* pBuffer, uint16_t capacity, uint16_t elementSize) {
     if (pQueue == NULL || pBuffer == NULL || capacity == 0 || elementSize == 0) {
         return eSTATUS_FAILURE;
