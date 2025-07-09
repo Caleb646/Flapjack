@@ -180,7 +180,7 @@ void TaskMotionControlUpdate (void* pvParameters) {
 
         // status = TestServoMove2Angle (90.0F);
 
-        TIM13->CCR1 = 1500;
+        // TIM13->CCR1 = 1500;
 
         if ((xTaskGetTickCount () - logStart) >= logStep) {
             logStart = xTaskGetTickCount ();
