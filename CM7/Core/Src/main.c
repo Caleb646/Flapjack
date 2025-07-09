@@ -172,11 +172,15 @@ void TaskMotionControlUpdate (void* pvParameters) {
             continue;
         }
 
-        status = PWMMixPIDnSend (pidAttitude, gFlightContext.targetThrottle);
-        if (status != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to send PWM mix");
-            continue;
-        }
+        // status = PWMMixPIDnSend (pidAttitude,
+        // gFlightContext.targetThrottle); if (status != eSTATUS_SUCCESS) {
+        //     LOG_ERROR ("Failed to send PWM mix");
+        //     continue;
+        // }
+
+        // status = TestServoMove2Angle (90.0F);
+
+        TIM13->CCR1 = 1500;
 
         if ((xTaskGetTickCount () - logStart) >= logStep) {
             logStart = xTaskGetTickCount ();

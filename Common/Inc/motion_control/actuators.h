@@ -84,6 +84,7 @@ STATUS_TYPE PIDInit (PIDContext* pContext);
 float ServoAngle2PWM (ServoDescriptor* pServo, float targetAngle);
 #endif // UNIT_TEST
 STATUS_TYPE ServoMove2Angle (Servo* pServo, float targetAngle);
+STATUS_TYPE TestServoMove2Angle (float targetAngle);
 
 STATUS_TYPE PWMMixPIDnSend (Vec3f pidAttitude, float targetThrottle);
 #ifdef UNIT_TEST

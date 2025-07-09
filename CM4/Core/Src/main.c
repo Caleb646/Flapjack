@@ -163,6 +163,12 @@ int main (void) {
     }
     HAL_Delay (1000);
 
+
+    // while (1) {
+    //     LOG_INFO ("Starting main loop");
+    //     HAL_Delay (5);
+    // }
+
     BaseType_t taskStatus = xTaskCreate (
     TaskMainLoop, "Motion Control Update Task", configMINIMAL_STACK_SIZE,
     NULL, tskIDLE_PRIORITY, NULL);

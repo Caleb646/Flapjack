@@ -8,7 +8,7 @@
 
 typedef enum {
     NUM_TASK_TYPES       = 2U,
-    SYNC_TASK_QUEUE_SIZE = 16U,
+    SYNC_TASK_QUEUE_SIZE = 128U,
     TASK_MAGIC           = 0xBEEF
 } SyncConstants;
 

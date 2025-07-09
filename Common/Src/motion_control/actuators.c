@@ -3,10 +3,8 @@
 #include "log.h"
 #include <string.h>
 
-#define CHECK_PWM_OK(pPwmHandle)          \
-    (                                     \
-    (pPwmHandle)->pTimerHandle != NULL && \
-    (pPwmHandle)->pTimerRegisters != NULL && (pPwmHandle)->timerChannelID != 0U)
+#define CHECK_PWM_OK(pPwmHandle) \
+    ((pPwmHandle)->pTimerHandle != NULL && (pPwmHandle)->pTimerRegisters != NULL) // && (pPwmHandle)->timerChannelID != 0U)
 
 #define CHECK_SERVO_DESCRIPTOR_OK(pServoDesc)                      \
     (                                                              \
@@ -185,6 +183,10 @@ static Servo gLeftServo;
 // static Motor rightMotor;
 // static Servo rightServo;
 
+STATUS_TYPE TestServoMove2Angle (float targetAngle) {
+    return ServoMove2Angle (&gLeftServo, targetAngle);
+}
+
 /*
  * \param pidAttitude roll, pitch, and yaw are between -1 and 1
  */
@@ -248,6 +250,7 @@ STATUS_TYPE ActuatorsInit (PWMHandle leftMotorPWM, PWMHandle leftServoPWM) {
         LOG_ERROR ("Failed to start left motor PWM");
         return eSTATUS_FAILURE;
     }
+
     if (HAL_TIM_PWM_Start (leftServoPWM.pTimerHandle, leftServoPWM.timerChannelID) != HAL_OK) {
         LOG_ERROR ("Failed to start left servo PWM");
         return eSTATUS_FAILURE;
