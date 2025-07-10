@@ -617,10 +617,7 @@ IMUCalibrate (IMU* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSel
     calibAConf.range      = aconf.range;
     calibAConf.avg        = aconf.avg;
     calibAConf.bw         = aconf.bw;
-    // calibAConf.range      = eIMU_ACC_RANGE_8G;
-    // calibAConf.avg        = eIMU_ACC_AVG_1;
-    // calibAConf.bw         = eIMU_ACC_BW_HALF;
-    status = IMUSetConf (pIMU, &calibAConf, NULL);
+    status                = IMUSetConf (pIMU, &calibAConf, NULL);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to set IMU accelerometer configuration for calibration");
         return status;

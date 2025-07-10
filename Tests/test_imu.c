@@ -41,22 +41,6 @@ SPITransmitCB (SPI_HandleTypeDef* hspi, uint8_t* pData, uint16_t size, uint32_t 
             gIMURegs[BMI3_REG_INT_STATUS_INT1] = (1U << 10U);
         }
     }
-    /*
-     * If we are reading from feature IO1 register and are in
-     * self calibration mode, 0x1, change system state back to normal 0x0
-     */
-    if (reg == BMI3_REG_FEATURE_IO1 && gIMURegs[BMI3_REG_FEATURE_IO1] & (1U << 11U)) {
-        // The self calibration finished flag has been read so we can set
-        // the system state back to normal the error condition to no error.
-        if ((gIMURegs[BMI3_REG_INT_STATUS_INT1] & (1U << 10U)) == FALSE) {
-            gIMURegs[BMI3_REG_FEATURE_IO1] |= (5U << 0U);
-            gIMURegs[BMI3_REG_FEATURE_IO1] &= ~(3U << 11U);
-        }
-    }
-
-    if (reg == BMI3_REG_INT_STATUS_INT1 && gIMURegs[BMI3_REG_FEATURE_IO1] & (1U << 11U)) {
-        gIMURegs[BMI3_REG_INT_STATUS_INT1] &= ~(1U << 10U);
-    }
 
     return HAL_OK;
 }
@@ -66,6 +50,24 @@ SPITransmitReceiveCB (SPI_HandleTypeDef* hspi, uint8_t* pTxData, uint8_t* pRxDat
     uint8_t reg = pTxData[0U] & 0x7FU;
     TEST_ASSERT_TRUE ((pTxData[0U] & BMI3_SPI_RD_MASK) > 0);
     TEST_ASSERT_TRUE (size > 1);
+
+    /*
+     * If we are reading from feature IO1 register and are in
+     * self calibration mode, 0x1, change system state back to normal 0x0
+     */
+    if (reg == BMI3_REG_FEATURE_IO1 && gIMURegs[BMI3_REG_FEATURE_IO1] & (1U << 11U)) {
+        // The self calibration finished flag has been read so we can set
+        // the system state back to normal the error condition to no error.
+        if ((gIMURegs[BMI3_REG_INT_STATUS_INT1] & (1U << 10U)) == FALSE) {
+            gIMURegs[BMI3_REG_FEATURE_IO1] |= (1U << 5U) | (1U << 4U) | (5U << 0U);
+            gIMURegs[BMI3_REG_FEATURE_IO1] &= ~(3U << 11U);
+        }
+    }
+
+    if (reg == BMI3_REG_INT_STATUS_INT1 && gIMURegs[BMI3_REG_FEATURE_IO1] & (1U << 11U)) {
+        gIMURegs[BMI3_REG_INT_STATUS_INT1] &= ~(1U << 10U);
+    }
+
     /*
      * NOTE: Position        Sent        Received
      *       0               addr         0x00
@@ -82,6 +84,7 @@ SPITransmitReceiveCB (SPI_HandleTypeDef* hspi, uint8_t* pTxData, uint8_t* pRxDat
             pRxData[i] = gIMURegs[reg + regIdx++];
         }
     }
+
     return HAL_OK;
 }
 
@@ -112,9 +115,6 @@ void test_IMUInit (void) {
     gconf.avg         = eIMU_GYRO_AVG_16;
     gconf.bw          = eIMU_GYRO_BW_HALF;
     gconf.mode        = eIMU_GYRO_MODE_HIGH_PERF;
-
-    gHAL_SPI_Transmit_CB        = SPITransmitCB;
-    gHAL_SPI_TransmitReceive_CB = SPITransmitReceiveCB;
 
     STATUS_TYPE status = IMUInit (&imu, &spi, aconf, gconf);
     TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
@@ -147,6 +147,9 @@ void test_IMUInit (void) {
     temp          = BMI3_SET_BITS (temp, BMI3_GYR_DRDY_INT, 1U);
     temp          = BMI3_SET_BITS (temp, BMI3_ACC_DRDY_INT, 1U);
     TEST_ASSERT_EQUAL_HEX16 (temp, gIMURegs[BMI3_REG_INT_MAP1 + 1]);
+
+    status = IMUEnableInterrupts (&imu);
+    TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
     // Check that imu interrupts are enabled
     TEST_ASSERT_EQUAL_HEX16 (
     ((1U << 2U | 1U << 0U) << 8U) | (1U << 2U | 1U << 0U),
