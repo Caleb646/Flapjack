@@ -123,6 +123,7 @@ void TaskMotionControlUpdate (void* pvParameters) {
     Vec3f maxAttitude = { .roll = 45.0F, .pitch = 45.0F, .yaw = 180.0F };
 
     float testServoAngle = 0.0F;
+    TIM13->CCR1          = 20000;
 
     if (IMUEnableInterrupts (&gIMU) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to enable IMU interrupts");
@@ -180,17 +181,14 @@ void TaskMotionControlUpdate (void* pvParameters) {
         //     continue;
         // }
 
-        status = TestServoMove2Angle (0.0F);
-        // status = TestServoMove2Angle (testServoAngle);
+        // leftServoPwmHandle.pTimerRegisters->CCR1 = 1500; // 0 * 10;
+        // TIM13->CCR1 = 20000;
+        // status = TestServoMove2Angle (0.0F);
 
-        testServoAngle += 5.0F;
-        if (testServoAngle > 45.0F) { // Reset angle after 45 degrees
-            testServoAngle = -45.0F;
-        }
-
-        // TIM13->CCR1 = 15000 * 10;
 
         if ((xTaskGetTickCount () - logStart) >= logStep) {
+
+            // TIM13->CCR1 = 20000;
 
             logStart = xTaskGetTickCount ();
 
@@ -310,7 +308,7 @@ int main (void) {
                                      .timerChannelID  = TIM_CHANNEL_1,
                                      .hzPeriod        = 50
     };
-    status = ActuatorsInit (leftServoPwmHandle, leftMotorPwmHandle);
+    status = ActuatorsInit (leftMotorPwmHandle, leftServoPwmHandle);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to init Actuators");
     }

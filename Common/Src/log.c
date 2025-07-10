@@ -105,8 +105,6 @@ STATUS_TYPE LoggerInit (USART_TypeDef* pUARTInstance, UART_HandleTypeDef** pOutU
 }
 
 static STATUS_TYPE LoggerWriteToUART (RingBuff volatile* pRingBuf, int32_t totalLen) {
-    uint32_t len         = 0;
-    void* pBufToTransmit = NULL;
 
     if (pRingBuf == NULL || gUART.Instance == NULL || totalLen <= 0 || totalLen > sizeof (gpBuffer)) {
         return eSTATUS_FAILURE;
@@ -173,73 +171,3 @@ static STATUS_TYPE LoggerUARTInit (UART_HandleTypeDef* huart1, USART_TypeDef* pU
 #endif // UNIT_TEST
     return eSTATUS_SUCCESS;
 }
-
-// void LogStackTrace (void) {
-
-//     LOG_ERROR ("=== STACK TRACE BEGIN ===");
-
-//     // Use GCC built-in functions to get current addresses
-//     void* current_pc = __builtin_return_address (0);
-//     void* caller_pc  = 0;
-
-//     LOG_ERROR ("Current function return address: 0x%08lX", (unsigned long)current_pc);
-
-//     // Try to get caller addresses using GCC built-ins
-//     // Note: This may not work in all optimization levels
-//     int frame_count      = 0;
-//     const int max_frames = 8;
-
-//     for (int i = 0; i < max_frames; i++) {
-//         void* return_addr = 0;
-
-//         // Use compiler built-in to get return address at different
-//         levels switch (i) { case 0: return_addr =
-//         __builtin_return_address (0); break; case 1:
-//             // Check if we can safely get level 1
-//             if (__builtin_frame_address (1) != 0) {
-//                 return_addr = __builtin_return_address (1);
-//             }
-//             break;
-//         case 2:
-//             if (__builtin_frame_address (2) != 0) {
-//                 return_addr = __builtin_return_address (2);
-//             }
-//             break;
-//         case 3:
-//             if (__builtin_frame_address (3) != 0) {
-//                 return_addr = __builtin_return_address (3);
-//             }
-//             break;
-//         default:
-//             // For higher levels, we'll break as it gets unreliable
-//             break;
-//         }
-
-//         if (return_addr == 0) {
-//             break;
-//         }
-
-//         // Check if this looks like a valid code address
-//         unsigned long addr = (unsigned long)return_addr;
-//         if (addr >= 0x08000000 && addr <= 0x08FFFFFF) {
-//             LOG_ERROR ("Frame %d: Return Address = 0x%08lX",
-//             frame_count, addr); frame_count++;
-//         }
-//     }
-
-//     // Additional debugging information
-//     LOG_ERROR ("Stack trace depth: %d frames", frame_count);
-
-//     // Get current stack pointer using a local variable address
-//     volatile uint32_t stack_marker = 0xDEADBEEF;
-//     LOG_ERROR ("Approximate stack pointer: 0x%08lX", (unsigned long)&stack_marker);
-
-//     // Log memory regions for reference
-//     LOG_ERROR ("Flash memory range: 0x08000000 - 0x08FFFFFF");
-//     LOG_ERROR ("RAM memory range: 0x20000000 - 0x2007FFFF");
-
-//     LOG_ERROR ("=== STACK TRACE END ===");
-
-//     // Keep the breakpoint for debugging
-//     __BKPT (2);
-// }

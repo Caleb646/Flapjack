@@ -11,13 +11,17 @@ STATUS_TYPE PWMInitTimBaseConfig (PWMHandle* pHandle, uint16_t prescaler, uint16
     }
 
     TIM_TypeDef* pTimerRegisters = pHandle->pTimerRegisters;
+    uint32_t tmpcr1              = pTimerRegisters->CR1;
+    /* Set the Autoreload value */
+    pTimerRegisters->ARR = arr; // 65535U;
+    /* Set the Prescaler value */
+    pTimerRegisters->PSC = prescaler;
 
-    uint32_t tmpcr1 = pTimerRegisters->CR1;
     /* Set the counter mode */
-    if (IS_TIM_COUNTER_MODE_SELECT_INSTANCE (pTimerRegisters)) {
-        tmpcr1 &= ~(TIM_CR1_DIR | TIM_CR1_CMS);
-        tmpcr1 |= TIM_COUNTERMODE_UP;
-    }
+    // if (IS_TIM_COUNTER_MODE_SELECT_INSTANCE (pTimerRegisters)) {
+    tmpcr1 &= ~(TIM_CR1_DIR | TIM_CR1_CMS);
+    tmpcr1 |= TIM_COUNTERMODE_UP;
+    // }
 
     /* Set the clock division */
     if (IS_TIM_CLOCK_DIVISION_INSTANCE (pTimerRegisters)) {
@@ -26,12 +30,12 @@ STATUS_TYPE PWMInitTimBaseConfig (PWMHandle* pHandle, uint16_t prescaler, uint16
     }
 
     /* Set the auto-reload preload */
-    tmpcr1 &= ~TIM_CR1_ARPE;
-    tmpcr1 |= TIM_AUTORELOAD_PRELOAD_ENABLE;
-    /* Set the Autoreload value */
-    pTimerRegisters->ARR = arr; // 65535U;
-    /* Set the Prescaler value */
-    pTimerRegisters->PSC = prescaler;
+    pTimerRegisters->CR1 |= TIM_CR1_ARPE;
+    // MODIFY_REG (tmpcr1, TIM_CR1_ARPE, TIM_AUTORELOAD_PRELOAD_ENABLE);
+    // tmpcr1 &= ~TIM_CR1_ARPE;
+    // tmpcr1 |= TIM_AUTORELOAD_PRELOAD_ENABLE;
+    /* NOTE: DISABLING Auto-Reload Preload */
+    // tmpcr1 &= ~TIM_AUTORELOAD_PRELOAD_ENABLE;
 
     if (IS_TIM_REPETITION_COUNTER_INSTANCE (pTimerRegisters)) {
         /* Set the Repetition Counter value */
@@ -40,10 +44,25 @@ STATUS_TYPE PWMInitTimBaseConfig (PWMHandle* pHandle, uint16_t prescaler, uint16
 
     /* Disable Update Event (UEV) with Update Generation (UG)
        by changing Update Request Source (URS) to avoid Update flag (UIF) */
-    pTimerRegisters->CR1 |= TIM_CR1_URS;
+    // pTimerRegisters->CR1 |= TIM_CR1_URS;
     /* Generate an update event to reload the Prescaler
        and the repetition counter (only for advanced timer) value immediately */
+
+    /* Enable Update Event (UEV) by clearing Update Disable (UDIS) bit */
+    pTimerRegisters->CR1 &= ~TIM_CR1_UDIS;
     pTimerRegisters->EGR = TIM_EGR_UG;
+    while ((pTimerRegisters->EGR & TIM_EGR_UG) == SET) {
+    }
+
+    while (pTimerRegisters->SR & TIM_SR_UIF) {
+        pTimerRegisters->SR = 0; /* Clear update flag. */
+    }
+    /*
+     * Enable UEV by setting UG bit to load data from preload to active
+     * registers
+     */
+    pTimerRegisters->EGR |= TIM_EGR_UG;
+
     pTimerRegisters->CR1 = tmpcr1;
 
     return eSTATUS_SUCCESS;
@@ -111,6 +130,7 @@ STATUS_TYPE PWMInitChannel (PWMHandle* pHandle) {
         /* Configure the Output Fast mode */
         pTimerRegisters->CCMR1 &= ~TIM_CCMR1_OC1FE;
         pTimerRegisters->CCMR1 |= TIM_OCFAST_DISABLE;
+
     } else if (timerChannelID == TIM_CHANNEL_2 && IS_TIM_CC2_INSTANCE (pTimerRegisters)) {
         uint32_t tmpccmrx;
         uint32_t tmpccer;
@@ -238,8 +258,14 @@ STATUS_TYPE PWMInit (PWMHandle* pHandle) {
     }
     /* Prescale 64 MHz to 1MHz */
     uint16_t prescaler = (uint16_t)(SystemCoreClock / 1000000U) - 1U;
+    // uint16_t prescaler = 100; // (uint16_t)(72000000U / 1000000U) - 1U;
     /* Scale  1MHz i.e. current PWM Period (ARR) to pHandle->hzPeriod */
+    // uint16_t arr = (uint16_t)(1000000U / pHandle->hzPeriod) - 1U;
     uint16_t arr = (uint16_t)(1000000U / pHandle->hzPeriod) - 1U;
+
+    // LOG_INFO("PWM Init - Timer: %s, Prescaler: %u, ARR: %u, Target: %u Hz",
+    //          (pHandle->pTimerRegisters == TIM13) ? "TIM13" : "TIM8",
+    //          prescaler, arr, (uint16_t)pHandle->hzPeriod);
 
     STATUS_TYPE status = PWMInitTimBaseConfig (pHandle, prescaler, arr);
     if (status != eSTATUS_SUCCESS) {
@@ -291,10 +317,19 @@ STATUS_TYPE PWMSend (PWMHandle* pHandle, uint32_t usUpTime) {
         LOG_ERROR ("Received invalid PWM pointer");
         return eSTATUS_FAILURE;
     }
+
+    /* ARR is synonymous with microseconds because the clock is prescaled to 1MHz */
     uint32_t usPeriod         = pHandle->pTimerRegisters->ARR + 1U;
     float dutyCyclePercentage = PWM_US2DC (usUpTime, usPeriod);
     uint32_t compareValue =
     (uint32_t)((dutyCyclePercentage / 100.0F) * (float)(usPeriod));
+
+    /* Debug output to understand what's happening */
+    // LOG_INFO("PWM Send - ARR: %u, Period: %u us, Pulse: %u us, Duty: %u%%, CCR: %u",
+    //          (uint16_t)(pHandle->pTimerRegisters->ARR),
+    //          (uint16_t)usPeriod, (uint16_t)usUpTime,
+    //          (uint16_t)dutyCyclePercentage, (uint16_t)compareValue);
+
     PWM_SET_COMPARE (pHandle, compareValue);
     return eSTATUS_SUCCESS;
 }
