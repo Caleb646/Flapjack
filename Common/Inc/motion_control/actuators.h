@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "hal.h"
+#include "motion_control/pwm.h"
 #include <stdint.h>
 
 
@@ -23,13 +24,6 @@ typedef struct {
     Vec3f prevError;
     Vec3f prevIntegral;
 } PIDContext;
-
-typedef struct {
-    TIM_HandleTypeDef* pTimerHandle;
-    TIM_TypeDef* pTimerRegisters;
-    uint32_t timerChannelID;
-    uint32_t usTargetDutyCycle;
-} PWMHandle;
 
 typedef struct {
     uint32_t usLeftDutyCycle;
@@ -87,9 +81,6 @@ STATUS_TYPE ServoMove2Angle (Servo* pServo, float targetAngle);
 STATUS_TYPE TestServoMove2Angle (float targetAngle);
 
 STATUS_TYPE PWMMixPIDnSend (Vec3f pidAttitude, float targetThrottle);
-#ifdef UNIT_TEST
-STATUS_TYPE PWMSend (PWMHandle const* pPWM);
-#endif // UNIT_TEST
 STATUS_TYPE ActuatorsInit (PWMHandle leftMotorPWM, PWMHandle leftServoPWM);
 
 // void MotionControlUpdatePWM(

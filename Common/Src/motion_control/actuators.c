@@ -3,16 +3,13 @@
 #include "log.h"
 #include <string.h>
 
-#define CHECK_PWM_OK(pPwmHandle) \
-    ((pPwmHandle)->pTimerHandle != NULL && (pPwmHandle)->pTimerRegisters != NULL) // && (pPwmHandle)->timerChannelID != 0U)
-
 #define CHECK_SERVO_DESCRIPTOR_OK(pServoDesc)                      \
     (                                                              \
     (pServoDesc) != NULL && (pServoDesc)->usLeftDutyCycle != 0U && \
     (pServoDesc)->usMiddleDutyCycle != 0U && (pServoDesc)->usRightDutyCycle != 0U)
 
 #define CHECK_SERVO_OK(pServo) \
-    ((pServo) != NULL && CHECK_PWM_OK (&((pServo)->pwmHandle)))
+    ((pServo) != NULL && PWM_CHECK_OK (&((pServo)->pwmHandle)))
 
 
 STATIC_TESTABLE_DECL float ServoAngle2PWM (ServoDescriptor* pServo, float targetAngle) {
@@ -33,33 +30,6 @@ STATIC_TESTABLE_DECL float ServoAngle2PWM (ServoDescriptor* pServo, float target
         (float)pServo->usMiddleDutyCycle, (float)pServo->usRightDutyCycle);
     }
     return (float)pServo->usMiddleDutyCycle;
-}
-
-STATIC_TESTABLE_DECL STATUS_TYPE PWMSend (PWMHandle const* pPWM) {
-    // uint32_t volatile *pCCR;
-    // uint32_t volatile *pARR;
-    // uint32_t volatile *pPSC;
-
-    // 1,000,000 Hz / ARR = 50Hz --> ARR = 20,000
-    // 1.5ms duty cycle = td (target duty cycle)
-    // td / period = percentage
-    // CCR / ARR = percentage
-    // CCR = ARR * (1500us / 20000us)
-
-    // 1,000,000 Hz / ARR = 2000Hz --> ARR = 500
-    // 250us duty cycle = td (target duty cycle)
-    // td / period = percentage
-    // CCR / ARR = percentage
-    // CCR = ARR * (250us / 500us)
-
-    // *pCCR = (uint16_t)pPWM->usTargetDutyCycle;
-    if (CHECK_PWM_OK (pPWM) != TRUE) {
-        LOG_ERROR ("Received invalid PWM pointer");
-        return eSTATUS_FAILURE;
-    }
-    __HAL_TIM_SET_COMPARE (pPWM->pTimerHandle, pPWM->timerChannelID, pPWM->usTargetDutyCycle);
-
-    return eSTATUS_SUCCESS;
 }
 
 STATUS_TYPE UpdateTargetAttitudeThrottle (
@@ -169,10 +139,7 @@ STATUS_TYPE ServoMove2Angle (Servo* pServo, float targetAngle) {
     targetAngle = clipf32 (
     targetAngle, -pServo->pwmDescriptor.maxAngle, pServo->pwmDescriptor.maxAngle);
 
-    pServo->pwmHandle.usTargetDutyCycle =
-    (uint32_t)ServoAngle2PWM (&pServo->pwmDescriptor, targetAngle);
-
-    return PWMSend (&pServo->pwmHandle);
+    return PWMSend (&pServo->pwmHandle, (uint32_t)ServoAngle2PWM (&pServo->pwmDescriptor, targetAngle));
 }
 
 // NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
@@ -205,17 +172,15 @@ STATUS_TYPE PWMMixPIDnSend (Vec3f pidAttitude, float targetThrottle) {
      *  Left Motor Mixing
      */
     float target        = 0.0F;
-    PWMHandle* pH       = &gLeftMotor.pwmHandle;
     MotorDescriptor* pM = &gLeftMotor.pwmDescriptor;
     target =
     targetThrottle - pidAttitude.pitch + pidAttitude.roll + pidAttitude.yaw;
-    pH->usTargetDutyCycle = (uint32_t)mapf32 (
+    uint32_t motorTargetDutyCycle = (uint32_t)mapf32 (
     target, -3.0F, 4.0F, (float)pM->usMinDutyCycle, (float)pM->usMaxDutyCycle);
 
     /*
      *  Left Servo Mixing
      */
-    pH                    = &gLeftServo.pwmHandle;
     ServoDescriptor* pSer = &gLeftServo.pwmDescriptor;
     target                = pSer->pitchMix * pidAttitude.pitch +
              pSer->rollMix * pidAttitude.roll + pSer->yawMix * pidAttitude.yaw;
@@ -223,39 +188,49 @@ STATUS_TYPE PWMMixPIDnSend (Vec3f pidAttitude, float targetThrottle) {
     // the larger pid roll is.
     // float target = pSer->pitchMix * pidAttitude.pitch + pSer->yawMix * pidAttitude.yaw;
     // pSer->targetAngle = ( clipf32(target, -1.0f, 1.0f) * pSer->maxAngle ) / ( clipf32(pSer->rollMix * pidAttitude.roll, -1.0f, 1.0f) * pSer->maxAngle );
-    target                = clipf32 (target, -1.0F, 1.0F) * pSer->maxAngle;
-    pSer->curAngle        = target;
-    pH->usTargetDutyCycle = (uint32_t)ServoAngle2PWM (pSer, target);
+    target         = clipf32 (target, -1.0F, 1.0F) * pSer->maxAngle;
+    pSer->curAngle = target;
+    uint32_t servoTargetDutyCycle = (uint32_t)ServoAngle2PWM (pSer, target);
+
+    PWMSend (&gLeftMotor.pwmHandle, motorTargetDutyCycle);
+    PWMSend (&gLeftServo.pwmHandle, servoTargetDutyCycle);
 
     return eSTATUS_SUCCESS;
 }
 
 STATUS_TYPE ActuatorsInit (PWMHandle leftMotorPWM, PWMHandle leftServoPWM) {
-    // Prescale 64MHz clock to 1MHz
-    __HAL_TIM_SET_PRESCALER (leftMotorPWM.pTimerHandle, 64);
-    // Use ARR register to scale clock from 1MHz to 4000Hz (250us)
-    __HAL_TIM_SET_AUTORELOAD (leftMotorPWM.pTimerHandle, 250);
-    // Set duty cycle to 0 percent
-    __HAL_TIM_SET_COMPARE (leftMotorPWM.pTimerHandle, leftMotorPWM.timerChannelID, 0);
+    // // Prescale 64MHz clock to 1MHz
+    // PWM_SET_PRESCALER (&leftMotorPWM, 64);
+    // // Use ARR register to scale clock from 1MHz to 4000Hz (250us)
+    // PWM_SET_PERIOD (&leftMotorPWM, 250);
+    // // Set duty cycle to 0 percent
+    // PWM_SET_COMPARE (&leftMotorPWM, 0);
 
-    // Prescale 64MHz clock to 1MHz
-    __HAL_TIM_SET_PRESCALER (leftServoPWM.pTimerHandle, 64);
-    // Use ARR register to scale clock from 1MHz to 50Hz
-    // 1MHz / 20,000 = 50Hz
-    __HAL_TIM_SET_AUTORELOAD (leftServoPWM.pTimerHandle, 20000);
-    // Set duty cycle to 0 percent
-    __HAL_TIM_SET_COMPARE (leftServoPWM.pTimerHandle, leftServoPWM.timerChannelID, 0);
+    // // Prescale 64MHz clock to 1MHz
+    // PWM_SET_PRESCALER (&leftServoPWM, 64);
+    // // Use ARR register to scale clock from 1MHz to 50Hz
+    // // 1MHz / 20,000 = 50Hz
+    // PWM_SET_PERIOD (&leftServoPWM, 20000);
+    // // Set duty cycle to 0 percent
+    // PWM_SET_COMPARE (&leftServoPWM, 0);
+    if (PWMInit (&leftMotorPWM) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to init left motor PWM");
+        return eSTATUS_FAILURE;
+    }
+    if (PWMInit (&leftServoPWM) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to init left servo PWM");
+        return eSTATUS_FAILURE;
+    }
 
-    if (HAL_TIM_PWM_Start (leftMotorPWM.pTimerHandle, leftMotorPWM.timerChannelID) != HAL_OK) {
+    if (PWMStart (&leftMotorPWM) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start left motor PWM");
         return eSTATUS_FAILURE;
     }
 
-    if (HAL_TIM_PWM_Start (leftServoPWM.pTimerHandle, leftServoPWM.timerChannelID) != HAL_OK) {
+    if (PWMStart (&leftServoPWM) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start left servo PWM");
         return eSTATUS_FAILURE;
     }
-
 
     memset ((void*)&gLeftMotor, 0, sizeof (Motor));
     memset ((void*)&gLeftServo, 0, sizeof (Servo));

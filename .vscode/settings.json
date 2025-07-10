@@ -12,7 +12,8 @@
         "string.h": "c",
         "bmixxx.h": "c",
         "log.h": "c",
-        "common.h": "c"
+        "common.h": "c",
+        "pwm.h": "c"
     },
     "C_Cpp.codeAnalysis.clangTidy.enabled": true,
     // "C_Cpp.codeAnalysis.clangTidy.path": "${Env:CLANG_TIDY_PATH}",

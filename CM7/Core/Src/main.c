@@ -82,8 +82,8 @@ TIM_HandleTypeDef htim13;
 void SystemClock_Config (void);
 static void MX_GPIO_Init (void);
 static void MX_SPI2_Init (void);
-static void MX_TIM8_Init (void);
-static void MX_TIM13_Init (void);
+// static void MX_TIM8_Init (void);
+// static void MX_TIM13_Init (void);
 void StartDefaultTask (void* argument);
 
 /* USER CODE BEGIN PFP */
@@ -121,6 +121,8 @@ void TaskMotionControlUpdate (void* pvParameters) {
     Vec3f currentAttitude  = { 0.0F };
     Vec3f targetAttitude   = { 0.0F };
     Vec3f maxAttitude = { .roll = 45.0F, .pitch = 45.0F, .yaw = 180.0F };
+
+    float testServoAngle = 0.0F;
 
     if (IMUEnableInterrupts (&gIMU) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to enable IMU interrupts");
@@ -178,11 +180,17 @@ void TaskMotionControlUpdate (void* pvParameters) {
         //     continue;
         // }
 
-        // status = TestServoMove2Angle (90.0F);
+        // status = TestServoMove2Angle (testServoAngle);
 
-        // TIM13->CCR1 = 1500;
+        TIM13->CCR1 = 15000 * 10;
 
         if ((xTaskGetTickCount () - logStart) >= logStep) {
+
+            testServoAngle += 15.0F;
+            if (testServoAngle > 45.0F) { // Reset angle after 45 degrees
+                testServoAngle = -45.0F;
+            }
+
             logStart = xTaskGetTickCount ();
 
             Vec3f a  = accel;
@@ -221,8 +229,8 @@ int main (void) {
 
     MX_GPIO_Init ();
     MX_SPI2_Init ();
-    MX_TIM8_Init ();
-    MX_TIM13_Init ();
+    // MX_TIM8_Init ();
+    // MX_TIM13_Init ();
 
     /* When system initialization is finished, Cortex-M7 will release Cortex-M4 by means of HSEM notification */
 
@@ -292,16 +300,22 @@ int main (void) {
     }
 
     PWMHandle leftMotorPwmHandle = {
-        .pTimerHandle      = &htim8,
-        .pTimerRegisters   = TIM8,
-        .timerChannelID    = TIM_CHANNEL_1,
-        .usTargetDutyCycle = 20 * 1000, // 20 ms
+        // .pTimerHandle    = &htim8,
+        .pTimerRegisters = TIM8,
+        .timerChannelID  = TIM_CHANNEL_1,
+        // Prescale 64MHz clock to 1MHz
+        .prescaler = 64,
+        // Use ARR (period) register to scale clock from 1MHz to 4000Hz (250us)
+        .period = 250,
     };
     PWMHandle leftServoPwmHandle = {
-        .pTimerHandle      = &htim13,
-        .pTimerRegisters   = TIM13,
-        .timerChannelID    = TIM_CHANNEL_1,
-        .usTargetDutyCycle = 1500, // 1.5 ms
+        // .pTimerHandle    = &htim13,
+        .pTimerRegisters = TIM13,
+        .timerChannelID  = TIM_CHANNEL_1,
+        // Prescale 64MHz clock to 1MHz
+        .prescaler = 64,
+        // Use ARR (period) register to scale clock from 1MHz to 50Hz (20ms)
+        .period = 20000,
     };
     status = ActuatorsInit (leftServoPwmHandle, leftMotorPwmHandle);
     if (status != eSTATUS_SUCCESS) {
@@ -443,113 +457,113 @@ static void MX_SPI2_Init (void) {
  * @param None
  * @retval None
  */
-static void MX_TIM8_Init (void) {
+// static void MX_TIM8_Init (void) {
 
-    /* USER CODE BEGIN TIM8_Init 0 */
+//     /* USER CODE BEGIN TIM8_Init 0 */
 
-    /* USER CODE END TIM8_Init 0 */
+//     /* USER CODE END TIM8_Init 0 */
 
-    TIM_ClockConfigTypeDef sClockSourceConfig           = { 0 };
-    TIM_MasterConfigTypeDef sMasterConfig               = { 0 };
-    TIM_OC_InitTypeDef sConfigOC                        = { 0 };
-    TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = { 0 };
+//     TIM_ClockConfigTypeDef sClockSourceConfig           = { 0 };
+//     TIM_MasterConfigTypeDef sMasterConfig               = { 0 };
+//     TIM_OC_InitTypeDef sConfigOC                        = { 0 };
+//     TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = { 0 };
 
-    /* USER CODE BEGIN TIM8_Init 1 */
+//     /* USER CODE BEGIN TIM8_Init 1 */
 
-    /* USER CODE END TIM8_Init 1 */
-    htim8.Instance               = TIM8;
-    htim8.Init.Prescaler         = 0;
-    htim8.Init.CounterMode       = TIM_COUNTERMODE_UP;
-    htim8.Init.Period            = 65535;
-    htim8.Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
-    htim8.Init.RepetitionCounter = 0;
-    htim8.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-    if (HAL_TIM_Base_Init (&htim8) != HAL_OK) {
-        Error_Handler ();
-    }
-    sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-    if (HAL_TIM_ConfigClockSource (&htim8, &sClockSourceConfig) != HAL_OK) {
-        Error_Handler ();
-    }
-    if (HAL_TIM_PWM_Init (&htim8) != HAL_OK) {
-        Error_Handler ();
-    }
-    sMasterConfig.MasterOutputTrigger  = TIM_TRGO_RESET;
-    sMasterConfig.MasterOutputTrigger2 = TIM_TRGO2_RESET;
-    sMasterConfig.MasterSlaveMode      = TIM_MASTERSLAVEMODE_DISABLE;
-    if (HAL_TIMEx_MasterConfigSynchronization (&htim8, &sMasterConfig) != HAL_OK) {
-        Error_Handler ();
-    }
-    sConfigOC.OCMode       = TIM_OCMODE_PWM1;
-    sConfigOC.Pulse        = 0;
-    sConfigOC.OCPolarity   = TIM_OCPOLARITY_HIGH;
-    sConfigOC.OCNPolarity  = TIM_OCNPOLARITY_HIGH;
-    sConfigOC.OCFastMode   = TIM_OCFAST_DISABLE;
-    sConfigOC.OCIdleState  = TIM_OCIDLESTATE_RESET;
-    sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
-    if (HAL_TIM_PWM_ConfigChannel (&htim8, &sConfigOC, TIM_CHANNEL_1) != HAL_OK) {
-        Error_Handler ();
-    }
-    sBreakDeadTimeConfig.OffStateRunMode  = TIM_OSSR_DISABLE;
-    sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
-    sBreakDeadTimeConfig.LockLevel        = TIM_LOCKLEVEL_OFF;
-    sBreakDeadTimeConfig.DeadTime         = 0;
-    sBreakDeadTimeConfig.BreakState       = TIM_BREAK_DISABLE;
-    sBreakDeadTimeConfig.BreakPolarity    = TIM_BREAKPOLARITY_HIGH;
-    sBreakDeadTimeConfig.BreakFilter      = 0;
-    sBreakDeadTimeConfig.Break2State      = TIM_BREAK2_DISABLE;
-    sBreakDeadTimeConfig.Break2Polarity   = TIM_BREAK2POLARITY_HIGH;
-    sBreakDeadTimeConfig.Break2Filter     = 0;
-    sBreakDeadTimeConfig.AutomaticOutput  = TIM_AUTOMATICOUTPUT_DISABLE;
-    if (HAL_TIMEx_ConfigBreakDeadTime (&htim8, &sBreakDeadTimeConfig) != HAL_OK) {
-        Error_Handler ();
-    }
-    /* USER CODE BEGIN TIM8_Init 2 */
+//     /* USER CODE END TIM8_Init 1 */
+//     htim8.Instance               = TIM8;
+//     htim8.Init.Prescaler         = 0;
+//     htim8.Init.CounterMode       = TIM_COUNTERMODE_UP;
+//     htim8.Init.Period            = 65535;
+//     htim8.Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
+//     htim8.Init.RepetitionCounter = 0;
+//     htim8.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+//     if (HAL_TIM_Base_Init (&htim8) != HAL_OK) {
+//         Error_Handler ();
+//     }
+//     sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+//     if (HAL_TIM_ConfigClockSource (&htim8, &sClockSourceConfig) != HAL_OK) {
+//         Error_Handler ();
+//     }
+//     if (HAL_TIM_PWM_Init (&htim8) != HAL_OK) {
+//         Error_Handler ();
+//     }
+//     sMasterConfig.MasterOutputTrigger  = TIM_TRGO_RESET;
+//     sMasterConfig.MasterOutputTrigger2 = TIM_TRGO2_RESET;
+//     sMasterConfig.MasterSlaveMode      = TIM_MASTERSLAVEMODE_DISABLE;
+//     if (HAL_TIMEx_MasterConfigSynchronization (&htim8, &sMasterConfig) != HAL_OK) {
+//         Error_Handler ();
+//     }
+//     sConfigOC.OCMode       = TIM_OCMODE_PWM1;
+//     sConfigOC.Pulse        = 0;
+//     sConfigOC.OCPolarity   = TIM_OCPOLARITY_HIGH;
+//     sConfigOC.OCNPolarity  = TIM_OCNPOLARITY_HIGH;
+//     sConfigOC.OCFastMode   = TIM_OCFAST_DISABLE;
+//     sConfigOC.OCIdleState  = TIM_OCIDLESTATE_RESET;
+//     sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
+//     if (HAL_TIM_PWM_ConfigChannel (&htim8, &sConfigOC, TIM_CHANNEL_1) != HAL_OK) {
+//         Error_Handler ();
+//     }
+//     sBreakDeadTimeConfig.OffStateRunMode  = TIM_OSSR_DISABLE;
+//     sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
+//     sBreakDeadTimeConfig.LockLevel        = TIM_LOCKLEVEL_OFF;
+//     sBreakDeadTimeConfig.DeadTime         = 0;
+//     sBreakDeadTimeConfig.BreakState       = TIM_BREAK_DISABLE;
+//     sBreakDeadTimeConfig.BreakPolarity    = TIM_BREAKPOLARITY_HIGH;
+//     sBreakDeadTimeConfig.BreakFilter      = 0;
+//     sBreakDeadTimeConfig.Break2State      = TIM_BREAK2_DISABLE;
+//     sBreakDeadTimeConfig.Break2Polarity   = TIM_BREAK2POLARITY_HIGH;
+//     sBreakDeadTimeConfig.Break2Filter     = 0;
+//     sBreakDeadTimeConfig.AutomaticOutput  = TIM_AUTOMATICOUTPUT_DISABLE;
+//     if (HAL_TIMEx_ConfigBreakDeadTime (&htim8, &sBreakDeadTimeConfig) != HAL_OK) {
+//         Error_Handler ();
+//     }
+//     /* USER CODE BEGIN TIM8_Init 2 */
 
-    /* USER CODE END TIM8_Init 2 */
-    HAL_TIM_MspPostInit (&htim8);
-}
+//     /* USER CODE END TIM8_Init 2 */
+//     HAL_TIM_MspPostInit (&htim8);
+// }
 
-/**
- * @brief TIM13 Initialization Function
- * @param None
- * @retval None
- */
-static void MX_TIM13_Init (void) {
+// /**
+//  * @brief TIM13 Initialization Function
+//  * @param None
+//  * @retval None
+//  */
+// static void MX_TIM13_Init (void) {
 
-    /* USER CODE BEGIN TIM13_Init 0 */
+//     /* USER CODE BEGIN TIM13_Init 0 */
 
-    /* USER CODE END TIM13_Init 0 */
+//     /* USER CODE END TIM13_Init 0 */
 
-    TIM_OC_InitTypeDef sConfigOC = { 0 };
+//     TIM_OC_InitTypeDef sConfigOC = { 0 };
 
-    /* USER CODE BEGIN TIM13_Init 1 */
+//     /* USER CODE BEGIN TIM13_Init 1 */
 
-    /* USER CODE END TIM13_Init 1 */
-    htim13.Instance               = TIM13;
-    htim13.Init.Prescaler         = 0;
-    htim13.Init.CounterMode       = TIM_COUNTERMODE_UP;
-    htim13.Init.Period            = 65535;
-    htim13.Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
-    htim13.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-    if (HAL_TIM_Base_Init (&htim13) != HAL_OK) {
-        Error_Handler ();
-    }
-    if (HAL_TIM_PWM_Init (&htim13) != HAL_OK) {
-        Error_Handler ();
-    }
-    sConfigOC.OCMode     = TIM_OCMODE_PWM1;
-    sConfigOC.Pulse      = 0;
-    sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-    sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-    if (HAL_TIM_PWM_ConfigChannel (&htim13, &sConfigOC, TIM_CHANNEL_1) != HAL_OK) {
-        Error_Handler ();
-    }
-    /* USER CODE BEGIN TIM13_Init 2 */
+//     /* USER CODE END TIM13_Init 1 */
+//     htim13.Instance               = TIM13;
+//     htim13.Init.Prescaler         = 0;
+//     htim13.Init.CounterMode       = TIM_COUNTERMODE_UP;
+//     htim13.Init.Period            = 65535;
+//     htim13.Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
+//     htim13.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+//     if (HAL_TIM_Base_Init (&htim13) != HAL_OK) {
+//         Error_Handler ();
+//     }
+//     if (HAL_TIM_PWM_Init (&htim13) != HAL_OK) {
+//         Error_Handler ();
+//     }
+//     sConfigOC.OCMode     = TIM_OCMODE_PWM1;
+//     sConfigOC.Pulse      = 0;
+//     sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+//     sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+//     if (HAL_TIM_PWM_ConfigChannel (&htim13, &sConfigOC, TIM_CHANNEL_1) != HAL_OK) {
+//         Error_Handler ();
+//     }
+//     /* USER CODE BEGIN TIM13_Init 2 */
 
-    /* USER CODE END TIM13_Init 2 */
-    HAL_TIM_MspPostInit (&htim13);
-}
+//     /* USER CODE END TIM13_Init 2 */
+//     HAL_TIM_MspPostInit (&htim13);
+// }
 
 /**
  * @brief USART1 Initialization Function

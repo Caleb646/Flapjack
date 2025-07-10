@@ -15,6 +15,7 @@
 #endif
 
 // NOLINTBEGIN
+static uint8_t gpBuffer[512]           = { 0 };
 static RingBuff volatile* gpCM4RingBuf = NULL;
 static RingBuff volatile* gpCM7RingBuf = NULL;
 static UART_HandleTypeDef gUART        = { 0 };
@@ -107,21 +108,15 @@ static STATUS_TYPE LoggerWriteToUART (RingBuff volatile* pRingBuf, int32_t total
     uint32_t len         = 0;
     void* pBufToTransmit = NULL;
 
-    if (pRingBuf == NULL || gUART.Instance == NULL) {
+    if (pRingBuf == NULL || gUART.Instance == NULL || totalLen <= 0 || totalLen > sizeof (gpBuffer)) {
         return eSTATUS_FAILURE;
     }
-
-send:
-    len = RingBuffGetLinearBlockReadLength (pRingBuf);
-    if (totalLen > 0) {
-        pBufToTransmit = RingBuffGetLinearBlockReadAddress (pRingBuf);
-        if (HAL_UART_Transmit (&gUART, pBufToTransmit, len, 1000) != HAL_OK) {
-            return eSTATUS_FAILURE;
-        }
-        RingBuffSkip (pRingBuf, len);
-        totalLen -= (int32_t)len;
-        /* Check for anything in the overflow buffer */
-        goto send;
+    /* Read totalLen bytes from ringbuffer and this will include bytes
+     * that overflowed (wrapped around to the beginning of the buffer)
+     */
+    uint32_t bytesRead = RingBuffRead (pRingBuf, (void*)gpBuffer, totalLen);
+    if (HAL_UART_Transmit (&gUART, gpBuffer, bytesRead, 1000) != HAL_OK) {
+        return eSTATUS_FAILURE;
     }
     return eSTATUS_SUCCESS;
 }

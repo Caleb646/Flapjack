@@ -8,6 +8,7 @@
 "./Common/Src/mem/ring_buff.o"
 "./Common/Src/motion_control/actuators.o"
 "./Common/Src/motion_control/filter.o"
+"./Common/Src/motion_control/pwm.o"
 "./Common/Src/sensors/imu/imu.o"
 "./Core/Src/freertos.o"
 "./Core/Src/main.o"
