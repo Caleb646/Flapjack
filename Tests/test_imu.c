@@ -14,7 +14,6 @@
 
 uint16_t gIMURegs[256] = { 0 };
 
-
 HAL_StatusTypeDef
 SPITransmitCB (SPI_HandleTypeDef* hspi, uint8_t* pData, uint16_t size, uint32_t timeout) {
     uint8_t reg = pData[0U] & 0x7FU;
@@ -32,6 +31,31 @@ SPITransmitCB (SPI_HandleTypeDef* hspi, uint8_t* pData, uint16_t size, uint32_t 
 
     if (reg == BMI3_REG_FEATURE_CTRL && pData[1U] & BMI3_ENABLE) {
         gIMURegs[BMI3_REG_FEATURE_IO1] = BMI3_ENABLE;
+    }
+
+    if (reg == BMI3_REG_CMD) {
+        uint16_t cmd = ((uint16_t)pData[2U] << 8U) | pData[1U];
+        if (cmd == BMI3_CMD_SELF_CALIB_TRIGGER) {
+            gIMURegs[BMI3_REG_FEATURE_IO1] = (1U << 11U);
+            // Set error status bit to indicate calibration finished
+            gIMURegs[BMI3_REG_INT_STATUS_INT1] = (1U << 10U);
+        }
+    }
+    /*
+     * If we are reading from feature IO1 register and are in
+     * self calibration mode, 0x1, change system state back to normal 0x0
+     */
+    if (reg == BMI3_REG_FEATURE_IO1 && gIMURegs[BMI3_REG_FEATURE_IO1] & (1U << 11U)) {
+        // The self calibration finished flag has been read so we can set
+        // the system state back to normal the error condition to no error.
+        if ((gIMURegs[BMI3_REG_INT_STATUS_INT1] & (1U << 10U)) == FALSE) {
+            gIMURegs[BMI3_REG_FEATURE_IO1] |= (5U << 0U);
+            gIMURegs[BMI3_REG_FEATURE_IO1] &= ~(3U << 11U);
+        }
+    }
+
+    if (reg == BMI3_REG_INT_STATUS_INT1 && gIMURegs[BMI3_REG_FEATURE_IO1] & (1U << 11U)) {
+        gIMURegs[BMI3_REG_INT_STATUS_INT1] &= ~(1U << 10U);
     }
 
     return HAL_OK;
@@ -61,15 +85,16 @@ SPITransmitReceiveCB (SPI_HandleTypeDef* hspi, uint8_t* pTxData, uint8_t* pRxDat
     return HAL_OK;
 }
 
-// void setUp (void) {
-
-// }
+void setUpIMU (void) {
+    memset (gIMURegs, 0, sizeof (gIMURegs));
+    gIMURegs[BMI3_REG_CHIP_ID] = BMI323_CHIP_ID;
+}
 
 // void tearDown (void) {
 // }
 
 void test_IMUInit (void) {
-    gIMURegs[BMI3_REG_CHIP_ID]  = BMI323_CHIP_ID;
+    setUpIMU ();
     gHAL_SPI_Transmit_CB        = SPITransmitCB;
     gHAL_SPI_TransmitReceive_CB = SPITransmitReceiveCB;
 
@@ -129,7 +154,7 @@ void test_IMUInit (void) {
 }
 
 void test_IMUConf (void) {
-    gIMURegs[BMI3_REG_CHIP_ID]  = BMI323_CHIP_ID;
+    setUpIMU ();
     gHAL_SPI_Transmit_CB        = SPITransmitCB;
     gHAL_SPI_TransmitReceive_CB = SPITransmitReceiveCB;
 
@@ -227,6 +252,7 @@ void test_IMUUpdate (void) {
     gconf.bw          = eIMU_GYRO_BW_HALF;
     gconf.mode        = eIMU_GYRO_MODE_HIGH_PERF;
 
+    setUpIMU ();
     status = IMUInit (&imu, &spi, aconf, gconf);
     TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
 
@@ -473,4 +499,51 @@ void test_IMUUpdate (void) {
     TEST_ASSERT_FLOAT_WITHIN (0.01F, 0.061F, lsbGyro.x);
     TEST_ASSERT_FLOAT_WITHIN (0.01F, -0.061F, lsbGyro.y);
     TEST_ASSERT_FLOAT_WITHIN (0.01F, 0.122F, lsbGyro.z); // 2 LSB
+}
+
+void test_IMUSelfCalibrate (void) {
+    setUpIMU ();
+    gHAL_SPI_Transmit_CB        = SPITransmitCB;
+    gHAL_SPI_TransmitReceive_CB = SPITransmitReceiveCB;
+
+    IMU imu;
+    SPI_HandleTypeDef spi;
+    IMUAccConf aconf  = { 0 };
+    aconf.odr         = eIMU_ACC_ODR_100;
+    aconf.range       = eIMU_ACC_RANGE_4G;
+    aconf.avg         = eIMU_ACC_AVG_32;
+    aconf.bw          = eIMU_ACC_BW_HALF;
+    aconf.mode        = eIMU_ACC_MODE_HIGH_PERF;
+    IMUGyroConf gconf = { 0 };
+    gconf.odr         = eIMU_GYRO_ODR_100;
+    gconf.range       = eIMU_GYRO_RANGE_250;
+    gconf.avg         = eIMU_GYRO_AVG_16;
+    gconf.bw          = eIMU_GYRO_BW_HALF;
+    gconf.mode        = eIMU_GYRO_MODE_HIGH_PERF;
+
+    STATUS_TYPE status = IMUInit (&imu, &spi, aconf, gconf);
+    TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+
+    // Test successful self-calibration
+    IMUSelfCalibResult calibResult = { 0 };
+
+    status =
+    IMUCalibrate (&imu, BMI3_SC_SENSITIVITY_EN | BMI3_SC_OFFSET_EN, BMI3_SC_APPLY_CORR_EN, &calibResult);
+
+    TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+    TEST_ASSERT_TRUE (calibResult.result);
+    TEST_ASSERT_EQUAL_INT (0, calibResult.error);
+
+    // // Test failed self-calibration
+    // IMUSelfCalibResult calibResult2 = { 0 };
+
+    // // Set up the mock behavior for failed calibration
+    // setupFailedSelfCalibration ();
+
+    // status =
+    // IMUCalibrate (&imu, BMI3_SC_SENSITIVITY_EN | BMI3_SC_OFFSET_EN, BMI3_SC_APPLY_CORR_EN, &calibResult2);
+
+    // TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status); // Function returns success but result indicates failure
+    // TEST_ASSERT_FALSE (calibResult2.result);
+    // TEST_ASSERT_NOT_EQUAL_INT (0, calibResult2.error);
 }

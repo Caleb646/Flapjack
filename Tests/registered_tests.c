@@ -19,6 +19,7 @@ void register_all_tests(void) {
     extern void test_IMUInit(void);
     extern void test_IMUConf(void);
     extern void test_IMUUpdate(void);
+    extern void test_IMUSelfCalibrate(void);
 
     // test_queue.c Tests
     extern void test_QueueInit_ValidParameters(void);
@@ -62,6 +63,7 @@ void register_all_tests(void) {
     register_test("test_IMUInit", test_IMUInit);
     register_test("test_IMUConf", test_IMUConf);
     register_test("test_IMUUpdate", test_IMUUpdate);
+    register_test("test_IMUSelfCalibrate", test_IMUSelfCalibrate);
     register_test("test_QueueInit_ValidParameters", test_QueueInit_ValidParameters);
     register_test("test_QueueInit_NullQueue", test_QueueInit_NullQueue);
     register_test("test_QueueInit_NullBuffer", test_QueueInit_NullBuffer);
