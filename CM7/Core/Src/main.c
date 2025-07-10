@@ -180,16 +180,17 @@ void TaskMotionControlUpdate (void* pvParameters) {
         //     continue;
         // }
 
+        status = TestServoMove2Angle (0.0F);
         // status = TestServoMove2Angle (testServoAngle);
 
-        TIM13->CCR1 = 15000 * 10;
+        testServoAngle += 5.0F;
+        if (testServoAngle > 45.0F) { // Reset angle after 45 degrees
+            testServoAngle = -45.0F;
+        }
+
+        // TIM13->CCR1 = 15000 * 10;
 
         if ((xTaskGetTickCount () - logStart) >= logStep) {
-
-            testServoAngle += 15.0F;
-            if (testServoAngle > 45.0F) { // Reset angle after 45 degrees
-                testServoAngle = -45.0F;
-            }
 
             logStart = xTaskGetTickCount ();
 
@@ -299,23 +300,15 @@ int main (void) {
         LOG_ERROR ("Failed to init Flight Context");
     }
 
-    PWMHandle leftMotorPwmHandle = {
-        // .pTimerHandle    = &htim8,
-        .pTimerRegisters = TIM8,
-        .timerChannelID  = TIM_CHANNEL_1,
-        // Prescale 64MHz clock to 1MHz
-        .prescaler = 64,
-        // Use ARR (period) register to scale clock from 1MHz to 4000Hz (250us)
-        .period = 250,
+    PWMHandle leftMotorPwmHandle = { // .pTimerHandle    = &htim8,
+                                     .pTimerRegisters = TIM8,
+                                     .timerChannelID  = TIM_CHANNEL_1,
+                                     .hzPeriod        = 4000
     };
-    PWMHandle leftServoPwmHandle = {
-        // .pTimerHandle    = &htim13,
-        .pTimerRegisters = TIM13,
-        .timerChannelID  = TIM_CHANNEL_1,
-        // Prescale 64MHz clock to 1MHz
-        .prescaler = 64,
-        // Use ARR (period) register to scale clock from 1MHz to 50Hz (20ms)
-        .period = 20000,
+    PWMHandle leftServoPwmHandle = { // .pTimerHandle    = &htim13,
+                                     .pTimerRegisters = TIM13,
+                                     .timerChannelID  = TIM_CHANNEL_1,
+                                     .hzPeriod        = 50
     };
     status = ActuatorsInit (leftServoPwmHandle, leftMotorPwmHandle);
     if (status != eSTATUS_SUCCESS) {

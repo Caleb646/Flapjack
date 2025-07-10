@@ -175,7 +175,7 @@ STATUS_TYPE PWMMixPIDnSend (Vec3f pidAttitude, float targetThrottle) {
     MotorDescriptor* pM = &gLeftMotor.pwmDescriptor;
     target =
     targetThrottle - pidAttitude.pitch + pidAttitude.roll + pidAttitude.yaw;
-    uint32_t motorTargetDutyCycle = (uint32_t)mapf32 (
+    uint32_t usMotorTargetDutyCycle = (uint32_t)mapf32 (
     target, -3.0F, 4.0F, (float)pM->usMinDutyCycle, (float)pM->usMaxDutyCycle);
 
     /*
@@ -190,10 +190,10 @@ STATUS_TYPE PWMMixPIDnSend (Vec3f pidAttitude, float targetThrottle) {
     // pSer->targetAngle = ( clipf32(target, -1.0f, 1.0f) * pSer->maxAngle ) / ( clipf32(pSer->rollMix * pidAttitude.roll, -1.0f, 1.0f) * pSer->maxAngle );
     target         = clipf32 (target, -1.0F, 1.0F) * pSer->maxAngle;
     pSer->curAngle = target;
-    uint32_t servoTargetDutyCycle = (uint32_t)ServoAngle2PWM (pSer, target);
+    uint32_t usServoTargetDutyCycle = (uint32_t)ServoAngle2PWM (pSer, target);
 
-    PWMSend (&gLeftMotor.pwmHandle, motorTargetDutyCycle);
-    PWMSend (&gLeftServo.pwmHandle, servoTargetDutyCycle);
+    PWMSend (&gLeftMotor.pwmHandle, usMotorTargetDutyCycle);
+    PWMSend (&gLeftServo.pwmHandle, usServoTargetDutyCycle);
 
     return eSTATUS_SUCCESS;
 }

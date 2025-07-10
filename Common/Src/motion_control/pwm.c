@@ -2,8 +2,9 @@
 #include "common.h"
 #include "hal.h"
 #include "log.h"
+#include <stdint.h>
 
-STATUS_TYPE PWMInitTimBaseConfig (PWMHandle* pHandle) {
+STATUS_TYPE PWMInitTimBaseConfig (PWMHandle* pHandle, uint16_t prescaler, uint16_t arr) {
 
     if (pHandle == NULL || pHandle->pTimerRegisters == NULL) {
         return eSTATUS_FAILURE;
@@ -28,9 +29,9 @@ STATUS_TYPE PWMInitTimBaseConfig (PWMHandle* pHandle) {
     tmpcr1 &= ~TIM_CR1_ARPE;
     tmpcr1 |= TIM_AUTORELOAD_PRELOAD_ENABLE;
     /* Set the Autoreload value */
-    pTimerRegisters->ARR = pHandle->period; // 65535U;
+    pTimerRegisters->ARR = arr; // 65535U;
     /* Set the Prescaler value */
-    pTimerRegisters->PSC = pHandle->prescaler;
+    pTimerRegisters->PSC = prescaler;
 
     if (IS_TIM_REPETITION_COUNTER_INSTANCE (pTimerRegisters)) {
         /* Set the Repetition Counter value */
@@ -235,8 +236,12 @@ STATUS_TYPE PWMInit (PWMHandle* pHandle) {
         LOG_ERROR ("PWM handle pointer or timer registers pointer is NULL");
         return eSTATUS_FAILURE;
     }
+    /* Prescale 64 MHz to 1MHz */
+    uint16_t prescaler = (uint16_t)(SystemCoreClock / 1000000U) - 1U;
+    /* Scale  1MHz i.e. current PWM Period (ARR) to pHandle->hzPeriod */
+    uint16_t arr = (uint16_t)(1000000U / pHandle->hzPeriod) - 1U;
 
-    STATUS_TYPE status = PWMInitTimBaseConfig (pHandle);
+    STATUS_TYPE status = PWMInitTimBaseConfig (pHandle, prescaler, arr);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize timer base configuration");
         return status;
@@ -280,25 +285,16 @@ STATUS_TYPE PWMStart (PWMHandle* pHandle) {
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE PWMSend (PWMHandle* pHandle, uint32_t usTargetDutyCycle) {
+STATUS_TYPE PWMSend (PWMHandle* pHandle, uint32_t usUpTime) {
 
-    // 1,000,000 Hz / ARR = 50Hz --> ARR = 20,000
-    // 1.5ms duty cycle = td (target duty cycle)
-    // td / period = percentage
-    // CCR / ARR = percentage
-    // CCR = ARR * (1500us / 20000us)
-
-    // 1,000,000 Hz / ARR = 2000Hz --> ARR = 500
-    // 250us duty cycle = td (target duty cycle)
-    // td / period = percentage
-    // CCR / ARR = percentage
-    // CCR = ARR * (250us / 500us)
-
-    // *pCCR = (uint16_t)pPWM->usTargetDutyCycle;
     if (PWM_CHECK_OK (pHandle) != TRUE) {
         LOG_ERROR ("Received invalid PWM pointer");
         return eSTATUS_FAILURE;
     }
-    PWM_SET_COMPARE (pHandle, usTargetDutyCycle);
+    uint32_t usPeriod         = pHandle->pTimerRegisters->ARR + 1U;
+    float dutyCyclePercentage = PWM_US2DC (usUpTime, usPeriod);
+    uint32_t compareValue =
+    (uint32_t)((dutyCyclePercentage / 100.0F) * (float)(usPeriod));
+    PWM_SET_COMPARE (pHandle, compareValue);
     return eSTATUS_SUCCESS;
 }
