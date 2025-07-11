@@ -123,7 +123,10 @@ void TaskMotionControlUpdate (void* pvParameters) {
     Vec3f maxAttitude = { .roll = 45.0F, .pitch = 45.0F, .yaw = 180.0F };
 
     float testServoAngle = 0.0F;
-    TIM13->CCR1          = 20000;
+    // TIM13->CCR1          = 1500;
+    // TIM13->PSC           = 64;
+    // TIM13->ARR           = 20000;
+
 
     if (IMUEnableInterrupts (&gIMU) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to enable IMU interrupts");
@@ -183,12 +186,15 @@ void TaskMotionControlUpdate (void* pvParameters) {
 
         // leftServoPwmHandle.pTimerRegisters->CCR1 = 1500; // 0 * 10;
         // TIM13->CCR1 = 20000;
-        // status = TestServoMove2Angle (0.0F);
+        status = TestServoMove2Angle (0.0F);
 
 
         if ((xTaskGetTickCount () - logStart) >= logStep) {
 
             // TIM13->CCR1 = 20000;
+            LOG_INFO (
+            "TIM13 CCR1: %u ARR: %u PSC: %u", (uint16_t)TIM13->CCR1,
+            (uint16_t)TIM13->ARR, (uint16_t)TIM13->PSC);
 
             logStart = xTaskGetTickCount ();
 

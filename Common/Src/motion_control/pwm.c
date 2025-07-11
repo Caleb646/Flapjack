@@ -4,7 +4,7 @@
 #include "log.h"
 #include <stdint.h>
 
-STATUS_TYPE PWMInitTimBaseConfig (PWMHandle* pHandle, uint16_t prescaler, uint16_t arr) {
+STATUS_TYPE PWMInitTimBaseConfig (PWMHandle* pHandle) {
 
     if (pHandle == NULL || pHandle->pTimerRegisters == NULL) {
         return eSTATUS_FAILURE;
@@ -13,9 +13,9 @@ STATUS_TYPE PWMInitTimBaseConfig (PWMHandle* pHandle, uint16_t prescaler, uint16
     TIM_TypeDef* pTimerRegisters = pHandle->pTimerRegisters;
     uint32_t tmpcr1              = pTimerRegisters->CR1;
     /* Set the Autoreload value */
-    pTimerRegisters->ARR = arr; // 65535U;
+    pTimerRegisters->ARR = pHandle->arr_; // 65535U;
     /* Set the Prescaler value */
-    pTimerRegisters->PSC = prescaler;
+    pTimerRegisters->PSC = pHandle->psc_;
 
     /* Set the counter mode */
     // if (IS_TIM_COUNTER_MODE_SELECT_INSTANCE (pTimerRegisters)) {
@@ -257,17 +257,17 @@ STATUS_TYPE PWMInit (PWMHandle* pHandle) {
         return eSTATUS_FAILURE;
     }
     /* Prescale 64 MHz to 1MHz */
-    uint16_t prescaler = (uint16_t)(SystemCoreClock / 1000000U) - 1U;
+    pHandle->psc_ = (uint16_t)(SystemCoreClock / 1000000U) - 1U;
     // uint16_t prescaler = 100; // (uint16_t)(72000000U / 1000000U) - 1U;
     /* Scale  1MHz i.e. current PWM Period (ARR) to pHandle->hzPeriod */
     // uint16_t arr = (uint16_t)(1000000U / pHandle->hzPeriod) - 1U;
-    uint16_t arr = (uint16_t)(1000000U / pHandle->hzPeriod) - 1U;
+    pHandle->arr_ = (uint16_t)(1000000U / pHandle->hzPeriod) - 1U;
 
     // LOG_INFO("PWM Init - Timer: %s, Prescaler: %u, ARR: %u, Target: %u Hz",
     //          (pHandle->pTimerRegisters == TIM13) ? "TIM13" : "TIM8",
     //          prescaler, arr, (uint16_t)pHandle->hzPeriod);
 
-    STATUS_TYPE status = PWMInitTimBaseConfig (pHandle, prescaler, arr);
+    STATUS_TYPE status = PWMInitTimBaseConfig (pHandle);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize timer base configuration");
         return status;
@@ -319,7 +319,10 @@ STATUS_TYPE PWMSend (PWMHandle* pHandle, uint32_t usUpTime) {
     }
 
     /* ARR is synonymous with microseconds because the clock is prescaled to 1MHz */
-    uint32_t usPeriod         = pHandle->pTimerRegisters->ARR + 1U;
+    pHandle->pTimerRegisters->ARR = pHandle->arr_;
+    pHandle->pTimerRegisters->PSC = pHandle->psc_;
+
+    uint32_t usPeriod         = pHandle->arr_ + 1U;
     float dutyCyclePercentage = PWM_US2DC (usUpTime, usPeriod);
     uint32_t compareValue =
     (uint32_t)((dutyCyclePercentage / 100.0F) * (float)(usPeriod));

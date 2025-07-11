@@ -52,6 +52,8 @@ typedef struct {
     TIM_TypeDef* pTimerRegisters;
     uint32_t timerChannelID;
     uint32_t hzPeriod; // PWM period frequency in Hz
+    uint16_t psc_;
+    uint16_t arr_;
 } PWMHandle;
 
 STATUS_TYPE PWMInit (PWMHandle* pHandle);
