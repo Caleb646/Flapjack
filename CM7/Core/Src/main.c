@@ -304,15 +304,15 @@ int main (void) {
         LOG_ERROR ("Failed to init Flight Context");
     }
 
-    PWMHandle leftMotorPwmHandle = { // .pTimerHandle    = &htim8,
-                                     .pTimerRegisters = TIM8,
-                                     .timerChannelID  = TIM_CHANNEL_1,
-                                     .hzPeriod        = 4000
+    PWMConfig leftMotorPwmHandle = { // .pTimerHandle    = &htim8,
+                                     .pTimer    = TIM8,
+                                     .channelID = TIM_CHANNEL_1,
+                                     .hzPeriod  = 4000
     };
-    PWMHandle leftServoPwmHandle = { // .pTimerHandle    = &htim13,
-                                     .pTimerRegisters = TIM13,
-                                     .timerChannelID  = TIM_CHANNEL_1,
-                                     .hzPeriod        = 50
+    PWMConfig leftServoPwmHandle = { // .pTimerHandle    = &htim13,
+                                     .pTimer    = TIM13,
+                                     .channelID = TIM_CHANNEL_1,
+                                     .hzPeriod  = 50
     };
     status = ActuatorsInit (leftMotorPwmHandle, leftServoPwmHandle);
     if (status != eSTATUS_SUCCESS) {

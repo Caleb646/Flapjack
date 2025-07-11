@@ -1,4 +1,5 @@
 "./Common/Src/common.o"
+"./Common/Src/dma.o"
 "./Common/Src/flight_context.o"
 "./Common/Src/init.o"
 "./Common/Src/log.o"

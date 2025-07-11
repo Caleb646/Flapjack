@@ -6,16 +6,26 @@
 
 STATUS_TYPE PWMInitTimBaseConfig (PWMHandle* pHandle) {
 
-    if (pHandle == NULL || pHandle->pTimerRegisters == NULL) {
+    if (pHandle == NULL || pHandle->timer.Instance == NULL) {
         return eSTATUS_FAILURE;
     }
 
-    TIM_TypeDef* pTimerRegisters = pHandle->pTimerRegisters;
-    uint32_t tmpcr1              = pTimerRegisters->CR1;
-    /* Set the Autoreload value */
-    pTimerRegisters->ARR = pHandle->arr_; // 65535U;
-    /* Set the Prescaler value */
-    pTimerRegisters->PSC = pHandle->psc_;
+    TIM_TypeDef* pTimerRegisters = pHandle->timer.Instance;
+
+    if (pTimerRegisters == TIM8) {
+        __HAL_RCC_TIM8_CLK_ENABLE ();
+    } else if (pTimerRegisters == TIM13) {
+        __HAL_RCC_TIM13_CLK_ENABLE ();
+    } else {
+        LOG_ERROR ("Invalid timer registers pointer: 0x%X", pTimerRegisters);
+        return eSTATUS_FAILURE;
+    }
+
+    uint32_t tmpcr1 = pTimerRegisters->CR1;
+    /* Set the Autoreload value 0 to 65535 */
+    pTimerRegisters->ARR = pHandle->timer.Init.Period;
+    /* Set the Prescaler value 0 to 65535 */
+    pTimerRegisters->PSC = pHandle->timer.Init.Prescaler;
 
     /* Set the counter mode */
     // if (IS_TIM_COUNTER_MODE_SELECT_INSTANCE (pTimerRegisters)) {
@@ -29,8 +39,13 @@ STATUS_TYPE PWMInitTimBaseConfig (PWMHandle* pHandle) {
         tmpcr1 |= (uint32_t)TIM_CLOCKDIVISION_DIV1;
     }
 
-    /* Set the auto-reload preload */
-    pTimerRegisters->CR1 |= TIM_CR1_ARPE;
+    /* Set the auto-reload preload to ENABLED */
+    if (pHandle->timer.Init.AutoReloadPreload == TIM_AUTORELOAD_PRELOAD_ENABLE) {
+        pTimerRegisters->CR1 |= TIM_CR1_ARPE;
+    } else {
+        pTimerRegisters->CR1 &= ~TIM_CR1_ARPE;
+    }
+    // pTimerRegisters->CR1 |= TIM_CR1_ARPE;
     // MODIFY_REG (tmpcr1, TIM_CR1_ARPE, TIM_AUTORELOAD_PRELOAD_ENABLE);
     // tmpcr1 &= ~TIM_CR1_ARPE;
     // tmpcr1 |= TIM_AUTORELOAD_PRELOAD_ENABLE;
@@ -49,19 +64,32 @@ STATUS_TYPE PWMInitTimBaseConfig (PWMHandle* pHandle) {
        and the repetition counter (only for advanced timer) value immediately */
 
     /* Enable Update Event (UEV) by clearing Update Disable (UDIS) bit */
-    pTimerRegisters->CR1 &= ~TIM_CR1_UDIS;
-    pTimerRegisters->EGR = TIM_EGR_UG;
-    while ((pTimerRegisters->EGR & TIM_EGR_UG) == SET) {
-    }
-
-    while (pTimerRegisters->SR & TIM_SR_UIF) {
-        pTimerRegisters->SR = 0; /* Clear update flag. */
-    }
     /*
-     * Enable UEV by setting UG bit to load data from preload to active
-     * registers
+     * The UEV (update event) event can be disabled by software by setting
+     * the UDIS bit in the TIMx_CR1 register. This is to avoid updating the
+     * shadow registers while writing new values in the preload registers.
+     * Then no update event occurs until the UDIS bit has been written to
+     * 0. However, the counter restarts from 0, as well as the counter of
+     * the prescaler (but the prescale rate does not change). In addition,
+     * if the URS bit (update request selection) in TIMx_CR1 register is
+     * set, setting the UG bit generates an update event UEV but without
+     * setting the UIF flag (thus no interrupt is sent). This is to avoid
+     * generating both update and capture interrupts when clearing the
+     * counter on the capture event.
      */
+    pTimerRegisters->CR1 |= TIM_CR1_URS;
     pTimerRegisters->EGR |= TIM_EGR_UG;
+    pTimerRegisters->CR1 &= ~TIM_CR1_UDIS;
+    /* UIF flag shouldn't be set but to avoid spurious interrupts set it to 0 */
+    // Ensure the EGR is processed
+    // clang-format off
+    while ((pTimerRegisters->EGR & TIM_EGR_UG) == SET);
+    // clang-format on
+    pTimerRegisters->SR = ~TIM_SR_UIF; /* Clear update flag. */
+    // while (pTimerRegisters->SR & TIM_SR_UIF) {
+    //     pTimerRegisters->SR = 0; /* Clear update flag. */
+    // }
+    // pTimerRegisters->EGR |= TIM_EGR_UG;
 
     pTimerRegisters->CR1 = tmpcr1;
 
@@ -70,12 +98,12 @@ STATUS_TYPE PWMInitTimBaseConfig (PWMHandle* pHandle) {
 
 STATUS_TYPE PWMInitChannel (PWMHandle* pHandle) {
 
-    if (pHandle == NULL || pHandle->pTimerRegisters == NULL) {
+    if (PWM_CHECK_OK (pHandle) == FALSE) {
         return eSTATUS_FAILURE;
     }
 
-    uint32_t timerChannelID      = pHandle->timerChannelID;
-    TIM_TypeDef* pTimerRegisters = pHandle->pTimerRegisters;
+    uint32_t timerChannelID      = pHandle->channelID;
+    TIM_TypeDef* pTimerRegisters = pHandle->timer.Instance;
     if (timerChannelID == TIM_CHANNEL_1 && IS_TIM_CC1_INSTANCE (pTimerRegisters)) {
         uint32_t tmpccmrx;
         uint32_t tmpccer;
@@ -195,15 +223,15 @@ STATUS_TYPE PWMInitChannel (PWMHandle* pHandle) {
 }
 
 STATUS_TYPE PWMInitGPIO (PWMHandle* pHandle) {
-    if (pHandle == NULL || pHandle->pTimerRegisters == NULL) {
+    if (PWM_CHECK_OK (pHandle) == FALSE) {
         LOG_ERROR ("Received invalid PWM handle or timer registers pointer");
         return eSTATUS_FAILURE;
     }
-    TIM_TypeDef* pTimerRegisters     = pHandle->pTimerRegisters;
+    TIM_TypeDef* pTimerRegisters     = pHandle->timer.Instance;
     GPIO_InitTypeDef GPIO_InitStruct = { 0 };
     if (pTimerRegisters == TIM8) {
         /* Peripheral clock enable */
-        __HAL_RCC_TIM8_CLK_ENABLE ();
+        // __HAL_RCC_TIM8_CLK_ENABLE ();
         __HAL_RCC_GPIOC_CLK_ENABLE ();
         __HAL_RCC_GPIOJ_CLK_ENABLE ();
         /* TIM8 GPIO Configuration
@@ -228,7 +256,7 @@ STATUS_TYPE PWMInitGPIO (PWMHandle* pHandle) {
 
     } else if (pTimerRegisters == TIM13) {
         /* Peripheral clock enable */
-        __HAL_RCC_TIM13_CLK_ENABLE ();
+        // __HAL_RCC_TIM13_CLK_ENABLE ();
         __HAL_RCC_GPIOF_CLK_ENABLE ();
         /* TIM13 GPIO Configuration
          * PF8     ------> TIM13_CH1
@@ -250,36 +278,44 @@ STATUS_TYPE PWMInitGPIO (PWMHandle* pHandle) {
 }
 
 
-STATUS_TYPE PWMInit (PWMHandle* pHandle) {
+STATUS_TYPE PWMInit (PWMConfig* pConfig, PWMHandle* pOutHandle) {
 
-    if (pHandle == NULL || pHandle->pTimerRegisters == NULL) {
-        LOG_ERROR ("PWM handle pointer or timer registers pointer is NULL");
+    if (pOutHandle == NULL) {
+        LOG_ERROR ("PWM output handle pointer is NULL");
         return eSTATUS_FAILURE;
     }
+
+    if (pConfig == NULL || pConfig->pTimer == NULL) {
+        LOG_ERROR ("Received invalid PWM configuration pointer or timer pointer");
+        return eSTATUS_FAILURE;
+    }
+
+    memset (pOutHandle, 0, sizeof (PWMHandle));
+    pOutHandle->timer.Instance = pConfig->pTimer;
+    pOutHandle->channelID      = pConfig->channelID;
+    pOutHandle->timer.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
     /* Prescale 64 MHz to 1MHz */
-    pHandle->psc_ = (uint16_t)(SystemCoreClock / 1000000U) - 1U;
-    // uint16_t prescaler = 100; // (uint16_t)(72000000U / 1000000U) - 1U;
-    /* Scale  1MHz i.e. current PWM Period (ARR) to pHandle->hzPeriod */
-    // uint16_t arr = (uint16_t)(1000000U / pHandle->hzPeriod) - 1U;
-    pHandle->arr_ = (uint16_t)(1000000U / pHandle->hzPeriod) - 1U;
+    pOutHandle->timer.Init.Prescaler = (uint16_t)(SystemCoreClock / 1000000U) - 1U;
+    /* Scale  1MHz i.e. current PWM Period (ARR) to pConfig->hzPeriod */
+    pOutHandle->timer.Init.Period = (uint16_t)(1000000U / pConfig->hzPeriod) - 1U;
 
     // LOG_INFO("PWM Init - Timer: %s, Prescaler: %u, ARR: %u, Target: %u Hz",
     //          (pHandle->pTimerRegisters == TIM13) ? "TIM13" : "TIM8",
     //          prescaler, arr, (uint16_t)pHandle->hzPeriod);
 
-    STATUS_TYPE status = PWMInitTimBaseConfig (pHandle);
+    STATUS_TYPE status = PWMInitTimBaseConfig (pOutHandle);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize timer base configuration");
         return status;
     }
 
-    status = PWMInitGPIO (pHandle);
+    status = PWMInitGPIO (pOutHandle);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize GPIO for timer");
         return status;
     }
 
-    status = PWMInitChannel (pHandle);
+    status = PWMInitChannel (pOutHandle);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize PWM channel");
         return status;
@@ -288,44 +324,48 @@ STATUS_TYPE PWMInit (PWMHandle* pHandle) {
     return eSTATUS_SUCCESS;
 }
 
+STATUS_TYPE PWMDMAInit (PWMDMAHandle* pOutHandle, PWMConfig* pConfig) {
+}
+
 STATUS_TYPE PWMStart (PWMHandle* pHandle) {
-    if (pHandle == NULL || pHandle->pTimerRegisters == NULL) {
+    if (PWM_CHECK_OK (pHandle) == FALSE) {
         LOG_ERROR ("Received invalid PWM pointer");
         return eSTATUS_FAILURE;
     }
 
     /* 0x1FU = 31 bits max shift */
-    uint32_t tmp = TIM_CCER_CC1E << (pHandle->timerChannelID & 0x1FU);
+    uint32_t tmp = TIM_CCER_CC1E << (pHandle->channelID & 0x1FU);
     /* Reset the CCxE Bit */
-    pHandle->pTimerRegisters->CCER &= ~tmp;
+    pHandle->timer.Instance->CCER &= ~tmp;
     /* Set or reset the CCxE Bit */
     /* 0x1FU = 31 bits max shift */
-    pHandle->pTimerRegisters->CCER |=
-    (uint32_t)(TIM_CCx_ENABLE << (pHandle->timerChannelID & 0x1FU));
+    pHandle->timer.Instance->CCER |=
+    (uint32_t)(TIM_CCx_ENABLE << (pHandle->channelID & 0x1FU));
 
-    if (IS_TIM_BREAK_INSTANCE (pHandle->pTimerRegisters) != FALSE) {
+    if (IS_TIM_BREAK_INSTANCE (pHandle->timer.Instance) != FALSE) {
         /* Enable the Main Output */
-        pHandle->pTimerRegisters->BDTR |= TIM_BDTR_MOE;
+        pHandle->timer.Instance->BDTR |= TIM_BDTR_MOE;
     }
-    pHandle->pTimerRegisters->CR1 |= TIM_CR1_CEN;
+    pHandle->timer.Instance->CR1 |= TIM_CR1_CEN;
     return eSTATUS_SUCCESS;
 }
 
 STATUS_TYPE PWMSend (PWMHandle* pHandle, uint32_t usUpTime) {
 
-    if (PWM_CHECK_OK (pHandle) != TRUE) {
+    if (PWM_CHECK_OK (pHandle) == FALSE) {
         LOG_ERROR ("Received invalid PWM pointer");
         return eSTATUS_FAILURE;
     }
 
     /* ARR is synonymous with microseconds because the clock is prescaled to 1MHz */
-    pHandle->pTimerRegisters->ARR = pHandle->arr_;
-    pHandle->pTimerRegisters->PSC = pHandle->psc_;
+    /* Set ARR and PSC here because sometimes they don't get set properly */
+    pHandle->timer.Instance->ARR = pHandle->timer.Init.Period;
+    pHandle->timer.Instance->PSC = pHandle->timer.Init.Prescaler;
 
-    uint32_t usPeriod         = pHandle->arr_ + 1U;
-    float dutyCyclePercentage = PWM_US2DC (usUpTime, usPeriod);
-    uint32_t compareValue =
-    (uint32_t)((dutyCyclePercentage / 100.0F) * (float)(usPeriod));
+    // uint32_t usPeriod         = pHandle->arr_ + 1U;
+    // float dutyCyclePercentage = PWM_US2DC (usUpTime, usPeriod);
+    // uint32_t compareValue =
+    // (uint32_t)((dutyCyclePercentage / 100.0F) * (float)(usPeriod));
 
     /* Debug output to understand what's happening */
     // LOG_INFO("PWM Send - ARR: %u, Period: %u us, Pulse: %u us, Duty: %u%%, CCR: %u",
@@ -333,6 +373,6 @@ STATUS_TYPE PWMSend (PWMHandle* pHandle, uint32_t usUpTime) {
     //          (uint16_t)usPeriod, (uint16_t)usUpTime,
     //          (uint16_t)dutyCyclePercentage, (uint16_t)compareValue);
 
-    PWM_SET_COMPARE (pHandle, compareValue);
+    PWM_SET_COMPARE (pHandle, usUpTime);
     return eSTATUS_SUCCESS;
 }
