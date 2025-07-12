@@ -47,10 +47,22 @@
         }                                                                         \
     } while (0)
 
+typedef enum {
+    eTIM_DMA_ID_UPDATE = TIM_DMA_ID_UPDATE, /*!< Index of the DMA handle used for Update DMA requests */
+    eTIM_DMA_ID_CC1 = TIM_DMA_ID_CC1, /*!< Index of the DMA handle used for Capture/Compare 1 DMA requests */
+    eTIM_DMA_ID_CC2 = TIM_DMA_ID_CC2, /*!< Index of the DMA handle used for Capture/Compare 2 DMA requests */
+    eTIM_DMA_ID_CC3 = TIM_DMA_ID_CC3, /*!< Index of the DMA handle used for Capture/Compare 3 DMA requests */
+    eTIM_DMA_ID_CC4 = TIM_DMA_ID_CC4, /*!< Index of the DMA handle used for Capture/Compare 4 DMA requests */
+    eTIM_DMA_ID_COMMUTATION = TIM_DMA_ID_COMMUTATION, /*!< Index of the DMA handle used for Commutation DMA requests */
+    eTIM_DMA_ID_TRIGGER = TIM_DMA_ID_TRIGGER /*!< Index of the DMA handle used for Trigger DMA requests */
+} eTIM_DMA_REGIDX;
+
 typedef struct {
     TIM_TypeDef* pTimer;
     uint32_t channelID;
-    uint32_t hzPeriod; // PWM period frequency in Hz
+    uint32_t hzPeriod;       // PWM period frequency in Hz
+    uint16_t dmaRegIDXs[7];  // DMA register indices for the timer channels
+    uint16_t dmaRegIDXCount; // Number of DMA register indices
 } PWMConfig;
 
 typedef struct {
@@ -58,20 +70,13 @@ typedef struct {
     uint32_t channelID;
 } PWMHandle;
 
-
 typedef struct {
-    TIM_TypeDef* pTimer;
-    uint32_t channelID;
-    uint32_t hzPeriod; // PWM period frequency in Hz
-} PWMDMAConfig;
-
-typedef struct {
-    PWMHandle handle;
-    DMA_HandleTypeDef dma;
+    PWMHandle tim;
+    DMA_HandleTypeDef* pDMA;
 } PWMDMAHandle;
 
 STATUS_TYPE PWMInit (PWMConfig* pConfig, PWMHandle* pOutHandle);
-STATUS_TYPE PWMDMAInit (PWMDMAHandle* pOutHandle, PWMConfig* pConfig);
+STATUS_TYPE PWMDMAInit (PWMConfig* pConfig, PWMDMAHandle* pOutHandle);
 STATUS_TYPE PWMStart (PWMHandle* pHandle);
 STATUS_TYPE PWMSend (PWMHandle* pHandle, uint32_t usUpTime);
 

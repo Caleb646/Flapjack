@@ -31,12 +31,14 @@
 #include "timers.h"
 
 #include "common.h"
+#include "dma.h"
 #include "flight_context.h"
 #include "log.h"
 #include "motion_control/actuators.h"
 #include "motion_control/filter.h"
 #include "sensors/imu/imu.h"
 #include "sync.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -260,6 +262,10 @@ int main (void) {
     }
     // Wait for CM4 to initialize UART
     HAL_Delay (1000);
+
+    if (DMASystemInit () != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to init DMA system");
+    }
 
     STATUS_TYPE status = eSTATUS_SUCCESS;
     /*

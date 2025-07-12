@@ -1,8 +1,10 @@
 #include "motion_control/pwm.h"
 #include "common.h"
+#include "dma.h"
 #include "hal.h"
 #include "log.h"
 #include <stdint.h>
+
 
 STATUS_TYPE PWMInitTimBaseConfig (PWMHandle* pHandle) {
 
@@ -45,24 +47,11 @@ STATUS_TYPE PWMInitTimBaseConfig (PWMHandle* pHandle) {
     } else {
         pTimerRegisters->CR1 &= ~TIM_CR1_ARPE;
     }
-    // pTimerRegisters->CR1 |= TIM_CR1_ARPE;
-    // MODIFY_REG (tmpcr1, TIM_CR1_ARPE, TIM_AUTORELOAD_PRELOAD_ENABLE);
-    // tmpcr1 &= ~TIM_CR1_ARPE;
-    // tmpcr1 |= TIM_AUTORELOAD_PRELOAD_ENABLE;
-    /* NOTE: DISABLING Auto-Reload Preload */
-    // tmpcr1 &= ~TIM_AUTORELOAD_PRELOAD_ENABLE;
 
     if (IS_TIM_REPETITION_COUNTER_INSTANCE (pTimerRegisters)) {
         /* Set the Repetition Counter value */
         pTimerRegisters->RCR = 0U;
     }
-
-    /* Disable Update Event (UEV) with Update Generation (UG)
-       by changing Update Request Source (URS) to avoid Update flag (UIF) */
-    // pTimerRegisters->CR1 |= TIM_CR1_URS;
-    /* Generate an update event to reload the Prescaler
-       and the repetition counter (only for advanced timer) value immediately */
-
     /* Enable Update Event (UEV) by clearing Update Disable (UDIS) bit */
     /*
      * The UEV (update event) event can be disabled by software by setting
@@ -85,13 +74,13 @@ STATUS_TYPE PWMInitTimBaseConfig (PWMHandle* pHandle) {
     // clang-format off
     while ((pTimerRegisters->EGR & TIM_EGR_UG) == SET);
     // clang-format on
-    pTimerRegisters->SR = ~TIM_SR_UIF; /* Clear update flag. */
-    // while (pTimerRegisters->SR & TIM_SR_UIF) {
-    //     pTimerRegisters->SR = 0; /* Clear update flag. */
-    // }
-    // pTimerRegisters->EGR |= TIM_EGR_UG;
-
+    pTimerRegisters->SR  = ~TIM_SR_UIF; /* Clear update flag. */
     pTimerRegisters->CR1 = tmpcr1;
+
+    pHandle->timer.DMABurstState = HAL_DMA_BURST_STATE_READY;
+    TIM_CHANNEL_STATE_SET_ALL (&pHandle->timer, HAL_TIM_CHANNEL_STATE_READY);
+    TIM_CHANNEL_N_STATE_SET_ALL (&pHandle->timer, HAL_TIM_CHANNEL_STATE_READY);
+    pHandle->timer.State = HAL_TIM_STATE_READY;
 
     return eSTATUS_SUCCESS;
 }
@@ -299,10 +288,6 @@ STATUS_TYPE PWMInit (PWMConfig* pConfig, PWMHandle* pOutHandle) {
     /* Scale  1MHz i.e. current PWM Period (ARR) to pConfig->hzPeriod */
     pOutHandle->timer.Init.Period = (uint16_t)(1000000U / pConfig->hzPeriod) - 1U;
 
-    // LOG_INFO("PWM Init - Timer: %s, Prescaler: %u, ARR: %u, Target: %u Hz",
-    //          (pHandle->pTimerRegisters == TIM13) ? "TIM13" : "TIM8",
-    //          prescaler, arr, (uint16_t)pHandle->hzPeriod);
-
     STATUS_TYPE status = PWMInitTimBaseConfig (pOutHandle);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize timer base configuration");
@@ -322,9 +307,6 @@ STATUS_TYPE PWMInit (PWMConfig* pConfig, PWMHandle* pOutHandle) {
     }
 
     return eSTATUS_SUCCESS;
-}
-
-STATUS_TYPE PWMDMAInit (PWMDMAHandle* pOutHandle, PWMConfig* pConfig) {
 }
 
 STATUS_TYPE PWMStart (PWMHandle* pHandle) {
@@ -374,5 +356,38 @@ STATUS_TYPE PWMSend (PWMHandle* pHandle, uint32_t usUpTime) {
     //          (uint16_t)dutyCyclePercentage, (uint16_t)compareValue);
 
     PWM_SET_COMPARE (pHandle, usUpTime);
+    return eSTATUS_SUCCESS;
+}
+
+STATUS_TYPE PWMDMAInit (PWMConfig* pTimConfig, DMAConfig* pDMAConfig, PWMDMAHandle* pOutHandle) {
+    if (
+    pOutHandle == NULL || pTimConfig == NULL || pTimConfig->pTimer == NULL ||
+    pDMAConfig == NULL || pDMAConfig->pDMA == NULL) {
+        LOG_ERROR ("Received invalid PWM DMA handle or configuration pointer");
+        return eSTATUS_FAILURE;
+    }
+
+    memset (pOutHandle, 0, sizeof (PWMDMAHandle));
+    STATUS_TYPE status = PWMInit (pTimConfig, &pOutHandle->tim);
+    if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to initialize PWM for DMA");
+        return status;
+    }
+
+    status = DMAInit (pDMAConfig, &pOutHandle->pDMA);
+    if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to initialize DMA");
+        return status;
+    }
+
+    for (uint16_t i = 0; i < pTimConfig->dmaRegIDXCount; i++) {
+        if (pTimConfig->dmaRegIDXs[i] >= 7U) {
+            LOG_ERROR ("Invalid DMA register index: %u", pTimConfig->dmaRegIDXs[i]);
+            return eSTATUS_FAILURE;
+        }
+        pOutHandle->tim.timer.hdma[pTimConfig->dmaRegIDXs[i]] = pOutHandle->pDMA;
+    }
+    pOutHandle->pDMA->Parent = &pOutHandle->tim.timer;
+
     return eSTATUS_SUCCESS;
 }
