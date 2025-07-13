@@ -64,7 +64,7 @@ typedef struct {
 
 /* Functions */
 STATUS_TYPE
-DShotInit (DShotConfig* pConfig, PWMConfig* pTimConfig, DShotHandle* pOutHandle);
+DShotInit (DShotConfig dConfig, PWMConfig timConfig, DShotHandle* pOutHandle);
 STATUS_TYPE DShotStart (DShotHandle* pDShotHandle);
 STATUS_TYPE DShotWrite (DShotHandle* pDShotHandle, uint16_t motor_value);
 

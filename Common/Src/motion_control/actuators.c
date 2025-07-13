@@ -142,7 +142,7 @@ STATUS_TYPE ServoInit (PWMConfig config, Servo* pOutServo) {
 
     memset ((void*)pOutServo, 0, sizeof (Servo));
     Servo servo = { 0 };
-    if (PWMInit (&config, &servo.pwm) != eSTATUS_SUCCESS) {
+    if (PWMInit (config, &servo.pwm) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize PWM for Servo");
         return eSTATUS_FAILURE;
     }
@@ -186,7 +186,7 @@ STATUS_TYPE ServoWrite (Servo* pServo, float targetAngle) {
 
     targetAngle =
     clipf32 (targetAngle, -pServo->desc.maxAngle, pServo->desc.maxAngle);
-    return PWMSend (&pServo->pwm, (uint32_t)ServoAngle2PWM (pServo, targetAngle));
+    return PWMWrite (&pServo->pwm, (uint32_t)ServoAngle2PWM (pServo, targetAngle));
 }
 
 STATUS_TYPE MotorInit (PWMConfig config, Motor* pOutMotor) {
@@ -200,7 +200,7 @@ STATUS_TYPE MotorInit (PWMConfig config, Motor* pOutMotor) {
     DShotConfig dshotConfig = { 0 };
     dshotConfig.dshotType   = DSHOT150; // Set DShot frequency
 
-    if (DShotInit (&dshotConfig, &config, &motor.dshot) != eSTATUS_SUCCESS) {
+    if (DShotInit (dshotConfig, config, &motor.dshot) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize DShot for Motor");
         return eSTATUS_FAILURE;
     }

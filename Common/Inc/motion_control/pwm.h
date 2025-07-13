@@ -92,10 +92,10 @@ typedef struct {
     DMA_HandleTypeDef* pDMA;
 } PWM_DMAHandle;
 
-STATUS_TYPE PWMInit (PWMConfig* pConfig, PWMHandle* pOutHandle);
+STATUS_TYPE PWMInit (PWMConfig config, PWMHandle* pOutHandle);
 STATUS_TYPE
-PWMDMAInit (PWM_DMAConfig* pTimConfig, DMAConfig* pDMAConfig, PWM_DMAHandle* pOutHandle);
+PWMDMAInit (PWM_DMAConfig timConfig, DMAConfig dmaConfig, PWM_DMAHandle* pOutHandle);
 STATUS_TYPE PWMStart (PWMHandle* pHandle);
-STATUS_TYPE PWMSend (PWMHandle* pHandle, uint32_t usUpTime);
+STATUS_TYPE PWMWrite (PWMHandle* pHandle, uint32_t usUpTime);
 
 #endif // __MOTION_CONTROL_PWM_H

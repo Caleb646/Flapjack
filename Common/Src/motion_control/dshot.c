@@ -54,18 +54,17 @@ static void dshot_enable_dma_request (DShotHandle* pDShotHandle);
 
 
 STATUS_TYPE
-DShotInit (DShotConfig* pConfig, PWMConfig* pTimConfig, DShotHandle* pOutHandle) {
+DShotInit (DShotConfig dConfig, PWMConfig timConfig, DShotHandle* pOutHandle) {
 
-    if (pConfig == NULL || pOutHandle == NULL) {
+    if (pOutHandle == NULL) {
         LOG_ERROR ("Received invalid DShot configuration pointer or output handle pointer");
         return eSTATUS_FAILURE;
     }
 
     DShotHandle dshot = { 0 };
 
-    uint32_t timDmaRegIdx =
-    dshot_tim_channel_to_dma_ccx_id (pTimConfig->base.channelID);
-    PWM_DMAConfig pwm_DmaConfig = { .base = pTimConfig->base };
+    uint32_t timDmaRegIdx = dshot_tim_channel_to_dma_ccx_id (timConfig.base.channelID);
+    PWM_DMAConfig pwm_DmaConfig = { .base = timConfig.base };
     /*
      * Set the timer channel capture compare register to be mapped to the dma register index
      */
@@ -82,7 +81,7 @@ DShotInit (DShotConfig* pConfig, PWMConfig* pTimConfig, DShotHandle* pOutHandle)
     dmaConfig.direction = eDMA_DIRECTION_MEMORY_TO_PERIPH;
     dmaConfig.priority  = eDMA_PRIORITY_HIGH;
 
-    STATUS_TYPE status = PWMDMAInit (&pwm_DmaConfig, &dmaConfig, &dshot.pwm);
+    STATUS_TYPE status = PWMDMAInit (pwm_DmaConfig, dmaConfig, &dshot.pwm);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize PWM DMA for DShot");
         return eSTATUS_FAILURE;
@@ -106,7 +105,7 @@ DShotInit (DShotConfig* pConfig, PWMConfig* pTimConfig, DShotHandle* pOutHandle)
     PWMHandle* ppwm    = &dshot.pwm.tim;
     PWM_SET_PRESCALER (ppwm, prescaler);
 
-    DSHOTTYPE dshotType = pConfig->dshotType;
+    DSHOTTYPE dshotType = dConfig.dshotType;
     if (dshotType == DSHOT150) {
         // Closet us value to 6.67 us is 7 us
         PWM_SET_PERIOD (ppwm, 7);
