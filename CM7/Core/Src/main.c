@@ -96,11 +96,11 @@ void StartDefaultTask (void* argument);
 /* USER CODE BEGIN 0 */
 
 // NOLINTBEGIN
-IMU gIMU;
-FlightContext gFlightContext;
-FilterMadgwickContext gFilterMadgwickContext;
-PIDContext gPIDAngleContext;
-TaskHandle_t gpTaskMotionControlUpdate;
+IMU gIMU                                     = { 0 };
+FlightContext gFlightContext                 = { 0 };
+FilterMadgwickContext gFilterMadgwickContext = { 0 };
+PIDContext gPIDAngleContext                  = { 0 };
+TaskHandle_t gpTaskMotionControlUpdate       = { 0 };
 // NOLINTEND
 
 void HAL_GPIO_EXTI_Callback (uint16_t gpioPin) {
@@ -124,11 +124,15 @@ void TaskMotionControlUpdate (void* pvParameters) {
     Vec3f targetAttitude   = { 0.0F };
     Vec3f maxAttitude = { .roll = 45.0F, .pitch = 45.0F, .yaw = 180.0F };
 
-    float testServoAngle = 0.0F;
+    // float testServoAngle = 0.0F;
     // TIM13->CCR1          = 1500;
     // TIM13->PSC           = 64;
     // TIM13->ARR           = 20000;
 
+    if (ActuatorsStart () != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to start actuators");
+        return;
+    }
 
     if (IMUEnableInterrupts (&gIMU) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to enable IMU interrupts");
@@ -180,16 +184,11 @@ void TaskMotionControlUpdate (void* pvParameters) {
             continue;
         }
 
-        // status = PWMMixPIDnSend (pidAttitude,
-        // gFlightContext.targetThrottle); if (status != eSTATUS_SUCCESS) {
-        //     LOG_ERROR ("Failed to send PWM mix");
-        //     continue;
-        // }
-
-        // leftServoPwmHandle.pTimerRegisters->CCR1 = 1500; // 0 * 10;
-        // TIM13->CCR1 = 20000;
-        status = TestServoMove2Angle (0.0F);
-
+        status = ActuatorsWrite (pidAttitude, 0.5F);
+        if (status != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to write actuators");
+            continue;
+        }
 
         if ((xTaskGetTickCount () - logStart) >= logStep) {
 
@@ -297,30 +296,19 @@ int main (void) {
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to warm up Madgwick Filter");
     }
-    // LOG_INFO ("Madgwick calibrated attitude");
-    // LOG_DATA_CURRENT_ATTITUDE ()
-
-    status = PIDInit (&gPIDAngleContext);
-    if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to init PID");
-    }
 
     status = FlightContextInit (&gFlightContext);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to init Flight Context");
     }
 
-    PWMConfig leftMotorPwmHandle = { // .pTimerHandle    = &htim8,
-                                     .pTimer    = TIM8,
-                                     .channelID = TIM_CHANNEL_1,
-                                     .hzPeriod  = 4000
+    PWMConfig left_Motor = {
+        .base = { .pTimer = TIM8, .channelID = TIM_CHANNEL_1, .hzPeriod = 0 }
     };
-    PWMConfig leftServoPwmHandle = { // .pTimerHandle    = &htim13,
-                                     .pTimer    = TIM13,
-                                     .channelID = TIM_CHANNEL_1,
-                                     .hzPeriod  = 50
+    PWMConfig left_Servo = {
+        .base = { .pTimer = TIM13, .channelID = TIM_CHANNEL_1, .hzPeriod = 50 }
     };
-    status = ActuatorsInit (leftMotorPwmHandle, leftServoPwmHandle);
+    status = ActuatorsInit (left_Motor, left_Servo);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to init Actuators");
     }

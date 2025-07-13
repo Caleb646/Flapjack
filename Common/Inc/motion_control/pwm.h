@@ -2,12 +2,21 @@
 #define __MOTION_CONTROL_PWM_H
 
 #include "common.h"
+#include "dma.h"
 #include "hal.h"
 #include "log.h"
+
 
 #define PWM_CHECK_OK(pPwmHandle) \
     ((pPwmHandle) != NULL && (pPwmHandle)->timer.Instance != NULL)
 
+#define PWM_CHECK_CONF_OK(pPwmConf) \
+    ((pPwmConf) != NULL && (pPwmConf)->base.pTimer != NULL)
+
+#define PWMDMA_CHECK_CONF_OK(pPwmConf) \
+    ((pPwmConf) != NULL && (pPwmConf)->base.pTimer != NULL)
+
+#define PWM_MHZ2HZ(x) ((x) * 1000000U)
 #define PWM_HZ2US(hz) \
     ((float)(1000000.0F /* <-- prescaled clock, 1 MHz */ / (float)(hz))) // Convert Hz to microseconds
 
@@ -60,10 +69,18 @@ typedef enum {
 typedef struct {
     TIM_TypeDef* pTimer;
     uint32_t channelID;
-    uint32_t hzPeriod;       // PWM period frequency in Hz
+    uint32_t hzPeriod; // PWM period frequency in Hz
+} PWMBaseConfig;
+
+typedef struct {
+    PWMBaseConfig base;
+} PWMConfig;
+
+typedef struct {
+    PWMBaseConfig base;
     uint16_t dmaRegIDXs[7];  // DMA register indices for the timer channels
     uint16_t dmaRegIDXCount; // Number of DMA register indices
-} PWMConfig;
+} PWM_DMAConfig;
 
 typedef struct {
     TIM_HandleTypeDef timer;
@@ -73,10 +90,11 @@ typedef struct {
 typedef struct {
     PWMHandle tim;
     DMA_HandleTypeDef* pDMA;
-} PWMDMAHandle;
+} PWM_DMAHandle;
 
 STATUS_TYPE PWMInit (PWMConfig* pConfig, PWMHandle* pOutHandle);
-STATUS_TYPE PWMDMAInit (PWMConfig* pConfig, PWMDMAHandle* pOutHandle);
+STATUS_TYPE
+PWMDMAInit (PWM_DMAConfig* pTimConfig, DMAConfig* pDMAConfig, PWM_DMAHandle* pOutHandle);
 STATUS_TYPE PWMStart (PWMHandle* pHandle);
 STATUS_TYPE PWMSend (PWMHandle* pHandle, uint32_t usUpTime);
 

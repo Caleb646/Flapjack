@@ -5,6 +5,8 @@
 #include "log.h"
 #include <stdint.h>
 
+#define MAX_DMA_TIM_REGISTERS 7U
+
 
 STATUS_TYPE PWMInitTimBaseConfig (PWMHandle* pHandle) {
 
@@ -19,7 +21,7 @@ STATUS_TYPE PWMInitTimBaseConfig (PWMHandle* pHandle) {
     } else if (pTimerRegisters == TIM13) {
         __HAL_RCC_TIM13_CLK_ENABLE ();
     } else {
-        LOG_ERROR ("Invalid timer registers pointer: 0x%X", pTimerRegisters);
+        LOG_ERROR ("Invalid timer registers pointer");
         return eSTATUS_FAILURE;
     }
 
@@ -274,19 +276,28 @@ STATUS_TYPE PWMInit (PWMConfig* pConfig, PWMHandle* pOutHandle) {
         return eSTATUS_FAILURE;
     }
 
-    if (pConfig == NULL || pConfig->pTimer == NULL) {
+    if (PWM_CHECK_CONF_OK (pConfig) == FALSE) {
         LOG_ERROR ("Received invalid PWM configuration pointer or timer pointer");
         return eSTATUS_FAILURE;
     }
 
     memset (pOutHandle, 0, sizeof (PWMHandle));
-    pOutHandle->timer.Instance = pConfig->pTimer;
-    pOutHandle->channelID      = pConfig->channelID;
+    pOutHandle->timer.Instance = pConfig->base.pTimer;
+    pOutHandle->channelID      = pConfig->base.channelID;
     pOutHandle->timer.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
-    /* Prescale 64 MHz to 1MHz */
-    pOutHandle->timer.Init.Prescaler = (uint16_t)(SystemCoreClock / 1000000U) - 1U;
-    /* Scale  1MHz i.e. current PWM Period (ARR) to pConfig->hzPeriod */
-    pOutHandle->timer.Init.Period = (uint16_t)(1000000U / pConfig->hzPeriod) - 1U;
+
+    if (pConfig->base.hzPeriod == 0) {
+        pOutHandle->timer.Init.Prescaler = 0;
+        pOutHandle->timer.Init.Period    = 0;
+    } else {
+        /* Prescale 64 MHz to 1MHz */
+        pOutHandle->timer.Init.Prescaler =
+        (uint16_t)(SystemCoreClock / 1000000U) - 1U;
+        /* Scale  1MHz i.e. current PWM Period (ARR) to pConfig->hzPeriod */
+        pOutHandle->timer.Init.Period =
+        (uint16_t)(1000000U / pConfig->base.hzPeriod) - 1U;
+    }
+
 
     STATUS_TYPE status = PWMInitTimBaseConfig (pOutHandle);
     if (status != eSTATUS_SUCCESS) {
@@ -359,16 +370,27 @@ STATUS_TYPE PWMSend (PWMHandle* pHandle, uint32_t usUpTime) {
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE PWMDMAInit (PWMConfig* pTimConfig, DMAConfig* pDMAConfig, PWMDMAHandle* pOutHandle) {
-    if (
-    pOutHandle == NULL || pTimConfig == NULL || pTimConfig->pTimer == NULL ||
-    pDMAConfig == NULL || pDMAConfig->pDMA == NULL) {
-        LOG_ERROR ("Received invalid PWM DMA handle or configuration pointer");
+STATUS_TYPE
+PWMDMAInit (PWM_DMAConfig* pTimConfig, DMAConfig* pDMAConfig, PWM_DMAHandle* pOutHandle) {
+
+    if (pOutHandle == NULL) {
+        LOG_ERROR ("Received nullptr for PWM_DMAHandle");
         return eSTATUS_FAILURE;
     }
 
-    memset (pOutHandle, 0, sizeof (PWMDMAHandle));
-    STATUS_TYPE status = PWMInit (pTimConfig, &pOutHandle->tim);
+    if (PWMDMA_CHECK_CONF_OK (pTimConfig) == FALSE) {
+        LOG_ERROR ("Received invalid PWM DMA configuration pointer or timer pointer");
+        return eSTATUS_FAILURE;
+    }
+
+    if (DMA_CHECK_CONF_OK (pDMAConfig) == FALSE) {
+        LOG_ERROR ("Received invalid DMA configuration pointer or DMA handle");
+        return eSTATUS_FAILURE;
+    }
+
+    memset (pOutHandle, 0, sizeof (PWM_DMAHandle));
+    PWMConfig pwmConfig = { .base = pTimConfig->base };
+    STATUS_TYPE status  = PWMInit (&pwmConfig, &pOutHandle->tim);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize PWM for DMA");
         return status;
@@ -380,8 +402,8 @@ STATUS_TYPE PWMDMAInit (PWMConfig* pTimConfig, DMAConfig* pDMAConfig, PWMDMAHand
         return status;
     }
 
-    for (uint16_t i = 0; i < pTimConfig->dmaRegIDXCount; i++) {
-        if (pTimConfig->dmaRegIDXs[i] >= 7U) {
+    for (uint16_t i = 0; i < pTimConfig->dmaRegIDXCount; ++i) {
+        if (pTimConfig->dmaRegIDXs[i] >= MAX_DMA_TIM_REGISTERS) {
             LOG_ERROR ("Invalid DMA register index: %u", pTimConfig->dmaRegIDXs[i]);
             return eSTATUS_FAILURE;
         }

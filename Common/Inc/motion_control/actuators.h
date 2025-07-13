@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "hal.h"
+#include "motion_control/dshot.h"
 #include "motion_control/pwm.h"
 #include <stdint.h>
 
@@ -38,18 +39,18 @@ typedef struct {
 } ServoDescriptor;
 
 typedef struct {
-    PWMHandle pwmHandle;
-    ServoDescriptor pwmDescriptor;
+    PWMHandle pwm;
+    ServoDescriptor desc;
 } Servo;
 
 typedef struct {
-    uint32_t usMinDutyCycle;
-    uint32_t usMaxDutyCycle;
+    uint32_t unused;
+    // uint32_t usMaxDutyCycle;
 } MotorDescriptor;
 
 typedef struct {
-    PWMHandle pwmHandle;
-    MotorDescriptor pwmDescriptor;
+    DShotHandle dshot;
+    MotorDescriptor desc;
 } Motor;
 
 typedef struct {
@@ -58,12 +59,12 @@ typedef struct {
     Vec3 right;
 } AxisMap;
 
-STATUS_TYPE UpdateTargetAttitudeThrottle (
-Vec3f maxAttitude,
-RadioPWMChannels radio,
-Vec3f* pOutputTargetAttitude,
-float* pOutputThrottle);
-
+// STATUS_TYPE UpdateTargetAttitudeThrottle (
+// Vec3f maxAttitude,
+// RadioPWMChannels radio,
+// Vec3f* pOutputTargetAttitude,
+// float* pOutputThrottle);
+// STATUS_TYPE PIDInit (PIDContext* pContext);
 STATUS_TYPE PIDUpdateAttitude (
 PIDContext* pidContext,
 Vec3f currentAttitude, // degrees
@@ -73,18 +74,24 @@ float dt,
 Vec3f* pOutputPIDAttitude // degrees
 );
 
-STATUS_TYPE PIDInit (PIDContext* pContext);
+STATUS_TYPE ServoInit (PWMConfig config, Servo* pOutServo);
+STATUS_TYPE ServoStart (Servo* pServo);
+STATUS_TYPE ServoWrite (Servo* pServo, float targetAngle);
+
+STATUS_TYPE MotorInit (PWMConfig config, Motor* pOutMotor);
+STATUS_TYPE MotorStart (Motor* pMotor);
+STATUS_TYPE MotorWrite (Motor* pMotor, uint16_t motorValue);
+
+STATUS_TYPE ActuatorsInit (PWMConfig left_ServoPWM, PWMConfig left_MotorPWM);
+STATUS_TYPE ActuatorsStart (void);
+STATUS_TYPE ActuatorsWrite (Vec3f pidAttitude, float targetThrottle);
+
+
 #ifdef UNIT_TEST
-float ServoAngle2PWM (ServoDescriptor* pServo, float targetAngle);
+float ServoAngle2PWM (Servo* pServo, float targetAngle);
+STATUS_TYPE
+ActuatorsMixPair (Servo* pServo, Motor* pMotor, Vec3f pidAttitude, float targetThrottle);
 #endif // UNIT_TEST
-STATUS_TYPE ServoMove2Angle (Servo* pServo, float targetAngle);
-STATUS_TYPE TestServoMove2Angle (float targetAngle);
 
-STATUS_TYPE PWMMixPIDnSend (Vec3f pidAttitude, float targetThrottle);
-STATUS_TYPE ActuatorsInit (PWMHandle leftMotorPWM, PWMHandle leftServoPWM);
-
-// void MotionControlUpdatePWM(
-//     AxisMap axisConf, Vec3 mmVelSteps, Vec3 mmAngVelSteps, void *devs, uint32_t nDevs
-// );
 
 #endif // MOTION_CONTROL_ACTUATORS_H

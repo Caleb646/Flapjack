@@ -5,6 +5,9 @@
 #include "log.h"
 #include <stdint.h>
 
+#define DMA_CHECK_CONF_OK(pDMAConf) \
+    ((pDMAConf) != NULL && (pDMAConf)->pDMA != NULL)
+
 typedef enum {
     eDMA_DIRECTION_PERIPH_TO_MEMORY = DMA_PERIPH_TO_MEMORY,
     eDMA_DIRECTION_MEMORY_TO_PERIPH = DMA_MEMORY_TO_PERIPH,
@@ -25,9 +28,10 @@ typedef struct {
 } DMAConfig;
 
 // Forward declaration of the PWM DMA handle structure
-// typedef struct __PWMDMAHandle PWMDMAHandle;
+// typedef struct __PWMDMAHandle PWM_DMAHandle;
 
 STATUS_TYPE DMASystemInit (void);
 STATUS_TYPE DMAInit (DMAConfig* pConfig, DMA_HandleTypeDef** ppOutHandle);
+DMA_HandleTypeDef* DMAGetUnusedStreamHandle (void);
 
 #endif /* DMA_H */

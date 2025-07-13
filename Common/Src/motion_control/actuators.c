@@ -1,6 +1,7 @@
 #include "motion_control/actuators.h"
 #include "flight_context.h"
 #include "log.h"
+#include "motion_control/dshot.h"
 #include <string.h>
 
 #define CHECK_SERVO_DESCRIPTOR_OK(pServoDesc)                      \
@@ -9,47 +10,26 @@
     (pServoDesc)->usMiddleDutyCycle != 0U && (pServoDesc)->usRightDutyCycle != 0U)
 
 #define CHECK_SERVO_OK(pServo) \
-    ((pServo) != NULL && PWM_CHECK_OK (&((pServo)->pwmHandle)))
+    ((pServo) != NULL && PWM_CHECK_OK (&((pServo)->pwm)))
 
+// STATUS_TYPE RadioUpdateTargetAttitudeThrottle (
+// Vec3f maxAttitude,
+// RadioPWMChannels radio,
+// Vec3f* pOutputTargetAttitude,
+// float* pOutputThrottle) {
 
-STATIC_TESTABLE_DECL float ServoAngle2PWM (ServoDescriptor* pServo, float targetAngle) {
-    if (CHECK_SERVO_DESCRIPTOR_OK (pServo) != TRUE) {
-        LOG_ERROR ("ServoDescriptor is not valid");
-        return 0.0F;
-    }
+//     *pOutputThrottle = clipf32 ((float)radio.channel1, 0.0F, 1.0F);
+//     pOutputTargetAttitude->roll =
+//     clipf32 ((float)radio.channel2, -1.0F, 1.0F) * maxAttitude.roll;
 
-    // Handle asymmetric servo ranges: map negative angles to
-    // [usLeftDutyCycle, usMiddleDutyCycle], positive to [usMiddleDutyCycle, usRightDutyCycle]
-    if (targetAngle < 0) {
-        return mapf32 (
-        targetAngle, -pServo->maxAngle, 0.0F,
-        (float)pServo->usLeftDutyCycle, (float)pServo->usMiddleDutyCycle);
-    } else if (targetAngle > 0) {
-        return mapf32 (
-        targetAngle, 0.0F, pServo->maxAngle,
-        (float)pServo->usMiddleDutyCycle, (float)pServo->usRightDutyCycle);
-    }
-    return (float)pServo->usMiddleDutyCycle;
-}
+//     pOutputTargetAttitude->pitch =
+//     clipf32 ((float)radio.channel3, -1.0F, 1.0F) * maxAttitude.pitch;
 
-STATUS_TYPE UpdateTargetAttitudeThrottle (
-Vec3f maxAttitude,
-RadioPWMChannels radio,
-Vec3f* pOutputTargetAttitude,
-float* pOutputThrottle) {
+//     pOutputTargetAttitude->yaw =
+//     clipf32 ((float)radio.channel4, -1.0F, 1.0F) * maxAttitude.yaw;
 
-    *pOutputThrottle = clipf32 ((float)radio.channel1, 0.0F, 1.0F);
-    pOutputTargetAttitude->roll =
-    clipf32 ((float)radio.channel2, -1.0F, 1.0F) * maxAttitude.roll;
-
-    pOutputTargetAttitude->pitch =
-    clipf32 ((float)radio.channel3, -1.0F, 1.0F) * maxAttitude.pitch;
-
-    pOutputTargetAttitude->yaw =
-    clipf32 ((float)radio.channel4, -1.0F, 1.0F) * maxAttitude.yaw;
-
-    return eSTATUS_SUCCESS;
-}
+//     return eSTATUS_SUCCESS;
+// }
 
 STATUS_TYPE PIDUpdateAttitude (
 PIDContext* pidContext,
@@ -125,21 +105,143 @@ Vec3f* pOutputPIDAttitude // degrees
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE PIDInit (PIDContext* pContext) {
-    memset ((void*)pContext, 0, sizeof (PIDContext));
+// STATUS_TYPE PIDInit (PIDContext* pContext) {
+//     memset ((void*)pContext, 0, sizeof (PIDContext));
+//     return eSTATUS_SUCCESS;
+// }
+
+STATIC_TESTABLE_DECL float ServoAngle2PWM (Servo* pServo, float targetAngle) {
+    if (CHECK_SERVO_OK (pServo) != TRUE) {
+        LOG_ERROR ("ServoDescriptor is not valid");
+        return 0.0F;
+    }
+
+    ServoDescriptor* pDesc = &pServo->desc;
+    // Handle asymmetric servo ranges: map negative angles to
+    // [usLeftDutyCycle, usMiddleDutyCycle], positive to [usMiddleDutyCycle, usRightDutyCycle]
+    if (targetAngle < 0) {
+        return mapf32 (
+        targetAngle, -pDesc->maxAngle, 0.0F, (float)pDesc->usLeftDutyCycle,
+        (float)pDesc->usMiddleDutyCycle);
+    }
+
+    if (targetAngle > 0) {
+        return mapf32 (
+        targetAngle, 0.0F, pDesc->maxAngle,
+        (float)pDesc->usMiddleDutyCycle, (float)pDesc->usRightDutyCycle);
+    }
+
+    return (float)pDesc->usMiddleDutyCycle;
+}
+
+STATUS_TYPE ServoInit (PWMConfig config, Servo* pOutServo) {
+    if (pOutServo == NULL) {
+        LOG_ERROR ("Received NULL pointer for Servo");
+        return eSTATUS_FAILURE;
+    }
+
+    memset ((void*)pOutServo, 0, sizeof (Servo));
+    Servo servo = { 0 };
+    if (PWMInit (&config, &servo.pwm) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to initialize PWM for Servo");
+        return eSTATUS_FAILURE;
+    }
+
+    ServoDescriptor servoDescriptor   = { 0 };
+    servoDescriptor.usLeftDutyCycle   = 1000;
+    servoDescriptor.usMiddleDutyCycle = 1500;
+    servoDescriptor.usRightDutyCycle  = 2000;
+    servoDescriptor.maxAngle          = 20;
+    servoDescriptor.curAngle          = 0;
+    servoDescriptor.rollMix           = -0.25F;
+    servoDescriptor.yawMix            = 0.5F;
+    servoDescriptor.pitchMix          = 0.5F;
+
+    servo.desc = servoDescriptor;
+    *pOutServo = servo;
+
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE ServoMove2Angle (Servo* pServo, float targetAngle) {
+STATUS_TYPE ServoStart (Servo* pServo) {
     if (CHECK_SERVO_OK (pServo) != TRUE) {
         LOG_ERROR ("Received invalid Servo pointer");
         return eSTATUS_FAILURE;
     }
 
-    targetAngle = clipf32 (
-    targetAngle, -pServo->pwmDescriptor.maxAngle, pServo->pwmDescriptor.maxAngle);
+    if (PWMStart (&pServo->pwm) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to start PWM for Servo");
+        return eSTATUS_FAILURE;
+    }
 
-    return PWMSend (&pServo->pwmHandle, (uint32_t)ServoAngle2PWM (&pServo->pwmDescriptor, targetAngle));
+    // Set initial angle to middle position
+    return ServoWrite (pServo, 0.0F);
+}
+
+STATUS_TYPE ServoWrite (Servo* pServo, float targetAngle) {
+    if (CHECK_SERVO_OK (pServo) != TRUE) {
+        LOG_ERROR ("Received invalid Servo pointer");
+        return eSTATUS_FAILURE;
+    }
+
+    targetAngle =
+    clipf32 (targetAngle, -pServo->desc.maxAngle, pServo->desc.maxAngle);
+    return PWMSend (&pServo->pwm, (uint32_t)ServoAngle2PWM (pServo, targetAngle));
+}
+
+STATUS_TYPE MotorInit (PWMConfig config, Motor* pOutMotor) {
+    if (pOutMotor == NULL) {
+        LOG_ERROR ("Received NULL pointer for Motor");
+        return eSTATUS_FAILURE;
+    }
+
+    memset ((void*)pOutMotor, 0, sizeof (Motor));
+    Motor motor             = { 0 };
+    DShotConfig dshotConfig = { 0 };
+    dshotConfig.dshotType   = DSHOT150; // Set DShot frequency
+
+    if (DShotInit (&dshotConfig, &config, &motor.dshot) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to initialize DShot for Motor");
+        return eSTATUS_FAILURE;
+    }
+
+    MotorDescriptor motorDescriptor = { 0 };
+    // motorDescriptor.usMinDutyCycle  = 50;
+    // motorDescriptor.usMaxDutyCycle  = 2000;
+
+    motor.desc = motorDescriptor;
+    *pOutMotor = motor;
+
+    return eSTATUS_SUCCESS;
+}
+
+STATUS_TYPE MotorStart (Motor* pMotor) {
+    if (pMotor == NULL) {
+        LOG_ERROR ("Received NULL pointer for Motor");
+        return eSTATUS_FAILURE;
+    }
+
+    if (DShotStart (&pMotor->dshot) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to start DShot for Motor");
+        return eSTATUS_FAILURE;
+    }
+
+    // Set initial throttle to minimum
+    return DShotWrite (&pMotor->dshot, DSHOT_MIN_THROTTLE);
+}
+
+STATUS_TYPE MotorWrite (Motor* pMotor, uint16_t motorValue) {
+    if (pMotor == NULL) {
+        LOG_ERROR ("Received NULL pointer for Motor");
+        return eSTATUS_FAILURE;
+    }
+
+    if (motorValue < DSHOT_MIN_THROTTLE || motorValue > DSHOT_MAX_THROTTLE) {
+        LOG_ERROR ("Motor value out of range: %u", motorValue);
+        return eSTATUS_FAILURE;
+    }
+
+    return DShotWrite (&pMotor->dshot, motorValue);
 }
 
 // NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
@@ -150,14 +252,11 @@ static Servo gLeftServo;
 // static Motor rightMotor;
 // static Servo rightServo;
 
-STATUS_TYPE TestServoMove2Angle (float targetAngle) {
-    return ServoMove2Angle (&gLeftServo, targetAngle);
-}
-
 /*
  * \param pidAttitude roll, pitch, and yaw are between -1 and 1
  */
-STATUS_TYPE PWMMixPIDnSend (Vec3f pidAttitude, float targetThrottle) {
+STATIC_TESTABLE_DECL STATUS_TYPE
+ActuatorsMixPair (Servo* pServo, Motor* pMotor, Vec3f pidAttitude, float targetThrottle) {
     /*
      *   NWU coordinate system:
      *       + x-axis pointing to the North
@@ -171,96 +270,76 @@ STATUS_TYPE PWMMixPIDnSend (Vec3f pidAttitude, float targetThrottle) {
     /*
      *  Left Motor Mixing
      */
-    float target        = 0.0F;
-    MotorDescriptor* pM = &gLeftMotor.pwmDescriptor;
-    target =
-    targetThrottle - pidAttitude.pitch + pidAttitude.roll + pidAttitude.yaw;
-    uint32_t usMotorTargetDutyCycle = (uint32_t)mapf32 (
-    target, -3.0F, 4.0F, (float)pM->usMinDutyCycle, (float)pM->usMaxDutyCycle);
+    // float target        = 0.0F;
+    // MotorDescriptor* pM = &gLeftMotor.pwmDescriptor;
+    // target =
+    // targetThrottle - pidAttitude.pitch + pidAttitude.roll + pidAttitude.yaw;
+    // uint32_t usMotorTargetDutyCycle = (uint32_t)mapf32 (
+    // target, -3.0F, 4.0F, (float)pM->usMinDutyCycle, (float)pM->usMaxDutyCycle);
 
     /*
      *  Left Servo Mixing
      */
-    ServoDescriptor* pSer = &gLeftServo.pwmDescriptor;
-    target                = pSer->pitchMix * pidAttitude.pitch +
-             pSer->rollMix * pidAttitude.roll + pSer->yawMix * pidAttitude.yaw;
+    ServoDescriptor* pServoDesc = &gLeftServo.desc;
+    float target = pServoDesc->pitchMix * pidAttitude.pitch +
+                   pServoDesc->rollMix * pidAttitude.roll +
+                   pServoDesc->yawMix * pidAttitude.yaw;
     // NOTE: Maybe Roll should have a negative impact on target angle. Meaning the magnitude of the target angle is closer to 0
     // the larger pid roll is.
     // float target = pSer->pitchMix * pidAttitude.pitch + pSer->yawMix * pidAttitude.yaw;
     // pSer->targetAngle = ( clipf32(target, -1.0f, 1.0f) * pSer->maxAngle ) / ( clipf32(pSer->rollMix * pidAttitude.roll, -1.0f, 1.0f) * pSer->maxAngle );
-    target         = clipf32 (target, -1.0F, 1.0F) * pSer->maxAngle;
-    pSer->curAngle = target;
-    uint32_t usServoTargetDutyCycle = (uint32_t)ServoAngle2PWM (pSer, target);
+    target = clipf32 (target, -1.0F, 1.0F) * pServoDesc->maxAngle;
+    pServoDesc->curAngle = target;
 
-    PWMSend (&gLeftMotor.pwmHandle, usMotorTargetDutyCycle);
-    PWMSend (&gLeftServo.pwmHandle, usServoTargetDutyCycle);
+    MotorWrite (pMotor, DSHOT_MIN_THROTTLE + (uint16_t)(targetThrottle * DSHOT_RANGE));
+    ServoWrite (pServo, target);
+    return eSTATUS_SUCCESS;
+}
+
+STATUS_TYPE ActuatorsInit (PWMConfig left_ServoPWM, PWMConfig left_MotorPWM) {
+
+    STATUS_TYPE status = ServoInit (left_ServoPWM, &gLeftServo);
+    if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to initialize left servo");
+        return status;
+    }
+
+    status = MotorInit (left_MotorPWM, &gLeftMotor);
+    if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to initialize left motor");
+        return status;
+    }
 
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE ActuatorsInit (PWMHandle leftMotorPWM, PWMHandle leftServoPWM) {
-    // // Prescale 64MHz clock to 1MHz
-    // PWM_SET_PRESCALER (&leftMotorPWM, 64);
-    // // Use ARR register to scale clock from 1MHz to 4000Hz (250us)
-    // PWM_SET_PERIOD (&leftMotorPWM, 250);
-    // // Set duty cycle to 0 percent
-    // PWM_SET_COMPARE (&leftMotorPWM, 0);
+STATUS_TYPE ActuatorsStart (void) {
 
-    // // Prescale 64MHz clock to 1MHz
-    // PWM_SET_PRESCALER (&leftServoPWM, 64);
-    // // Use ARR register to scale clock from 1MHz to 50Hz
-    // // 1MHz / 20,000 = 50Hz
-    // PWM_SET_PERIOD (&leftServoPWM, 20000);
-    // // Set duty cycle to 0 percent
-    // PWM_SET_COMPARE (&leftServoPWM, 0);
-    if (PWMInit (&leftMotorPWM) != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to init left motor PWM");
-        return eSTATUS_FAILURE;
-    }
-    if (PWMInit (&leftServoPWM) != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to init left servo PWM");
-        return eSTATUS_FAILURE;
+    STATUS_TYPE status = ServoStart (&gLeftServo);
+    if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to start left servo");
+        return status;
     }
 
-    if (PWMStart (&leftMotorPWM) != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to start left motor PWM");
-        return eSTATUS_FAILURE;
+    status = MotorStart (&gLeftMotor);
+    if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to start left motor");
+        return status;
     }
-
-    if (PWMStart (&leftServoPWM) != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to start left servo PWM");
-        return eSTATUS_FAILURE;
-    }
-
-    memset ((void*)&gLeftMotor, 0, sizeof (Motor));
-    memset ((void*)&gLeftServo, 0, sizeof (Servo));
-    // memset((void*)&rightMotor, 0, sizeof(Motor));
-    // memset((void*)&rightServo, 0, sizeof(Servo));
-
-    MotorDescriptor motorDescriptor;
-    memset ((void*)&motorDescriptor, 0, sizeof (MotorDescriptor));
-    motorDescriptor.usMinDutyCycle = 125;
-    motorDescriptor.usMaxDutyCycle = 250;
-
-    gLeftMotor.pwmDescriptor = motorDescriptor;
-    gLeftMotor.pwmHandle     = leftMotorPWM;
-
-    ServoDescriptor servoDescriptor;
-    memset ((void*)&servoDescriptor, 0, sizeof (ServoDescriptor));
-    servoDescriptor.usLeftDutyCycle   = 1000;
-    servoDescriptor.usMiddleDutyCycle = 1500;
-    servoDescriptor.usRightDutyCycle  = 2000;
-
-    servoDescriptor.maxAngle = 20;
-    servoDescriptor.curAngle = 0;
-
-    servoDescriptor.rollMix  = -0.25F;
-    servoDescriptor.yawMix   = 0.5F;
-    servoDescriptor.pitchMix = 0.5F;
-
-
-    gLeftServo.pwmDescriptor = servoDescriptor;
-    gLeftServo.pwmHandle     = leftServoPWM;
 
     return eSTATUS_SUCCESS;
+}
+
+STATUS_TYPE ActuatorsWrite (Vec3f pidAttitude, float targetThrottle) {
+    // if (
+    // pidAttitude.roll < -1.0F || pidAttitude.roll > 1.0F ||
+    // pidAttitude.pitch < -1.0F || pidAttitude.pitch > 1.0F ||
+    // pidAttitude.yaw < -1.0F || pidAttitude.yaw > 1.0F) {
+    //     LOG_ERROR (
+    //     "PID attitude values out of range: roll: %f, pitch: %f, yaw: %f",
+    //     pidAttitude.roll, pidAttitude.pitch, pidAttitude.yaw);
+    //     return eSTATUS_FAILURE;
+    // }
+
+    return ActuatorsMixPair (&gLeftServo, &gLeftMotor, pidAttitude, targetThrottle);
 }

@@ -16,49 +16,49 @@ DMA_HandleTypeDef gDMAStream_6 = { 0 };
  * @brief This function handles DMA1 stream0 global interrupt.
  */
 void DMA1_Stream0_IRQHandler (void) {
-    // HAL_DMA_IRQHandler (&hdma_tim2_ch3_up);
+    HAL_DMA_IRQHandler (&gDMAStream_0);
 }
 
 /**
  * @brief This function handles DMA1 stream1 global interrupt.
  */
 void DMA1_Stream1_IRQHandler (void) {
-    // HAL_DMA_IRQHandler (&hdma_tim2_ch3_up);
+    HAL_DMA_IRQHandler (&gDMAStream_1);
 }
 
 /**
  * @brief This function handles DMA1 stream2 global interrupt.
  */
 void DMA1_Stream2_IRQHandler (void) {
-    // HAL_DMA_IRQHandler (&hdma_tim2_ch3_up);
+    HAL_DMA_IRQHandler (&gDMAStream_2);
 }
 
 /**
  * @brief This function handles DMA1 stream3 global interrupt.
  */
 void DMA1_Stream3_IRQHandler (void) {
-    // HAL_DMA_IRQHandler (&hdma_tim5_ch4_trig);
+    HAL_DMA_IRQHandler (&gDMAStream_3);
 }
 
 /**
  * @brief This function handles DMA1 stream4 global interrupt.
  */
 void DMA1_Stream4_IRQHandler (void) {
-    // HAL_DMA_IRQHandler (&hdma_tim5_ch2);
+    HAL_DMA_IRQHandler (&gDMAStream_4);
 }
 
 /**
  * @brief This function handles DMA1 stream5 global interrupt.
  */
 void DMA1_Stream5_IRQHandler (void) {
-    // HAL_DMA_IRQHandler (&hdma_tim2_ch1);
+    HAL_DMA_IRQHandler (&gDMAStream_5);
 }
 
 /**
  * @brief This function handles DMA1 stream6 global interrupt.
  */
 void DMA1_Stream6_IRQHandler (void) {
-    // HAL_DMA_IRQHandler (&hdma_tim2_ch1);
+    HAL_DMA_IRQHandler (&gDMAStream_6);
 }
 
 
@@ -105,7 +105,6 @@ STATUS_TYPE DMAInit (DMAConfig* pConfig, DMA_HandleTypeDef** ppOutHandle) {
     hdma.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
     hdma.Init.MemDataAlignment    = DMA_MDATAALIGN_WORD;
     hdma.Init.Mode                = DMA_NORMAL;
-    hdma.Init.Priority            = DMA_PRIORITY_HIGH;
     hdma.Init.FIFOMode            = DMA_FIFOMODE_ENABLE;
     hdma.Init.FIFOThreshold       = DMA_FIFO_THRESHOLD_1QUARTERFULL;
     hdma.Init.MemBurst            = DMA_MBURST_SINGLE;
@@ -143,4 +142,41 @@ STATUS_TYPE DMAInit (DMAConfig* pConfig, DMA_HandleTypeDef** ppOutHandle) {
     }
 
     return eSTATUS_SUCCESS;
+}
+
+/*
+ * If the all the streams are used this doesn't mean that the DMA is not
+ * possible. Each stream supports multiple channels, so it can be shared.
+ */
+DMA_HandleTypeDef* DMAGetUnusedStreamHandle (void) {
+
+    if (gDMAStream_0.Instance == NULL) {
+        return &gDMAStream_0;
+    }
+
+    if (gDMAStream_1.Instance == NULL) {
+        return &gDMAStream_1;
+    }
+
+    if (gDMAStream_2.Instance == NULL) {
+        return &gDMAStream_2;
+    }
+
+    if (gDMAStream_3.Instance == NULL) {
+        return &gDMAStream_3;
+    }
+
+    if (gDMAStream_4.Instance == NULL) {
+        return &gDMAStream_4;
+    }
+
+    if (gDMAStream_5.Instance == NULL) {
+        return &gDMAStream_5;
+    }
+
+    if (gDMAStream_6.Instance == NULL) {
+        return &gDMAStream_6;
+    }
+    LOG_ERROR ("No unused DMA streams available");
+    return NULL;
 }
