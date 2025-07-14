@@ -80,7 +80,7 @@ STATUS_TYPE ServoWrite (Servo* pServo, float targetAngle);
 
 STATUS_TYPE MotorInit (PWMConfig config, Motor* pOutMotor);
 STATUS_TYPE MotorStart (Motor* pMotor);
-STATUS_TYPE MotorWrite (Motor* pMotor, uint16_t motorValue);
+STATUS_TYPE MotorWrite (Motor* pMotor, float motorValue);
 
 STATUS_TYPE ActuatorsInit (PWMConfig left_ServoPWM, PWMConfig left_MotorPWM);
 STATUS_TYPE ActuatorsStart (void);

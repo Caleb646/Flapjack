@@ -161,8 +161,20 @@ STATUS_TYPE DShotWrite (DShotHandle* pDShotHandle, uint16_t motorVal) {
 // __HAL_TIM_DISABLE_DMA is needed to eliminate the delay between different
 // dshot signals I don't know why :(
 static void dshot_dma_tc_callback (DMA_HandleTypeDef* hdma) {
+
+    LOG_INFO ("DShot DMA transfer complete callback");
+    if (hdma == NULL) {
+        LOG_ERROR ("NULL DMA handle");
+        return;
+    }
+
     TIM_HandleTypeDef* htim =
     (TIM_HandleTypeDef*)((DMA_HandleTypeDef*)hdma)->Parent;
+
+    if (htim == NULL) {
+        LOG_ERROR ("Invalid timer handle");
+        return;
+    }
 
     if (hdma == htim->hdma[TIM_DMA_ID_CC1]) {
         __HAL_TIM_DISABLE_DMA (htim, TIM_DMA_CC1);
@@ -234,6 +246,7 @@ static void dshot_prepare_dmabuffer (DShotHandle* pDShotHandle, uint16_t value) 
 
 
 static void dshot_dma_start (DShotHandle* pDShotHandle) {
+
     uint32_t timDmaCCXRegIdx = pDShotHandle->timDmaCCXRegIdx;
     DMA_HandleTypeDef* hdma =
     pDShotHandle->pwm.tim.timer.hdma[pDShotHandle->timDmaCCXRegIdx];
@@ -246,23 +259,39 @@ static void dshot_dma_start (DShotHandle* pDShotHandle) {
     }
 
     if (timDmaCCXRegIdx == eTIM_DMA_ID_CC1) {
-        HAL_DMA_Start_IT (
+        HAL_StatusTypeDef halStatus = HAL_DMA_Start_IT (
         hdma, (uint32_t)pMotorDmaBuffer, (uint32_t)&pTimer->CCR1, DSHOT_DMA_BUFFER_SIZE);
+
+        if (halStatus != HAL_OK) {
+            LOG_ERROR ("Failed to start DMA for DShot for CC1");
+        }
     }
 
     else if (timDmaCCXRegIdx == eTIM_DMA_ID_CC2) {
-        HAL_DMA_Start_IT (
+        HAL_StatusTypeDef halStatus = HAL_DMA_Start_IT (
         hdma, (uint32_t)pMotorDmaBuffer, (uint32_t)&pTimer->CCR2, DSHOT_DMA_BUFFER_SIZE);
+
+        if (halStatus != HAL_OK) {
+            LOG_ERROR ("Failed to start DMA for DShot for CC2");
+        }
     }
 
     else if (timDmaCCXRegIdx == eTIM_DMA_ID_CC3) {
-        HAL_DMA_Start_IT (
+        HAL_StatusTypeDef halStatus = HAL_DMA_Start_IT (
         hdma, (uint32_t)pMotorDmaBuffer, (uint32_t)&pTimer->CCR3, DSHOT_DMA_BUFFER_SIZE);
+
+        if (halStatus != HAL_OK) {
+            LOG_ERROR ("Failed to start DMA for DShot for CC3");
+        }
     }
 
     else if (timDmaCCXRegIdx == eTIM_DMA_ID_CC4) {
-        HAL_DMA_Start_IT (
+        HAL_StatusTypeDef halStatus = HAL_DMA_Start_IT (
         hdma, (uint32_t)pMotorDmaBuffer, (uint32_t)&pTimer->CCR4, DSHOT_DMA_BUFFER_SIZE);
+
+        if (halStatus != HAL_OK) {
+            LOG_ERROR ("Failed to start DMA for DShot for CC4");
+        }
     }
 
     else {

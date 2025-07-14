@@ -230,18 +230,21 @@ STATUS_TYPE MotorStart (Motor* pMotor) {
     return DShotWrite (&pMotor->dshot, DSHOT_MIN_THROTTLE);
 }
 
-STATUS_TYPE MotorWrite (Motor* pMotor, uint16_t motorValue) {
+/*
+ * throttle is between 0.0F and 1.0F
+ */
+STATUS_TYPE MotorWrite (Motor* pMotor, float throttle) {
     if (pMotor == NULL) {
         LOG_ERROR ("Received NULL pointer for Motor");
         return eSTATUS_FAILURE;
     }
 
-    if (motorValue < DSHOT_MIN_THROTTLE || motorValue > DSHOT_MAX_THROTTLE) {
-        LOG_ERROR ("Motor value out of range: %u", motorValue);
+    if (throttle < 0.0F || throttle > 1.0F) {
+        LOG_ERROR ("Motor value out of range: %u", (uint16_t)(throttle * 100.0F));
         return eSTATUS_FAILURE;
     }
 
-    return DShotWrite (&pMotor->dshot, motorValue);
+    return DShotWrite (&pMotor->dshot, DSHOT_MIN_THROTTLE + (uint16_t)(throttle * DSHOT_RANGE));
 }
 
 // NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
@@ -291,7 +294,8 @@ ActuatorsMixPair (Servo* pServo, Motor* pMotor, Vec3f pidAttitude, float targetT
     target = clipf32 (target, -1.0F, 1.0F) * pServoDesc->maxAngle;
     pServoDesc->curAngle = target;
 
-    MotorWrite (pMotor, DSHOT_MIN_THROTTLE + (uint16_t)(targetThrottle * DSHOT_RANGE));
+    /* Motor throttle should be between 0 and 1 */
+    MotorWrite (pMotor, targetThrottle);
     ServoWrite (pServo, target);
     return eSTATUS_SUCCESS;
 }

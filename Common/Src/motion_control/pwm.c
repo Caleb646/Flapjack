@@ -392,7 +392,7 @@ PWMDMAInit (PWM_DMAConfig timConfig, DMAConfig dmaConfig, PWM_DMAHandle* pOutHan
         return status;
     }
 
-    status = DMAInit (&dmaConfig, &pwm_DMA.pDMA);
+    status = DMAInit (dmaConfig, &pwm_DMA.pDMA);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize DMA");
         return status;
