@@ -8,9 +8,10 @@
 #define MAX_DMA_TIM_REGISTERS 7U
 
 
-STATUS_TYPE PWMInitTimBaseConfig (PWMHandle* pHandle) {
+STATUS_TYPE PWMEnableTimClock (PWMHandle* pHandle) {
 
     if (pHandle == NULL || pHandle->timer.Instance == NULL) {
+        LOG_ERROR ("Invalid PWM handle or timer instance");
         return eSTATUS_FAILURE;
     }
 
@@ -22,6 +23,22 @@ STATUS_TYPE PWMInitTimBaseConfig (PWMHandle* pHandle) {
         __HAL_RCC_TIM13_CLK_ENABLE ();
     } else {
         LOG_ERROR ("Invalid timer registers pointer");
+        return eSTATUS_FAILURE;
+    }
+
+    return eSTATUS_SUCCESS;
+}
+
+STATUS_TYPE PWMInitTimBaseConfig (PWMHandle* pHandle) {
+
+    if (pHandle == NULL || pHandle->timer.Instance == NULL) {
+        return eSTATUS_FAILURE;
+    }
+
+    TIM_TypeDef* pTimerRegisters = pHandle->timer.Instance;
+
+    if (PWMEnableTimClock (pHandle) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to enable timer clock");
         return eSTATUS_FAILURE;
     }
 
@@ -232,7 +249,7 @@ STATUS_TYPE PWMInitGPIO (PWMHandle* pHandle) {
         GPIO_InitStruct.Pin       = GPIO_PIN_6;
         GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
         GPIO_InitStruct.Pull      = GPIO_NOPULL;
-        GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_LOW;
+        GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_VERY_HIGH;
         GPIO_InitStruct.Alternate = GPIO_AF3_TIM8;
         HAL_GPIO_Init (GPIOC, &GPIO_InitStruct);
 
@@ -240,7 +257,7 @@ STATUS_TYPE PWMInitGPIO (PWMHandle* pHandle) {
         GPIO_InitStruct.Pin       = GPIO_PIN_7;
         GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
         GPIO_InitStruct.Pull      = GPIO_NOPULL;
-        GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_LOW;
+        GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_VERY_HIGH;
         GPIO_InitStruct.Alternate = GPIO_AF3_TIM8;
         // #define ARD_D6_GPIO_Port GPIOJ
         HAL_GPIO_Init (GPIOJ, &GPIO_InitStruct);
@@ -282,12 +299,17 @@ STATUS_TYPE PWMInit (PWMConfig config, PWMHandle* pOutHandle) {
     }
 
     memset (pOutHandle, 0, sizeof (PWMHandle));
-    PWMHandle pwm                    = { 0 };
-    pwm.timer.Instance               = config.base.pTimer;
-    pwm.channelID                    = config.base.channelID;
-    pwm.timer.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+    PWMHandle pwm      = { 0 };
+    pwm.timer.Instance = config.base.pTimer;
+    pwm.channelID      = config.base.channelID;
 
-    if (config.base.hzPeriod == 0) {
+    if (config.base.doAutoReload == TRUE) {
+        pwm.timer.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+    } else {
+        pwm.timer.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+    }
+
+    if (config.base.hzPeriod <= 0) {
         pwm.timer.Init.Prescaler = 0;
         pwm.timer.Init.Period    = 0;
     } else {
@@ -296,12 +318,38 @@ STATUS_TYPE PWMInit (PWMConfig config, PWMHandle* pOutHandle) {
         /* Scale  1MHz i.e. current PWM Period (ARR) to config.hzPeriod */
         pwm.timer.Init.Period = (uint16_t)(1000000U / config.base.hzPeriod) - 1U;
     }
+    pwm.timer.Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
+    pwm.timer.Init.CounterMode       = TIM_COUNTERMODE_UP;
+    pwm.timer.Init.RepetitionCounter = 0;
+    STATUS_TYPE status               = eSTATUS_SUCCESS;
 
-
-    STATUS_TYPE status = PWMInitTimBaseConfig (&pwm);
+    // STATUS_TYPE status = PWMInitTimBaseConfig (&pwm);
+    // if (status != eSTATUS_SUCCESS) {
+    //     LOG_ERROR ("Failed to initialize timer base configuration");
+    //     return status;
+    // }
+    status = PWMEnableTimClock (&pwm);
     if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to initialize timer base configuration");
+        LOG_ERROR ("Failed to enable timer clock");
         return status;
+    }
+
+    if (HAL_TIM_PWM_Init (&pwm.timer) != HAL_OK) {
+        LOG_ERROR ("Failed to initialize timer PWM");
+        return eSTATUS_FAILURE;
+    }
+
+    TIM_OC_InitTypeDef sConfig = { 0 };
+    sConfig.OCMode             = TIM_OCMODE_PWM1;
+    sConfig.OCPolarity         = TIM_OCPOLARITY_HIGH;
+    sConfig.Pulse              = 10;
+    sConfig.OCNPolarity        = TIM_OCNPOLARITY_HIGH;
+    sConfig.OCFastMode         = TIM_OCFAST_DISABLE;
+    sConfig.OCIdleState        = TIM_OCIDLESTATE_RESET;
+    sConfig.OCNIdleState       = TIM_OCNIDLESTATE_RESET;
+    if (HAL_TIM_PWM_ConfigChannel (&pwm.timer, &sConfig, pwm.channelID) != HAL_OK) {
+        LOG_ERROR ("Failed to configure PWM channel");
+        return eSTATUS_FAILURE;
     }
 
     status = PWMInitGPIO (&pwm);
@@ -310,11 +358,11 @@ STATUS_TYPE PWMInit (PWMConfig config, PWMHandle* pOutHandle) {
         return status;
     }
 
-    status = PWMInitChannel (&pwm);
-    if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to initialize PWM channel");
-        return status;
-    }
+    // status = PWMInitChannel (&pwm);
+    // if (status != eSTATUS_SUCCESS) {
+    //     LOG_ERROR ("Failed to initialize PWM channel");
+    //     return status;
+    // }
 
     *pOutHandle = pwm;
     return eSTATUS_SUCCESS;
@@ -392,7 +440,7 @@ PWM_DMAInit (PWM_DMAConfig timConfig, DMAConfig dmaConfig, PWM_DMAHandle* pOutHa
         return status;
     }
 
-    status = DMAInit (&dmaConfig, &pwm_DMA.pDMA);
+    status = DMAInit (dmaConfig, &pwm_DMA.pDMA);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize DMA");
         return status;
@@ -403,10 +451,25 @@ PWM_DMAInit (PWM_DMAConfig timConfig, DMAConfig dmaConfig, PWM_DMAHandle* pOutHa
             LOG_ERROR ("Invalid DMA register index: %u", timConfig.dmaRegIDXs[i]);
             return eSTATUS_FAILURE;
         }
-        pwm_DMA.tim.timer.hdma[timConfig.dmaRegIDXs[i]] = pwm_DMA.pDMA;
+        __HAL_LINKDMA (
+        &pwm_DMA.tim.timer, hdma[timConfig.dmaRegIDXs[0]], *pwm_DMA.pDMA);
     }
-    pwm_DMA.pDMA->Parent = &pwm_DMA.tim.timer;
 
     *pOutHandle = pwm_DMA;
+    return eSTATUS_SUCCESS;
+}
+
+STATUS_TYPE PWM_DMAStart (PWM_DMAHandle* pHandle, uint32_t const* pData, uint16_t Length) {
+
+    if (pHandle == NULL || pData == NULL || Length == 0) {
+        LOG_ERROR ("Invalid parameters");
+        return eSTATUS_FAILURE;
+    }
+
+    if (HAL_TIM_PWM_Start_DMA (&pHandle->tim.timer, pHandle->tim.channelID, (uint32_t*)pData, Length) != HAL_OK) {
+        LOG_ERROR ("Failed to start PWM DMA");
+        return eSTATUS_FAILURE;
+    }
+
     return eSTATUS_SUCCESS;
 }

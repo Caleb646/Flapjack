@@ -54,15 +54,15 @@ static void dshot_enable_dma_request (DShotHandle* pDShotHandle);
 
 
 STATUS_TYPE
-DShotInit (DShotConfig dConfig, PWMConfig timConfig, DShotHandle* pOutHandle) {
+DShotInit (DShotConfig dConfig, PWMConfig timConfig, DMAConfig dmaConfig, DShotHandle* pOutHandle) {
 
     if (pOutHandle == NULL) {
         LOG_ERROR ("Received invalid DShot configuration pointer or output handle pointer");
         return eSTATUS_FAILURE;
     }
 
+    memset (pOutHandle, 0, sizeof (DShotHandle));
     DShotHandle dshot = { 0 };
-
     uint32_t timDmaRegIdx = dshot_tim_channel_to_dma_ccx_id (timConfig.base.channelID);
     PWM_DMAConfig pwm_DmaConfig = { .base = timConfig.base };
     /*
@@ -71,17 +71,7 @@ DShotInit (DShotConfig dConfig, PWMConfig timConfig, DShotHandle* pOutHandle) {
     pwm_DmaConfig.dmaRegIDXs[0]  = timDmaRegIdx;
     pwm_DmaConfig.dmaRegIDXCount = 1;
 
-    DMA_HandleTypeDef* pDmaHandle = DMAGetUnusedStreamHandle ();
-    if (pDmaHandle == NULL) {
-        LOG_ERROR ("Failed to get unused DMA stream handle");
-        return eSTATUS_FAILURE;
-    }
-    DMAConfig dmaConfig = { 0 };
-    dmaConfig.pDMA      = pDmaHandle->Instance;
-    dmaConfig.direction = eDMA_DIRECTION_MEMORY_TO_PERIPH;
-    dmaConfig.priority  = eDMA_PRIORITY_HIGH;
-
-    STATUS_TYPE status = PWM_DMAInit (pwm_DmaConfig, dmaConfig, &dshot.pwm);
+    STATUS_TYPE status = PWMDMAInit (pwm_DmaConfig, dmaConfig, &dshot.pwm);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize PWM DMA for DShot");
         return eSTATUS_FAILURE;
@@ -136,8 +126,8 @@ DShotInit (DShotConfig dConfig, PWMConfig timConfig, DShotHandle* pOutHandle) {
     /*
      * For the mapped timer channel capture compare register, map the dma transfer complete callback
      */
-    TIM_HandleTypeDef* pTimerHandle = &ppwm->timer;
-    pTimerHandle->hdma[timDmaRegIdx]->XferCpltCallback = dshot_dma_tc_callback;
+    // TIM_HandleTypeDef* pTimerHandle = &ppwm->timer;
+    // pTimerHandle->hdma[timDmaRegIdx]->XferCpltCallback = dshot_dma_tc_callback;
 
     dshot.timDmaCCXRegIdx = timDmaRegIdx;
     *pOutHandle           = dshot;
@@ -152,6 +142,14 @@ STATUS_TYPE DShotStart (DShotHandle* pDShotHandle) {
 }
 
 STATUS_TYPE DShotWrite (DShotHandle* pDShotHandle, uint16_t motorVal) {
+
+    if (
+    TIM_CHANNEL_STATE_GET (
+    &pDShotHandle->pwm.tim.timer, pDShotHandle->pwm.tim.channelID) ==
+    HAL_TIM_CHANNEL_STATE_BUSY) {
+        return HAL_BUSY;
+    }
+
     dshot_prepare_dmabuffer (pDShotHandle, motorVal);
     dshot_dma_start (pDShotHandle);
     dshot_enable_dma_request (pDShotHandle);
@@ -160,25 +158,41 @@ STATUS_TYPE DShotWrite (DShotHandle* pDShotHandle, uint16_t motorVal) {
 
 // __HAL_TIM_DISABLE_DMA is needed to eliminate the delay between different
 // dshot signals I don't know why :(
-static void dshot_dma_tc_callback (DMA_HandleTypeDef* hdma) {
-    TIM_HandleTypeDef* htim =
-    (TIM_HandleTypeDef*)((DMA_HandleTypeDef*)hdma)->Parent;
+// static void dshot_dma_tc_callback (TIM_HandleTypeDef *htim) {
+/*
+ * Timer DMA transfer complete callback.
+ */
+void HAL_TIM_PWM_PulseFinishedCallback (TIM_HandleTypeDef* htim) {
 
-    if (hdma == htim->hdma[TIM_DMA_ID_CC1]) {
-        __HAL_TIM_DISABLE_DMA (htim, TIM_DMA_CC1);
+    LOG_INFO ("DShot DMA transfer complete callback");
+    // if (htim == NULL) {
+    //     LOG_ERROR ("NULL DMA handle");
+    //     return;
+    // }
+
+    // TIM_HandleTypeDef* htim =
+    // (TIM_HandleTypeDef*)((DMA_HandleTypeDef*)hdma)->Parent;
+
+    if (htim == NULL) {
+        LOG_ERROR ("Invalid timer handle");
+        return;
     }
 
-    else if (hdma == htim->hdma[TIM_DMA_ID_CC2]) {
-        __HAL_TIM_DISABLE_DMA (htim, TIM_DMA_CC2);
-    }
+    // if (hdma == htim->hdma[TIM_DMA_ID_CC1]) {
+    __HAL_TIM_DISABLE_DMA (htim, TIM_DMA_CC1);
+    // }
 
-    else if (hdma == htim->hdma[TIM_DMA_ID_CC3]) {
-        __HAL_TIM_DISABLE_DMA (htim, TIM_DMA_CC3);
-    }
+    // else if (hdma == htim->hdma[TIM_DMA_ID_CC2]) {
+    __HAL_TIM_DISABLE_DMA (htim, TIM_DMA_CC2);
+    // }
 
-    else if (hdma == htim->hdma[TIM_DMA_ID_CC4]) {
-        __HAL_TIM_DISABLE_DMA (htim, TIM_DMA_CC4);
-    }
+    // else if (hdma == htim->hdma[TIM_DMA_ID_CC3]) {
+    __HAL_TIM_DISABLE_DMA (htim, TIM_DMA_CC3);
+    // }
+
+    // else if (hdma == htim->hdma[TIM_DMA_ID_CC4]) {
+    __HAL_TIM_DISABLE_DMA (htim, TIM_DMA_CC4);
+    // }
 }
 
 static uint32_t dshot_tim_channel_to_dma_ccx_id (uint32_t channelID) {
@@ -234,41 +248,63 @@ static void dshot_prepare_dmabuffer (DShotHandle* pDShotHandle, uint16_t value) 
 
 
 static void dshot_dma_start (DShotHandle* pDShotHandle) {
-    uint32_t timDmaCCXRegIdx = pDShotHandle->timDmaCCXRegIdx;
-    DMA_HandleTypeDef* hdma =
-    pDShotHandle->pwm.tim.timer.hdma[pDShotHandle->timDmaCCXRegIdx];
-    TIM_TypeDef* pTimer       = pDShotHandle->pwm.tim.timer.Instance;
-    uint32_t* pMotorDmaBuffer = pDShotHandle->pMotorDmaBuffer;
 
-    if (hdma == NULL || pMotorDmaBuffer == NULL) {
-        LOG_ERROR ("DMA handle or Motor DMA buffer is NULL for DShot");
+    if (PWM_DMAStart (&pDShotHandle->pwm, pDShotHandle->pMotorDmaBuffer, DSHOT_DMA_BUFFER_SIZE) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to start DShot DMA");
         return;
     }
 
-    if (timDmaCCXRegIdx == eTIM_DMA_ID_CC1) {
-        HAL_DMA_Start_IT (
-        hdma, (uint32_t)pMotorDmaBuffer, (uint32_t)&pTimer->CCR1, DSHOT_DMA_BUFFER_SIZE);
-    }
+    // uint32_t timDmaCCXRegIdx = pDShotHandle->timDmaCCXRegIdx;
+    // DMA_HandleTypeDef* hdma =
+    // pDShotHandle->pwm.tim.timer.hdma[pDShotHandle->timDmaCCXRegIdx];
+    // TIM_TypeDef* pTimer       = pDShotHandle->pwm.tim.timer.Instance;
+    // uint32_t* pMotorDmaBuffer = pDShotHandle->pMotorDmaBuffer;
 
-    else if (timDmaCCXRegIdx == eTIM_DMA_ID_CC2) {
-        HAL_DMA_Start_IT (
-        hdma, (uint32_t)pMotorDmaBuffer, (uint32_t)&pTimer->CCR2, DSHOT_DMA_BUFFER_SIZE);
-    }
+    // if (hdma == NULL || pMotorDmaBuffer == NULL) {
+    //     LOG_ERROR ("DMA handle or Motor DMA buffer is NULL for DShot");
+    //     return;
+    // }
 
-    else if (timDmaCCXRegIdx == eTIM_DMA_ID_CC3) {
-        HAL_DMA_Start_IT (
-        hdma, (uint32_t)pMotorDmaBuffer, (uint32_t)&pTimer->CCR3, DSHOT_DMA_BUFFER_SIZE);
-    }
+    // if (timDmaCCXRegIdx == eTIM_DMA_ID_CC1) {
+    //     HAL_StatusTypeDef halStatus = HAL_DMA_Start_IT (
+    //     hdma, (uint32_t)pMotorDmaBuffer, (uint32_t)&pTimer->CCR1, DSHOT_DMA_BUFFER_SIZE);
 
-    else if (timDmaCCXRegIdx == eTIM_DMA_ID_CC4) {
-        HAL_DMA_Start_IT (
-        hdma, (uint32_t)pMotorDmaBuffer, (uint32_t)&pTimer->CCR4, DSHOT_DMA_BUFFER_SIZE);
-    }
+    //     if (halStatus != HAL_OK) {
+    //         LOG_ERROR ("Failed to start DMA for DShot for CC1");
+    //     }
+    // }
 
-    else {
-        LOG_ERROR ("Invalid DMA register index for DShot: %u", (uint16_t)timDmaCCXRegIdx);
-        return;
-    }
+    // else if (timDmaCCXRegIdx == eTIM_DMA_ID_CC2) {
+    //     HAL_StatusTypeDef halStatus = HAL_DMA_Start_IT (
+    //     hdma, (uint32_t)pMotorDmaBuffer, (uint32_t)&pTimer->CCR2, DSHOT_DMA_BUFFER_SIZE);
+
+    //     if (halStatus != HAL_OK) {
+    //         LOG_ERROR ("Failed to start DMA for DShot for CC2");
+    //     }
+    // }
+
+    // else if (timDmaCCXRegIdx == eTIM_DMA_ID_CC3) {
+    //     HAL_StatusTypeDef halStatus = HAL_DMA_Start_IT (
+    //     hdma, (uint32_t)pMotorDmaBuffer, (uint32_t)&pTimer->CCR3, DSHOT_DMA_BUFFER_SIZE);
+
+    //     if (halStatus != HAL_OK) {
+    //         LOG_ERROR ("Failed to start DMA for DShot for CC3");
+    //     }
+    // }
+
+    // else if (timDmaCCXRegIdx == eTIM_DMA_ID_CC4) {
+    //     HAL_StatusTypeDef halStatus = HAL_DMA_Start_IT (
+    //     hdma, (uint32_t)pMotorDmaBuffer, (uint32_t)&pTimer->CCR4, DSHOT_DMA_BUFFER_SIZE);
+
+    //     if (halStatus != HAL_OK) {
+    //         LOG_ERROR ("Failed to start DMA for DShot for CC4");
+    //     }
+    // }
+
+    // else {
+    //     LOG_ERROR ("Invalid DMA register index for DShot: %u",
+    //     (uint16_t)timDmaCCXRegIdx); return;
+    // }
 }
 
 static void dshot_enable_dma_request (DShotHandle* pDShotHandle) {

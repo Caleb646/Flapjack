@@ -2,11 +2,11 @@
 #define MOTION_CONTROL_ACTUATORS_H
 
 #include "common.h"
+#include "dma.h"
 #include "hal.h"
 #include "motion_control/dshot.h"
 #include "motion_control/pwm.h"
 #include <stdint.h>
-
 
 typedef struct {
     uint32_t channel1;
@@ -44,6 +44,11 @@ typedef struct {
 } Servo;
 
 typedef struct {
+    PWMConfig pwm;
+    DMAConfig dma;
+} MotorConfig;
+
+typedef struct {
     uint32_t unused;
     // uint32_t usMaxDutyCycle;
 } MotorDescriptor;
@@ -65,6 +70,7 @@ typedef struct {
 // Vec3f* pOutputTargetAttitude,
 // float* pOutputThrottle);
 // STATUS_TYPE PIDInit (PIDContext* pContext);
+
 STATUS_TYPE PIDUpdateAttitude (
 PIDContext* pidContext,
 Vec3f currentAttitude, // degrees
@@ -78,11 +84,11 @@ STATUS_TYPE ServoInit (PWMConfig config, Servo* pOutServo);
 STATUS_TYPE ServoStart (Servo* pServo);
 STATUS_TYPE ServoWrite (Servo* pServo, float targetAngle);
 
-STATUS_TYPE MotorInit (PWMConfig config, Motor* pOutMotor);
+STATUS_TYPE MotorInit (MotorConfig config, Motor* pOutMotor);
 STATUS_TYPE MotorStart (Motor* pMotor);
-STATUS_TYPE MotorWrite (Motor* pMotor, uint16_t motorValue);
+STATUS_TYPE MotorWrite (Motor* pMotor, float motorValue);
 
-STATUS_TYPE ActuatorsInit (PWMConfig left_ServoPWM, PWMConfig left_MotorPWM);
+STATUS_TYPE ActuatorsInit (PWMConfig left_ServoPWM, MotorConfig left_Motor);
 STATUS_TYPE ActuatorsStart (void);
 STATUS_TYPE ActuatorsWrite (Vec3f pidAttitude, float targetThrottle);
 
