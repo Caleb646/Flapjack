@@ -311,7 +311,7 @@ int main (void) {
                                .dma = { .pDMA = DMA1_Stream0,
                                         .direction = eDMA_DIRECTION_MEMORY_TO_PERIPH,
                                         .priority = eDMA_PRIORITY_HIGH,
-                                        .request = DMA_REQUEST_TIM8_CH1 } };
+                                        .request = DMA_REQUEST_TIM8_UP } };
 
     PWMConfig left_Servo = { .base = { .pTimer       = TIM13,
                                        .channelID    = TIM_CHANNEL_1,

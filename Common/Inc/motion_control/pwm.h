@@ -26,14 +26,16 @@
 #define PWM_US2DC(us, usPeriod) \
     (((float)(us) * (100.0F / (float)(usPeriod)))) // Convert microseconds to duty cycle percentage
 
-#define PWM_SET_PRESCALER(pPwmHandle, valPrescaler)         \
-    do {                                                    \
-        (pPwmHandle)->timer.Instance->PSC = (valPrescaler); \
+#define PWM_SET_PRESCALER(pPwmHandle, valPrescaler)          \
+    do {                                                     \
+        (pPwmHandle)->timer.Instance->PSC  = (valPrescaler); \
+        (pPwmHandle)->timer.Init.Prescaler = (valPrescaler); \
     } while (0)
 
 #define PWM_SET_PERIOD(pPwmHandle, valPeriod)            \
     do {                                                 \
         (pPwmHandle)->timer.Instance->ARR = (valPeriod); \
+        (pPwmHandle)->timer.Init.Period   = (valPeriod); \
     } while (0)
 
 #define PWM_SET_COMPARE(pPwmHandle, compare)                                      \
@@ -89,18 +91,16 @@ typedef struct {
 } PWMHandle;
 
 typedef struct {
-    PWMHandle tim;
+    PWMHandle pwm;
     DMA_HandleTypeDef* pDMA;
 } PWM_DMAHandle;
 
 STATUS_TYPE PWMInit (PWMConfig config, PWMHandle* pOutHandle);
-STATUS_TYPE
-PWM_DMAInit (PWM_DMAConfig timConfig, DMAConfig dmaConfig, PWM_DMAHandle* pOutHandle);
 STATUS_TYPE PWMStart (PWMHandle* pHandle);
 STATUS_TYPE PWMWrite (PWMHandle* pHandle, uint32_t usUpTime);
 
 STATUS_TYPE
-PWMDMAInit (PWM_DMAConfig timConfig, DMAConfig dmaConfig, PWM_DMAHandle* pOutHandle);
+PWM_DMAInit (PWM_DMAConfig timConfig, DMAConfig dmaConfig, PWM_DMAHandle* pOutHandle);
 STATUS_TYPE PWM_DMAStart (PWM_DMAHandle* pHandle, uint32_t const* pData, uint16_t Length);
 
 

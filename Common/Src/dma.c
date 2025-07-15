@@ -117,9 +117,10 @@ STATUS_TYPE DMAInit (DMAConfig config, DMA_HandleTypeDef** ppOutHandle) {
     hdma.Init.MemDataAlignment    = DMA_MDATAALIGN_WORD;
     hdma.Init.Mode                = DMA_NORMAL;
     hdma.Init.FIFOMode            = DMA_FIFOMODE_ENABLE;
-    hdma.Init.FIFOThreshold       = DMA_FIFO_THRESHOLD_1QUARTERFULL;
-    hdma.Init.MemBurst            = DMA_MBURST_SINGLE;
-    hdma.Init.PeriphBurst         = DMA_PBURST_SINGLE;
+    // DMA_FIFO_THRESHOLD_1QUARTERFULL;
+    hdma.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
+    hdma.Init.MemBurst      = DMA_MBURST_SINGLE;
+    hdma.Init.PeriphBurst   = DMA_PBURST_SINGLE;
 
     if (HAL_DMA_Init (&hdma) != HAL_OK) {
         LOG_ERROR ("Failed to initialize DMA");
