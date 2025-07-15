@@ -81,7 +81,7 @@ DShotInit (DShotConfig dConfig, PWMConfig timConfig, DShotHandle* pOutHandle) {
     dmaConfig.direction = eDMA_DIRECTION_MEMORY_TO_PERIPH;
     dmaConfig.priority  = eDMA_PRIORITY_HIGH;
 
-    STATUS_TYPE status = PWMDMAInit (pwm_DmaConfig, dmaConfig, &dshot.pwm);
+    STATUS_TYPE status = PWM_DMAInit (pwm_DmaConfig, dmaConfig, &dshot.pwm);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize PWM DMA for DShot");
         return eSTATUS_FAILURE;

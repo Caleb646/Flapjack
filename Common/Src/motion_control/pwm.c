@@ -371,7 +371,7 @@ STATUS_TYPE PWMWrite (PWMHandle* pHandle, uint32_t usUpTime) {
 }
 
 STATUS_TYPE
-PWMDMAInit (PWM_DMAConfig timConfig, DMAConfig dmaConfig, PWM_DMAHandle* pOutHandle) {
+PWM_DMAInit (PWM_DMAConfig timConfig, DMAConfig dmaConfig, PWM_DMAHandle* pOutHandle) {
 
     if (pOutHandle == NULL) {
         LOG_ERROR ("Received nullptr for PWM_DMAHandle");

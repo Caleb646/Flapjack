@@ -94,7 +94,7 @@ typedef struct {
 
 STATUS_TYPE PWMInit (PWMConfig config, PWMHandle* pOutHandle);
 STATUS_TYPE
-PWMDMAInit (PWM_DMAConfig timConfig, DMAConfig dmaConfig, PWM_DMAHandle* pOutHandle);
+PWM_DMAInit (PWM_DMAConfig timConfig, DMAConfig dmaConfig, PWM_DMAHandle* pOutHandle);
 STATUS_TYPE PWMStart (PWMHandle* pHandle);
 STATUS_TYPE PWMWrite (PWMHandle* pHandle, uint32_t usUpTime);
 
