@@ -25,6 +25,7 @@ typedef struct {
     DMA_Stream_TypeDef* pDMA;
     eDMA_TRANSFER_DIR direction;
     eDMA_PRIORITY priority;
+    uint32_t request; // DMA request type, e.g., DMA_REQUEST_USART1_TX
 } DMAConfig;
 
 // Forward declaration of the PWM DMA handle structure

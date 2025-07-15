@@ -70,6 +70,7 @@ typedef struct {
     TIM_TypeDef* pTimer;
     uint32_t channelID;
     uint32_t hzPeriod; // PWM period frequency in Hz
+    uint8_t doAutoReload;
 } PWMBaseConfig;
 
 typedef struct {
@@ -93,9 +94,12 @@ typedef struct {
 } PWM_DMAHandle;
 
 STATUS_TYPE PWMInit (PWMConfig config, PWMHandle* pOutHandle);
-STATUS_TYPE
-PWMDMAInit (PWM_DMAConfig timConfig, DMAConfig dmaConfig, PWM_DMAHandle* pOutHandle);
 STATUS_TYPE PWMStart (PWMHandle* pHandle);
 STATUS_TYPE PWMWrite (PWMHandle* pHandle, uint32_t usUpTime);
+
+STATUS_TYPE
+PWMDMAInit (PWM_DMAConfig timConfig, DMAConfig dmaConfig, PWM_DMAHandle* pOutHandle);
+STATUS_TYPE PWM_DMAStart (PWM_DMAHandle* pHandle, uint32_t const* pData, uint16_t Length);
+
 
 #endif // __MOTION_CONTROL_PWM_H

@@ -17,7 +17,7 @@ uint8_t gDMAStreamsAlloced[7]  = { 0 };
  * @brief This function handles DMA1 stream0 global interrupt.
  */
 void DMA1_Stream0_IRQHandler (void) {
-    LOG_INFO ("DMA1 Stream0 IRQ Handler");
+    // LOG_INFO ("DMA1 Stream0 IRQ Handler");
     HAL_DMA_IRQHandler (&gDMAStream_0);
 }
 
@@ -108,6 +108,7 @@ STATUS_TYPE DMAInit (DMAConfig config, DMA_HandleTypeDef** ppOutHandle) {
 
     DMA_HandleTypeDef hdma        = { 0 };
     hdma.Instance                 = config.pDMA;
+    hdma.Init.Request             = config.request;
     hdma.Init.Direction           = config.direction;
     hdma.Init.Priority            = config.priority;
     hdma.Init.PeriphInc           = DMA_PINC_DISABLE;

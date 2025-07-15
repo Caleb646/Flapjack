@@ -195,9 +195,9 @@ void TaskMotionControlUpdate (void* pvParameters) {
             // TIM8->CCR1 = 2000;
             // TIM8->ARR  = 20000;
             // TIM8->PSC  = 64;
-            // LOG_INFO (
-            // "TIM13 CCR1: %u ARR: %u PSC: %u", (uint16_t)TIM13->CCR1,
-            // (uint16_t)TIM13->ARR, (uint16_t)TIM13->PSC);
+            LOG_INFO (
+            "TIM8 CCR1: %u ARR: %u PSC: %u", (uint16_t)TIM8->CCR1,
+            (uint16_t)TIM8->ARR, (uint16_t)TIM8->PSC);
 
             logStart = xTaskGetTickCount ();
 
@@ -304,13 +304,20 @@ int main (void) {
         LOG_ERROR ("Failed to init Flight Context");
     }
 
-    PWMConfig left_Motor = {
-        .base = { .pTimer = TIM8, .channelID = TIM_CHANNEL_1, .hzPeriod = 0 }
-    };
-    PWMConfig left_Servo = {
-        .base = { .pTimer = TIM13, .channelID = TIM_CHANNEL_1, .hzPeriod = 50 }
-    };
-    status = ActuatorsInit (left_Servo, left_Motor);
+    MotorConfig left_Motor = { .pwm = { .base = { .pTimer = TIM8,
+                                                  .channelID = TIM_CHANNEL_1,
+                                                  .hzPeriod     = 0,
+                                                  .doAutoReload = TRUE } },
+                               .dma = { .pDMA = DMA1_Stream0,
+                                        .direction = eDMA_DIRECTION_MEMORY_TO_PERIPH,
+                                        .priority = eDMA_PRIORITY_HIGH,
+                                        .request = DMA_REQUEST_TIM8_CH1 } };
+
+    PWMConfig left_Servo = { .base = { .pTimer       = TIM13,
+                                       .channelID    = TIM_CHANNEL_1,
+                                       .hzPeriod     = 50,
+                                       .doAutoReload = TRUE } };
+    status               = ActuatorsInit (left_Servo, left_Motor);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to init Actuators");
     }

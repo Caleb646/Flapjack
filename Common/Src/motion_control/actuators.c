@@ -2,7 +2,9 @@
 #include "flight_context.h"
 #include "log.h"
 #include "motion_control/dshot.h"
+#include "motion_control/pwm.h"
 #include <string.h>
+
 
 #define CHECK_SERVO_DESCRIPTOR_OK(pServoDesc)                      \
     (                                                              \
@@ -189,7 +191,7 @@ STATUS_TYPE ServoWrite (Servo* pServo, float targetAngle) {
     return PWMWrite (&pServo->pwm, (uint32_t)ServoAngle2PWM (pServo, targetAngle));
 }
 
-STATUS_TYPE MotorInit (PWMConfig config, Motor* pOutMotor) {
+STATUS_TYPE MotorInit (MotorConfig config, Motor* pOutMotor) {
     if (pOutMotor == NULL) {
         LOG_ERROR ("Received NULL pointer for Motor");
         return eSTATUS_FAILURE;
@@ -200,7 +202,7 @@ STATUS_TYPE MotorInit (PWMConfig config, Motor* pOutMotor) {
     DShotConfig dshotConfig = { 0 };
     dshotConfig.dshotType   = DSHOT150; // Set DShot frequency
 
-    if (DShotInit (dshotConfig, config, &motor.dshot) != eSTATUS_SUCCESS) {
+    if (DShotInit (dshotConfig, config.pwm, config.dma, &motor.dshot) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize DShot for Motor");
         return eSTATUS_FAILURE;
     }
@@ -300,7 +302,7 @@ ActuatorsMixPair (Servo* pServo, Motor* pMotor, Vec3f pidAttitude, float targetT
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE ActuatorsInit (PWMConfig left_ServoPWM, PWMConfig left_MotorPWM) {
+STATUS_TYPE ActuatorsInit (PWMConfig left_ServoPWM, MotorConfig left_Motor) {
 
     STATUS_TYPE status = ServoInit (left_ServoPWM, &gLeftServo);
     if (status != eSTATUS_SUCCESS) {
@@ -308,7 +310,7 @@ STATUS_TYPE ActuatorsInit (PWMConfig left_ServoPWM, PWMConfig left_MotorPWM) {
         return status;
     }
 
-    status = MotorInit (left_MotorPWM, &gLeftMotor);
+    status = MotorInit (left_Motor, &gLeftMotor);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize left motor");
         return status;
