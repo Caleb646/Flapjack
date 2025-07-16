@@ -4,22 +4,32 @@
 #include "log.h"
 #include <stdint.h>
 
-DMA_HandleTypeDef gDMAStream_0 = { 0 };
-DMA_HandleTypeDef gDMAStream_1 = { 0 };
-DMA_HandleTypeDef gDMAStream_2 = { 0 };
-DMA_HandleTypeDef gDMAStream_3 = { 0 };
-DMA_HandleTypeDef gDMAStream_4 = { 0 };
-DMA_HandleTypeDef gDMAStream_5 = { 0 };
-DMA_HandleTypeDef gDMAStream_6 = { 0 };
-uint8_t gDMAStreamsAlloced[7]  = { 0 };
+#define CHECK_DMA1_STREAM_VALID(stream)                     \
+    (                                                       \
+    (stream) == DMA1_Stream0 || (stream) == DMA1_Stream1 || \
+    (stream) == DMA1_Stream2 || (stream) == DMA1_Stream3 || \
+    (stream) == DMA1_Stream4 || (stream) == DMA1_Stream5 || (stream) == DMA1_Stream6)
+#define CHECK_DMA_CONFIG_OK(pDMAConfig) \
+    ((pDMAConfig) != NULL && (pDMAConfig)->pDMA != NULL && (pDMAConfig)->request != 0)
+
+DMA_HandleTypeDef gDMAStream_0                  = { 0 };
+DMA_HandleTypeDef gDMAStream_1                  = { 0 };
+DMA_HandleTypeDef gDMAStream_2                  = { 0 };
+DMA_HandleTypeDef gDMAStream_3                  = { 0 };
+DMA_HandleTypeDef gDMAStream_4                  = { 0 };
+DMA_HandleTypeDef gDMAStream_5                  = { 0 };
+DMA_HandleTypeDef gDMAStream_6                  = { 0 };
+uint8_t gDMAStreamsAlloced[7]                   = { 0 };
+DMACallback gDMAStreamCallbacks[7][4]           = { 0 };
+DMA_HandleTypeDef* gDMACallbackStreamHandles[7] = { 0 };
 
 /**
  * @brief This function handles DMA1 stream0 global interrupt.
  */
-// void DMA1_Stream0_IRQHandler (void) {
-//     // LOG_INFO ("DMA1 Stream0 IRQ Handler");
-//     HAL_DMA_IRQHandler (&gDMAStream_0);
-// }
+void DMA1_Stream0_IRQHandler (void) {
+    // LOG_INFO ("DMA1 Stream0 IRQ Handler");
+    HAL_DMA_IRQHandler (&gDMAStream_0);
+}
 
 /**
  * @brief This function handles DMA1 stream1 global interrupt.
@@ -64,8 +74,53 @@ void DMA1_Stream6_IRQHandler (void) {
 }
 
 
-STATUS_TYPE DMASystemInit (void) {
+static int32_t DMAStream2Idx (DMA_TypeDef* pStream) {
+    if (pStream == DMA1_Stream0) {
+        return 0;
+    }
+    if (pStream == DMA1_Stream1) {
+        return 1;
+    }
+    if (pStream == DMA1_Stream2) {
+        return 2;
+    }
+    if (pStream == DMA1_Stream3) {
+        return 3;
+    }
+    if (pStream == DMA1_Stream4) {
+        return 4;
+    }
+    if (pStream == DMA1_Stream5) {
+        return 5;
+    }
+    if (pStream == DMA1_Stream6) {
+        return 6;
+    }
+    return -1;
+}
 
+static DMA_HandleTypeDef* DMAGetHandleByStream (DMA_TypeDef* pStream) {
+
+    if (pStream == DMA1_Stream0) {
+        return &gDMAStream_0;
+    } else if (pStream == DMA1_Stream1) {
+        return &gDMAStream_1;
+    } else if (pStream == DMA1_Stream2) {
+        return &gDMAStream_2;
+    } else if (pStream == DMA1_Stream3) {
+        return &gDMAStream_3;
+    } else if (pStream == DMA1_Stream4) {
+        return &gDMAStream_4;
+    } else if (pStream == DMA1_Stream5) {
+        return &gDMAStream_5;
+    } else if (pStream == DMA1_Stream6) {
+        return &gDMAStream_6;
+    }
+    return NULL;
+}
+
+STATUS_TYPE DMASystemInit (void) {
+    LOG_INFO ("Initializing DMA1 system");
     __HAL_RCC_DMA1_CLK_ENABLE ();
 
     gDMAStream_0.Instance = DMA1_Stream0;
@@ -106,6 +161,16 @@ STATUS_TYPE DMAInit (DMAConfig config, DMA_HandleTypeDef** ppOutHandle) {
         return eSTATUS_FAILURE;
     }
 
+    if (CHECK_DMA_CONFIG_OK (&config) == FALSE) {
+        LOG_ERROR ("Invalid DMA configuration");
+        return eSTATUS_FAILURE;
+    }
+
+    if (CHECK_DMA1_STREAM_VALID (config.pDMA) == FALSE) {
+        LOG_ERROR ("Invalid DMA stream");
+        return eSTATUS_FAILURE;
+    }
+
     DMA_HandleTypeDef hdma        = { 0 };
     hdma.Instance                 = config.pDMA;
     hdma.Init.Request             = config.request;
@@ -116,57 +181,68 @@ STATUS_TYPE DMAInit (DMAConfig config, DMA_HandleTypeDef** ppOutHandle) {
     hdma.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
     hdma.Init.MemDataAlignment    = DMA_MDATAALIGN_WORD;
     hdma.Init.Mode                = DMA_NORMAL;
-    hdma.Init.FIFOMode            = DMA_FIFOMODE_ENABLE;
-    // DMA_FIFO_THRESHOLD_1QUARTERFULL;
+    /*
+     * When it is configured in direct mode ***(FIFO disabled)***, to
+     * transfer data in memory-to-peripheral mode, the DMA preloads only
+     * one data from the memory to the internal FIFO to ensure an immediate
+     * data transfer as soon as a DMA request is triggered by a peripheral.
+     */
+    hdma.Init.FIFOMode      = DMA_FIFOMODE_DISABLE;
     hdma.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
     hdma.Init.MemBurst      = DMA_MBURST_SINGLE;
     hdma.Init.PeriphBurst   = DMA_PBURST_SINGLE;
+
+    if (hdma.Init.Direction == eDMA_DIRECTION_MEMORY_TO_PERIPH && hdma.Init.FIFOMode == DMA_FIFOMODE_ENABLE) {
+        LOG_ERROR ("direct mode (fifo disabled) has to be used for memory-to-peripheral transfers");
+        return eSTATUS_FAILURE;
+    }
 
     if (HAL_DMA_Init (&hdma) != HAL_OK) {
         LOG_ERROR ("Failed to initialize DMA");
         return eSTATUS_FAILURE;
     }
 
-    if (config.pDMA == DMA1_Stream0) {
-        gDMAStream_0 = hdma;
-        *ppOutHandle = &gDMAStream_0;
+    DMA_HandleTypeDef* pHandle = DMAGetHandleByStream (hdma.Instance);
+    if (pHandle == NULL) {
+        LOG_ERROR ("Failed to get DMA handle for stream");
+        return eSTATUS_FAILURE;
     }
+    *pHandle     = hdma;
+    *ppOutHandle = pHandle;
+    return eSTATUS_SUCCESS;
+}
 
-    else if (config.pDMA == DMA1_Stream1) {
-        gDMAStream_1 = hdma;
-        *ppOutHandle = &gDMAStream_1;
-    }
+STATUS_TYPE DMASetTimCallback (DMA_HandleTypeDef* hdma, DMACallback cb, eDMA_CB_TYPE cbType) {
 
-    else if (config.pDMA == DMA1_Stream2) {
-        gDMAStream_2 = hdma;
-        *ppOutHandle = &gDMAStream_2;
-    }
-
-    else if (config.pDMA == DMA1_Stream3) {
-        gDMAStream_3 = hdma;
-        *ppOutHandle = &gDMAStream_3;
-    }
-
-    else if (config.pDMA == DMA1_Stream4) {
-        gDMAStream_4 = hdma;
-        *ppOutHandle = &gDMAStream_4;
-    }
-
-    else if (config.pDMA == DMA1_Stream5) {
-        gDMAStream_5 = hdma;
-        *ppOutHandle = &gDMAStream_5;
-    }
-
-    else if (config.pDMA == DMA1_Stream6) {
-        gDMAStream_6 = hdma;
-        *ppOutHandle = &gDMAStream_6;
-    }
-
-    else {
-        LOG_ERROR ("Unsupported DMA stream");
+    if (hdma == NULL || cb == NULL) {
+        LOG_ERROR ("Invalid DMA handle or callback");
         return eSTATUS_FAILURE;
     }
 
+    int32_t idx = DMAStream2Idx (hdma->Instance);
+    if (idx < 0) {
+        LOG_ERROR ("Invalid DMA stream");
+        return eSTATUS_FAILURE;
+    }
+
+    gDMACallbackStreamHandles[idx] = hdma;
+    switch (cbType) {
+    case eDMA_CB_TRANSFER_COMPLETE:
+        gDMAStreamCallbacks[idx][eDMA_CB_TRANSFER_COMPLETE] = cb;
+        break;
+    case eDMA_CB_HALF_TRANSFER:
+        gDMAStreamCallbacks[idx][eDMA_CB_HALF_TRANSFER] = cb;
+        break;
+    case eDMA_CB_TRANSFER_ERROR:
+        gDMAStreamCallbacks[idx][eDMA_CB_TRANSFER_ERROR] = cb;
+        break;
+    case eDMA_CB_ABORT:
+        gDMAStreamCallbacks[idx][eDMA_CB_ABORT] = cb;
+        break;
+    default:
+        LOG_ERROR ("Invalid DMA callback type");
+        return eSTATUS_FAILURE;
+    }
     return eSTATUS_SUCCESS;
 }
 

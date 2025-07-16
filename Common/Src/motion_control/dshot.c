@@ -45,12 +45,12 @@
 #define DSHOT300_HZ PWM_MHZ2HZ (6)
 #define DSHOT150_HZ PWM_MHZ2HZ (3)
 
-static void dshot_dma_tc_callback (DMA_HandleTypeDef* hdma);
+// static void dshot_dma_tc_callback (DMA_HandleTypeDef* hdma);
 static uint32_t dshot_tim_channel_to_dma_ccx_id (uint32_t channelID);
 static uint16_t dshot_prepare_packet (uint16_t value);
 static void dshot_prepare_dmabuffer (DShotHandle* pDShotHandle, uint16_t value);
 static void dshot_dma_start (DShotHandle* pDShotHandle);
-static void dshot_enable_dma_request (DShotHandle* pDShotHandle);
+// static void dshot_enable_dma_request (DShotHandle* pDShotHandle);
 
 
 STATUS_TYPE

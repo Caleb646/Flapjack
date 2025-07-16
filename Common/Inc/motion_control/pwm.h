@@ -95,6 +95,16 @@ typedef struct {
     DMA_HandleTypeDef* pDMA;
 } PWM_DMAHandle;
 
+
+typedef enum {
+    ePWM_DMA_CB_TRANSFER_COMPLETE = 0,
+    ePWM_DMA_CB_HALF_TRANSFER     = 1,
+    ePWM_DMA_CB_TRANSFER_ERROR    = 2,
+    ePWM_DMA_CB_ABORT             = 3
+} ePWM_DMA_CB_TYPE;
+
+typedef void (*PWM_DMACallback) (TIM_HandleTypeDef* htim);
+
 STATUS_TYPE PWMInit (PWMConfig config, PWMHandle* pOutHandle);
 STATUS_TYPE PWMStart (PWMHandle* pHandle);
 STATUS_TYPE PWMWrite (PWMHandle* pHandle, uint32_t usUpTime);

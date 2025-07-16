@@ -28,6 +28,15 @@ typedef struct {
     uint32_t request; // DMA request type, e.g., DMA_REQUEST_USART1_TX
 } DMAConfig;
 
+typedef enum {
+    eDMA_CB_TRANSFER_COMPLETE = 0,
+    eDMA_CB_HALF_TRANSFER     = 1,
+    eDMA_CB_TRANSFER_ERROR    = 2,
+    eDMA_CB_ABORT             = 3
+} eDMA_CB_TYPE;
+
+typedef void (*DMACallback) (struct __DMA_HandleTypeDef* hdma);
+
 // Forward declaration of the PWM DMA handle structure
 // typedef struct __PWMDMAHandle PWM_DMAHandle;
 
