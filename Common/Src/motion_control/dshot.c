@@ -71,7 +71,7 @@ DShotInit (DShotConfig dConfig, PWMConfig timConfig, DMAConfig dmaConfig, DShotH
     pwm_DmaConfig.dmaRegIDXs[0]  = timDmaRegIdx;
     pwm_DmaConfig.dmaRegIDXCount = 1;
 
-    STATUS_TYPE status = PWMDMAInit (pwm_DmaConfig, dmaConfig, &dshot.pwmdma);
+    STATUS_TYPE status = PWM_DMAInit (pwm_DmaConfig, dmaConfig, &dshot.pwmdma);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize PWM DMA for DShot");
         return eSTATUS_FAILURE;
@@ -155,8 +155,16 @@ STATUS_TYPE DShotWrite (DShotHandle* pDShotHandle, uint16_t motorVal) {
 
     dshot_prepare_dmabuffer (pDShotHandle, motorVal);
     dshot_dma_start (pDShotHandle);
-    dshot_enable_dma_request (pDShotHandle);
+    // dshot_enable_dma_request (pDShotHandle);
     return eSTATUS_SUCCESS;
+}
+
+void HAL_TIM_ErrorCallback (TIM_HandleTypeDef* htim) {
+    LOG_ERROR ("DShot timer error callback");
+}
+
+void HAL_TIM_PWM_PulseFinishedHalfCpltCallback (TIM_HandleTypeDef* htim) {
+    LOG_INFO ("DShot DMA transfer half complete callback");
 }
 
 // __HAL_TIM_DISABLE_DMA is needed to eliminate the delay between different
@@ -182,7 +190,9 @@ void HAL_TIM_PWM_PulseFinishedCallback (TIM_HandleTypeDef* htim) {
     }
 
     uint32_t channel = TIM_CHANNEL_1;
-    if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_2) {
+    if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1) {
+        channel = TIM_CHANNEL_1;
+    } else if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_2) {
         channel = TIM_CHANNEL_2;
     } else if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_3) {
         channel = TIM_CHANNEL_3;
@@ -193,10 +203,10 @@ void HAL_TIM_PWM_PulseFinishedCallback (TIM_HandleTypeDef* htim) {
         return;
     }
 
-    HAL_TIM_PWM_Stop_DMA (htim, channel);
+    // HAL_TIM_PWM_Stop_DMA (htim, channel);
 
     // if (hdma == htim->hdma[TIM_DMA_ID_CC1]) {
-    // __HAL_TIM_DISABLE_DMA (htim, TIM_DMA_CC1);
+    __HAL_TIM_DISABLE_DMA (htim, channel);
     // // }
 
     // // else if (hdma == htim->hdma[TIM_DMA_ID_CC2]) {
@@ -324,9 +334,9 @@ static void dshot_dma_start (DShotHandle* pDShotHandle) {
     // }
 }
 
-static void dshot_enable_dma_request (DShotHandle* pDShotHandle) {
+// static void dshot_enable_dma_request (DShotHandle* pDShotHandle) {
 
-    TIM_HandleTypeDef* pTimerHandle = &pDShotHandle->pwmdma.pwm.timer;
-    uint32_t timChannelID           = pDShotHandle->pwmdma.pwm.channelID;
-    __HAL_TIM_ENABLE_DMA (pTimerHandle, timChannelID);
-}
+//     TIM_HandleTypeDef* pTimerHandle = &pDShotHandle->pwmdma.pwm.timer;
+//     uint32_t timChannelID           = pDShotHandle->pwmdma.pwm.channelID;
+//     __HAL_TIM_ENABLE_DMA (pTimerHandle, timChannelID);
+// }

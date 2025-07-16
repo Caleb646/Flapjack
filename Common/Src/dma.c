@@ -16,10 +16,10 @@ uint8_t gDMAStreamsAlloced[7]  = { 0 };
 /**
  * @brief This function handles DMA1 stream0 global interrupt.
  */
-void DMA1_Stream0_IRQHandler (void) {
-    // LOG_INFO ("DMA1 Stream0 IRQ Handler");
-    HAL_DMA_IRQHandler (&gDMAStream_0);
-}
+// void DMA1_Stream0_IRQHandler (void) {
+//     // LOG_INFO ("DMA1 Stream0 IRQ Handler");
+//     HAL_DMA_IRQHandler (&gDMAStream_0);
+// }
 
 /**
  * @brief This function handles DMA1 stream1 global interrupt.

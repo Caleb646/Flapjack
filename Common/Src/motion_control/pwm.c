@@ -339,7 +339,7 @@ STATUS_TYPE PWMInit (PWMConfig config, PWMHandle* pOutHandle) {
     TIM_OC_InitTypeDef sConfig = { 0 };
     sConfig.OCMode             = TIM_OCMODE_PWM1;
     sConfig.OCPolarity         = TIM_OCPOLARITY_HIGH;
-    sConfig.Pulse              = 10;
+    sConfig.Pulse              = 0; // 10;
     sConfig.OCNPolarity        = TIM_OCNPOLARITY_HIGH;
     sConfig.OCFastMode         = TIM_OCFAST_DISABLE;
     sConfig.OCIdleState        = TIM_OCIDLESTATE_RESET;

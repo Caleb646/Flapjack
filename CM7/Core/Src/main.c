@@ -39,6 +39,130 @@
 #include "sensors/imu/imu.h"
 #include "sync.h"
 
+
+TIM_HandleTypeDef TimHandle;
+DMA_HandleTypeDef hdma_tim;
+TIM_OC_InitTypeDef sConfig;
+uint32_t aCCValue_Buffer[8] = { 0 };
+uint32_t uwTimerPeriod      = 0;
+
+
+// void DMA1_Stream0_IRQHandler (void) {
+//     // LOG_INFO ("DMA1 Stream0 IRQ Handler");
+//     HAL_DMA_IRQHandler (&hdma_tim);
+// }
+
+void Temp_PWM_Init (TIM_HandleTypeDef* htim) {
+    GPIO_InitTypeDef GPIO_InitStruct;
+
+
+    /*##-1- Enable peripherals and GPIO Clocks #################################*/
+    /* TIM8 clock enable */
+    __HAL_RCC_TIM8_CLK_ENABLE ();
+    __HAL_RCC_DMA1_CLK_ENABLE ();
+    __HAL_RCC_GPIOC_CLK_ENABLE ();
+    __HAL_RCC_GPIOJ_CLK_ENABLE ();
+    /* TIM8 GPIO Configuration
+     * PC6     ------> TIM8_CH1
+     * PJ7     ------> TIM8_CH2N
+     */
+    GPIO_InitStruct.Pin       = GPIO_PIN_6;
+    GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull      = GPIO_NOPULL;
+    GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_VERY_HIGH;
+    GPIO_InitStruct.Alternate = GPIO_AF3_TIM8;
+    HAL_GPIO_Init (GPIOC, &GPIO_InitStruct);
+
+    // #define ARD_D6_Pin GPIO_PIN_7
+    GPIO_InitStruct.Pin       = GPIO_PIN_7;
+    GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull      = GPIO_NOPULL;
+    GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_VERY_HIGH;
+    GPIO_InitStruct.Alternate = GPIO_AF3_TIM8;
+    // #define ARD_D6_GPIO_Port GPIOJ
+    HAL_GPIO_Init (GPIOJ, &GPIO_InitStruct);
+
+
+    /* Set the parameters to be configured */
+    hdma_tim.Init.Request             = DMA_REQUEST_TIM8_CH1;
+    hdma_tim.Init.Direction           = DMA_MEMORY_TO_PERIPH;
+    hdma_tim.Init.PeriphInc           = DMA_PINC_DISABLE;
+    hdma_tim.Init.MemInc              = DMA_MINC_ENABLE;
+    hdma_tim.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
+    hdma_tim.Init.MemDataAlignment    = DMA_MDATAALIGN_WORD;
+    hdma_tim.Init.Mode                = DMA_NORMAL;
+    hdma_tim.Init.Priority            = DMA_PRIORITY_MEDIUM;
+    hdma_tim.Init.FIFOMode            = DMA_FIFOMODE_DISABLE;
+    hdma_tim.Init.FIFOThreshold       = DMA_FIFO_THRESHOLD_FULL;
+    hdma_tim.Init.MemBurst            = DMA_MBURST_SINGLE;
+    hdma_tim.Init.PeriphBurst         = DMA_PBURST_SINGLE;
+
+    /* Set hdma_tim instance */
+    hdma_tim.Instance = DMA1_Stream0;
+
+    /* Link hdma_tim to hdma[TIM_DMA_ID_CC1] (channel1) */
+    htim->hdma[TIM_DMA_ID_CC1] = &hdma_tim;
+    hdma_tim.Parent            = htim;
+    // __HAL_LINKDMA (htim, hdma[TIM_DMA_ID_CC1], hdma_tim);
+
+    /* Initialize TIMx DMA handle */
+    HAL_DMA_Init (htim->hdma[TIM_DMA_ID_CC1]);
+
+    /*##-2- Configure the NVIC for DMA #########################################*/
+    /* NVIC configuration for DMA transfer complete interrupt */
+    HAL_NVIC_SetPriority (DMA1_Stream0_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ (DMA1_Stream0_IRQn);
+}
+
+void Temp_DMA_Start (void) {
+
+    Temp_PWM_Init (&TimHandle);
+
+    uint32_t prescaler = 64U - 1U;
+    uwTimerPeriod      = 1000U;
+    /* Compute CCR1 value to generate a duty cycle at 75% */
+    aCCValue_Buffer[0] = 750U;
+    /* Compute CCR2 value to generate a duty cycle at 50% */
+    aCCValue_Buffer[1] = 500U;
+    /* Compute CCR3 value to generate a duty cycle at 25% */
+    aCCValue_Buffer[2] = 250U;
+
+    TimHandle.Instance               = TIM8;
+    TimHandle.Init.Period            = uwTimerPeriod;
+    TimHandle.Init.RepetitionCounter = 0;
+    TimHandle.Init.Prescaler         = prescaler;
+    TimHandle.Init.ClockDivision     = 0;
+    TimHandle.Init.CounterMode       = TIM_COUNTERMODE_UP;
+    TimHandle.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+
+    if (HAL_TIM_PWM_Init (&TimHandle) != HAL_OK) {
+        return;
+    }
+
+    /*##-2- Configure the PWM channel 1 ########################################*/
+    sConfig.OCMode       = TIM_OCMODE_PWM1;
+    sConfig.OCPolarity   = TIM_OCPOLARITY_HIGH;
+    sConfig.Pulse        = 0;
+    sConfig.OCNPolarity  = TIM_OCNPOLARITY_HIGH;
+    sConfig.OCFastMode   = TIM_OCFAST_DISABLE;
+    sConfig.OCIdleState  = TIM_OCIDLESTATE_RESET;
+    sConfig.OCNIdleState = TIM_OCNIDLESTATE_RESET;
+    if (HAL_TIM_PWM_ConfigChannel (&TimHandle, &sConfig, TIM_CHANNEL_1) != HAL_OK) {
+        return;
+    }
+    LOG_INFO ("PWM starting");
+    /* ##-3- Start PWM signal generation in DMA mode ############################ */
+    if (HAL_TIM_PWM_Start_DMA (&TimHandle, TIM_CHANNEL_1, aCCValue_Buffer, 3) != HAL_OK) {
+        return;
+    }
+
+    while (1) {
+        LOG_INFO ("PWM running");
+        HAL_Delay (1000);
+    }
+}
+
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -117,6 +241,7 @@ void HAL_GPIO_EXTI_Callback (uint16_t gpioPin) {
 }
 
 void TaskMotionControlUpdate (void* pvParameters) {
+
     float startTime        = (float)xTaskGetTickCount ();
     uint32_t logStart      = xTaskGetTickCount ();
     uint32_t const logStep = 500;
@@ -264,6 +389,10 @@ int main (void) {
     // Wait for CM4 to initialize UART
     HAL_Delay (1000);
 
+
+    // Temp_DMA_Start ();
+
+
     if (DMASystemInit () != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to init DMA system");
     }
@@ -311,7 +440,7 @@ int main (void) {
                                .dma = { .pDMA = DMA1_Stream0,
                                         .direction = eDMA_DIRECTION_MEMORY_TO_PERIPH,
                                         .priority = eDMA_PRIORITY_HIGH,
-                                        .request = DMA_REQUEST_TIM8_UP } };
+                                        .request = DMA_REQUEST_TIM8_CH1 } };
 
     PWMConfig left_Servo = { .base = { .pTimer       = TIM13,
                                        .channelID    = TIM_CHANNEL_1,
