@@ -11,13 +11,22 @@
 PWM_DMACallback gPWM_DMACallbacks[13][4][8] = { 0 };
 
 static int32_t PWMTim2Idx (TIM_TypeDef* pTim);
+static int32_t PWMTimChannel2Idx (uint32_t channeldID);
+static int32_t PWMTimActiveChannel2Idx (HAL_TIM_ActiveChannel channel);
+static PWM_DMACallback
+PWM_DMAGetCallback (TIM_HandleTypeDef* htim, ePWM_DMA_CB_TYPE cbType);
 
 /*
  * The callback set by HAL_PWM_DMA_START call this function for Timer DMA transfer error callback.
  */
 void HAL_TIM_ErrorCallback (TIM_HandleTypeDef* htim) {
+
     if (htim == NULL) {
         return;
+    }
+    PWM_DMACallback callback = PWM_DMAGetCallback (htim, ePWM_DMA_CB_TRANSFER_ERROR);
+    if (callback != NULL) {
+        callback (htim);
     }
 }
 
@@ -25,27 +34,33 @@ void HAL_TIM_ErrorCallback (TIM_HandleTypeDef* htim) {
  * The callback set by HAL_PWM_DMA_START call this function for Timer DMA transfer half complete callback.
  */
 void HAL_TIM_PWM_PulseFinishedHalfCpltCallback (TIM_HandleTypeDef* htim) {
+
+    if (htim == NULL) {
+        return;
+    }
+    PWM_DMACallback callback = PWM_DMAGetCallback (htim, ePWM_DMA_CB_HALF_TRANSFER);
+    if (callback != NULL) {
+        callback (htim);
+    }
 }
 
 /*
  * The callback set by HAL_PWM_DMA_START call this function for Timer DMA transfer complete callback.
  */
 void HAL_TIM_PWM_PulseFinishedCallback (TIM_HandleTypeDef* htim) {
-    int32_t timIdx     = PWMTim2Idx (htim->Instance);
-    int32_t channelIdx = PWMTimActiveChannel2Idx (htim->Channel);
-    if (timIdx < 0 || channelIdx < 0) {
+
+    if (htim == NULL) {
         return;
     }
-    PWM_DMACallback cb =
-    gPWM_DMACallbacks[timIdx][ePWM_DMA_CB_HALF_TRANSFER][channelIdx];
+    PWM_DMACallback callback = PWM_DMAGetCallback (htim, ePWM_DMA_CB_TRANSFER_COMPLETE);
+    if (callback != NULL) {
+        callback (htim);
+    }
 }
 
 static PWM_DMACallback
 PWM_DMAGetCallback (TIM_HandleTypeDef* htim, ePWM_DMA_CB_TYPE cbType) {
 
-    if (htim == NULL) {
-        return NULL;
-    }
     int32_t timIdx     = PWMTim2Idx (htim->Instance);
     int32_t channelIdx = PWMTimActiveChannel2Idx (htim->Channel);
     if (timIdx < 0 || channelIdx < 0) {
@@ -54,6 +69,45 @@ PWM_DMAGetCallback (TIM_HandleTypeDef* htim, ePWM_DMA_CB_TYPE cbType) {
     return gPWM_DMACallbacks[timIdx][cbType][channelIdx];
 }
 
+static int32_t PWMTim2Idx (TIM_TypeDef* pTim) {
+
+    if (pTim == NULL) {
+        // LOG_ERROR ("Invalid timer instance");
+        return -1;
+    }
+
+    TIM_TypeDef* pTimerRegisters = pTim;
+    if (pTimerRegisters == TIM8) {
+        return 8 - 1; // Timers are 1-indexed in the HAL, so TIM8 is index 7
+    }
+    if (pTimerRegisters == TIM13) {
+        return 13 - 1; // Timers are 1-indexed in the HAL, so TIM13 is index 12
+    }
+    return -1;
+}
+
+static int32_t PWMTimChannel2Idx (uint32_t channeldID) {
+
+    switch (channeldID) {
+    case TIM_CHANNEL_1: return 0;
+    case TIM_CHANNEL_2: return 1;
+    case TIM_CHANNEL_3: return 2;
+    case TIM_CHANNEL_4: return 3;
+    case TIM_CHANNEL_5: return 4;
+    case TIM_CHANNEL_6: return 5;
+    default:
+        // LOG_ERROR ("Invalid timer channel ID: 0x%X", (uint16_t)channeldID);
+        return -1; // Invalid channel ID
+    }
+}
+
+static int32_t PWMTimActiveChannel2Idx (HAL_TIM_ActiveChannel channel) {
+
+    if (channel > 0) {
+        return (int32_t)channel - 1; // Convert to 0-indexed
+    }
+    return -1;
+}
 
 static STATUS_TYPE PWMEnableTimClock (PWMHandle* pHandle) {
 
@@ -76,30 +130,6 @@ static STATUS_TYPE PWMEnableTimClock (PWMHandle* pHandle) {
     }
 
     return eSTATUS_SUCCESS;
-}
-
-static int32_t PWMTim2Idx (TIM_TypeDef* pTim) {
-
-    if (pTim == NULL) {
-        // LOG_ERROR ("Invalid timer instance");
-        return -1;
-    }
-
-    TIM_TypeDef* pTimerRegisters = pTim;
-    if (pTimerRegisters == TIM8) {
-        return 8 - 1; // Timers are 1-indexed in the HAL, so TIM8 is index 7
-    }
-    if (pTimerRegisters == TIM13) {
-        return 13 - 1; // Timers are 1-indexed in the HAL, so TIM13 is index 12
-    }
-    return -1;
-}
-
-static int32_t PWMTimActiveChannel2Idx (HAL_TIM_ActiveChannel channel) {
-    if (channel > 0) {
-        return (int32_t)channel - 1; // Convert to 0-indexed
-    }
-    return -1;
 }
 
 // STATUS_TYPE PWMInitTimBaseConfig (PWMHandle* pHandle) {
@@ -370,20 +400,20 @@ STATUS_TYPE PWMInit (PWMConfig config, PWMHandle* pOutHandle) {
 
     memset (pOutHandle, 0, sizeof (PWMHandle));
     uint32_t autoReload = TIM_AUTORELOAD_PRELOAD_ENABLE;
-    uint32_t prescaler  = 0;
-    uint32_t period     = 0;
+    uint32_t prescaler  = (uint16_t)(SystemCoreClock / 1000000U) - 1U;
+    uint32_t period = (uint16_t)(1000000U / MAX_U32 (config.base.hzPeriod, 1U)) - 1U;
 
     if (config.base.doAutoReload == FALSE) {
         LOG_INFO ("Enabling auto-reload for PWM timer");
         autoReload = TIM_AUTORELOAD_PRELOAD_DISABLE;
     }
 
-    if (config.base.hzPeriod > 0) {
-        /* Prescale 64 MHz to 1MHz */
-        prescaler = (uint16_t)(SystemCoreClock / 1000000U) - 1U;
-        /* Scale  1MHz i.e. current PWM Period (ARR) to config.hzPeriod */
-        period = (uint16_t)(1000000U / config.base.hzPeriod) - 1U;
-    }
+    // if (config.base.hzPeriod > 0) {
+    //     /* Prescale 64 MHz to 1MHz */
+    //     prescaler = (uint16_t)(SystemCoreClock / 1000000U) - 1U;
+    //     /* Scale  1MHz i.e. current PWM Period (ARR) to config.hzPeriod
+    //     */ period = (uint16_t)(1000000U / config.base.hzPeriod) - 1U;
+    // }
     PWMHandle pwm                    = { 0 };
     pwm.timer.Instance               = config.base.pTimer;
     pwm.channelID                    = config.base.channelID;
@@ -510,15 +540,15 @@ PWM_DMAInit (PWM_DMAConfig timConfig, DMAConfig dmaConfig, PWM_DMAHandle* pOutHa
     }
 
     memset (pOutHandle, 0, sizeof (PWM_DMAHandle));
-    PWM_DMAHandle pwm_DMA = { 0 };
-    PWMConfig pwmConfig   = { .base = timConfig.base };
-    STATUS_TYPE status    = PWMInit (pwmConfig, &pwm_DMA.pwm);
+    // PWM_DMAHandle pwm_DMA = { 0 };
+    PWMConfig pwmConfig = { .base = timConfig.base };
+    STATUS_TYPE status  = PWMInit (pwmConfig, &pOutHandle->pwm);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize PWM for DMA");
         return status;
     }
 
-    status = DMAInit (dmaConfig, &pwm_DMA.pDMA);
+    status = DMAInit (dmaConfig, &pOutHandle->pDMA);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize DMA");
         return status;
@@ -530,6 +560,7 @@ PWM_DMAInit (PWM_DMAConfig timConfig, DMAConfig dmaConfig, PWM_DMAHandle* pOutHa
         return eSTATUS_FAILURE;
     }
 
+    // *pOutHandle = pwm_DMA;
     for (uint16_t i = 0; i < timConfig.dmaRegIDXCount; ++i) {
         if (timConfig.dmaRegIDXs[i] >= MAX_DMA_TIM_REGISTERS) {
             LOG_ERROR ("Invalid DMA register index: %u", timConfig.dmaRegIDXs[i]);
@@ -542,13 +573,14 @@ PWM_DMAInit (PWM_DMAConfig timConfig, DMAConfig dmaConfig, PWM_DMAHandle* pOutHa
          * Link the DMA handle to the specific PWM timer register it is
          * going to be writing to.
          */
-        pwm_DMA.pwm.timer.hdma[timConfig.dmaRegIDXs[i]] = pwm_DMA.pDMA;
+        pOutHandle->pwm.timer.hdma[timConfig.dmaRegIDXs[i]] = pOutHandle->pDMA;
     }
     // Link the DMA handle to the parent timer
-    // This is necessary for the HAL to know which timer the DMA is associated with
-    pwm_DMA.pDMA->Parent = &pwm_DMA.pwm.timer;
-
-    *pOutHandle = pwm_DMA;
+    // This is necessary for the HAL to know which timer the DMA is
+    // associated with *pOutHandle              = pwm_DMA;
+    pOutHandle->pDMA->Parent = &pOutHandle->pwm.timer;
+    // pwm_DMA.pDMA->Parent = &pwm_DMA.pwm.timer;
+    //*pOutHandle = pwm_DMA;
     return eSTATUS_SUCCESS;
 }
 
@@ -559,10 +591,135 @@ STATUS_TYPE PWM_DMAStart (PWM_DMAHandle* pHandle, uint32_t const* pData, uint16_
         return eSTATUS_FAILURE;
     }
 
+    if (pHandle->pwm.timer.Instance != TIM8) {
+        LOG_ERROR ("PWM DMA only supports TIM8 for now");
+        return eSTATUS_FAILURE;
+    }
+    if (pHandle->pwm.timer.hdma[TIM_DMA_ID_CC1]->Instance != DMA1_Stream0) {
+        LOG_ERROR ("PWM DMA only supports DMA1_Stream0 for TIM8");
+        return eSTATUS_FAILURE;
+    }
+
+    if (
+    ((TIM_HandleTypeDef*)pHandle->pwm.timer.hdma[TIM_DMA_ID_CC1]->Parent)->Instance != TIM8) {
+        LOG_ERROR ("PWM DMA handle's parent timer does not match TIM8");
+        return eSTATUS_FAILURE;
+    }
+
+    LOG_INFO ("Starting PWM DMA");
+
+    // Debug: Check timer state before starting DMA
+    // LOG_INFO (
+    // "Timer state before DMA start: CR1=0x%X, DIER=0x%X, SR=0x%X",
+    // (uint16_t)pHandle->pwm.timer.Instance->CR1,
+    // (uint16_t)pHandle->pwm.timer.Instance->DIER,
+    // (uint16_t)pHandle->pwm.timer.Instance->SR);
+
     if (HAL_TIM_PWM_Start_DMA (&pHandle->pwm.timer, pHandle->pwm.channelID, (uint32_t*)pData, Length) != HAL_OK) {
         LOG_ERROR ("Failed to start PWM DMA");
         return eSTATUS_FAILURE;
     }
 
+    // // Debug: Check timer state after starting DMA
+    // LOG_INFO (
+    // "Timer state after DMA start: CR1=0x%X, DIER=0x%X, SR=0x%X",
+    // (uint16_t)pHandle->pwm.timer.Instance->CR1,
+    // (uint16_t)pHandle->pwm.timer.Instance->DIER,
+    // (uint16_t)pHandle->pwm.timer.Instance->SR);
+
+    // // Debug: Check if DMA is actually enabled and configured
+    // DMA_Stream_TypeDef* dmaStream = (DMA_Stream_TypeDef*)pHandle->pDMA->Instance;
+    // LOG_INFO (
+    // "DMA Stream CR=0x%X, NDTR=%u, PAR=0x%X, M0AR=0x%X",
+    // (uint16_t)dmaStream->CR, (uint16_t)dmaStream->NDTR,
+    // (uint16_t)dmaStream->PAR, (uint16_t)dmaStream->M0AR);
+
+    return eSTATUS_SUCCESS;
+}
+
+STATUS_TYPE PWM_DMAStopISR (TIM_HandleTypeDef* htim, uint32_t Channel) {
+    if (htim == NULL) {
+        // LOG_ERROR ("Invalid PWM DMA handle or timer instance");
+        return eSTATUS_FAILURE;
+    }
+
+    HAL_StatusTypeDef status = HAL_OK;
+
+    switch (Channel) {
+    case TIM_CHANNEL_1: {
+        /* Disable the TIM Capture/Compare 1 DMA request */
+        __HAL_TIM_DISABLE_DMA (htim, TIM_DMA_CC1);
+        __HAL_DMA_DISABLE (htim->hdma[TIM_DMA_ID_CC1]);
+        // (void)HAL_DMA_Abort_IT (htim->hdma[TIM_DMA_ID_CC1]);
+        break;
+    }
+
+    case TIM_CHANNEL_2: {
+        /* Disable the TIM Capture/Compare 2 DMA request */
+        __HAL_TIM_DISABLE_DMA (htim, TIM_DMA_CC2);
+        __HAL_DMA_DISABLE (htim->hdma[TIM_DMA_ID_CC2]);
+        // (void)HAL_DMA_Abort_IT (htim->hdma[TIM_DMA_ID_CC2]);
+        break;
+    }
+
+    case TIM_CHANNEL_3: {
+        /* Disable the TIM Capture/Compare 3 DMA request */
+        __HAL_TIM_DISABLE_DMA (htim, TIM_DMA_CC3);
+        __HAL_DMA_DISABLE (htim->hdma[TIM_DMA_ID_CC3]);
+        // (void)HAL_DMA_Abort_IT (htim->hdma[TIM_DMA_ID_CC3]);
+        break;
+    }
+
+    case TIM_CHANNEL_4: {
+        /* Disable the TIM Capture/Compare 4 interrupt */
+        __HAL_TIM_DISABLE_DMA (htim, TIM_DMA_CC4);
+        __HAL_DMA_DISABLE (htim->hdma[TIM_DMA_ID_CC4]);
+        // (void)HAL_DMA_Abort_IT (htim->hdma[TIM_DMA_ID_CC4]);
+        break;
+    }
+
+    default: status = HAL_ERROR; break;
+    }
+
+    if (status == HAL_OK) {
+        /* Disable the Capture compare channel */
+        TIM_CCxChannelCmd (htim->Instance, Channel, TIM_CCx_DISABLE);
+
+        if (IS_TIM_BREAK_INSTANCE (htim->Instance) != RESET) {
+            /* Disable the Main Output */
+            __HAL_TIM_MOE_DISABLE (htim);
+        }
+
+        /* Disable the Peripheral */
+        __HAL_TIM_DISABLE (htim);
+
+        /* Set the TIM channel state */
+        TIM_CHANNEL_STATE_SET (htim, Channel, HAL_TIM_CHANNEL_STATE_READY);
+    }
+
+    if (status != HAL_OK) {
+        // LOG_ERROR ("Failed to stop PWM DMA for channel %u", (uint16_t)Channel);
+        return eSTATUS_FAILURE;
+    }
+    return eSTATUS_SUCCESS;
+}
+
+STATUS_TYPE
+PWM_DMARegisterCallback (PWM_DMAHandle* pHandle, uint32_t channelID, PWM_DMACallback callback, ePWM_DMA_CB_TYPE cbType) {
+
+    if (pHandle == NULL || callback == NULL) {
+        LOG_ERROR ("Invalid parameters for PWM DMA callback registration");
+        return eSTATUS_FAILURE;
+    }
+
+    int32_t id     = PWMTimChannel2Idx (channelID);
+    int32_t timIdx = PWMTim2Idx (pHandle->pwm.timer.Instance);
+
+    if (timIdx < 0 || id < 0) {
+        LOG_ERROR ("Invalid timer index or channel ID for PWM DMA callback registration");
+        return eSTATUS_FAILURE;
+    }
+
+    gPWM_DMACallbacks[timIdx][cbType][id] = callback;
     return eSTATUS_SUCCESS;
 }

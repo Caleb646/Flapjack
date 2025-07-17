@@ -45,7 +45,7 @@
 #define DSHOT300_HZ PWM_MHZ2HZ (6)
 #define DSHOT150_HZ PWM_MHZ2HZ (3)
 
-// static void dshot_dma_tc_callback (DMA_HandleTypeDef* hdma);
+static void DShotDMACompleteCallback (TIM_HandleTypeDef* htim);
 static uint32_t dshot_tim_channel_to_dma_ccx_id (uint32_t channelID);
 static uint16_t dshot_prepare_packet (uint16_t value);
 static void dshot_prepare_dmabuffer (DShotHandle* pDShotHandle, uint16_t value);
@@ -77,6 +77,14 @@ DShotInit (DShotConfig dConfig, PWMConfig timConfig, DMAConfig dmaConfig, DShotH
         return eSTATUS_FAILURE;
     }
 
+    status = PWM_DMARegisterCallback (
+    &dshot.pwmdma, dshot.pwmdma.pwm.channelID, DShotDMACompleteCallback,
+    ePWM_DMA_CB_TRANSFER_COMPLETE);
+    if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to register PWM DMA callback for DShot");
+        return eSTATUS_FAILURE;
+    }
+
     /*
      * Scale clock frequency from 64 MHz to 1 MHz.
      * Then set ARR to the us value in the Bit column.
@@ -91,7 +99,11 @@ DShotInit (DShotConfig dConfig, PWMConfig timConfig, DMAConfig dmaConfig, DShotH
      * signal needs to be high in order to be counted as a 0. Bit is pwm
      * period in us
      */
-    uint16_t prescaler = (TIMER_CLOCK / 64) - 1U;
+    // PWM_SET_PRESCALER (&dshot.pwmdma.pwm, (TIMER_CLOCK / 64) - 1U);
+    // PWM_SET_PERIOD (&dshot.pwmdma.pwm, 1000); // Set period to 1 us
+    // dshot.usValforBit_1 = 750;
+    // dshot.usValforBit_0 = 250;
+    uint16_t prescaler = (TIMER_CLOCK / 1000000U) - 1U;
     PWMHandle* ppwm    = &dshot.pwmdma.pwm;
     PWM_SET_PRESCALER (ppwm, prescaler);
 
@@ -123,11 +135,6 @@ DShotInit (DShotConfig dConfig, PWMConfig timConfig, DMAConfig dmaConfig, DShotH
         LOG_ERROR ("Invalid DShot type: %d", dshotType);
         return eSTATUS_FAILURE;
     }
-    /*
-     * For the mapped timer channel capture compare register, map the dma transfer complete callback
-     */
-    // TIM_HandleTypeDef* pTimerHandle = &ppwm->timer;
-    // pTimerHandle->hdma[timDmaRegIdx]->XferCpltCallback = dshot_dma_tc_callback;
 
     dshot.timDmaCCXRegIdx = timDmaRegIdx;
     *pOutHandle           = dshot;
@@ -150,76 +157,50 @@ STATUS_TYPE DShotWrite (DShotHandle* pDShotHandle, uint16_t motorVal) {
     TIM_CHANNEL_STATE_GET (
     &pDShotHandle->pwmdma.pwm.timer, pDShotHandle->pwmdma.pwm.channelID) ==
     HAL_TIM_CHANNEL_STATE_BUSY) {
-        return HAL_BUSY;
+        LOG_ERROR ("Tim busy");
+        return eSTATUS_FAILURE;
     }
-
+    LOG_INFO ("Tim not busy");
     dshot_prepare_dmabuffer (pDShotHandle, motorVal);
     dshot_dma_start (pDShotHandle);
     // dshot_enable_dma_request (pDShotHandle);
     return eSTATUS_SUCCESS;
 }
 
-void HAL_TIM_ErrorCallback (TIM_HandleTypeDef* htim) {
-    LOG_ERROR ("DShot timer error callback");
-}
+static void DShotDMACompleteCallback (TIM_HandleTypeDef* htim) {
 
-void HAL_TIM_PWM_PulseFinishedHalfCpltCallback (TIM_HandleTypeDef* htim) {
-    LOG_INFO ("DShot DMA transfer half complete callback");
-}
-
-// __HAL_TIM_DISABLE_DMA is needed to eliminate the delay between different
-// dshot signals I don't know why :(
-// static void dshot_dma_tc_callback (TIM_HandleTypeDef *htim) {
-/*
- * Timer DMA transfer complete callback.
- */
-void HAL_TIM_PWM_PulseFinishedCallback (TIM_HandleTypeDef* htim) {
-
-    LOG_INFO ("DShot DMA transfer complete callback");
-    // if (htim == NULL) {
-    //     LOG_ERROR ("NULL DMA handle");
-    //     return;
-    // }
-
-    // TIM_HandleTypeDef* htim =
-    // (TIM_HandleTypeDef*)((DMA_HandleTypeDef*)hdma)->Parent;
-
+    // LOG_INFO ("DShot DMA transfer complete callback");
     if (htim == NULL) {
-        LOG_ERROR ("Invalid timer handle");
         return;
     }
 
-    uint32_t channel = TIM_CHANNEL_1;
+    uint32_t channel = 0;
+    uint32_t dma_id  = 0;
+
     if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1) {
         channel = TIM_CHANNEL_1;
+        dma_id  = TIM_DMA_ID_CC1;
     } else if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_2) {
         channel = TIM_CHANNEL_2;
+        dma_id  = TIM_DMA_ID_CC2;
     } else if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_3) {
         channel = TIM_CHANNEL_3;
+        dma_id  = TIM_DMA_ID_CC3;
     } else if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_4) {
         channel = TIM_CHANNEL_4;
+        dma_id  = TIM_DMA_ID_CC4;
     } else {
-        LOG_ERROR ("Invalid timer ACTIVE channel: %d", (uint16_t)htim->Channel);
         return;
     }
 
-    // HAL_TIM_PWM_Stop_DMA (htim, channel);
+    // Disable DMA request for this channel but keep timer running
+    // __HAL_TIM_DISABLE_DMA (htim, channel);
+    // __HAL_DMA_DISABLE (htim->hdma[dma_id]);
 
-    // if (hdma == htim->hdma[TIM_DMA_ID_CC1]) {
-    __HAL_TIM_DISABLE_DMA (htim, channel);
-    // // }
+    // Set channel state to ready for next transmission
+    // TIM_CHANNEL_STATE_SET (htim, channel, HAL_TIM_CHANNEL_STATE_READY);
 
-    // // else if (hdma == htim->hdma[TIM_DMA_ID_CC2]) {
-    // __HAL_TIM_DISABLE_DMA (htim, TIM_DMA_CC2);
-    // // }
-
-    // // else if (hdma == htim->hdma[TIM_DMA_ID_CC3]) {
-    // __HAL_TIM_DISABLE_DMA (htim, TIM_DMA_CC3);
-    // // }
-
-    // // else if (hdma == htim->hdma[TIM_DMA_ID_CC4]) {
-    // __HAL_TIM_DISABLE_DMA (htim, TIM_DMA_CC4);
-    // }
+    HAL_TIM_PWM_Stop_DMA (htim, channel);
 }
 
 static uint32_t dshot_tim_channel_to_dma_ccx_id (uint32_t channelID) {
@@ -268,6 +249,11 @@ static void dshot_prepare_dmabuffer (DShotHandle* pDShotHandle, uint16_t value) 
         motor_dmabuffer[i] = (packet & 0x8000U) ? usValforBit_1 : usValforBit_0;
         packet <<= 1U;
     }
+
+    // for (uint16_t i = 0; i < 16U; ++i) {
+    //     motor_dmabuffer[i] = (i & 1U) ? usValforBit_1 : usValforBit_0;
+    //     packet <<= 1U;
+    // }
 
     motor_dmabuffer[16] = 0;
     motor_dmabuffer[17] = 0;

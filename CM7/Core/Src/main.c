@@ -308,21 +308,24 @@ void TaskMotionControlUpdate (void* pvParameters) {
             continue;
         }
 
-        status = ActuatorsWrite (pidAttitude, 0.5F);
-        if (status != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to write actuators");
-            continue;
-        }
+        // status = ActuatorsWrite (pidAttitude, 0.5F);
+        // if (status != eSTATUS_SUCCESS) {
+        //     LOG_ERROR ("Failed to write actuators");
+        //     continue;
+        // }
 
         if ((xTaskGetTickCount () - logStart) >= logStep) {
 
+            status = ActuatorsWrite (pidAttitude, 0.5F);
             // TIM13->CCR1 = 20000;
             // TIM8->CCR1 = 2000;
             // TIM8->ARR  = 20000;
             // TIM8->PSC  = 64;
-            LOG_INFO (
-            "TIM8 CCR1: %u ARR: %u PSC: %u", (uint16_t)TIM8->CCR1,
-            (uint16_t)TIM8->ARR, (uint16_t)TIM8->PSC);
+            // LOG_INFO (
+            // "TIM8 CCR1: %u ARR: %u PSC: %u", (uint16_t)TIM8->CCR1,
+            // (uint16_t)TIM8->ARR, (uint16_t)TIM8->PSC);
+
+            LOG_INFO ("H");
 
             logStart = xTaskGetTickCount ();
 
@@ -435,8 +438,8 @@ int main (void) {
 
     MotorConfig left_Motor = { .pwm = { .base = { .pTimer = TIM8,
                                                   .channelID = TIM_CHANNEL_1,
-                                                  .hzPeriod     = 0,
-                                                  .doAutoReload = TRUE } },
+                                                  .hzPeriod = 0,
+                                                  .doAutoReload = FALSE } },
                                .dma = { .pDMA = DMA1_Stream0,
                                         .direction = eDMA_DIRECTION_MEMORY_TO_PERIPH,
                                         .priority = eDMA_PRIORITY_HIGH,

@@ -29,6 +29,7 @@ DMA_HandleTypeDef* gDMACallbackStreamHandles[7] = { 0 };
 void DMA1_Stream0_IRQHandler (void) {
     // LOG_INFO ("DMA1 Stream0 IRQ Handler");
     HAL_DMA_IRQHandler (&gDMAStream_0);
+    // LOG_INFO ("irq");
 }
 
 /**
@@ -131,25 +132,27 @@ STATUS_TYPE DMASystemInit (void) {
     gDMAStream_5.Instance = DMA1_Stream5;
     gDMAStream_6.Instance = DMA1_Stream6;
 
-    HAL_NVIC_SetPriority (DMA1_Stream0_IRQn, 0, 0);
+    uint32_t p = 6;
+
+    HAL_NVIC_SetPriority (DMA1_Stream0_IRQn, p, p);
     HAL_NVIC_EnableIRQ (DMA1_Stream0_IRQn);
 
-    HAL_NVIC_SetPriority (DMA1_Stream1_IRQn, 0, 0);
+    HAL_NVIC_SetPriority (DMA1_Stream1_IRQn, p, p);
     HAL_NVIC_EnableIRQ (DMA1_Stream1_IRQn);
 
-    HAL_NVIC_SetPriority (DMA1_Stream2_IRQn, 0, 0);
+    HAL_NVIC_SetPriority (DMA1_Stream2_IRQn, p, p);
     HAL_NVIC_EnableIRQ (DMA1_Stream2_IRQn);
 
-    HAL_NVIC_SetPriority (DMA1_Stream3_IRQn, 0, 0);
+    HAL_NVIC_SetPriority (DMA1_Stream3_IRQn, p, p);
     HAL_NVIC_EnableIRQ (DMA1_Stream3_IRQn);
 
-    HAL_NVIC_SetPriority (DMA1_Stream4_IRQn, 0, 0);
+    HAL_NVIC_SetPriority (DMA1_Stream4_IRQn, p, p);
     HAL_NVIC_EnableIRQ (DMA1_Stream4_IRQn);
 
-    HAL_NVIC_SetPriority (DMA1_Stream5_IRQn, 0, 0);
+    HAL_NVIC_SetPriority (DMA1_Stream5_IRQn, p, p);
     HAL_NVIC_EnableIRQ (DMA1_Stream5_IRQn);
 
-    HAL_NVIC_SetPriority (DMA1_Stream6_IRQn, 0, 0);
+    HAL_NVIC_SetPriority (DMA1_Stream6_IRQn, p, p);
     HAL_NVIC_EnableIRQ (DMA1_Stream6_IRQn);
 
     return eSTATUS_SUCCESS;
@@ -197,11 +200,6 @@ STATUS_TYPE DMAInit (DMAConfig config, DMA_HandleTypeDef** ppOutHandle) {
         return eSTATUS_FAILURE;
     }
 
-    if (HAL_DMA_Init (&hdma) != HAL_OK) {
-        LOG_ERROR ("Failed to initialize DMA");
-        return eSTATUS_FAILURE;
-    }
-
     DMA_HandleTypeDef* pHandle = DMAGetHandleByStream (hdma.Instance);
     if (pHandle == NULL) {
         LOG_ERROR ("Failed to get DMA handle for stream");
@@ -209,6 +207,11 @@ STATUS_TYPE DMAInit (DMAConfig config, DMA_HandleTypeDef** ppOutHandle) {
     }
     *pHandle     = hdma;
     *ppOutHandle = pHandle;
+
+    if (HAL_DMA_Init (*ppOutHandle) != HAL_OK) {
+        LOG_ERROR ("Failed to initialize DMA");
+        return eSTATUS_FAILURE;
+    }
     return eSTATUS_SUCCESS;
 }
 
