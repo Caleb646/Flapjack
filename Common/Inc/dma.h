@@ -41,7 +41,7 @@ typedef void (*DMACallback) (struct __DMA_HandleTypeDef* hdma);
 // typedef struct __PWMDMAHandle PWM_DMAHandle;
 
 STATUS_TYPE DMASystemInit (void);
-STATUS_TYPE DMAInit (DMAConfig config, DMA_HandleTypeDef** ppOutHandle);
+STATUS_TYPE DMA_PWMInit (DMAConfig config, DMA_HandleTypeDef** ppOutHandle);
 DMA_HandleTypeDef* DMAGetUnusedStreamHandle (void);
 
 #endif /* DMA_H */

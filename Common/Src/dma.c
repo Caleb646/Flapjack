@@ -27,9 +27,7 @@ DMA_HandleTypeDef* gDMACallbackStreamHandles[7] = { 0 };
  * @brief This function handles DMA1 stream0 global interrupt.
  */
 void DMA1_Stream0_IRQHandler (void) {
-    // LOG_INFO ("DMA1 Stream0 IRQ Handler");
     HAL_DMA_IRQHandler (&gDMAStream_0);
-    // LOG_INFO ("irq");
 }
 
 /**
@@ -75,7 +73,7 @@ void DMA1_Stream6_IRQHandler (void) {
 }
 
 
-static int32_t DMAStream2Idx (DMA_TypeDef* pStream) {
+static int32_t DMAStream2Idx (DMA_Stream_TypeDef* pStream) {
     if (pStream == DMA1_Stream0) {
         return 0;
     }
@@ -100,7 +98,7 @@ static int32_t DMAStream2Idx (DMA_TypeDef* pStream) {
     return -1;
 }
 
-static DMA_HandleTypeDef* DMAGetHandleByStream (DMA_TypeDef* pStream) {
+static DMA_HandleTypeDef* DMAGetHandleByStream (DMA_Stream_TypeDef* pStream) {
 
     if (pStream == DMA1_Stream0) {
         return &gDMAStream_0;
@@ -158,7 +156,7 @@ STATUS_TYPE DMASystemInit (void) {
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE DMAInit (DMAConfig config, DMA_HandleTypeDef** ppOutHandle) {
+STATUS_TYPE DMA_PWMInit (DMAConfig config, DMA_HandleTypeDef** ppOutHandle) {
     if (ppOutHandle == NULL) {
         LOG_ERROR ("Output handle is NULL");
         return eSTATUS_FAILURE;

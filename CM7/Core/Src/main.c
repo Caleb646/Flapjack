@@ -308,15 +308,15 @@ void TaskMotionControlUpdate (void* pvParameters) {
             continue;
         }
 
-        // status = ActuatorsWrite (pidAttitude, 0.5F);
-        // if (status != eSTATUS_SUCCESS) {
-        //     LOG_ERROR ("Failed to write actuators");
-        //     continue;
-        // }
+        status = ActuatorsWrite (pidAttitude, 0.5F);
+        if (status != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to write actuators");
+            continue;
+        }
 
         if ((xTaskGetTickCount () - logStart) >= logStep) {
 
-            status = ActuatorsWrite (pidAttitude, 0.5F);
+            // status = ActuatorsWrite (pidAttitude, 0.5F);
             // TIM13->CCR1 = 20000;
             // TIM8->CCR1 = 2000;
             // TIM8->ARR  = 20000;

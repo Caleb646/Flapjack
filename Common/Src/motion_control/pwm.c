@@ -399,6 +399,7 @@ STATUS_TYPE PWMInit (PWMConfig config, PWMHandle* pOutHandle) {
     }
 
     memset (pOutHandle, 0, sizeof (PWMHandle));
+    uint32_t channelID  = config.base.channelID;
     uint32_t autoReload = TIM_AUTORELOAD_PRELOAD_ENABLE;
     uint32_t prescaler  = (uint16_t)(SystemCoreClock / 1000000U) - 1U;
     uint32_t period = (uint16_t)(1000000U / MAX_U32 (config.base.hzPeriod, 1U)) - 1U;
@@ -408,35 +409,23 @@ STATUS_TYPE PWMInit (PWMConfig config, PWMHandle* pOutHandle) {
         autoReload = TIM_AUTORELOAD_PRELOAD_DISABLE;
     }
 
-    // if (config.base.hzPeriod > 0) {
-    //     /* Prescale 64 MHz to 1MHz */
-    //     prescaler = (uint16_t)(SystemCoreClock / 1000000U) - 1U;
-    //     /* Scale  1MHz i.e. current PWM Period (ARR) to config.hzPeriod
-    //     */ period = (uint16_t)(1000000U / config.base.hzPeriod) - 1U;
-    // }
-    PWMHandle pwm                    = { 0 };
-    pwm.timer.Instance               = config.base.pTimer;
-    pwm.channelID                    = config.base.channelID;
-    pwm.timer.Init.Prescaler         = prescaler;
-    pwm.timer.Init.Period            = period;
-    pwm.timer.Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
-    pwm.timer.Init.CounterMode       = TIM_COUNTERMODE_UP;
-    pwm.timer.Init.RepetitionCounter = 0;
-    pwm.timer.Init.AutoReloadPreload = autoReload;
-    STATUS_TYPE status               = eSTATUS_SUCCESS;
+    pOutHandle->timer.Instance               = config.base.pTimer;
+    pOutHandle->channelID                    = channelID;
+    pOutHandle->timer.Init.Prescaler         = prescaler;
+    pOutHandle->timer.Init.Period            = period;
+    pOutHandle->timer.Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
+    pOutHandle->timer.Init.CounterMode       = TIM_COUNTERMODE_UP;
+    pOutHandle->timer.Init.RepetitionCounter = 0;
+    pOutHandle->timer.Init.AutoReloadPreload = autoReload;
 
-    // STATUS_TYPE status = PWMInitTimBaseConfig (&pwm);
-    // if (status != eSTATUS_SUCCESS) {
-    //     LOG_ERROR ("Failed to initialize timer base configuration");
-    //     return status;
-    // }
-    status = PWMEnableTimClock (&pwm);
+    STATUS_TYPE status = eSTATUS_SUCCESS;
+    status             = PWMEnableTimClock (pOutHandle);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to enable timer clock");
         return status;
     }
 
-    if (HAL_TIM_PWM_Init (&pwm.timer) != HAL_OK) {
+    if (HAL_TIM_PWM_Init (&pOutHandle->timer) != HAL_OK) {
         LOG_ERROR ("Failed to initialize timer PWM");
         return eSTATUS_FAILURE;
     }
@@ -449,7 +438,7 @@ STATUS_TYPE PWMInit (PWMConfig config, PWMHandle* pOutHandle) {
     sConfig.OCFastMode         = TIM_OCFAST_DISABLE;
     sConfig.OCIdleState        = TIM_OCIDLESTATE_RESET;
     sConfig.OCNIdleState       = TIM_OCNIDLESTATE_RESET;
-    if (HAL_TIM_PWM_ConfigChannel (&pwm.timer, &sConfig, pwm.channelID) != HAL_OK) {
+    if (HAL_TIM_PWM_ConfigChannel (&pOutHandle->timer, &sConfig, channelID) != HAL_OK) {
         LOG_ERROR ("Failed to configure PWM channel");
         return eSTATUS_FAILURE;
     }
@@ -460,19 +449,12 @@ STATUS_TYPE PWMInit (PWMConfig config, PWMHandle* pOutHandle) {
         gpioFreq = GPIO_SPEED_FREQ_VERY_HIGH;
     }
     LOG_INFO ("Setting GPIO frequency to %u", (uint16_t)gpioFreq);
-    status = PWMInitGPIO (&pwm, gpioFreq);
+    status = PWMInitGPIO (pOutHandle, gpioFreq);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize GPIO for timer");
         return status;
     }
 
-    // status = PWMInitChannel (&pwm);
-    // if (status != eSTATUS_SUCCESS) {
-    //     LOG_ERROR ("Failed to initialize PWM channel");
-    //     return status;
-    // }
-
-    *pOutHandle = pwm;
     return eSTATUS_SUCCESS;
 }
 
@@ -511,17 +493,6 @@ STATUS_TYPE PWMWrite (PWMHandle* pHandle, uint32_t usUpTime) {
     pHandle->timer.Instance->ARR = pHandle->timer.Init.Period;
     pHandle->timer.Instance->PSC = pHandle->timer.Init.Prescaler;
 
-    // uint32_t usPeriod         = pHandle->arr_ + 1U;
-    // float dutyCyclePercentage = PWM_US2DC (usUpTime, usPeriod);
-    // uint32_t compareValue =
-    // (uint32_t)((dutyCyclePercentage / 100.0F) * (float)(usPeriod));
-
-    /* Debug output to understand what's happening */
-    // LOG_INFO("PWM Send - ARR: %u, Period: %u us, Pulse: %u us, Duty: %u%%, CCR: %u",
-    //          (uint16_t)(pHandle->pTimerRegisters->ARR),
-    //          (uint16_t)usPeriod, (uint16_t)usUpTime,
-    //          (uint16_t)dutyCyclePercentage, (uint16_t)compareValue);
-
     PWM_SET_COMPARE (pHandle, usUpTime);
     return eSTATUS_SUCCESS;
 }
@@ -540,7 +511,6 @@ PWM_DMAInit (PWM_DMAConfig timConfig, DMAConfig dmaConfig, PWM_DMAHandle* pOutHa
     }
 
     memset (pOutHandle, 0, sizeof (PWM_DMAHandle));
-    // PWM_DMAHandle pwm_DMA = { 0 };
     PWMConfig pwmConfig = { .base = timConfig.base };
     STATUS_TYPE status  = PWMInit (pwmConfig, &pOutHandle->pwm);
     if (status != eSTATUS_SUCCESS) {
@@ -548,7 +518,7 @@ PWM_DMAInit (PWM_DMAConfig timConfig, DMAConfig dmaConfig, PWM_DMAHandle* pOutHa
         return status;
     }
 
-    status = DMAInit (dmaConfig, &pOutHandle->pDMA);
+    status = DMA_PWMInit (dmaConfig, &pOutHandle->pDMA);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize DMA");
         return status;
@@ -560,15 +530,11 @@ PWM_DMAInit (PWM_DMAConfig timConfig, DMAConfig dmaConfig, PWM_DMAHandle* pOutHa
         return eSTATUS_FAILURE;
     }
 
-    // *pOutHandle = pwm_DMA;
     for (uint16_t i = 0; i < timConfig.dmaRegIDXCount; ++i) {
         if (timConfig.dmaRegIDXs[i] >= MAX_DMA_TIM_REGISTERS) {
             LOG_ERROR ("Invalid DMA register index: %u", timConfig.dmaRegIDXs[i]);
             return eSTATUS_FAILURE;
         }
-        // __HAL_LINKDMA (
-        // &pwm_DMA.pwm.timer, hdma[timConfig.dmaRegIDXs[i]], *pwm_DMA.pDMA);
-
         /*
          * Link the DMA handle to the specific PWM timer register it is
          * going to be writing to.
@@ -576,63 +542,16 @@ PWM_DMAInit (PWM_DMAConfig timConfig, DMAConfig dmaConfig, PWM_DMAHandle* pOutHa
         pOutHandle->pwm.timer.hdma[timConfig.dmaRegIDXs[i]] = pOutHandle->pDMA;
     }
     // Link the DMA handle to the parent timer
-    // This is necessary for the HAL to know which timer the DMA is
-    // associated with *pOutHandle              = pwm_DMA;
     pOutHandle->pDMA->Parent = &pOutHandle->pwm.timer;
-    // pwm_DMA.pDMA->Parent = &pwm_DMA.pwm.timer;
-    //*pOutHandle = pwm_DMA;
     return eSTATUS_SUCCESS;
 }
 
 STATUS_TYPE PWM_DMAStart (PWM_DMAHandle* pHandle, uint32_t const* pData, uint16_t Length) {
 
-    if (pHandle == NULL || pData == NULL || Length == 0) {
-        LOG_ERROR ("Invalid parameters");
-        return eSTATUS_FAILURE;
-    }
-
-    if (pHandle->pwm.timer.Instance != TIM8) {
-        LOG_ERROR ("PWM DMA only supports TIM8 for now");
-        return eSTATUS_FAILURE;
-    }
-    if (pHandle->pwm.timer.hdma[TIM_DMA_ID_CC1]->Instance != DMA1_Stream0) {
-        LOG_ERROR ("PWM DMA only supports DMA1_Stream0 for TIM8");
-        return eSTATUS_FAILURE;
-    }
-
-    if (
-    ((TIM_HandleTypeDef*)pHandle->pwm.timer.hdma[TIM_DMA_ID_CC1]->Parent)->Instance != TIM8) {
-        LOG_ERROR ("PWM DMA handle's parent timer does not match TIM8");
-        return eSTATUS_FAILURE;
-    }
-
-    LOG_INFO ("Starting PWM DMA");
-
-    // Debug: Check timer state before starting DMA
-    // LOG_INFO (
-    // "Timer state before DMA start: CR1=0x%X, DIER=0x%X, SR=0x%X",
-    // (uint16_t)pHandle->pwm.timer.Instance->CR1,
-    // (uint16_t)pHandle->pwm.timer.Instance->DIER,
-    // (uint16_t)pHandle->pwm.timer.Instance->SR);
-
     if (HAL_TIM_PWM_Start_DMA (&pHandle->pwm.timer, pHandle->pwm.channelID, (uint32_t*)pData, Length) != HAL_OK) {
         LOG_ERROR ("Failed to start PWM DMA");
         return eSTATUS_FAILURE;
     }
-
-    // // Debug: Check timer state after starting DMA
-    // LOG_INFO (
-    // "Timer state after DMA start: CR1=0x%X, DIER=0x%X, SR=0x%X",
-    // (uint16_t)pHandle->pwm.timer.Instance->CR1,
-    // (uint16_t)pHandle->pwm.timer.Instance->DIER,
-    // (uint16_t)pHandle->pwm.timer.Instance->SR);
-
-    // // Debug: Check if DMA is actually enabled and configured
-    // DMA_Stream_TypeDef* dmaStream = (DMA_Stream_TypeDef*)pHandle->pDMA->Instance;
-    // LOG_INFO (
-    // "DMA Stream CR=0x%X, NDTR=%u, PAR=0x%X, M0AR=0x%X",
-    // (uint16_t)dmaStream->CR, (uint16_t)dmaStream->NDTR,
-    // (uint16_t)dmaStream->PAR, (uint16_t)dmaStream->M0AR);
 
     return eSTATUS_SUCCESS;
 }
