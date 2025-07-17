@@ -37,7 +37,6 @@
 #include "motion_control/pwm.h"
 #include <stdint.h>
 
-
 // in Hz, typically 64 MHz for STM32H7 series
 #define TIMER_CLOCK SystemCoreClock
 
@@ -50,7 +49,6 @@ static uint32_t dshot_tim_channel_to_dma_ccx_id (uint32_t channelID);
 static uint16_t dshot_prepare_packet (uint16_t value);
 static void dshot_prepare_dmabuffer (DShotHandle* pDShotHandle, uint16_t value);
 static void dshot_dma_start (DShotHandle* pDShotHandle);
-// static void dshot_enable_dma_request (DShotHandle* pDShotHandle);
 
 
 STATUS_TYPE
@@ -110,21 +108,21 @@ DShotInit (DShotConfig dConfig, PWMConfig timConfig, DMAConfig dmaConfig, DShotH
     DSHOTTYPE dshotType = dConfig.dshotType;
     if (dshotType == DSHOT150) {
         // Closet us value to 6.67 us is 7 us
-        PWM_SET_PERIOD (ppwm, 7);
+        PWM_SET_PERIOD (ppwm, 7 - 1);
         dshot.usValforBit_1 = 5; // 5 us for bit 1
         dshot.usValforBit_0 = 3; // 3 us for bit 0
     }
 
     else if (dshotType == DSHOT300) {
         // Closet us value to 3.33 us is 3 us
-        PWM_SET_PERIOD (ppwm, 3);
+        PWM_SET_PERIOD (ppwm, 3 - 1);
         dshot.usValforBit_1 = 2; // 2 us for bit 1
         dshot.usValforBit_0 = 1; // 1 us for bit 0
     }
 
     else if (dshotType == DSHOT600) {
         // Closet us value to 1.67 us is 2 us
-        PWM_SET_PERIOD (ppwm, 2);
+        PWM_SET_PERIOD (ppwm, 2 - 1);
         // Closet us value to 1.25 us is 1 us
         dshot.usValforBit_1 = 1; // 1 us for bit 1
         // Closet us value to 0.625 us is 1 us
@@ -147,23 +145,25 @@ STATUS_TYPE DShotStart (DShotHandle* pDShotHandle) {
     // Enabling/disabling DMA request can restart a new cycle without PWM
     // start/stop. return PWM_DMAStart (&pDShotHandle->pwmdma);
 
-    /* NOTE: Do NOT pwm timer yet. Let it be started by DShotWrite */
+    /* NOTE: Do NOT start PWM timer yet. Let it be started by DShotWrite */
     return eSTATUS_SUCCESS;
 }
 
 STATUS_TYPE DShotWrite (DShotHandle* pDShotHandle, uint16_t motorVal) {
+    if (pDShotHandle == NULL) {
+        LOG_ERROR ("Received NULL pointer for DShot handle");
+        return eSTATUS_FAILURE;
+    }
 
-    if (
-    TIM_CHANNEL_STATE_GET (
-    &pDShotHandle->pwmdma.pwm.timer, pDShotHandle->pwmdma.pwm.channelID) ==
-    HAL_TIM_CHANNEL_STATE_BUSY) {
+    HAL_TIM_ChannelStateTypeDef channelState = TIM_CHANNEL_STATE_GET (
+    &pDShotHandle->pwmdma.pwm.timer, pDShotHandle->pwmdma.pwm.channelID);
+    if (channelState == HAL_TIM_CHANNEL_STATE_BUSY) {
         LOG_ERROR ("Tim busy");
         return eSTATUS_FAILURE;
     }
     LOG_INFO ("Tim not busy");
     dshot_prepare_dmabuffer (pDShotHandle, motorVal);
     dshot_dma_start (pDShotHandle);
-    // dshot_enable_dma_request (pDShotHandle);
     return eSTATUS_SUCCESS;
 }
 
@@ -194,13 +194,18 @@ static void DShotDMACompleteCallback (TIM_HandleTypeDef* htim) {
     }
 
     // Disable DMA request for this channel but keep timer running
-    // __HAL_TIM_DISABLE_DMA (htim, channel);
+    // __HAL_TIM_DISABLE_DMA (htim, dma_id);
     // __HAL_DMA_DISABLE (htim->hdma[dma_id]);
-
-    // Set channel state to ready for next transmission
+    // // Set channel state to ready for next transmission
     // TIM_CHANNEL_STATE_SET (htim, channel, HAL_TIM_CHANNEL_STATE_READY);
 
-    HAL_TIM_PWM_Stop_DMA (htim, channel);
+    if (htim->hdma[dma_id]->State == HAL_DMA_STATE_BUSY) {
+        HAL_TIM_PWM_Stop_DMA (htim, channel);
+    } else {
+        HAL_TIM_PWM_Stop (htim, channel);
+    }
+
+    // HAL_TIM_PWM_Stop_DMA (htim, channel);
 }
 
 static uint32_t dshot_tim_channel_to_dma_ccx_id (uint32_t channelID) {
@@ -266,63 +271,4 @@ static void dshot_dma_start (DShotHandle* pDShotHandle) {
         LOG_ERROR ("Failed to start DShot DMA");
         return;
     }
-
-    // uint32_t timDmaCCXRegIdx = pDShotHandle->timDmaCCXRegIdx;
-    // DMA_HandleTypeDef* hdma =
-    // pDShotHandle->pwm.tim.timer.hdma[pDShotHandle->timDmaCCXRegIdx];
-    // TIM_TypeDef* pTimer       = pDShotHandle->pwm.tim.timer.Instance;
-    // uint32_t* pMotorDmaBuffer = pDShotHandle->pMotorDmaBuffer;
-
-    // if (hdma == NULL || pMotorDmaBuffer == NULL) {
-    //     LOG_ERROR ("DMA handle or Motor DMA buffer is NULL for DShot");
-    //     return;
-    // }
-
-    // if (timDmaCCXRegIdx == eTIM_DMA_ID_CC1) {
-    //     HAL_StatusTypeDef halStatus = HAL_DMA_Start_IT (
-    //     hdma, (uint32_t)pMotorDmaBuffer, (uint32_t)&pTimer->CCR1, DSHOT_DMA_BUFFER_SIZE);
-
-    //     if (halStatus != HAL_OK) {
-    //         LOG_ERROR ("Failed to start DMA for DShot for CC1");
-    //     }
-    // }
-
-    // else if (timDmaCCXRegIdx == eTIM_DMA_ID_CC2) {
-    //     HAL_StatusTypeDef halStatus = HAL_DMA_Start_IT (
-    //     hdma, (uint32_t)pMotorDmaBuffer, (uint32_t)&pTimer->CCR2, DSHOT_DMA_BUFFER_SIZE);
-
-    //     if (halStatus != HAL_OK) {
-    //         LOG_ERROR ("Failed to start DMA for DShot for CC2");
-    //     }
-    // }
-
-    // else if (timDmaCCXRegIdx == eTIM_DMA_ID_CC3) {
-    //     HAL_StatusTypeDef halStatus = HAL_DMA_Start_IT (
-    //     hdma, (uint32_t)pMotorDmaBuffer, (uint32_t)&pTimer->CCR3, DSHOT_DMA_BUFFER_SIZE);
-
-    //     if (halStatus != HAL_OK) {
-    //         LOG_ERROR ("Failed to start DMA for DShot for CC3");
-    //     }
-    // }
-
-    // else if (timDmaCCXRegIdx == eTIM_DMA_ID_CC4) {
-    //     HAL_StatusTypeDef halStatus = HAL_DMA_Start_IT (
-    //     hdma, (uint32_t)pMotorDmaBuffer, (uint32_t)&pTimer->CCR4, DSHOT_DMA_BUFFER_SIZE);
-
-    //     if (halStatus != HAL_OK) {
-    //         LOG_ERROR ("Failed to start DMA for DShot for CC4");
-    //     }
-    // }
-
-    // else {
-    //     LOG_ERROR ("Invalid DMA register index for DShot: %u",
-    //     (uint16_t)timDmaCCXRegIdx); return;
-    // }
 }
-
-// static void dshot_enable_dma_request (DShotHandle* pDShotHandle) {
-
-//     TIM_HandleTypeDef* pTimerHandle = &pDShotHandle->pwmdma.pwm.timer;
-//     uint32_t timChannelID           = pDShotHandle->pwmdma.pwm.channelID;
-//     __HAL_TIM_ENABLE_DMA (pTimerHandle, timChannelID);
-// }
