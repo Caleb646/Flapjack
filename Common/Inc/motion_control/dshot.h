@@ -55,7 +55,7 @@ typedef struct {
 
 typedef struct {
     PWM_DMAHandle pwmdma;
-    eTIM_DMA_REGIDX timDmaCCXRegIdx; /*!< DMA register index for the timer channel */
+    // eTIM_DMA_REGIDX timDmaCCXRegIdx; /*!< DMA register index for the timer channel */
     uint32_t pMotorDmaBuffer[DSHOT_DMA_BUFFER_SIZE]; /*!< DMA buffer for DShot */
     uint16_t usValforBit_1; /*!< microsecond value to send a 1 */
     uint16_t usValforBit_0; /*!< microsecond value to send a 0 */

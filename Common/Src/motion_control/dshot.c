@@ -60,8 +60,9 @@ DShotInit (DShotConfig dConfig, PWMConfig timConfig, DMAConfig dmaConfig, DShotH
     }
 
     memset (pOutHandle, 0, sizeof (DShotHandle));
-    DShotHandle dshot = { 0 };
-    uint32_t timDmaRegIdx = dshot_tim_channel_to_dma_ccx_id (timConfig.base.channelID);
+    // DShotHandle dshot = { 0 };
+    uint32_t channelID    = timConfig.base.channelID;
+    uint32_t timDmaRegIdx = dshot_tim_channel_to_dma_ccx_id (channelID);
     PWM_DMAConfig pwm_DmaConfig = { .base = timConfig.base };
     /*
      * Set the timer channel capture compare register to be mapped to the dma register index
@@ -69,15 +70,14 @@ DShotInit (DShotConfig dConfig, PWMConfig timConfig, DMAConfig dmaConfig, DShotH
     pwm_DmaConfig.dmaRegIDXs[0]  = timDmaRegIdx;
     pwm_DmaConfig.dmaRegIDXCount = 1;
 
-    STATUS_TYPE status = PWM_DMAInit (pwm_DmaConfig, dmaConfig, &dshot.pwmdma);
+    STATUS_TYPE status = PWM_DMAInit (pwm_DmaConfig, dmaConfig, &pOutHandle->pwmdma);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize PWM DMA for DShot");
         return eSTATUS_FAILURE;
     }
 
-    status = PWM_DMARegisterCallback (
-    &dshot.pwmdma, dshot.pwmdma.pwm.channelID, DShotDMACompleteCallback,
-    ePWM_DMA_CB_TRANSFER_COMPLETE);
+    status =
+    PWM_DMARegisterCallback (&pOutHandle->pwmdma, channelID, DShotDMACompleteCallback, ePWM_DMA_CB_TRANSFER_COMPLETE);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to register PWM DMA callback for DShot");
         return eSTATUS_FAILURE;
@@ -102,31 +102,31 @@ DShotInit (DShotConfig dConfig, PWMConfig timConfig, DMAConfig dmaConfig, DShotH
     // dshot.usValforBit_1 = 750;
     // dshot.usValforBit_0 = 250;
     uint16_t prescaler = (TIMER_CLOCK / 1000000U) - 1U;
-    PWMHandle* ppwm    = &dshot.pwmdma.pwm;
+    PWMHandle* ppwm    = &pOutHandle->pwmdma.pwm;
     PWM_SET_PRESCALER (ppwm, prescaler);
 
     DSHOTTYPE dshotType = dConfig.dshotType;
     if (dshotType == DSHOT150) {
         // Closet us value to 6.67 us is 7 us
         PWM_SET_PERIOD (ppwm, 7 - 1);
-        dshot.usValforBit_1 = 5; // 5 us for bit 1
-        dshot.usValforBit_0 = 3; // 3 us for bit 0
+        pOutHandle->usValforBit_1 = 5; // 5 us for bit 1
+        pOutHandle->usValforBit_0 = 3; // 3 us for bit 0
     }
 
     else if (dshotType == DSHOT300) {
         // Closet us value to 3.33 us is 3 us
         PWM_SET_PERIOD (ppwm, 3 - 1);
-        dshot.usValforBit_1 = 2; // 2 us for bit 1
-        dshot.usValforBit_0 = 1; // 1 us for bit 0
+        pOutHandle->usValforBit_1 = 2; // 2 us for bit 1
+        pOutHandle->usValforBit_0 = 1; // 1 us for bit 0
     }
 
     else if (dshotType == DSHOT600) {
         // Closet us value to 1.67 us is 2 us
         PWM_SET_PERIOD (ppwm, 2 - 1);
         // Closet us value to 1.25 us is 1 us
-        dshot.usValforBit_1 = 1; // 1 us for bit 1
+        pOutHandle->usValforBit_1 = 1; // 1 us for bit 1
         // Closet us value to 0.625 us is 1 us
-        dshot.usValforBit_0 = 1;
+        pOutHandle->usValforBit_0 = 1;
     }
 
     else {
@@ -134,9 +134,7 @@ DShotInit (DShotConfig dConfig, PWMConfig timConfig, DMAConfig dmaConfig, DShotH
         return eSTATUS_FAILURE;
     }
 
-    dshot.timDmaCCXRegIdx = timDmaRegIdx;
-    *pOutHandle           = dshot;
-
+    // pOutHandle->timDmaCCXRegIdx = timDmaRegIdx;
     return eSTATUS_SUCCESS;
 }
 

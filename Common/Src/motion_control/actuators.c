@@ -198,11 +198,10 @@ STATUS_TYPE MotorInit (MotorConfig config, Motor* pOutMotor) {
     }
 
     memset ((void*)pOutMotor, 0, sizeof (Motor));
-    Motor motor             = { 0 };
     DShotConfig dshotConfig = { 0 };
     dshotConfig.dshotType   = DSHOT150; // Set DShot frequency
 
-    if (DShotInit (dshotConfig, config.pwm, config.dma, &motor.dshot) != eSTATUS_SUCCESS) {
+    if (DShotInit (dshotConfig, config.pwm, config.dma, &pOutMotor->dshot) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize DShot for Motor");
         return eSTATUS_FAILURE;
     }
@@ -211,9 +210,7 @@ STATUS_TYPE MotorInit (MotorConfig config, Motor* pOutMotor) {
     // motorDescriptor.usMinDutyCycle  = 50;
     // motorDescriptor.usMaxDutyCycle  = 2000;
 
-    motor.desc = motorDescriptor;
-    *pOutMotor = motor;
-
+    pOutMotor->desc = motorDescriptor;
     return eSTATUS_SUCCESS;
 }
 
