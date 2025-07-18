@@ -324,8 +324,7 @@ void TaskMotionControlUpdate (void* pvParameters) {
             // LOG_INFO (
             // "TIM8 CCR1: %u ARR: %u PSC: %u", (uint16_t)TIM8->CCR1,
             // (uint16_t)TIM8->ARR, (uint16_t)TIM8->PSC);
-
-            LOG_INFO ("H");
+            // LOG_INFO ("H");
 
             logStart = xTaskGetTickCount ();
 

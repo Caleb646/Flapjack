@@ -76,6 +76,7 @@ set(ALL_TEST_SOURCES
     test_imu.c
     test_filter.c
     test_queue.c
+    test_actuators.c
     registered_tests.c
     ./stubs/hal_stub.c
     ../Common/Src/sensors/imu/imu.c
