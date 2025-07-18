@@ -41,6 +41,7 @@ Vec3f maxAttitude,     // degrees
 float dt,
 Vec3f* pOutputPIDAttitude // degrees
 ) {
+
     float P            = 0.0F;
     float I            = 0.0F;
     float D            = 0.0F;
