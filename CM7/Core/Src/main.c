@@ -249,10 +249,7 @@ void TaskMotionControlUpdate (void* pvParameters) {
     Vec3f targetAttitude   = { 0.0F };
     Vec3f maxAttitude = { .roll = 45.0F, .pitch = 45.0F, .yaw = 180.0F };
 
-    // float testServoAngle = 0.0F;
-    // TIM13->CCR1          = 1500;
-    // TIM13->PSC           = 64;
-    // TIM13->ARR           = 20000;
+    // uint8_t switchAngle = 0;
 
     if (ActuatorsStart () != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start actuators");
@@ -308,14 +305,23 @@ void TaskMotionControlUpdate (void* pvParameters) {
             continue;
         }
 
-        status = ActuatorsWrite (pidAttitude, 0.5F);
-        if (status != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to write actuators");
-            continue;
-        }
+        // status = ActuatorsWrite (pidAttitude, 0.5F);
+        // if (status != eSTATUS_SUCCESS) {
+        //     LOG_ERROR ("Failed to write actuators");
+        //     continue;
+        // }
 
         if ((xTaskGetTickCount () - logStart) >= logStep) {
 
+            // Servo* pServo    = ActuatorsGetLeftServo ();
+            // uint32_t usAngle = 1500;
+            // if (switchAngle == 0) {
+            //     usAngle     = 500;
+            //     switchAngle = 1;
+            // } else {
+            //     switchAngle = 0;
+            // }
+            // PWMWrite (&pServo->pwm, usAngle);
             // status = ActuatorsWrite (pidAttitude, 0.5F);
             // TIM13->CCR1 = 20000;
             // TIM8->CCR1 = 2000;

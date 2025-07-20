@@ -144,25 +144,25 @@ STATUS_TYPE ServoInit (PWMConfig config, Servo* pOutServo) {
     }
 
     memset ((void*)pOutServo, 0, sizeof (Servo));
-    Servo servo = { 0 };
-    if (PWMInit (config, &servo.pwm) != eSTATUS_SUCCESS) {
+    if (PWMInit (config, &pOutServo->pwm) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize PWM for Servo");
         return eSTATUS_FAILURE;
     }
 
-    ServoDescriptor servoDescriptor   = { 0 };
-    servoDescriptor.usLeftDutyCycle   = 1000;
-    servoDescriptor.usMiddleDutyCycle = 1500;
-    servoDescriptor.usRightDutyCycle  = 2000;
-    servoDescriptor.maxAngle          = 20;
+    ServoDescriptor servoDescriptor = { 0 };
+    // servoDescriptor.usLeftDutyCycle   = 1000;
+    // servoDescriptor.usMiddleDutyCycle = 1500;
+    // servoDescriptor.usRightDutyCycle  = 2000;
+    servoDescriptor.usLeftDutyCycle   = 550;
+    servoDescriptor.usMiddleDutyCycle = 1600;
+    servoDescriptor.usRightDutyCycle  = 2650;
+    servoDescriptor.maxAngle          = 90;
     servoDescriptor.curAngle          = 0;
     servoDescriptor.rollMix           = -0.25F;
     servoDescriptor.yawMix            = 0.5F;
     servoDescriptor.pitchMix          = 0.5F;
 
-    servo.desc = servoDescriptor;
-    *pOutServo = servo;
-
+    pOutServo->desc = servoDescriptor;
     return eSTATUS_SUCCESS;
 }
 
@@ -346,4 +346,8 @@ STATUS_TYPE ActuatorsWrite (Vec3f pidAttitude, float targetThrottle) {
     // }
 
     return ActuatorsMixPair (&gLeftServo, &gLeftMotor, pidAttitude, targetThrottle);
+}
+
+Servo* ActuatorsGetLeftServo (void) {
+    return &gLeftServo;
 }

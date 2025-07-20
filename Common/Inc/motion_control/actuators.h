@@ -91,6 +91,7 @@ STATUS_TYPE MotorWrite (Motor* pMotor, float motorValue);
 STATUS_TYPE ActuatorsInit (PWMConfig left_ServoPWM, MotorConfig left_Motor);
 STATUS_TYPE ActuatorsStart (void);
 STATUS_TYPE ActuatorsWrite (Vec3f pidAttitude, float targetThrottle);
+Servo* ActuatorsGetLeftServo (void);
 
 
 #ifdef UNIT_TEST
