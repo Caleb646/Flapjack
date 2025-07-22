@@ -227,24 +227,36 @@ STATUS_TYPE MotorStart (Motor* pMotor) {
     }
 
     // Set initial throttle to minimum
-    return DShotWrite (&pMotor->dshot, DSHOT_MIN_THROTTLE);
+    // return DShotWrite (&pMotor->dshot, DSHOT_MIN_THROTTLE);
+    return eSTATUS_SUCCESS;
 }
 
 /*
  * throttle is between 0.0F and 1.0F
  */
 STATUS_TYPE MotorWrite (Motor* pMotor, float throttle) {
+
     if (pMotor == NULL) {
         LOG_ERROR ("Received NULL pointer for Motor");
         return eSTATUS_FAILURE;
     }
 
     if (throttle < 0.0F || throttle > 1.0F) {
-        LOG_ERROR ("Motor value out of range: %u", (uint16_t)(throttle * 100.0F));
+        LOG_ERROR ("Motor throttle out of range: %u", (uint16_t)(throttle * 100.0F));
         return eSTATUS_FAILURE;
     }
 
-    return DShotWrite (&pMotor->dshot, DSHOT_MIN_THROTTLE + (uint16_t)(throttle * DSHOT_RANGE));
+    STATUS_TYPE status =
+    DShotWrite (&pMotor->dshot, DSHOT_MIN_THROTTLE + (uint16_t)(throttle * DSHOT_RANGE));
+    if (status != eSTATUS_SUCCESS && status != eSTATUS_BUSY) {
+        LOG_ERROR ("Failed to write to motor");
+        return status;
+    }
+    /*
+     * NOTE: DShotWrite returns eSTATUS_BUSY when a write is in progress.
+     * Don't consider this a failure.
+     */
+    return eSTATUS_SUCCESS;
 }
 
 // NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
@@ -335,17 +347,22 @@ STATUS_TYPE ActuatorsStart (void) {
 }
 
 STATUS_TYPE ActuatorsWrite (Vec3f pidAttitude, float targetThrottle) {
-    // if (
-    // pidAttitude.roll < -1.0F || pidAttitude.roll > 1.0F ||
-    // pidAttitude.pitch < -1.0F || pidAttitude.pitch > 1.0F ||
-    // pidAttitude.yaw < -1.0F || pidAttitude.yaw > 1.0F) {
-    //     LOG_ERROR (
-    //     "PID attitude values out of range: roll: %f, pitch: %f, yaw: %f",
-    //     pidAttitude.roll, pidAttitude.pitch, pidAttitude.yaw);
-    //     return eSTATUS_FAILURE;
-    // }
-
     return ActuatorsMixPair (&gLeftServo, &gLeftMotor, pidAttitude, targetThrottle);
+}
+
+STATUS_TYPE ActuatorsArm (void) {
+
+    // STATUS_TYPE status = eSTATUS_SUCCESS;
+    for (uint32_t i = 0; i < 50; ++i) {
+        if (MotorWrite (&gLeftMotor, 0.0F) != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to arm left motor");
+            return eSTATUS_FAILURE;
+        }
+        // DelayMicroseconds (10);
+        // vTaskDelay(pdMS_TO_TICKS(100));
+    }
+
+    return eSTATUS_SUCCESS;
 }
 
 Servo* ActuatorsGetLeftServo (void) {

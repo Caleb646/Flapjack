@@ -249,10 +249,11 @@ void TaskMotionControlUpdate (void* pvParameters) {
     Vec3f targetAttitude   = { 0.0F };
     Vec3f maxAttitude = { .roll = 45.0F, .pitch = 45.0F, .yaw = 180.0F };
 
-    // uint8_t switchAngle = 0;
-
     if (ActuatorsStart () != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start actuators");
+    } else {
+        ActuatorsArm ();
+        LOG_INFO ("Actuators armed");
     }
 
     if (IMUEnableInterrupts (&gIMU) != eSTATUS_SUCCESS) {
@@ -282,7 +283,8 @@ void TaskMotionControlUpdate (void* pvParameters) {
 
         // RadioPWMChannels radio;
         float currentTime = (float)xTaskGetTickCount ();
-        float dt = (currentTime - startTime) / 1000.0F; // Convert milliseconds to seconds
+        // Convert milliseconds to seconds
+        float dt  = (currentTime - startTime) / 1000.0F;
         startTime = currentTime;
 
         if (dt <= 0.0F) {
@@ -305,11 +307,11 @@ void TaskMotionControlUpdate (void* pvParameters) {
             continue;
         }
 
-        // status = ActuatorsWrite (pidAttitude, 0.5F);
-        // if (status != eSTATUS_SUCCESS) {
-        //     LOG_ERROR ("Failed to write actuators");
-        //     continue;
-        // }
+        status = ActuatorsWrite (pidAttitude, 0.5F);
+        if (status != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to write actuators");
+            continue;
+        }
 
         if ((xTaskGetTickCount () - logStart) >= logStep) {
 

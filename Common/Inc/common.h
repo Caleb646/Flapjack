@@ -72,6 +72,7 @@
 
 typedef enum {
     eSTATUS_SUCCESS = 0,
+    eSTATUS_BUSY    = -1,
 
 
     eSTATUS_FAILURE = -127

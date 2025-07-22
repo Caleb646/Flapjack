@@ -156,10 +156,8 @@ STATUS_TYPE DShotWrite (DShotHandle* pDShotHandle, uint16_t motorVal) {
     HAL_TIM_ChannelStateTypeDef channelState = TIM_CHANNEL_STATE_GET (
     &pDShotHandle->pwmdma.pwm.timer, pDShotHandle->pwmdma.pwm.channelID);
     if (channelState == HAL_TIM_CHANNEL_STATE_BUSY) {
-        LOG_ERROR ("Tim busy");
-        return eSTATUS_FAILURE;
+        return eSTATUS_BUSY;
     }
-    LOG_INFO ("Tim not busy");
     dshot_prepare_dmabuffer (pDShotHandle, motorVal);
     dshot_dma_start (pDShotHandle);
     return eSTATUS_SUCCESS;
