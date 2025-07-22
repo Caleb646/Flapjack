@@ -157,6 +157,7 @@ STATUS_TYPE DMASystemInit (void) {
 }
 
 STATUS_TYPE DMA_PWMInit (DMAConfig config, DMA_HandleTypeDef** ppOutHandle) {
+
     if (ppOutHandle == NULL) {
         LOG_ERROR ("Output handle is NULL");
         return eSTATUS_FAILURE;
@@ -175,8 +176,8 @@ STATUS_TYPE DMA_PWMInit (DMAConfig config, DMA_HandleTypeDef** ppOutHandle) {
     DMA_HandleTypeDef hdma        = { 0 };
     hdma.Instance                 = config.pDMA;
     hdma.Init.Request             = config.request;
-    hdma.Init.Direction           = config.direction;
     hdma.Init.Priority            = config.priority;
+    hdma.Init.Direction           = DMA_MEMORY_TO_PERIPH;
     hdma.Init.PeriphInc           = DMA_PINC_DISABLE;
     hdma.Init.MemInc              = DMA_MINC_ENABLE;
     hdma.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;

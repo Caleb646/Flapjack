@@ -440,21 +440,10 @@ int main (void) {
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to init Flight Context");
     }
-
-    MotorConfig left_Motor = { .pwm = { .base = { .pTimer = TIM8,
-                                                  .channelID = TIM_CHANNEL_1,
-                                                  .hzPeriod = 0,
-                                                  .doAutoReload = FALSE } },
-                               .dma = { .pDMA = DMA1_Stream0,
-                                        .direction = eDMA_DIRECTION_MEMORY_TO_PERIPH,
-                                        .priority = eDMA_PRIORITY_HIGH,
-                                        .request = DMA_REQUEST_TIM8_CH1 } };
-
-    PWMConfig left_Servo = { .base = { .pTimer       = TIM13,
-                                       .channelID    = TIM_CHANNEL_1,
-                                       .hzPeriod     = 50,
-                                       .doAutoReload = TRUE } };
-    status               = ActuatorsInit (left_Servo, left_Motor);
+    MotorConfig left_Motor =
+    MOTOR_CREATE_CONF (TIM8, TIM_CHANNEL_1, DMA1_Stream0, DMA_REQUEST_TIM8_CH1);
+    PWMConfig left_Servo = PWM_CREATE_CONF (TIM13, TIM_CHANNEL_1, 50, TRUE);
+    status = ActuatorsInit (left_Servo, left_Motor);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to init Actuators");
     }

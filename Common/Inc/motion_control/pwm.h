@@ -58,6 +58,16 @@
         }                                                                         \
     } while (0)
 
+#define PWM_CREATE_CONF(PTR_TIMER, CHANNEL_ID, HZ_PERIOD, AUTO_RELOAD) \
+    {                                                                  \
+        .base = {                                                      \
+            .pTimer       = (PTR_TIMER),                               \
+            .channelID    = (CHANNEL_ID),                              \
+            .hzPeriod     = (HZ_PERIOD),                               \
+            .doAutoReload = (AUTO_RELOAD)                              \
+        }                                                              \
+    }
+
 typedef enum {
     eTIM_DMA_ID_UPDATE = TIM_DMA_ID_UPDATE, /*!< Index of the DMA handle used for Update DMA requests */
     eTIM_DMA_ID_CC1 = TIM_DMA_ID_CC1, /*!< Index of the DMA handle used for Capture/Compare 1 DMA requests */

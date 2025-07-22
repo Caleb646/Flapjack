@@ -8,6 +8,12 @@
 #define DMA_CHECK_CONF_OK(pDMAConf) \
     ((pDMAConf) != NULL && (pDMAConf)->pDMA != NULL)
 
+#define DMA_CREATE_PWM_CONF(DMA_STREAM, DIRECTION, PRIORITY, DMA_REQUEST_ID) \
+    { .pDMA      = (DMA_STREAM),                                             \
+      .direction = (DIRECTION),                                              \
+      .priority  = (PRIORITY),                                               \
+      .request   = (DMA_REQUEST_ID) }
+
 typedef enum {
     eDMA_DIRECTION_PERIPH_TO_MEMORY = DMA_PERIPH_TO_MEMORY,
     eDMA_DIRECTION_MEMORY_TO_PERIPH = DMA_MEMORY_TO_PERIPH,
