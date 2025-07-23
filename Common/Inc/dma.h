@@ -9,10 +9,13 @@
     ((pDMAConf) != NULL && (pDMAConf)->pDMA != NULL)
 
 #define DMA_CREATE_PWM_CONF(DMA_STREAM, DIRECTION, PRIORITY, DMA_REQUEST_ID) \
-    { .pDMA      = (DMA_STREAM),                                             \
-      .direction = (DIRECTION),                                              \
-      .priority  = (PRIORITY),                                               \
-      .request   = (DMA_REQUEST_ID) }
+    { .pDMA          = (DMA_STREAM),                                         \
+      .direction     = (DIRECTION),                                          \
+      .priority      = (PRIORITY),                                           \
+      .request       = (DMA_REQUEST_ID),                                     \
+      .transferMode  = DMA_NORMAL,                                           \
+      .fifoMode      = DMA_FIFOMODE_DISABLE, /* Direct Mode */               \
+      .fifoThreshold = DMA_FIFO_THRESHOLD_FULL }
 
 typedef enum {
     eDMA_DIRECTION_PERIPH_TO_MEMORY = DMA_PERIPH_TO_MEMORY,
@@ -31,7 +34,10 @@ typedef struct {
     DMA_Stream_TypeDef* pDMA;
     eDMA_TRANSFER_DIR direction;
     eDMA_PRIORITY priority;
-    uint32_t request; // DMA request type, e.g., DMA_REQUEST_USART1_TX
+    uint32_t request;      // DMA request type, e.g., DMA_REQUEST_USART1_TX
+    uint32_t transferMode; // DMA transfer mode, e.g., DMA_NORMAL, DMA_CIRCULAR
+    uint32_t fifoMode; // DMA FIFO mode, e.g., DMA_FIFOMODE_DISABLE (Direct Mode), DMA_FIFOMODE_ENABLE
+    uint32_t fifoThreshold; // FIFO threshold level
 } DMAConfig;
 
 typedef enum {
@@ -47,7 +53,7 @@ typedef void (*DMACallback) (struct __DMA_HandleTypeDef* hdma);
 // typedef struct __PWMDMAHandle PWM_DMAHandle;
 
 STATUS_TYPE DMASystemInit (void);
-STATUS_TYPE DMA_PWMInit (DMAConfig config, DMA_HandleTypeDef** ppOutHandle);
+STATUS_TYPE DMA_Init (DMAConfig config, DMA_HandleTypeDef** ppOutHandle);
 DMA_HandleTypeDef* DMAGetUnusedStreamHandle (void);
 
 #endif /* DMA_H */

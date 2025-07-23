@@ -242,11 +242,11 @@ void HAL_GPIO_EXTI_Callback (uint16_t gpioPin) {
 
 void TaskMotionControlUpdate (void* pvParameters) {
 
-    float startTime        = (float)xTaskGetTickCount ();
-    uint32_t logStart      = xTaskGetTickCount ();
-    uint32_t const logStep = 500;
-    Vec3f currentAttitude  = { 0.0F };
-    Vec3f targetAttitude   = { 0.0F };
+    float msStartTime        = (float)xTaskGetTickCount ();
+    uint32_t msLogStart      = xTaskGetTickCount ();
+    uint32_t const msLogStep = 500;
+    Vec3f currentAttitude    = { 0.0F };
+    Vec3f targetAttitude     = { 0.0F };
     Vec3f maxAttitude = { .roll = 45.0F, .pitch = 45.0F, .yaw = 180.0F };
 
     if (ActuatorsStart () != eSTATUS_SUCCESS) {
@@ -282,10 +282,10 @@ void TaskMotionControlUpdate (void* pvParameters) {
         }
 
         // RadioPWMChannels radio;
-        float currentTime = (float)xTaskGetTickCount ();
+        float msCurrentTime = (float)xTaskGetTickCount ();
         // Convert milliseconds to seconds
-        float dt  = (currentTime - startTime) / 1000.0F;
-        startTime = currentTime;
+        float dt    = (msCurrentTime - msStartTime) / 1000.0F;
+        msStartTime = msCurrentTime;
 
         if (dt <= 0.0F) {
             continue;
@@ -307,13 +307,13 @@ void TaskMotionControlUpdate (void* pvParameters) {
             continue;
         }
 
-        status = ActuatorsWrite (pidAttitude, 0.5F);
+        status = ActuatorsWrite (pidAttitude, 0.25F);
         if (status != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to write actuators");
             continue;
         }
 
-        if ((xTaskGetTickCount () - logStart) >= logStep) {
+        if ((xTaskGetTickCount () - msLogStart) >= msLogStep) {
 
             // Servo* pServo    = ActuatorsGetLeftServo ();
             // uint32_t usAngle = 1500;
@@ -334,7 +334,7 @@ void TaskMotionControlUpdate (void* pvParameters) {
             // (uint16_t)TIM8->ARR, (uint16_t)TIM8->PSC);
             // LOG_INFO ("H");
 
-            logStart = xTaskGetTickCount ();
+            msLogStart = xTaskGetTickCount ();
 
             Vec3f a  = accel;
             Vec3f g  = gyro;

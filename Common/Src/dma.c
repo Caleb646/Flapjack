@@ -156,7 +156,7 @@ STATUS_TYPE DMASystemInit (void) {
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE DMA_PWMInit (DMAConfig config, DMA_HandleTypeDef** ppOutHandle) {
+STATUS_TYPE DMA_Init (DMAConfig config, DMA_HandleTypeDef** ppOutHandle) {
 
     if (ppOutHandle == NULL) {
         LOG_ERROR ("Output handle is NULL");
@@ -173,31 +173,31 @@ STATUS_TYPE DMA_PWMInit (DMAConfig config, DMA_HandleTypeDef** ppOutHandle) {
         return eSTATUS_FAILURE;
     }
 
+    if (config.direction == DMA_MEMORY_TO_PERIPH && config.fifoMode == DMA_FIFOMODE_ENABLE) {
+        LOG_ERROR ("Direct mode (fifo disabled) has to be used for memory-to-peripheral transfers");
+        return eSTATUS_FAILURE;
+    }
+
     DMA_HandleTypeDef hdma        = { 0 };
     hdma.Instance                 = config.pDMA;
     hdma.Init.Request             = config.request;
     hdma.Init.Priority            = config.priority;
-    hdma.Init.Direction           = DMA_MEMORY_TO_PERIPH;
+    hdma.Init.Direction           = config.direction;
     hdma.Init.PeriphInc           = DMA_PINC_DISABLE;
     hdma.Init.MemInc              = DMA_MINC_ENABLE;
     hdma.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
     hdma.Init.MemDataAlignment    = DMA_MDATAALIGN_WORD;
-    hdma.Init.Mode                = DMA_NORMAL;
+    hdma.Init.Mode                = config.transferMode;
     /*
      * When it is configured in direct mode ***(FIFO disabled)***, to
      * transfer data in memory-to-peripheral mode, the DMA preloads only
      * one data from the memory to the internal FIFO to ensure an immediate
      * data transfer as soon as a DMA request is triggered by a peripheral.
      */
-    hdma.Init.FIFOMode      = DMA_FIFOMODE_DISABLE;
-    hdma.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
+    hdma.Init.FIFOMode      = config.fifoMode;
+    hdma.Init.FIFOThreshold = config.fifoThreshold;
     hdma.Init.MemBurst      = DMA_MBURST_SINGLE;
     hdma.Init.PeriphBurst   = DMA_PBURST_SINGLE;
-
-    if (hdma.Init.Direction == eDMA_DIRECTION_MEMORY_TO_PERIPH && hdma.Init.FIFOMode == DMA_FIFOMODE_ENABLE) {
-        LOG_ERROR ("direct mode (fifo disabled) has to be used for memory-to-peripheral transfers");
-        return eSTATUS_FAILURE;
-    }
 
     DMA_HandleTypeDef* pHandle = DMAGetHandleByStream (hdma.Instance);
     if (pHandle == NULL) {
