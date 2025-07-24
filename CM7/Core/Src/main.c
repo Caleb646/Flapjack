@@ -260,6 +260,7 @@ void TaskMotionControlUpdate (void* pvParameters) {
         LOG_ERROR ("Failed to enable IMU interrupts");
     }
     LOG_INFO ("Motion control task started");
+
     while (1) {
         ulTaskNotifyTake (pdTRUE, pdMS_TO_TICKS (1000));
         /* Add error handling */
