@@ -101,32 +101,35 @@ DShotInit (DShotConfig dConfig, PWMConfig timConfig, DMAConfig dmaConfig, DShotH
     // PWM_SET_PERIOD (&dshot.pwmdma.pwm, 1000); // Set period to 1 us
     // dshot.usValforBit_1 = 750;
     // dshot.usValforBit_0 = 250;
-    uint16_t prescaler = (TIMER_CLOCK / 1000000U) - 1U;
+    // uint16_t prescaler = (TIMER_CLOCK / 1000000U) - 1U;
+    uint16_t prescaler = 0U;
     PWMHandle* ppwm    = &pOutHandle->pwmdma.pwm;
     PWM_SET_PRESCALER (ppwm, prescaler);
 
     DSHOTTYPE dshotType = dConfig.dshotType;
     if (dshotType == DSHOT150) {
-        // Closet us value to 6.67 us is 7 us
-        PWM_SET_PERIOD (ppwm, 7 - 1);
-        pOutHandle->usValforBit_1 = 5; // 5 us for bit 1
-        pOutHandle->usValforBit_0 = 3; // 3 us for bit 0
+        // 64MHz × 6.67us = 426.7 timer ticks
+        PWM_SET_PERIOD (ppwm, 427 - 1);
+        pOutHandle->usValforBit_1 = 320; // 75% of 6.67 us / 427 ticks
+        pOutHandle->usValforBit_0 = 160; // 37.5% of 6.67 us / 427 ticks
     }
 
     else if (dshotType == DSHOT300) {
-        // Closet us value to 3.33 us is 3 us
-        PWM_SET_PERIOD (ppwm, 3 - 1);
-        pOutHandle->usValforBit_1 = 2; // 2 us for bit 1
-        pOutHandle->usValforBit_0 = 1; // 1 us for bit 0
+        // // Closet us value to 3.33 us is 3 us
+        // PWM_SET_PERIOD (ppwm, 3 - 1);
+        // pOutHandle->usValforBit_1 = 2; // 2 us for bit 1
+        // pOutHandle->usValforBit_0 = 1; // 1 us for bit 0
+        return eSTATUS_FAILURE; // DShot300 is not supported
     }
 
     else if (dshotType == DSHOT600) {
-        // Closet us value to 1.67 us is 2 us
-        PWM_SET_PERIOD (ppwm, 2 - 1);
-        // Closet us value to 1.25 us is 1 us
-        pOutHandle->usValforBit_1 = 1; // 1 us for bit 1
-        // Closet us value to 0.625 us is 1 us
-        pOutHandle->usValforBit_0 = 1;
+        // // Closet us value to 1.67 us is 2 us
+        // PWM_SET_PERIOD (ppwm, 2 - 1);
+        // // Closet us value to 1.25 us is 1 us
+        // pOutHandle->usValforBit_1 = 1; // 1 us for bit 1
+        // // Closet us value to 0.625 us is 1 us
+        // pOutHandle->usValforBit_0 = 1;
+        return eSTATUS_FAILURE; // DShot600 is not supported
     }
 
     else {
@@ -195,11 +198,11 @@ static void DShotDMACompleteCallback (TIM_HandleTypeDef* htim) {
     // // Set channel state to ready for next transmission
     // TIM_CHANNEL_STATE_SET (htim, channel, HAL_TIM_CHANNEL_STATE_READY);
 
-    if (htim->hdma[dma_id]->State == HAL_DMA_STATE_BUSY) {
-        HAL_TIM_PWM_Stop_DMA (htim, channel);
-    } else {
-        HAL_TIM_PWM_Stop (htim, channel);
-    }
+    // if (htim->hdma[dma_id]->State == HAL_DMA_STATE_BUSY) {
+    //     HAL_TIM_PWM_Stop_DMA (htim, channel);
+    // } else {
+    //     HAL_TIM_PWM_Stop (htim, channel);
+    // }
 
     // HAL_TIM_PWM_Stop_DMA (htim, channel);
 }

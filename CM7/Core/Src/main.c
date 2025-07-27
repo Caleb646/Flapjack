@@ -308,7 +308,7 @@ void TaskMotionControlUpdate (void* pvParameters) {
             continue;
         }
 
-        status = ActuatorsWrite (pidAttitude, 0.25F);
+        status = ActuatorsWrite (pidAttitude, 0.75F);
         if (status != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to write actuators");
             continue;
@@ -414,13 +414,13 @@ int main (void) {
      */
     {
         IMUAccConf aconf  = { 0 };
-        aconf.odr         = eIMU_ACC_ODR_100;
+        aconf.odr         = eIMU_ACC_ODR_200;
         aconf.range       = eIMU_ACC_RANGE_2G;
         aconf.avg         = eIMU_ACC_AVG_16;
         aconf.bw          = eIMU_ACC_BW_HALF;
         aconf.mode        = eIMU_ACC_MODE_HIGH_PERF;
         IMUGyroConf gconf = { 0 };
-        gconf.odr         = eIMU_GYRO_ODR_100;
+        gconf.odr         = eIMU_GYRO_ODR_200;
         gconf.range       = eIMU_GYRO_RANGE_250;
         gconf.avg         = eIMU_GYRO_AVG_16;
         gconf.bw          = eIMU_GYRO_BW_HALF;
@@ -450,6 +450,10 @@ int main (void) {
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to init Actuators");
     }
+
+    // NOTE: Temporary wait. Wait 10 seconds to allow esc to be connected to battery.
+    LOG_INFO ("Waiting for ESC to be connected to battery");
+    HAL_Delay (10000);
 
     /*
      *

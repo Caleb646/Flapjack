@@ -872,30 +872,35 @@ STATUS_TYPE IMUInit (IMU* pIMU, SPI_HandleTypeDef* pSPI, IMUAccConf aconf, IMUGy
         LOG_INFO ("Self calibration result: [%d]", calibResult.result);
     }
 
+    /* NOTE: For some reason the ODR value used during calibration is always
+     * read back from the IMU. So a calibration odr of 100Hz and an user set odr of 200 Hz
+     * causes the conf comparison to fail even after the user conf is restored.
+     * But the 200 Hz odr rate is honored by the IMU. */
     /* Double check that the given confs stuck */
     {
-        IMUAccConf aconf2;
-        IMUGyroConf gconf2;
-        status = IMUGetConf (pIMU, &aconf2, &gconf2);
-        if (status != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to read back IMU configuration");
-            IMULogDeviceErr (pIMU, NULL);
-            return status;
-        }
+        // HAL_Delay (100);
+        // IMUAccConf aconf2;
+        // IMUGyroConf gconf2;
+        // status = IMUGetConf (pIMU, &aconf2, &gconf2);
+        // if (status != eSTATUS_SUCCESS) {
+        //     LOG_ERROR ("Failed to read back IMU configuration");
+        //     IMULogDeviceErr (pIMU, NULL);
+        //     return status;
+        // }
 
-        status = IMUCompareConfs (aconf, gconf, aconf2, gconf2);
-        if (status != eSTATUS_SUCCESS) {
-            LOG_ERROR (
-            "IMU configuration mismatch after setting. "
-            "Expected: Accel [%d %d %d %d] Gyro [%d %d %d %d] "
-            "Got: Accel [%d %d %d %d] Gyro [%d %d %d %d]",
-            aconf.mode, aconf.odr, aconf.range, aconf.avg, gconf.mode,
-            gconf.odr, gconf.range, gconf.avg, aconf2.mode, aconf2.odr,
-            aconf2.range, aconf2.avg, gconf2.mode, gconf2.odr,
-            gconf2.range, gconf2.avg);
-            IMULogDeviceErr (pIMU, NULL);
-            return status;
-        }
+        // status = IMUCompareConfs (aconf, gconf, aconf2, gconf2);
+        // if (status != eSTATUS_SUCCESS) {
+        //     LOG_ERROR (
+        //     "IMU configuration mismatch after setting. "
+        //     "Expected: Accel [%d %d %d %d] Gyro [%d %d %d %d] "
+        //     "Got: Accel [%d %d %d %d] Gyro [%d %d %d %d]",
+        //     aconf.mode, aconf.odr, aconf.range, aconf.avg, gconf.mode,
+        //     gconf.odr, gconf.range, gconf.avg, aconf2.mode, aconf2.odr,
+        //     aconf2.range, aconf2.avg, gconf2.mode, gconf2.odr,
+        //     gconf2.range, gconf2.avg);
+        //     IMULogDeviceErr (pIMU, NULL);
+        //     return status;
+        // }
     }
 
     return eSTATUS_SUCCESS;

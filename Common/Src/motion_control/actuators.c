@@ -247,7 +247,7 @@ STATUS_TYPE MotorWrite (Motor* pMotor, float throttle) {
     }
 
     STATUS_TYPE status =
-    DShotWrite (&pMotor->dshot, DSHOT_MIN_THROTTLE + (uint16_t)(throttle * DSHOT_RANGE));
+    DShotWrite (&pMotor->dshot, DSHOT_MIN_THROTTLE + (uint16_t)(throttle * (float)DSHOT_RANGE));
     if (status != eSTATUS_SUCCESS && status != eSTATUS_BUSY) {
         LOG_ERROR ("Failed to write to motor");
         return status;
@@ -353,14 +353,41 @@ STATUS_TYPE ActuatorsWrite (Vec3f pidAttitude, float targetThrottle) {
 STATUS_TYPE ActuatorsArm (void) {
 
     // STATUS_TYPE status = eSTATUS_SUCCESS;
-    for (uint32_t i = 0; i < 50; ++i) {
-        if (MotorWrite (&gLeftMotor, 0.0F) != eSTATUS_SUCCESS) {
+    for (uint32_t i = 0; i < 300; ++i) {
+
+        if (DShotWrite (&gLeftMotor.dshot, 0U) != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to arm left motor");
             return eSTATUS_FAILURE;
         }
-        // DelayMicroseconds (10);
-        // vTaskDelay(pdMS_TO_TICKS(100));
+        // if (MotorWrite (&gLeftMotor, 0.0F) != eSTATUS_SUCCESS) {
+        //     LOG_ERROR ("Failed to arm left motor");
+        //     return eSTATUS_FAILURE;
+        // }
+        // NOTE: assumes DShot150 is used.
+        // Write 0 throttle values to the esc for 100ms - 300ms to arm the
+        // motor DelayMicroseconds (150);
+        vTaskDelay (pdMS_TO_TICKS (1));
     }
+
+    // Slowly increase the throttle to 50%
+    float i = 0.0F;
+    while (i < 0.50F) {
+        if (MotorWrite (&gLeftMotor, i) != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to arm left motor");
+            return eSTATUS_FAILURE;
+        }
+        vTaskDelay (pdMS_TO_TICKS (5));
+        i += 0.01F;
+    }
+
+    // while (1) {
+    //     if (MotorWrite (&gLeftMotor, 0.5F) != eSTATUS_SUCCESS) {
+    //         LOG_ERROR ("Failed to arm left motor");
+    //         return eSTATUS_FAILURE;
+    //     }
+    //     // DelayMicroseconds (5);
+    //     vTaskDelay (pdMS_TO_TICKS (5));
+    // }
 
     return eSTATUS_SUCCESS;
 }

@@ -71,28 +71,21 @@ class IMUViewer(QtWidgets.QWidget):
         self.setWindowTitle("IMU Orientation Viewer")
         self.resize(1200, 800)
 
-        # Create main layout
         main_layout = QVBoxLayout(self)
-        
-        # Create tab widget
+
         self.tab_widget = QTabWidget()
         
-        # Create 3D viewer tab
         self.viewer_tab = QtWidgets.QWidget()
         self.setup_3d_viewer(self.viewer_tab)
         self.tab_widget.addTab(self.viewer_tab, "3D Orientation")
         
-        # Create attitude plotter tab
         self.plotter_tab = AttitudePlotter()
         self.tab_widget.addTab(self.plotter_tab, "Attitude Graphs")
         
-        # Add tabs to main layout
         main_layout.addWidget(self.tab_widget)
-        
-        # Serial controls (shared between tabs)
+
         self.setup_serial_controls(main_layout)
         
-        # Serial port setup
         self.serial = QSerialPort(
             "COM4",
             baudRate=QtSerialPort.QSerialPort.Baud115200,
@@ -100,8 +93,7 @@ class IMUViewer(QtWidgets.QWidget):
         )
         self.buffer = b""
 
-        # Logging setup - initially no files open
-        os.makedirs("./GUI/Logs", exist_ok=True)  # Ensure base logs directory exists
+        os.makedirs("./GUI/Logs", exist_ok=True)  
         self.debug_log = None
         self.flight_data_log = None
         self.current_session_folder = None
@@ -111,7 +103,6 @@ class IMUViewer(QtWidgets.QWidget):
         """Setup the 3D orientation viewer"""
         layout = QVBoxLayout(parent_widget)
         
-        # 3D view setup
         self.view = GLViewWidget()
         self.view.setMinimumHeight(400)
         self.view.opts['distance'] = 5
@@ -144,13 +135,11 @@ class IMUViewer(QtWidgets.QWidget):
         
     def setup_serial_controls(self, main_layout):
         """Setup serial communication controls"""
-        # Serial GUI controls
         self.message_le = QtWidgets.QLineEdit()
         self.send_btn = QtWidgets.QPushButton("Send", clicked=self.send)
         self.output_te = QtWidgets.QTextEdit(readOnly=True)
         self.output_te.setMaximumHeight(150)
         
-        # Log level filter controls
         self.log_level_combo = QtWidgets.QComboBox()
         self.log_level_combo.addItems(["[DEBUG]", "[INFO]", "[WARNING]", "[ERROR]"])
         self.log_level_combo.setCurrentText("[INFO]")
@@ -159,7 +148,6 @@ class IMUViewer(QtWidgets.QWidget):
         self.current_log_level = "[INFO]"
         self.button = QtWidgets.QPushButton("Connect", checkable=True, toggled=self.on_toggled)
 
-        # Layout for controls
         top_controls = QHBoxLayout()
         top_controls.addWidget(self.message_le)
         top_controls.addWidget(self.send_btn)
@@ -170,7 +158,7 @@ class IMUViewer(QtWidgets.QWidget):
 
     def apply_log_level(self):
         self.current_log_level = self.log_level_combo.currentText()
-        self.output_te.clear()  # Optionally clear console on filter change
+        self.output_te.clear()
 
     def log_level_value(self, level):
         # Map log level string to numeric value for comparison
@@ -204,24 +192,22 @@ class IMUViewer(QtWidgets.QWidget):
                 data = json.loads(message)
                 if data.get("type") == "debug":
                     msg = json.dumps(data)
-                    if self.debug_log:  # Only write if file is open
+                    if self.debug_log:
                         self.debug_log.write(msg + "\n")
                         self.debug_log.flush()
                     self.append_debug_console(
                         msg, level=data.get("lvl", "[INFO]")
                         )
                 else:
-                    if self.flight_data_log:  # Only write if file is open
+                    if self.flight_data_log: 
                         self.flight_data_log.write(json.dumps(data) + "\n")
                         self.flight_data_log.flush()
                     if data.get("type") == "attitude":  # Fixed typo from "attidude"
                         attitude_data = data.get("data", {})
                         self.update_orientation(attitude_data)
-                        # Also send to the attitude plotter
                         self.plotter_tab.add_attitude_data(attitude_data)
                     elif data.get("type") == "imu_data":
                         imu_data = data.get("data", {})
-                        # Send to the attitude plotter
                         self.plotter_tab.add_imu_data(imu_data)
             except json.JSONDecodeError:
                 print(f"Failed to decode JSON: {message}")
@@ -238,15 +224,12 @@ class IMUViewer(QtWidgets.QWidget):
         self.button.setText("Disconnect" if checked else "Connect")
         if checked:
             if not self.serial.isOpen():
-                # Create session folder and open log files
                 self.create_session_folder()
                 if not self.serial.open(QtCore.QIODevice.ReadWrite):
                     self.output_te.append("Failed to open serial port.")
                     self.button.setChecked(False)
-                    # Close the log files since connection failed
                     self.close_session_files()
         else:
-            # Close session files and serial port
             self.close_session_files()
             self.serial.close()
 
