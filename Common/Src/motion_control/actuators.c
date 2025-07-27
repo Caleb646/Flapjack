@@ -350,11 +350,17 @@ STATUS_TYPE ActuatorsWrite (Vec3f pidAttitude, float targetThrottle) {
     return ActuatorsMixPair (&gLeftServo, &gLeftMotor, pidAttitude, targetThrottle);
 }
 
+/*
+ * \brief After motors are armed, a motor write has to be issued at
+ * least every 5ms or the motor ESC will stop the motor.
+ */
 STATUS_TYPE ActuatorsArm (void) {
 
     // STATUS_TYPE status = eSTATUS_SUCCESS;
     for (uint32_t i = 0; i < 300; ++i) {
-
+        /* NOTE: A DShot value of all 0s is a special command to
+         * the esc to arm/disarm the motor depending on the esc's current state.
+         * The reason MotorWrite isn't used is because it uses a valid throttle value between > 48 and < 2048 */
         if (DShotWrite (&gLeftMotor.dshot, 0U) != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to arm left motor");
             return eSTATUS_FAILURE;
@@ -364,8 +370,6 @@ STATUS_TYPE ActuatorsArm (void) {
         //     return eSTATUS_FAILURE;
         // }
         // NOTE: assumes DShot150 is used.
-        // Write 0 throttle values to the esc for 100ms - 300ms to arm the
-        // motor DelayMicroseconds (150);
         vTaskDelay (pdMS_TO_TICKS (1));
     }
 
