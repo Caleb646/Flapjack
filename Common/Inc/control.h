@@ -14,9 +14,10 @@ typedef enum { eFLIGHT_MODE_HOVER = 0, eFLIGHT_MODE_AIRPLANE };
 typedef uint8_t eREQUESTED_STATE_t;
 typedef enum {
     /* These are the command states that a gui or radio controller can send */
-    eREQUESTED_STATE_START = 0,
-    eREQUESTED_STATE_STOP,
-    eREQUESTED_STATE_SENSOR_ONLY
+    eREQUESTED_STATE_STOP = 0,
+    eREQUESTED_STATE_START
+
+    // eREQUESTED_STATE_SENSOR_ONLY
 };
 
 typedef uint8_t eOP_STATE_t;
