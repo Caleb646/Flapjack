@@ -8,9 +8,10 @@ from PyQt5.QtSerialPort import QSerialPort
 from pyqtgraph.opengl import GLViewWidget, GLBoxItem, GLGridItem, GLLinePlotItem, GLMeshItem, MeshData
 from pyqtgraph import Vector
 import pyqtgraph as pg
+from datetime import datetime
 import trimesh
 import os
-from datetime import datetime
+import struct
 
 START_DELIM = b"<"
 END_DELIM = b">"
@@ -81,6 +82,9 @@ class IMUViewer(QtWidgets.QWidget):
         
         self.plotter_tab = AttitudePlotter()
         self.tab_widget.addTab(self.plotter_tab, "Attitude Graphs")
+        
+        self.control_tab = FlightControlTab(self)
+        self.tab_widget.addTab(self.control_tab, "Flight Control")
         
         main_layout.addWidget(self.tab_widget)
 
@@ -219,6 +223,52 @@ class IMUViewer(QtWidgets.QWidget):
         if text:
             self.serial.write(text.encode() + b'\n')
 
+    def send_start_command(self):
+        """Send start command as 8-byte packet"""
+        if not self.serial.isOpen():
+            self.append_debug_console("Serial port not connected!", "[ERROR]")
+            return
+            
+        # Command structure based on C code:
+        # typedef struct {
+        #     CommandHeader header;
+        #     eREQUESTED_STATE_t requestedState;
+        # } ChangeOpStateCmd;
+        #
+        # CommandHeader: { uint8_t commandType; }
+        # eREQUESTED_STATE_t: uint8_t
+        
+        COMMAND_TYPE_CHANGE_OP_STATE = 1
+        REQUESTED_STATE_START = 1        
+        
+        # Create 8-byte packet: commandType(1) + requestedState(1) + padding(6)
+        # B = uint8_t and 6x = 6 bytes of padding
+        packet = struct.pack('<BBB6x', COMMAND_TYPE_CHANGE_OP_STATE, REQUESTED_STATE_START)
+        
+        try:
+            self.serial.write(packet)
+            self.append_debug_console(f"Sent START command: {packet.hex()}", "[INFO]")
+        except Exception as e:
+            self.append_debug_console(f"Failed to send START command: {e}", "[ERROR]")
+
+    def send_stop_command(self):
+        """Send stop command as 8-byte packet"""
+        if not self.serial.isOpen():
+            self.append_debug_console("Serial port not connected!", "[ERROR]")
+            return
+        
+        COMMAND_TYPE_CHANGE_OP_STATE = 1
+        REQUESTED_STATE_STOP = 0        
+        
+        # Create 8-byte packet: commandType(1) + requestedState(1) + padding(6)
+        packet = struct.pack('<BBB6x', COMMAND_TYPE_CHANGE_OP_STATE, REQUESTED_STATE_STOP)
+        
+        try:
+            self.serial.write(packet)
+            self.append_debug_console(f"Sent STOP command: {packet.hex()}", "[INFO]")
+        except Exception as e:
+            self.append_debug_console(f"Failed to send STOP command: {e}", "[ERROR]")
+
     @QtCore.pyqtSlot(bool)
     def on_toggled(self, checked):
         self.button.setText("Disconnect" if checked else "Connect")
@@ -229,9 +279,16 @@ class IMUViewer(QtWidgets.QWidget):
                     self.output_te.append("Failed to open serial port.")
                     self.button.setChecked(False)
                     self.close_session_files()
+                else:
+                    # Enable command buttons when connected
+                    self.control_tab.set_buttons_enabled(True)
+                    self.append_debug_console("Connected to flight controller", "[INFO]")
         else:
             self.close_session_files()
             self.serial.close()
+            # Disable command buttons when disconnected
+            self.control_tab.set_buttons_enabled(False)
+            self.append_debug_console("Disconnected from flight controller", "[INFO]")
 
     def update_orientation(self, orientation):
         roll_deg = orientation.get("roll", 0)
@@ -296,6 +353,72 @@ class IMUViewer(QtWidgets.QWidget):
         if self.current_session_folder:
             self.append_debug_console(f"Session files saved to: {self.current_session_folder}", "[INFO]")
             self.current_session_folder = None
+
+class FlightControlTab(QtWidgets.QWidget):
+    def __init__(self, parent_viewer):
+        super().__init__()
+        self.parent_viewer = parent_viewer
+        self.setup_ui()
+        
+    def setup_ui(self):
+        layout = QVBoxLayout(self)
+        
+        # Flight Controller Commands
+        flight_control_group = QtWidgets.QGroupBox("Flight Controller Commands")
+        flight_control_layout = QHBoxLayout(flight_control_group)
+        
+        self.start_btn = QtWidgets.QPushButton("Start", clicked=self.send_start_command)
+        self.start_btn.setStyleSheet("QPushButton { background-color: #4CAF50; color: white; font-weight: bold; padding: 10px; }")
+        self.start_btn.setEnabled(False)  # Disabled until connected
+        
+        self.stop_btn = QtWidgets.QPushButton("Stop", clicked=self.send_stop_command)
+        self.stop_btn.setStyleSheet("QPushButton { background-color: #f44336; color: white; font-weight: bold; padding: 10px; }")
+        self.stop_btn.setEnabled(False)  # Disabled until connected
+        
+        flight_control_layout.addWidget(self.start_btn)
+        flight_control_layout.addWidget(self.stop_btn)
+        
+        layout.addWidget(flight_control_group)
+        
+        # Status display
+        status_group = QtWidgets.QGroupBox("Status")
+        status_layout = QVBoxLayout(status_group)
+        
+        self.status_label = QtWidgets.QLabel("Disconnected")
+        self.status_label.setStyleSheet("QLabel { font-weight: bold; padding: 5px; }")
+        
+        self.last_command_label = QtWidgets.QLabel("Last Command: None")
+        self.last_command_label.setStyleSheet("QLabel { padding: 5px; }")
+        
+        status_layout.addWidget(self.status_label)
+        status_layout.addWidget(self.last_command_label)
+        
+        layout.addWidget(status_group)
+        
+        # Add spacer to push everything to the top
+        layout.addStretch()
+        
+    def set_buttons_enabled(self, enabled):
+        """Enable or disable command buttons"""
+        self.start_btn.setEnabled(enabled)
+        self.stop_btn.setEnabled(enabled)
+        
+        if enabled:
+            self.status_label.setText("Connected")
+            self.status_label.setStyleSheet("QLabel { font-weight: bold; padding: 5px; color: green; }")
+        else:
+            self.status_label.setText("Disconnected")
+            self.status_label.setStyleSheet("QLabel { font-weight: bold; padding: 5px; color: red; }")
+            
+    def send_start_command(self):
+        """Send start command as 8-byte packet"""
+        self.parent_viewer.send_start_command()
+        self.last_command_label.setText("Last Command: START")
+        
+    def send_stop_command(self):
+        """Send stop command as 8-byte packet"""
+        self.parent_viewer.send_stop_command()
+        self.last_command_label.setText("Last Command: STOP")
 
 class AttitudePlotter(QtWidgets.QWidget):
     def __init__(self):
