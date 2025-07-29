@@ -156,18 +156,12 @@ int main (void) {
         CriticalErrorHandler ();
     }
 
-    // UART_HandleTypeDef* pUart;
-    // if (LoggerInit (USART1, &pUart) != eSTATUS_SUCCESS) {
-    if (LoggerInit (USART1, NULL) != eSTATUS_SUCCESS) {
+    UART_HandleTypeDef* pUart;
+    if (LoggerInit (USART1, &pUart) != eSTATUS_SUCCESS) {
+        // if (LoggerInit (USART1, NULL) != eSTATUS_SUCCESS) {
         CriticalErrorHandler ();
     }
     HAL_Delay (1000);
-
-
-    // while (1) {
-    //     LOG_INFO ("Starting main loop");
-    //     HAL_Delay (5);
-    // }
 
     BaseType_t taskStatus = xTaskCreate (
     TaskMainLoop, "Motion Control Update Task", configMINIMAL_STACK_SIZE,
