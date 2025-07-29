@@ -770,6 +770,19 @@ STATUS_TYPE IMUEnableInterrupts (IMU const* pIMU) {
     return status;
 }
 
+STATUS_TYPE IMUDisableInterrupts (IMU const* pIMU) {
+    if (pIMU == NULL || pIMU->pSPI == NULL) {
+        return (STATUS_TYPE)eIMU_NULL_PTR;
+    }
+
+    // Enable INT1 and INT2 with active high
+    uint8_t pDisableInterrupts[2] = { 0, 0 };
+    STATUS_TYPE status =
+    IMUWriteReg (pIMU, BMI3_REG_IO_INT_CTRL, pDisableInterrupts, 2);
+
+    return status;
+}
+
 STATUS_TYPE
 IMUConvertRaw (IMU_ACC_RANGE aRange, Vec3 ra, IMU_GYRO_RANGE gRange, Vec3 rg, Vec3f* pAccelOut, Vec3f* pGyroOut) {
 

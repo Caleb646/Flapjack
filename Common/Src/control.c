@@ -2,8 +2,8 @@
 #include "common.h"
 #include "hal.h"
 #include "log.h"
-#include "mem.h"
-#include "queue.h"
+#include "mem/mem.h"
+#include "mem/queue.h"
 
 
 // #if not defined(UNIT_TEST) && defined(CORE_M4)

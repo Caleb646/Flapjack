@@ -284,6 +284,9 @@ class IMUViewer(QtWidgets.QWidget):
                     self.control_tab.set_buttons_enabled(True)
                     self.append_debug_console("Connected to flight controller", "[INFO]")
         else:
+            # NOTE: Send stop command when disconnecting the GUI
+            self.send_stop_command()
+            
             self.close_session_files()
             self.serial.close()
             # Disable command buttons when disconnected

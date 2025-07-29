@@ -4,15 +4,15 @@
 #include "common.h"
 #include "hal.h"
 #include "log.h"
-#include "mem.h"
+#include "mem/mem.h"
 
 #define COMMAND_DATA_SIZE 7U
 
 typedef uint8_t eFLIGHT_MODE_t;
-typedef enum { eFLIGHT_MODE_HOVER = 0, eFLIGHT_MODE_AIRPLANE };
+enum { eFLIGHT_MODE_HOVER = 0, eFLIGHT_MODE_AIRPLANE };
 
 typedef uint8_t eREQUESTED_STATE_t;
-typedef enum {
+enum {
     /* These are the command states that a gui or radio controller can send */
     eREQUESTED_STATE_STOP = 0,
     eREQUESTED_STATE_START
@@ -21,7 +21,7 @@ typedef enum {
 };
 
 typedef uint8_t eOP_STATE_t;
-typedef enum {
+enum {
     /* These are the states the FC can transition to based on the context and sent op state */
     eOP_STATE_STOPPED,
     eOP_STATE_RUNNING,
@@ -29,7 +29,7 @@ typedef enum {
 };
 
 typedef uint8_t eCOMMAND_t;
-typedef enum {
+enum {
     eCOMMAND_TYPE_EMPTY = 0, // represents invalid command
     eCOMMAND_TYPE_CHANGE_OP_STATE,
     eCOMMAND_TYPE_CHANGE_FLIGHT_MODE,
@@ -40,7 +40,7 @@ typedef enum {
 typedef int8_t velocity_t;
 typedef uint16_t pid_t;
 typedef uint8_t ePID_t;
-typedef enum { ePID_ROLL = 0, ePID_PITCH, ePID_YAW, ePID_THROTTLE };
+enum { ePID_ROLL = 0, ePID_PITCH, ePID_YAW, ePID_THROTTLE };
 
 typedef struct {
     eCOMMAND_t commandType;

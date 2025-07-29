@@ -79,7 +79,7 @@ PCD_HandleTypeDef hpcd_USB_OTG_HS;
 
 /* Private function prototypes -----------------------------------------------*/
 static void MX_GPIO_Init (void);
-static void MX_HDMI_CEC_Init (void);
+// static void MX_HDMI_CEC_Init (void);
 static void MX_RTC_Init (void);
 static void MX_SAI1_Init (void);
 static void MX_SPDIFRX1_Init (void);
@@ -139,7 +139,7 @@ int main (void) {
 
     /* Initialize all configured peripherals */
     MX_GPIO_Init ();
-    MX_HDMI_CEC_Init ();
+    // MX_HDMI_CEC_Init ();
     MX_RTC_Init ();
     MX_SAI1_Init ();
     MX_SPDIFRX1_Init ();
@@ -189,33 +189,33 @@ int main (void) {
  * @param None
  * @retval None
  */
-static void MX_HDMI_CEC_Init (void) {
+// static void MX_HDMI_CEC_Init (void) {
 
-    /* USER CODE BEGIN HDMI_CEC_Init 0 */
+//     /* USER CODE BEGIN HDMI_CEC_Init 0 */
 
-    /* USER CODE END HDMI_CEC_Init 0 */
+//     /* USER CODE END HDMI_CEC_Init 0 */
 
-    /* USER CODE BEGIN HDMI_CEC_Init 1 */
+//     /* USER CODE BEGIN HDMI_CEC_Init 1 */
 
-    /* USER CODE END HDMI_CEC_Init 1 */
-    hcec.Instance             = CEC;
-    hcec.Init.SignalFreeTime  = CEC_DEFAULT_SFT;
-    hcec.Init.Tolerance       = CEC_STANDARD_TOLERANCE;
-    hcec.Init.BRERxStop       = CEC_RX_STOP_ON_BRE;
-    hcec.Init.BREErrorBitGen  = CEC_BRE_ERRORBIT_NO_GENERATION;
-    hcec.Init.LBPEErrorBitGen = CEC_LBPE_ERRORBIT_NO_GENERATION;
-    hcec.Init.BroadcastMsgNoErrorBitGen = CEC_BROADCASTERROR_ERRORBIT_GENERATION;
-    hcec.Init.SignalFreeTimeOption = CEC_SFT_START_ON_TXSOM;
-    hcec.Init.ListenMode           = CEC_FULL_LISTENING_MODE;
-    hcec.Init.OwnAddress           = CEC_OWN_ADDRESS_NONE;
-    hcec.Init.RxBuffer             = cec_receive_buffer;
-    if (HAL_CEC_Init (&hcec) != HAL_OK) {
-        Error_Handler ();
-    }
-    /* USER CODE BEGIN HDMI_CEC_Init 2 */
+//     /* USER CODE END HDMI_CEC_Init 1 */
+//     hcec.Instance             = CEC;
+//     hcec.Init.SignalFreeTime  = CEC_DEFAULT_SFT;
+//     hcec.Init.Tolerance       = CEC_STANDARD_TOLERANCE;
+//     hcec.Init.BRERxStop       = CEC_RX_STOP_ON_BRE;
+//     hcec.Init.BREErrorBitGen  = CEC_BRE_ERRORBIT_NO_GENERATION;
+//     hcec.Init.LBPEErrorBitGen = CEC_LBPE_ERRORBIT_NO_GENERATION;
+//     hcec.Init.BroadcastMsgNoErrorBitGen =
+//     CEC_BROADCASTERROR_ERRORBIT_GENERATION; hcec.Init.SignalFreeTimeOption
+//     = CEC_SFT_START_ON_TXSOM; hcec.Init.ListenMode           =
+//     CEC_FULL_LISTENING_MODE; hcec.Init.OwnAddress           =
+//     CEC_OWN_ADDRESS_NONE; hcec.Init.RxBuffer             =
+//     cec_receive_buffer; if (HAL_CEC_Init (&hcec) != HAL_OK) {
+//         Error_Handler ();
+//     }
+//     /* USER CODE BEGIN HDMI_CEC_Init 2 */
 
-    /* USER CODE END HDMI_CEC_Init 2 */
-}
+//     /* USER CODE END HDMI_CEC_Init 2 */
+// }
 
 /**
  * @brief RTC Initialization Function

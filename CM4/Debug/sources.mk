@@ -23,8 +23,8 @@ C_DEPS :=
 # Every subdirectory with source files must be described here
 SUBDIRS := \
 Common/Src \
+Common/Src/mc \
 Common/Src/mem \
-Common/Src/motion_control \
 Common/Src/sensors/imu \
 Core/Src \
 Core/Startup \

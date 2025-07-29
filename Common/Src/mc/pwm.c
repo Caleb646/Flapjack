@@ -569,3 +569,23 @@ STATUS_TYPE PWM_DMAStart (PWM_DMAHandle* pHandle, uint32_t const* pData, uint16_
 
     return eSTATUS_SUCCESS;
 }
+
+STATUS_TYPE
+PWM_DMARegisterCallback (PWM_DMAHandle* pHandle, uint32_t channelID, PWM_DMACallback callback, ePWM_DMA_CB_TYPE cbType) {
+
+    if (pHandle == NULL || callback == NULL) {
+        LOG_ERROR ("Invalid parameters for PWM DMA callback registration");
+        return eSTATUS_FAILURE;
+    }
+
+    int32_t id     = PWMTimChannel2Idx (channelID);
+    int32_t timIdx = PWMTim2Idx (pHandle->pwm.timer.Instance);
+
+    if (timIdx < 0 || id < 0) {
+        LOG_ERROR ("Invalid timer index or channel ID for PWM DMA callback registration");
+        return eSTATUS_FAILURE;
+    }
+
+    gPWM_DMACallbacks[timIdx][cbType][id] = callback;
+    return eSTATUS_SUCCESS;
+}

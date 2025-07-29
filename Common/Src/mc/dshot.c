@@ -57,24 +57,24 @@ static void DShotDMACompleteCallback (TIM_HandleTypeDef* htim) {
         return;
     }
 
-    uint32_t channel = 0;
-    uint32_t dma_id  = 0;
+    // uint32_t channel = 0;
+    // uint32_t dma_id  = 0;
 
-    if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1) {
-        channel = TIM_CHANNEL_1;
-        dma_id  = TIM_DMA_ID_CC1;
-    } else if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_2) {
-        channel = TIM_CHANNEL_2;
-        dma_id  = TIM_DMA_ID_CC2;
-    } else if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_3) {
-        channel = TIM_CHANNEL_3;
-        dma_id  = TIM_DMA_ID_CC3;
-    } else if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_4) {
-        channel = TIM_CHANNEL_4;
-        dma_id  = TIM_DMA_ID_CC4;
-    } else {
-        return;
-    }
+    // if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1) {
+    //     channel = TIM_CHANNEL_1;
+    //     dma_id  = TIM_DMA_ID_CC1;
+    // } else if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_2) {
+    //     channel = TIM_CHANNEL_2;
+    //     dma_id  = TIM_DMA_ID_CC2;
+    // } else if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_3) {
+    //     channel = TIM_CHANNEL_3;
+    //     dma_id  = TIM_DMA_ID_CC3;
+    // } else if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_4) {
+    //     channel = TIM_CHANNEL_4;
+    //     dma_id  = TIM_DMA_ID_CC4;
+    // } else {
+    //     return;
+    // }
 
     // Disable DMA request for this channel but keep timer running
     // __HAL_TIM_DISABLE_DMA (htim, dma_id);
