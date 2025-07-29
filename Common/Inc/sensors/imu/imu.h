@@ -189,5 +189,7 @@ STATUS_TYPE IMU2CPUInterruptHandler (IMU* pIMU);
 STATUS_TYPE IMUReadReg (IMU const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
 STATUS_TYPE IMUWriteReg (IMU const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
 STATUS_TYPE IMUInit (IMU* pIMU, SPI_HandleTypeDef* pSPI, IMUAccConf aconf, IMUGyroConf gconf);
+STATUS_TYPE IMUStart (IMU* pIMU);
+STATUS_TYPE IMUStop (IMU* pIMU);
 
 #endif // SENSORS_IMU_H

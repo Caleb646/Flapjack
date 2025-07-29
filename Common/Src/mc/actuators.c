@@ -1,8 +1,8 @@
-#include "motion_control/actuators.h"
+#include "mc/actuators.h"
 #include "flight_context.h"
 #include "log.h"
-#include "motion_control/dshot.h"
-#include "motion_control/pwm.h"
+#include "mc/dshot.h"
+#include "mc/pwm.h"
 #include <string.h>
 
 
@@ -108,11 +108,6 @@ Vec3f* pOutputPIDAttitude // degrees
     return eSTATUS_SUCCESS;
 }
 
-// STATUS_TYPE PIDInit (PIDContext* pContext) {
-//     memset ((void*)pContext, 0, sizeof (PIDContext));
-//     return eSTATUS_SUCCESS;
-// }
-
 STATIC_TESTABLE_DECL float ServoAngle2PWM (Servo* pServo, float targetAngle) {
     if (CHECK_SERVO_OK (pServo) != TRUE) {
         LOG_ERROR ("ServoDescriptor is not valid");
@@ -181,6 +176,20 @@ STATUS_TYPE ServoStart (Servo* pServo) {
     return ServoWrite (pServo, 0.0F);
 }
 
+STATUS_TYPE ServoStop (Servo* pServo) {
+    if (CHECK_SERVO_OK (pServo) != TRUE) {
+        LOG_ERROR ("Received invalid Servo pointer");
+        return eSTATUS_FAILURE;
+    }
+
+    if (PWMStop (&pServo->pwm) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to stop PWM for Servo");
+        return eSTATUS_FAILURE;
+    }
+
+    return eSTATUS_SUCCESS;
+}
+
 STATUS_TYPE ServoWrite (Servo* pServo, float targetAngle) {
     if (CHECK_SERVO_OK (pServo) != TRUE) {
         LOG_ERROR ("Received invalid Servo pointer");
@@ -228,6 +237,24 @@ STATUS_TYPE MotorStart (Motor* pMotor) {
 
     // Set initial throttle to minimum
     // return DShotWrite (&pMotor->dshot, DSHOT_MIN_THROTTLE);
+    return eSTATUS_SUCCESS;
+}
+
+STATUS_TYPE MotorStop (Motor* pMotor) {
+    if (pMotor == NULL) {
+        LOG_ERROR ("Received NULL pointer for Motor");
+        return eSTATUS_FAILURE;
+    }
+
+    /*
+     * NOTE: The motor's ESC will automatically stop the motor
+     * when the PWM signal has stopped for more than 5-10ms.
+     */
+    if (DShotStop (&pMotor->dshot) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to stop dshot");
+        return eSTATUS_FAILURE;
+    }
+
     return eSTATUS_SUCCESS;
 }
 
@@ -312,49 +339,11 @@ ActuatorsMixPair (Servo* pServo, Motor* pMotor, Vec3f pidAttitude, float targetT
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE ActuatorsInit (PWMConfig left_ServoPWM, MotorConfig left_Motor) {
-
-    STATUS_TYPE status = ServoInit (left_ServoPWM, &gLeftServo);
-    if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to initialize left servo");
-        return status;
-    }
-
-    status = MotorInit (left_Motor, &gLeftMotor);
-    if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to initialize left motor");
-        return status;
-    }
-
-    return eSTATUS_SUCCESS;
-}
-
-STATUS_TYPE ActuatorsStart (void) {
-
-    STATUS_TYPE status = ServoStart (&gLeftServo);
-    if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to start left servo");
-        return status;
-    }
-
-    status = MotorStart (&gLeftMotor);
-    if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to start left motor");
-        return status;
-    }
-
-    return eSTATUS_SUCCESS;
-}
-
-STATUS_TYPE ActuatorsWrite (Vec3f pidAttitude, float targetThrottle) {
-    return ActuatorsMixPair (&gLeftServo, &gLeftMotor, pidAttitude, targetThrottle);
-}
-
 /*
  * \brief After motors are armed, a motor write has to be issued at
  * least every 5ms or the motor ESC will stop the motor.
  */
-STATUS_TYPE ActuatorsArm (void) {
+STATIC_TESTABLE_DECL STATUS_TYPE ActuatorsArm (void) {
 
     // STATUS_TYPE status = eSTATUS_SUCCESS;
     for (uint32_t i = 0; i < 300; ++i) {
@@ -394,6 +383,64 @@ STATUS_TYPE ActuatorsArm (void) {
     // }
 
     return eSTATUS_SUCCESS;
+}
+
+STATUS_TYPE ActuatorsInit (PWMConfig left_ServoPWM, MotorConfig left_Motor) {
+
+    STATUS_TYPE status = ServoInit (left_ServoPWM, &gLeftServo);
+    if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to initialize left servo");
+        return status;
+    }
+
+    status = MotorInit (left_Motor, &gLeftMotor);
+    if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to initialize left motor");
+        return status;
+    }
+
+    return eSTATUS_SUCCESS;
+}
+
+STATUS_TYPE ActuatorsStart (void) {
+
+    STATUS_TYPE status = ServoStart (&gLeftServo);
+    if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to start left servo");
+        return status;
+    }
+
+    status = MotorStart (&gLeftMotor);
+    if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to start left motor");
+        return status;
+    }
+
+    status = ActuatorsArm ();
+    if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to arm actuators");
+        return status;
+    }
+
+    return eSTATUS_SUCCESS;
+}
+
+STATUS_TYPE ActuatorsStop (void) {
+    if (MotorStop (&gLeftMotor) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to stop left motor");
+        return eSTATUS_FAILURE;
+    }
+
+    if (ServoStop (&gLeftServo) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to stop left servo");
+        return eSTATUS_FAILURE;
+    }
+
+    return eSTATUS_SUCCESS;
+}
+
+STATUS_TYPE ActuatorsWrite (Vec3f pidAttitude, float targetThrottle) {
+    return ActuatorsMixPair (&gLeftServo, &gLeftMotor, pidAttitude, targetThrottle);
 }
 
 Servo* ActuatorsGetLeftServo (void) {

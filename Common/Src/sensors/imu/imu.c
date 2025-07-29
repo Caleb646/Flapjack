@@ -905,3 +905,18 @@ STATUS_TYPE IMUInit (IMU* pIMU, SPI_HandleTypeDef* pSPI, IMUAccConf aconf, IMUGy
 
     return eSTATUS_SUCCESS;
 }
+
+STATUS_TYPE IMUStart (IMU* pIMU) {
+    if (IMUEnableInterrupts (pIMU) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to enable IMU interrupts");
+        return eSTATUS_FAILURE;
+    }
+    return eSTATUS_SUCCESS;
+}
+STATUS_TYPE IMUStop (IMU* pIMU) {
+    if (IMUDisableInterrupts (pIMU) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to disable IMU interrupts");
+        return eSTATUS_FAILURE;
+    }
+    return eSTATUS_SUCCESS;
+}

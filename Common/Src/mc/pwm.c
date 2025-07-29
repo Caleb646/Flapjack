@@ -1,4 +1,4 @@
-#include "motion_control/pwm.h"
+#include "mc/pwm.h"
 #include "common.h"
 #include "dma.h"
 #include "hal.h"
@@ -481,6 +481,20 @@ STATUS_TYPE PWMStart (PWMHandle* pHandle) {
     return eSTATUS_SUCCESS;
 }
 
+STATUS_TYPE PWMStop (PWMHandle* pHandle) {
+    if (PWM_CHECK_OK (pHandle) == FALSE) {
+        LOG_ERROR ("Received invalid PWM pointer");
+        return eSTATUS_FAILURE;
+    }
+
+    if (HAL_TIM_PWM_Stop (&pHandle->timer, pHandle->channelID) != HAL_OK) {
+        LOG_ERROR ("Failed to stop PWM");
+        return eSTATUS_FAILURE;
+    }
+
+    return eSTATUS_SUCCESS;
+}
+
 STATUS_TYPE PWMWrite (PWMHandle* pHandle, uint32_t usUpTime) {
 
     if (PWM_CHECK_OK (pHandle) == FALSE) {
@@ -553,92 +567,5 @@ STATUS_TYPE PWM_DMAStart (PWM_DMAHandle* pHandle, uint32_t const* pData, uint16_
         return eSTATUS_FAILURE;
     }
 
-    return eSTATUS_SUCCESS;
-}
-
-STATUS_TYPE PWM_DMAStopISR (TIM_HandleTypeDef* htim, uint32_t Channel) {
-    if (htim == NULL) {
-        // LOG_ERROR ("Invalid PWM DMA handle or timer instance");
-        return eSTATUS_FAILURE;
-    }
-
-    HAL_StatusTypeDef status = HAL_OK;
-
-    switch (Channel) {
-    case TIM_CHANNEL_1: {
-        /* Disable the TIM Capture/Compare 1 DMA request */
-        __HAL_TIM_DISABLE_DMA (htim, TIM_DMA_CC1);
-        __HAL_DMA_DISABLE (htim->hdma[TIM_DMA_ID_CC1]);
-        // (void)HAL_DMA_Abort_IT (htim->hdma[TIM_DMA_ID_CC1]);
-        break;
-    }
-
-    case TIM_CHANNEL_2: {
-        /* Disable the TIM Capture/Compare 2 DMA request */
-        __HAL_TIM_DISABLE_DMA (htim, TIM_DMA_CC2);
-        __HAL_DMA_DISABLE (htim->hdma[TIM_DMA_ID_CC2]);
-        // (void)HAL_DMA_Abort_IT (htim->hdma[TIM_DMA_ID_CC2]);
-        break;
-    }
-
-    case TIM_CHANNEL_3: {
-        /* Disable the TIM Capture/Compare 3 DMA request */
-        __HAL_TIM_DISABLE_DMA (htim, TIM_DMA_CC3);
-        __HAL_DMA_DISABLE (htim->hdma[TIM_DMA_ID_CC3]);
-        // (void)HAL_DMA_Abort_IT (htim->hdma[TIM_DMA_ID_CC3]);
-        break;
-    }
-
-    case TIM_CHANNEL_4: {
-        /* Disable the TIM Capture/Compare 4 interrupt */
-        __HAL_TIM_DISABLE_DMA (htim, TIM_DMA_CC4);
-        __HAL_DMA_DISABLE (htim->hdma[TIM_DMA_ID_CC4]);
-        // (void)HAL_DMA_Abort_IT (htim->hdma[TIM_DMA_ID_CC4]);
-        break;
-    }
-
-    default: status = HAL_ERROR; break;
-    }
-
-    if (status == HAL_OK) {
-        /* Disable the Capture compare channel */
-        TIM_CCxChannelCmd (htim->Instance, Channel, TIM_CCx_DISABLE);
-
-        if (IS_TIM_BREAK_INSTANCE (htim->Instance) != RESET) {
-            /* Disable the Main Output */
-            __HAL_TIM_MOE_DISABLE (htim);
-        }
-
-        /* Disable the Peripheral */
-        __HAL_TIM_DISABLE (htim);
-
-        /* Set the TIM channel state */
-        TIM_CHANNEL_STATE_SET (htim, Channel, HAL_TIM_CHANNEL_STATE_READY);
-    }
-
-    if (status != HAL_OK) {
-        // LOG_ERROR ("Failed to stop PWM DMA for channel %u", (uint16_t)Channel);
-        return eSTATUS_FAILURE;
-    }
-    return eSTATUS_SUCCESS;
-}
-
-STATUS_TYPE
-PWM_DMARegisterCallback (PWM_DMAHandle* pHandle, uint32_t channelID, PWM_DMACallback callback, ePWM_DMA_CB_TYPE cbType) {
-
-    if (pHandle == NULL || callback == NULL) {
-        LOG_ERROR ("Invalid parameters for PWM DMA callback registration");
-        return eSTATUS_FAILURE;
-    }
-
-    int32_t id     = PWMTimChannel2Idx (channelID);
-    int32_t timIdx = PWMTim2Idx (pHandle->pwm.timer.Instance);
-
-    if (timIdx < 0 || id < 0) {
-        LOG_ERROR ("Invalid timer index or channel ID for PWM DMA callback registration");
-        return eSTATUS_FAILURE;
-    }
-
-    gPWM_DMACallbacks[timIdx][cbType][id] = callback;
     return eSTATUS_SUCCESS;
 }

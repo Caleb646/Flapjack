@@ -43,7 +43,25 @@ typedef struct RingBuff_ RingBuff;
 #define MEM_SHARED_CM7_UART_RINGBUFF_TOTAL_LEN (sizeof (RingBuff) + 8192U)
 #define MEM_SHARED_CM7_UART_RINGBUFF_END \
     (MEM_SHARED_CM7_UART_RINGBUFF_START + MEM_SHARED_CM7_UART_RINGBUFF_TOTAL_LEN)
+/*
+ * The flight controller can receive 'commands' from a GUI or RF remote control.
+ * The parsed commands are stored here for the flight controller to process.
+ */
+#define MEM_SHARED_COMMAND_QUEUE_START \
+    MEM_U32_ALIGN4 (MEM_SHARED_CM7_UART_RINGBUFF_END)
+#define MEM_SHARED_COMMAND_QUEUE_TOTAL_LEN (512U)
+#define MEM_SHARED_COMMAND_QUEUE_END \
+    (MEM_SHARED_COMMAND_QUEUE_START + MEM_SHARED_COMMAND_QUEUE_TOTAL_LEN)
 
-STATIC_ASSERT (MEM_SHARED_CM7_UART_RINGBUFF_END <= MEM_SRAM_4_END, "");
+/*
+ * Shared Flight State for the flight controller to access the current state.
+ */
+#define MEM_SHARED_FLIGHT_STATE_START \
+    MEM_U32_ALIGN4 (MEM_SHARED_COMMAND_QUEUE_END)
+#define MEM_SHARED_FLIGHT_STATE_TOTAL_LEN (128U)
+#define MEM_SHARED_FLIGHT_STATE_END \
+    (MEM_SHARED_FLIGHT_STATE_START + MEM_SHARED_FLIGHT_STATE_TOTAL_LEN)
+
+STATIC_ASSERT (MEM_SHARED_FLIGHT_STATE_END <= MEM_SRAM_4_END, "");
 
 #endif // MEM_H

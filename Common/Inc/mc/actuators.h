@@ -4,8 +4,8 @@
 #include "common.h"
 #include "dma.h"
 #include "hal.h"
-#include "motion_control/dshot.h"
-#include "motion_control/pwm.h"
+#include "mc/dshot.h"
+#include "mc/pwm.h"
 #include <stdint.h>
 
 #define MOTOR_CREATE_CONF(PTR_TIMER, CHANNEL_ID, DMA_STREAM, DMA_REQUEST_ID) \
@@ -95,14 +95,13 @@ STATUS_TYPE MotorWrite (Motor* pMotor, float motorValue);
 STATUS_TYPE ActuatorsInit (PWMConfig left_ServoPWM, MotorConfig left_Motor);
 STATUS_TYPE ActuatorsStart (void);
 STATUS_TYPE ActuatorsWrite (Vec3f pidAttitude, float targetThrottle);
-STATUS_TYPE ActuatorsArm (void);
 Servo* ActuatorsGetLeftServo (void);
 
 
 #ifdef UNIT_TEST
 float ServoAngle2PWM (Servo* pServo, float targetAngle);
-STATUS_TYPE
-ActuatorsMixPair (Servo* pServo, Motor* pMotor, Vec3f pidAttitude, float targetThrottle);
+STATUS_TYPE ActuatorsMixPair (Servo* pServo, Motor* pMotor, Vec3f pidAttitude, float tthrottle);
+STATUS_TYPE ActuatorsArm (void);
 #endif // UNIT_TEST
 
 

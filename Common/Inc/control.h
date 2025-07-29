@@ -4,30 +4,113 @@
 #include "common.h"
 #include "hal.h"
 #include "log.h"
+#include "mem.h"
 
-typedef enum {
-    eFLIGHT_MODE_HOVER = 0,
-    eFLIGHT_MODE_AIRPLANE
-} eFLIGHT_MODE;
+#define COMMAND_DATA_SIZE 7U
 
+typedef uint8_t eFLIGHT_MODE_t;
+typedef enum { eFLIGHT_MODE_HOVER = 0, eFLIGHT_MODE_AIRPLANE };
+
+typedef uint8_t eREQUESTED_STATE_t;
 typedef enum {
-    eOP_STATE_START = 0,
-    eOP_STATE_STOP,
-    eOP_STATE_SENSOR_ONLY,
+    /* These are the command states that a gui or radio controller can send */
+    eREQUESTED_STATE_START = 0,
+    eREQUESTED_STATE_STOP,
+    eREQUESTED_STATE_SENSOR_ONLY
+};
+
+typedef uint8_t eOP_STATE_t;
+typedef enum {
+    /* These are the states the FC can transition to based on the context and sent op state */
+    eOP_STATE_STOPPED,
     eOP_STATE_RUNNING,
-    eOP_STATE_IDLE
-} eOP_STATE;
+    eOP_STATE_ERROR
+};
 
+typedef uint8_t eCOMMAND_t;
 typedef enum {
-    eCOMMAND_TYPE_CHANGE_OP_STATE = 0,
+    eCOMMAND_TYPE_EMPTY = 0, // represents invalid command
+    eCOMMAND_TYPE_CHANGE_OP_STATE,
     eCOMMAND_TYPE_CHANGE_FLIGHT_MODE,
-    eCOMMAND_TYPE_CHANGE_VEL,
+    eCOMMAND_TYPE_CHANGE_VELOCITY,
     eCOMMAND_TYPE_CHANGE_PID
-} eCOMMAND_TYPE;
+};
+
+typedef int8_t velocity_t;
+typedef uint16_t pid_t;
+typedef uint8_t ePID_t;
+typedef enum { ePID_ROLL = 0, ePID_PITCH, ePID_YAW, ePID_THROTTLE };
 
 typedef struct {
-    eFLIGHT_MODE flightMode;
-    eOP_STATE opState;
+    eCOMMAND_t commandType;
+} CommandHeader;
+
+typedef struct {
+    CommandHeader header;
+    uint8_t data[COMMAND_DATA_SIZE];
+} EmptyCommand;
+
+typedef struct {
+    CommandHeader header;
+    eREQUESTED_STATE_t requestedState;
+} ChangeOpStateCmd;
+
+typedef struct {
+    CommandHeader header;
+    eFLIGHT_MODE_t flightMode;
+} ChangeFlightModeCmd;
+
+typedef struct {
+    CommandHeader header;
+    velocity_t vUp;      // -100 to 100
+    velocity_t vRight;   // -100 to 100
+    velocity_t vForward; // -100 to 100
+} ChangeVelocityCmd;
+
+typedef struct {
+    CommandHeader header;
+    ePID_t pidType;
+    union {
+        pid_t roll;
+        pid_t pitch;
+        pid_t yaw;
+        pid_t throttle;
+    } P; // 0 to 65,535
+
+    union {
+        pid_t roll;
+        pid_t pitch;
+        pid_t yaw;
+        pid_t throttle;
+    } I; // 0 to 65,535
+
+    union {
+        pid_t roll;
+        pid_t pitch;
+        pid_t yaw;
+        pid_t throttle;
+    } D; // 0 to 65,535
+} ChangePIDCmd;
+
+typedef struct {
+    eFLIGHT_MODE_t flightMode;
+    eOP_STATE_t opState;
 } FCState;
+
+
+STATIC_ASSERT (sizeof (EmptyCommand) <= MEM_SHARED_COMMAND_QUEUE_TOTAL_LEN, "");
+STATIC_ASSERT (sizeof (ChangeOpStateCmd) <= sizeof (EmptyCommand), "");
+STATIC_ASSERT (sizeof (ChangeFlightModeCmd) <= sizeof (EmptyCommand), "");
+STATIC_ASSERT (sizeof (ChangeVelocityCmd) <= sizeof (EmptyCommand), "");
+STATIC_ASSERT (sizeof (ChangePIDCmd) <= sizeof (EmptyCommand), "");
+STATIC_ASSERT (sizeof (FCState) <= MEM_SHARED_FLIGHT_STATE_TOTAL_LEN, "");
+
+STATUS_TYPE ControlInit (void);
+STATUS_TYPE ControlStart (UART_HandleTypeDef* huart);
+STATUS_TYPE ControlProcessRawCmds (void);
+STATUS_TYPE ControlGetNewCmd (EmptyCommand* pOutCmd);
+FCState ControlGetCopyFCState (void);
+eOP_STATE_t ControlGetOpState (void);
+STATUS_TYPE ControlUpdateFCState (FCState const* pNewState);
 
 #endif /* CONTROL_H */

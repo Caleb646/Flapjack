@@ -36,7 +36,7 @@
 #include "common.h"
 #include "dma.h"
 #include "hal.h"
-#include "motion_control/pwm.h"
+#include "mc/pwm.h"
 
 #define DSHOT_DMA_BUFFER_SIZE 18 /* resolution + frame reset (2us) */
 #define DSHOT_FRAME_SIZE      16
@@ -66,6 +66,7 @@ typedef struct {
 STATUS_TYPE
 DShotInit (DShotConfig dConfig, PWMConfig timConfig, DMAConfig dmaConfig, DShotHandle* pOutHandle);
 STATUS_TYPE DShotStart (DShotHandle* pDShotHandle);
+STATUS_TYPE DShotStop (DShotHandle* pDShotHandle);
 STATUS_TYPE DShotWrite (DShotHandle* pDShotHandle, uint16_t motor_value);
 
 

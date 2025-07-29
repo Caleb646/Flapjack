@@ -80,7 +80,7 @@ set(ALL_TEST_SOURCES
     registered_tests.c
     ./stubs/hal_stub.c
     ../Common/Src/sensors/imu/imu.c
-    ../Common/Src/motion_control/filter.c
+    ../Common/Src/mc/filter.c
     ../Common/Src/mem/queue.c
     ../Common/Src/common.c
 )

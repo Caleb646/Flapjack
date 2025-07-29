@@ -31,12 +31,10 @@
 
 
 #include "common.h"
+#include "control.h"
 #include "log.h"
-
-// #include "imu.h"
-// #include "motion_control.h"
-// #include "flight_context.h"
 #include "sync.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -75,14 +73,6 @@ UART_HandleTypeDef huart1;
 
 PCD_HandleTypeDef hpcd_USB_OTG_HS;
 
-/* Definitions for defaultTask */
-osThreadId_t defaultTaskHandle;
-const osThreadAttr_t defaultTask_attributes = {
-    .name       = "defaultTask",
-    .stack_size = 128 * 4,
-    .priority   = (osPriority_t)osPriorityNormal,
-};
-uint8_t cec_receive_buffer[16];
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -104,11 +94,20 @@ void StartDefaultTask (void* argument);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+UART_HandleTypeDef* gpUartLogging = NULL;
+
 void TaskMainLoop (void* pvParameters) {
     uint32_t startTime = xTaskGetTickCount ();
     uint32_t logStep   = 5000;
+
+    if (ControlStart (gpUartLogging) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to start control module");
+        CriticalErrorHandler ();
+    }
+
     while (1) {
         SyncProcessTasks ();
+        ControlProcessRawCmds ();
         if ((xTaskGetTickCount () - startTime) >= logStep) {
             startTime = xTaskGetTickCount ();
             LOG_INFO ("Main loop running");
@@ -118,10 +117,6 @@ void TaskMainLoop (void* pvParameters) {
 
 /* USER CODE END 0 */
 
-/**
- * @brief  The application entry point.
- * @retval int
- */
 int main (void) {
 
     /* USER CODE BEGIN Boot_Mode_Sequence_1 */
@@ -156,9 +151,13 @@ int main (void) {
         CriticalErrorHandler ();
     }
 
-    UART_HandleTypeDef* pUart;
-    if (LoggerInit (USART1, &pUart) != eSTATUS_SUCCESS) {
+    if (LoggerInit (USART1, &gpUartLogging) != eSTATUS_SUCCESS) {
         // if (LoggerInit (USART1, NULL) != eSTATUS_SUCCESS) {
+        CriticalErrorHandler ();
+    }
+
+    if (ControlInit () != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to init control module");
         CriticalErrorHandler ();
     }
     HAL_Delay (1000);

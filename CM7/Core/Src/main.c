@@ -31,14 +31,13 @@
 #include "timers.h"
 
 #include "common.h"
+#include "control.h"
 #include "dma.h"
-#include "flight_context.h"
 #include "log.h"
-#include "motion_control/actuators.h"
-#include "motion_control/filter.h"
+#include "mc/actuators.h"
+#include "mc/filter.h"
 #include "sensors/imu/imu.h"
 #include "sync.h"
-
 
 TIM_HandleTypeDef TimHandle;
 DMA_HandleTypeDef hdma_tim;
@@ -46,185 +45,26 @@ TIM_OC_InitTypeDef sConfig;
 uint32_t aCCValue_Buffer[8] = { 0 };
 uint32_t uwTimerPeriod      = 0;
 
-
-// void DMA1_Stream0_IRQHandler (void) {
-//     // LOG_INFO ("DMA1 Stream0 IRQ Handler");
-//     HAL_DMA_IRQHandler (&hdma_tim);
-// }
-
-void Temp_PWM_Init (TIM_HandleTypeDef* htim) {
-    GPIO_InitTypeDef GPIO_InitStruct;
-
-
-    /*##-1- Enable peripherals and GPIO Clocks #################################*/
-    /* TIM8 clock enable */
-    __HAL_RCC_TIM8_CLK_ENABLE ();
-    __HAL_RCC_DMA1_CLK_ENABLE ();
-    __HAL_RCC_GPIOC_CLK_ENABLE ();
-    __HAL_RCC_GPIOJ_CLK_ENABLE ();
-    /* TIM8 GPIO Configuration
-     * PC6     ------> TIM8_CH1
-     * PJ7     ------> TIM8_CH2N
-     */
-    GPIO_InitStruct.Pin       = GPIO_PIN_6;
-    GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull      = GPIO_NOPULL;
-    GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_VERY_HIGH;
-    GPIO_InitStruct.Alternate = GPIO_AF3_TIM8;
-    HAL_GPIO_Init (GPIOC, &GPIO_InitStruct);
-
-    // #define ARD_D6_Pin GPIO_PIN_7
-    GPIO_InitStruct.Pin       = GPIO_PIN_7;
-    GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull      = GPIO_NOPULL;
-    GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_VERY_HIGH;
-    GPIO_InitStruct.Alternate = GPIO_AF3_TIM8;
-    // #define ARD_D6_GPIO_Port GPIOJ
-    HAL_GPIO_Init (GPIOJ, &GPIO_InitStruct);
-
-
-    /* Set the parameters to be configured */
-    hdma_tim.Init.Request             = DMA_REQUEST_TIM8_CH1;
-    hdma_tim.Init.Direction           = DMA_MEMORY_TO_PERIPH;
-    hdma_tim.Init.PeriphInc           = DMA_PINC_DISABLE;
-    hdma_tim.Init.MemInc              = DMA_MINC_ENABLE;
-    hdma_tim.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
-    hdma_tim.Init.MemDataAlignment    = DMA_MDATAALIGN_WORD;
-    hdma_tim.Init.Mode                = DMA_NORMAL;
-    hdma_tim.Init.Priority            = DMA_PRIORITY_MEDIUM;
-    hdma_tim.Init.FIFOMode            = DMA_FIFOMODE_DISABLE;
-    hdma_tim.Init.FIFOThreshold       = DMA_FIFO_THRESHOLD_FULL;
-    hdma_tim.Init.MemBurst            = DMA_MBURST_SINGLE;
-    hdma_tim.Init.PeriphBurst         = DMA_PBURST_SINGLE;
-
-    /* Set hdma_tim instance */
-    hdma_tim.Instance = DMA1_Stream0;
-
-    /* Link hdma_tim to hdma[TIM_DMA_ID_CC1] (channel1) */
-    htim->hdma[TIM_DMA_ID_CC1] = &hdma_tim;
-    hdma_tim.Parent            = htim;
-    // __HAL_LINKDMA (htim, hdma[TIM_DMA_ID_CC1], hdma_tim);
-
-    /* Initialize TIMx DMA handle */
-    HAL_DMA_Init (htim->hdma[TIM_DMA_ID_CC1]);
-
-    /*##-2- Configure the NVIC for DMA #########################################*/
-    /* NVIC configuration for DMA transfer complete interrupt */
-    HAL_NVIC_SetPriority (DMA1_Stream0_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ (DMA1_Stream0_IRQn);
-}
-
-void Temp_DMA_Start (void) {
-
-    Temp_PWM_Init (&TimHandle);
-
-    uint32_t prescaler = 64U - 1U;
-    uwTimerPeriod      = 1000U;
-    /* Compute CCR1 value to generate a duty cycle at 75% */
-    aCCValue_Buffer[0] = 750U;
-    /* Compute CCR2 value to generate a duty cycle at 50% */
-    aCCValue_Buffer[1] = 500U;
-    /* Compute CCR3 value to generate a duty cycle at 25% */
-    aCCValue_Buffer[2] = 250U;
-
-    TimHandle.Instance               = TIM8;
-    TimHandle.Init.Period            = uwTimerPeriod;
-    TimHandle.Init.RepetitionCounter = 0;
-    TimHandle.Init.Prescaler         = prescaler;
-    TimHandle.Init.ClockDivision     = 0;
-    TimHandle.Init.CounterMode       = TIM_COUNTERMODE_UP;
-    TimHandle.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-
-    if (HAL_TIM_PWM_Init (&TimHandle) != HAL_OK) {
-        return;
-    }
-
-    /*##-2- Configure the PWM channel 1 ########################################*/
-    sConfig.OCMode       = TIM_OCMODE_PWM1;
-    sConfig.OCPolarity   = TIM_OCPOLARITY_HIGH;
-    sConfig.Pulse        = 0;
-    sConfig.OCNPolarity  = TIM_OCNPOLARITY_HIGH;
-    sConfig.OCFastMode   = TIM_OCFAST_DISABLE;
-    sConfig.OCIdleState  = TIM_OCIDLESTATE_RESET;
-    sConfig.OCNIdleState = TIM_OCNIDLESTATE_RESET;
-    if (HAL_TIM_PWM_ConfigChannel (&TimHandle, &sConfig, TIM_CHANNEL_1) != HAL_OK) {
-        return;
-    }
-    LOG_INFO ("PWM starting");
-    /* ##-3- Start PWM signal generation in DMA mode ############################ */
-    if (HAL_TIM_PWM_Start_DMA (&TimHandle, TIM_CHANNEL_1, aCCValue_Buffer, 3) != HAL_OK) {
-        return;
-    }
-
-    while (1) {
-        LOG_INFO ("PWM running");
-        HAL_Delay (1000);
-    }
-}
-
-
-/* USER CODE END Includes */
-
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
-
-/* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-
 #ifndef HSEM_ID_0
 #define HSEM_ID_0 (0U) /* HW semaphore 0*/
 #endif
 
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
-/* Private variables ---------------------------------------------------------*/
-
 SPI_HandleTypeDef hspi2;
-
 TIM_HandleTypeDef htim8;
 TIM_HandleTypeDef htim13;
-
-// UART_HandleTypeDef huart1;
-
-/* Definitions for defaultTask */
-// osThreadId_t defaultTaskHandle;
-// const osThreadAttr_t defaultTask_attributes = {
-//     .name       = "defaultTask",
-//     .stack_size = 128 * 4,
-//     .priority   = (osPriority_t)osPriorityNormal,
-// };
-/* USER CODE BEGIN PV */
-
-/* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config (void);
 static void MX_GPIO_Init (void);
 static void MX_SPI2_Init (void);
-// static void MX_TIM8_Init (void);
-// static void MX_TIM13_Init (void);
-void StartDefaultTask (void* argument);
-
-/* USER CODE BEGIN PFP */
-
-/* USER CODE END PFP */
-
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
 
 // NOLINTBEGIN
 IMU gIMU                                     = { 0 };
-FlightContext gFlightContext                 = { 0 };
 FilterMadgwickContext gFilterMadgwickContext = { 0 };
 PIDContext gPIDAngleContext                  = { 0 };
 TaskHandle_t gpTaskMotionControlUpdate       = { 0 };
+Vec3f gTargetAttitude                        = { 0.0F };
+float gTargetThrottle                        = 0.25F; // 25% throttle
 // NOLINTEND
 
 void HAL_GPIO_EXTI_Callback (uint16_t gpioPin) {
@@ -240,28 +80,117 @@ void HAL_GPIO_EXTI_Callback (uint16_t gpioPin) {
     }
 }
 
+void FCEnterRunningState (FCState curState, eREQUESTED_STATE_t requestedState) {
+
+    eOP_STATE_t curOpState  = curState.opState;
+    eOP_STATE_t nextOpState = eOP_STATE_RUNNING;
+    if (curOpState == eOP_STATE_STOPPED) {
+        if (requestedState == eREQUESTED_STATE_START) {
+            if (ActuatorsStart () != eSTATUS_SUCCESS || IMUStart (&gIMU) != eSTATUS_SUCCESS) {
+                LOG_ERROR ("Failed to start");
+                nextOpState = eOP_STATE_ERROR;
+            }
+        }
+    }
+
+    curState.opState = nextOpState;
+    if (ControlUpdateFCState (&curState) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to update fc state");
+    }
+}
+
+void FCEnterStoppedState (FCState curState, eREQUESTED_STATE_t requestedState) {
+
+    eOP_STATE_t curOpState  = curState.opState;
+    eOP_STATE_t nextOpState = eOP_STATE_STOPPED;
+    if (curOpState == eOP_STATE_RUNNING) {
+        if (requestedState == eREQUESTED_STATE_STOP) {
+            if (IMUStop (&gIMU) != eSTATUS_SUCCESS || ActuatorsStop () != eSTATUS_SUCCESS) {
+                LOG_ERROR ("Failed to stop");
+                nextOpState = eOP_STATE_ERROR;
+            }
+        }
+    }
+
+    curState.opState = nextOpState;
+    if (ControlUpdateFCState (&curState) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to update fc state");
+    }
+}
+
+void ProcessOPStateChange (FCState curState, eREQUESTED_STATE_t requestedState) {
+
+    if (curState.opState == requestedState) {
+        LOG_INFO ("Already in state: %d", curState.opState);
+        return;
+    }
+
+    if (requestedState == eREQUESTED_STATE_START) {
+        FCEnterRunningState (curState, requestedState);
+        return;
+    }
+    if (requestedState == eREQUESTED_STATE_STOP) {
+        FCEnterStoppedState (curState, requestedState);
+        return;
+    }
+}
+
+void TaskMainLoop (void* pvParameters) {
+    uint32_t startTime = xTaskGetTickCount ();
+    uint32_t logStep   = 5000;
+
+    if (ControlStart (NULL) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to start control module");
+        CriticalErrorHandler ();
+    }
+    while (1) {
+        EmptyCommand cmd = { 0 };
+        if (ControlGetNewCmd (&cmd) != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to get new command");
+        } else {
+            switch (cmd.header.commandType) {
+            case eCOMMAND_TYPE_EMPTY:
+                LOG_ERROR ("Received empty command");
+                break;
+            case eCOMMAND_TYPE_CHANGE_OP_STATE:
+                ChangeOpStateCmd* opCmd = (ChangeOpStateCmd*)&cmd;
+                ProcessOPStateChange (ControlGetCopyFCState (), opCmd->requestedState);
+                break;
+            case eCOMMAND_TYPE_CHANGE_FLIGHT_MODE:
+                ChangeFlightModeCmd* flightModeCmd = (ChangeFlightModeCmd*)&cmd;
+                // ProcessFlightModeChange (ControlGetCopyFCState (), flightModeCmd->requestedMode);
+                break;
+            case eCOMMAND_TYPE_CHANGE_VELOCITY:
+                ChangeVelocityCmd* velocityCmd = (ChangeVelocityCmd*)&cmd;
+                // ProcessVelocityChange (ControlGetCopyFCState (), velocityCmd->requestedVelocity);
+                break;
+            case eCOMMAND_TYPE_CHANGE_PID:
+                ChangePIDCmd* pidCmd = (ChangePIDCmd*)&cmd;
+                // ProcessPIDChange (ControlGetCopyFCState (), pidCmd->pidType, pidCmd->pidValue);
+                break;
+            default:
+                LOG_ERROR ("Unknown command type: %d", cmd.header.commandType);
+            }
+        }
+        // Aim for 500Hz
+        vTaskDelay (pdMS_TO_TICKS (2));
+    }
+}
+
 void TaskMotionControlUpdate (void* pvParameters) {
 
     float msStartTime        = (float)xTaskGetTickCount ();
     uint32_t msLogStart      = xTaskGetTickCount ();
     uint32_t const msLogStep = 500;
     Vec3f currentAttitude    = { 0.0F };
-    Vec3f targetAttitude     = { 0.0F };
     Vec3f maxAttitude = { .roll = 45.0F, .pitch = 45.0F, .yaw = 180.0F };
 
-    if (ActuatorsStart () != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to start actuators");
-    } else {
-        ActuatorsArm ();
-        LOG_INFO ("Actuators armed");
-    }
-
-    if (IMUEnableInterrupts (&gIMU) != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to enable IMU interrupts");
-    }
-    LOG_INFO ("Motion control task started");
-
     while (1) {
+        if (ControlGetOpState () != eOP_STATE_RUNNING) {
+            // Limit state checks to 1000Hz
+            vTaskDelay (pdMS_TO_TICKS (1));
+            continue;
+        }
         ulTaskNotifyTake (pdTRUE, pdMS_TO_TICKS (1000));
         /* Add error handling */
         if (gIMU.status != eSTATUS_SUCCESS) {
@@ -302,39 +231,19 @@ void TaskMotionControlUpdate (void* pvParameters) {
 
         Vec3f pidAttitude = { 0.0F };
         status            = PIDUpdateAttitude (
-        &gPIDAngleContext, currentAttitude, targetAttitude, maxAttitude, dt, &pidAttitude);
+        &gPIDAngleContext, currentAttitude, gTargetAttitude, maxAttitude, dt, &pidAttitude);
         if (status != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to update PID attitude");
             continue;
         }
 
-        status = ActuatorsWrite (pidAttitude, 0.75F);
+        status = ActuatorsWrite (pidAttitude, gTargetThrottle);
         if (status != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to write actuators");
             continue;
         }
 
         if ((xTaskGetTickCount () - msLogStart) >= msLogStep) {
-
-            // Servo* pServo    = ActuatorsGetLeftServo ();
-            // uint32_t usAngle = 1500;
-            // if (switchAngle == 0) {
-            //     usAngle     = 500;
-            //     switchAngle = 1;
-            // } else {
-            //     switchAngle = 0;
-            // }
-            // PWMWrite (&pServo->pwm, usAngle);
-            // status = ActuatorsWrite (pidAttitude, 0.5F);
-            // TIM13->CCR1 = 20000;
-            // TIM8->CCR1 = 2000;
-            // TIM8->ARR  = 20000;
-            // TIM8->PSC  = 64;
-            // LOG_INFO (
-            // "TIM8 CCR1: %u ARR: %u PSC: %u", (uint16_t)TIM8->CCR1,
-            // (uint16_t)TIM8->ARR, (uint16_t)TIM8->PSC);
-            // LOG_INFO ("H");
-
             msLogStart = xTaskGetTickCount ();
 
             Vec3f a  = accel;
@@ -397,12 +306,13 @@ int main (void) {
     if (LoggerInit (NULL, NULL) != eSTATUS_SUCCESS) {
         CriticalErrorHandler ();
     }
+
+    if (ControlInit () != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to init control module");
+        CriticalErrorHandler ();
+    }
     // Wait for CM4 to initialize UART
     HAL_Delay (1000);
-
-
-    // Temp_DMA_Start ();
-
 
     if (DMASystemInit () != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to init DMA system");
@@ -425,8 +335,7 @@ int main (void) {
         gconf.avg         = eIMU_GYRO_AVG_16;
         gconf.bw          = eIMU_GYRO_BW_HALF;
         gconf.mode        = eIMU_GYRO_MODE_HIGH_PERF;
-        status            = IMUInit (&gIMU, &hspi2, aconf, gconf);
-        if (status != eSTATUS_SUCCESS) {
+        if (IMUInit (&gIMU, &hspi2, aconf, gconf) != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to init IMU");
         }
     }
@@ -439,10 +348,6 @@ int main (void) {
         LOG_ERROR ("Failed to warm up Madgwick Filter");
     }
 
-    status = FlightContextInit (&gFlightContext);
-    if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to init Flight Context");
-    }
     MotorConfig left_Motor =
     MOTOR_CREATE_CONF (TIM8, TIM_CHANNEL_1, DMA1_Stream0, DMA_REQUEST_TIM8_CH1);
     PWMConfig left_Servo = PWM_CREATE_CONF (TIM13, TIM_CHANNEL_1, 50, TRUE);
@@ -463,12 +368,26 @@ int main (void) {
      * like HAL_Delay will not work.
      */
     LOG_INFO ("Starting FreeRTOS");
+    uint16_t taskPriority = 2;
     BaseType_t taskStatus = xTaskCreate (
-    TaskMotionControlUpdate, "Motion Control Update Task", configMINIMAL_STACK_SIZE,
-    NULL, tskIDLE_PRIORITY, &gpTaskMotionControlUpdate);
+    TaskMotionControlUpdate, "Motion Control Update Task",
+    configMINIMAL_STACK_SIZE, NULL, taskPriority, &gpTaskMotionControlUpdate);
 
     if (taskStatus != pdPASS) {
         LOG_ERROR ("Failed to create motion control update task");
+    }
+
+    /*
+     * NOTE: Give the main control loop a lower priority than the motion
+     * control update task (higher number == more important).
+     */
+    taskPriority = 1;
+    taskStatus   = xTaskCreate (
+    TaskMainLoop, "Main Control Loop Task", configMINIMAL_STACK_SIZE, NULL,
+    taskPriority, NULL);
+
+    if (taskStatus != pdPASS) {
+        LOG_ERROR ("Failed to to create main control loop task");
     }
 
     vTaskStartScheduler ();
@@ -775,30 +694,6 @@ static void MX_GPIO_Init (void) {
     /* EXTI interrupt init*/
     HAL_NVIC_SetPriority (IMU_INT_EXTI_IRQn, 5, 0);
     HAL_NVIC_EnableIRQ (IMU_INT_EXTI_IRQn);
-
-    /* USER CODE BEGIN MX_GPIO_Init_2 */
-
-    /* USER CODE END MX_GPIO_Init_2 */
-}
-
-/* USER CODE BEGIN 4 */
-
-/* USER CODE END 4 */
-
-/* USER CODE BEGIN Header_StartDefaultTask */
-/**
- * @brief  Function implementing the defaultTask thread.
- * @param  argument: Not used
- * @retval None
- */
-/* USER CODE END Header_StartDefaultTask */
-void StartDefaultTask (void* argument) {
-    /* USER CODE BEGIN 5 */
-    /* Infinite loop */
-    for (;;) {
-        osDelay (1);
-    }
-    /* USER CODE END 5 */
 }
 
 /**
