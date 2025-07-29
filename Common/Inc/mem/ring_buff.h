@@ -99,7 +99,7 @@ typedef struct RingBuff_ {
 STATIC_ASSERT (sizeof (RingBuff) == 32, "RingBuff is not 32 bytes");
 
 RINGBUFF_VOLATILE RingBuff* RingBuffCreate (void* buffdata, size_t size);
-STATUS_TYPE RingBuffIsValid (RINGBUFF_VOLATILE RingBuff* buff);
+BOOL_t RingBuffIsValid (RINGBUFF_VOLATILE RingBuff* buff);
 void RingBuffFree (RINGBUFF_VOLATILE RingBuff* buff);
 void RingBuffReset (RINGBUFF_VOLATILE RingBuff* buff);
 void RingBuffSetEvtFn (RINGBUFF_VOLATILE RingBuff* buff, ringbuff_evt_fn fn);

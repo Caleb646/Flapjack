@@ -97,6 +97,10 @@ void FCEnterRunningState (FCState curState, eREQUESTED_STATE_t requestedState) {
     if (ControlUpdateFCState (&curState) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to update fc state");
     }
+
+    if (nextOpState == eOP_STATE_RUNNING) {
+        LOG_INFO ("FC in running state");
+    }
 }
 
 void FCEnterStoppedState (FCState curState, eREQUESTED_STATE_t requestedState) {
@@ -115,6 +119,10 @@ void FCEnterStoppedState (FCState curState, eREQUESTED_STATE_t requestedState) {
     curState.opState = nextOpState;
     if (ControlUpdateFCState (&curState) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to update fc state");
+    }
+
+    if (nextOpState == eOP_STATE_STOPPED) {
+        LOG_INFO ("FC in stopped state");
     }
 }
 
@@ -138,6 +146,7 @@ void ProcessOPStateChange (FCState curState, eREQUESTED_STATE_t requestedState) 
 void TaskMainLoop (void* pvParameters) {
     uint32_t startTime = xTaskGetTickCount ();
     uint32_t logStep   = 5000;
+    LOG_INFO ("Main loop started");
 
     if (ControlStart (NULL) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start control module");
@@ -145,16 +154,16 @@ void TaskMainLoop (void* pvParameters) {
     }
     while (1) {
         EmptyCommand cmd = { 0 };
-        if (ControlGetNewCmd (&cmd) != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to get new command");
-        } else {
+        if (ControlGetNewCmd (&cmd) == TRUE) {
             switch (cmd.header.commandType) {
             case eCOMMAND_TYPE_EMPTY:
                 LOG_ERROR ("Received empty command");
                 break;
             case eCOMMAND_TYPE_CHANGE_OP_STATE:
+                // LOG_INFO ("Received START command");
                 ChangeOpStateCmd* opCmd = (ChangeOpStateCmd*)&cmd;
                 ProcessOPStateChange (ControlGetCopyFCState (), opCmd->requestedState);
+
                 break;
             case eCOMMAND_TYPE_CHANGE_FLIGHT_MODE:
                 ChangeFlightModeCmd* flightModeCmd = (ChangeFlightModeCmd*)&cmd;
@@ -184,6 +193,7 @@ void TaskMotionControlUpdate (void* pvParameters) {
     uint32_t const msLogStep = 500;
     Vec3f currentAttitude    = { 0.0F };
     Vec3f maxAttitude = { .roll = 45.0F, .pitch = 45.0F, .yaw = 180.0F };
+    LOG_INFO ("Motion control update task started");
 
     while (1) {
         if (ControlGetOpState () != eOP_STATE_RUNNING) {
@@ -356,9 +366,9 @@ int main (void) {
         LOG_ERROR ("Failed to init Actuators");
     }
 
-    // NOTE: Temporary wait. Wait 10 seconds to allow esc to be connected to battery.
-    LOG_INFO ("Waiting for ESC to be connected to battery");
-    HAL_Delay (10000);
+    // NOTE: Temporary wait. Wait 10 seconds to allow esc to be connected
+    // to battery. LOG_INFO ("Waiting for ESC to be connected to battery");
+    // HAL_Delay (10000);
 
     /*
      *

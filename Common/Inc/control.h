@@ -109,7 +109,7 @@ STATIC_ASSERT (sizeof (FCState) <= MEM_SHARED_FLIGHT_STATE_TOTAL_LEN, "");
 STATUS_TYPE ControlInit (void);
 STATUS_TYPE ControlStart (UART_HandleTypeDef* huart);
 STATUS_TYPE ControlProcessRawCmds (void);
-STATUS_TYPE ControlGetNewCmd (EmptyCommand* pOutCmd);
+BOOL_t ControlGetNewCmd (EmptyCommand* pOutCmd);
 FCState ControlGetCopyFCState (void);
 eOP_STATE_t ControlGetOpState (void);
 STATUS_TYPE ControlUpdateFCState (FCState const* pNewState);

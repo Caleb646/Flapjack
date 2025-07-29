@@ -243,7 +243,7 @@ class IMUViewer(QtWidgets.QWidget):
         
         # Create 8-byte packet: commandType(1) + requestedState(1) + padding(6)
         # B = uint8_t and 6x = 6 bytes of padding
-        packet = struct.pack('<BBB6x', COMMAND_TYPE_CHANGE_OP_STATE, REQUESTED_STATE_START)
+        packet = struct.pack('<BB6x', COMMAND_TYPE_CHANGE_OP_STATE, REQUESTED_STATE_START)
         
         try:
             self.serial.write(packet)
@@ -261,7 +261,7 @@ class IMUViewer(QtWidgets.QWidget):
         REQUESTED_STATE_STOP = 0        
         
         # Create 8-byte packet: commandType(1) + requestedState(1) + padding(6)
-        packet = struct.pack('<BBB6x', COMMAND_TYPE_CHANGE_OP_STATE, REQUESTED_STATE_STOP)
+        packet = struct.pack('<BB6x', COMMAND_TYPE_CHANGE_OP_STATE, REQUESTED_STATE_STOP)
         
         try:
             self.serial.write(packet)
@@ -286,7 +286,7 @@ class IMUViewer(QtWidgets.QWidget):
         else:
             # NOTE: Send stop command when disconnecting the GUI
             self.send_stop_command()
-            
+
             self.close_session_files()
             self.serial.close()
             # Disable command buttons when disconnected

@@ -94,13 +94,17 @@ void StartDefaultTask (void* argument);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-UART_HandleTypeDef* gpUartLogging = NULL;
+UART_HandleTypeDef* gpUSART1 = NULL;
+
+void USART1_IRQHandler (void) {
+    HAL_UART_IRQHandler (gpUSART1);
+}
 
 void TaskMainLoop (void* pvParameters) {
     uint32_t startTime = xTaskGetTickCount ();
     uint32_t logStep   = 5000;
 
-    if (ControlStart (gpUartLogging) != eSTATUS_SUCCESS) {
+    if (ControlStart (gpUSART1) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start control module");
         CriticalErrorHandler ();
     }
@@ -151,7 +155,7 @@ int main (void) {
         CriticalErrorHandler ();
     }
 
-    if (LoggerInit (USART1, &gpUartLogging) != eSTATUS_SUCCESS) {
+    if (LoggerInit (USART1, &gpUSART1) != eSTATUS_SUCCESS) {
         // if (LoggerInit (USART1, NULL) != eSTATUS_SUCCESS) {
         CriticalErrorHandler ();
     }
@@ -162,9 +166,10 @@ int main (void) {
     }
     HAL_Delay (1000);
 
+    uint16_t taskPriority = 1;
     BaseType_t taskStatus = xTaskCreate (
     TaskMainLoop, "Motion Control Update Task", configMINIMAL_STACK_SIZE,
-    NULL, tskIDLE_PRIORITY, NULL);
+    NULL, taskPriority, NULL);
 
     if (taskStatus != pdPASS) {
         LOG_ERROR ("Failed to create motion control update task");

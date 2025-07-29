@@ -11,7 +11,7 @@
 #define RAW_COMMAND_QUEUE_CAPACITY 8U
 // A local only buffer to store raw commands during the interrupt handler
 static Queue gRawCommandQueue = { 0 };
-static uint8_t gRawCommandBuffer[RAW_COMMAND_QUEUE_CAPACITY * sizeof (EmptyCommand)] = { 0 };
+static uint8_t gRawCommandQueueBuffer[RAW_COMMAND_QUEUE_CAPACITY * sizeof (EmptyCommand)] = { 0 };
 static uint8_t gUartInterruptBuffer[sizeof (EmptyCommand)] = { 0 };
 
 /*
@@ -19,23 +19,31 @@ static uint8_t gUartInterruptBuffer[sizeof (EmptyCommand)] = { 0 };
  * their is only 1 uart that is set to recv. If there are multiple receiving uarts, this will not work.
  */
 void HAL_UART_RxCpltCallback (UART_HandleTypeDef* huart) {
+    // LOG_INFO ("Interrupt");
+    if (QueueIsFull (&gRawCommandQueue)) {
+        // LOG_ERROR ("queue full");
+        return;
+    }
+    QueueEnqueue (&gRawCommandQueue, (void*)gUartInterruptBuffer);
     HAL_UART_Receive_IT (huart, gUartInterruptBuffer, sizeof (EmptyCommand));
 }
 
 STATIC_TESTABLE_DECL STATUS_TYPE ControlInit_CM4 (void) {
-
-    if (QueueInit (&gRawCommandQueue, gRawCommandBuffer, RAW_COMMAND_QUEUE_CAPACITY, sizeof (EmptyCommand)) != eSTATUS_SUCCESS) {
+    if (QueueInit (&gRawCommandQueue, gRawCommandQueueBuffer, RAW_COMMAND_QUEUE_CAPACITY, sizeof (EmptyCommand)) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize raw command queue");
         return eSTATUS_FAILURE;
     }
+
+    HAL_NVIC_SetPriority (USART1_IRQn, 5, 5);
+    HAL_NVIC_EnableIRQ (USART1_IRQn);
 
     return eSTATUS_SUCCESS;
 }
 
 // #endif
 
-static Queue* gpCommandQueue  = NULL;
-static FCState* gpFlightState = NULL;
+static Queue* gpSharedCommandQueue = NULL;
+static FCState* gpFlightState      = NULL;
 
 STATIC_TESTABLE_DECL STATUS_TYPE ControlInitCmdQueue (Queue* pQueue) {
     if (pQueue == NULL) {
@@ -50,6 +58,8 @@ STATIC_TESTABLE_DECL STATUS_TYPE ControlInitCmdQueue (Queue* pQueue) {
         LOG_ERROR ("Command queue size exceeds total length");
         return eSTATUS_FAILURE;
     }
+
+    memset ((void*)MEM_SHARED_COMMAND_QUEUE_START, 0, MEM_SHARED_COMMAND_QUEUE_TOTAL_LEN);
 
     void* pBuffer =
     (void*)MEM_U32_ALIGN4 (MEM_SHARED_COMMAND_QUEUE_START + sizeof (Queue));
@@ -107,11 +117,11 @@ STATIC_TESTABLE_DECL STATUS_TYPE ControlInitFCState (FCState* pState) {
 
 STATUS_TYPE ControlInit (void) {
 
-    gpCommandQueue = (Queue*)MEM_SHARED_COMMAND_QUEUE_START;
-    gpFlightState  = (FCState*)MEM_SHARED_FLIGHT_STATE_START;
+    gpSharedCommandQueue = (Queue*)MEM_SHARED_COMMAND_QUEUE_START;
+    gpFlightState        = (FCState*)MEM_SHARED_FLIGHT_STATE_START;
 
     if (HAL_GetCurrentCPUID () == CM4_CPUID) {
-        if (ControlInitCmdQueue (gpCommandQueue) != eSTATUS_SUCCESS) {
+        if (ControlInitCmdQueue (gpSharedCommandQueue) != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to initialize command queue");
             return eSTATUS_FAILURE;
         }
@@ -154,30 +164,37 @@ STATUS_TYPE ControlProcessRawCmds (void) {
      * or RF remote control is always a valid command and doesn't require parsing.
      * The buffer can simply be cast to the appriopriate command type based on the header.
      */
-    if (QueueEnqueue (&gRawCommandQueue, gUartInterruptBuffer) != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to process and push raw command to shared queue");
-        return eSTATUS_FAILURE;
+    if (QueueIsEmpty (&gRawCommandQueue) != TRUE) {
+        EmptyCommand cmd = { 0 };
+        // Get the command from the raw command queue
+        QueueDequeue (&gRawCommandQueue, (void*)&cmd);
+        // LOG_INFO ("Processing command of type: %d", cmd.header.commandType);
+        // Process command and place it in the shared command queue
+        if (QueueEnqueue (gpSharedCommandQueue, (void*)&cmd) != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to process and push raw command to shared queue");
+            return eSTATUS_FAILURE;
+        }
     }
 
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE ControlGetNewCmd (EmptyCommand* pOutCmd) {
+BOOL_t ControlGetNewCmd (EmptyCommand* pOutCmd) {
     if (HAL_GetCurrentCPUID () == CM4_CPUID) {
         LOG_ERROR ("Should only be called on CM7");
-        return eSTATUS_FAILURE;
+        return FALSE;
     }
 
-    if (QueueIsEmpty (gpCommandQueue)) {
-        return eSTATUS_SUCCESS;
+    if (QueueIsEmpty (gpSharedCommandQueue) == TRUE) {
+        return FALSE;
     }
 
-    if (QueueDequeue (gpCommandQueue, pOutCmd) != eSTATUS_SUCCESS) {
+    // LOG_INFO ("%d", gpSharedCommandQueue->count);
+    if (QueueDequeue (gpSharedCommandQueue, pOutCmd) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to dequeue command from shared queue");
-        return eSTATUS_FAILURE;
+        return FALSE;
     }
-
-    return eSTATUS_SUCCESS;
+    return TRUE;
 }
 
 FCState ControlGetCopyFCState (void) {

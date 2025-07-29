@@ -31,8 +31,9 @@
 #define DEG2RAD(x)               (((float)x) * 0.017453292519943295F) // (π / 180)
 #define RAD2DEG(x)               (((float)x) * 57.29577951308232F) // (180 / π)
 
-#define TRUE                     (1)
-#define FALSE                    (0)
+typedef uint8_t BOOL_t;
+enum { FALSE = 0, TRUE = 1 };
+
 
 typedef enum {
     eSTATUS_SUCCESS = 0,
