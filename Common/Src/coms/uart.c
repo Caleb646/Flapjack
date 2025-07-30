@@ -1,11 +1,23 @@
-#include "init.h"
+#include "coms/uart.h"
 #include "common.h"
 #include "hal.h"
+
 
 #define STLINK_TX_Pin       GPIO_PIN_10
 #define STLINK_TX_GPIO_Port GPIOA
 #define STLINK_RX_Pin       GPIO_PIN_9
 #define STLINK_RX_GPIO_Port GPIOA
+
+// Define extern variables
+UART_HandleTypeDef egHandleUSART_1 = { 0 };
+
+/*
+ * Below are functions declared by the HAL and defined here.
+ */
+
+void USART1_IRQHandler (void) {
+    HAL_UART_IRQHandler (&egHandleUSART_1);
+}
 
 /*
  * Called by HAL_UART_Init()
@@ -14,7 +26,8 @@ void HAL_UART_MspInit (UART_HandleTypeDef* huart) {
     GPIO_InitTypeDef GPIO_InitStruct             = { 0 };
     RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = { 0 };
     if (huart->Instance == USART1) {
-        /** Initializes the peripherals clock
+        /*
+         *  Initializes the peripherals clock
          */
         PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_USART1;
         PeriphClkInitStruct.Usart16ClockSelection = RCC_USART16CLKSOURCE_D2PCLK2;

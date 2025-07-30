@@ -80,7 +80,8 @@
 
 // clang-format on
 
-STATUS_TYPE LoggerInit (USART_TypeDef* pUARTInstance, UART_HandleTypeDef** pOutUARTHandle);
+STATUS_TYPE LoggerSecondaryInit (void);
+STATUS_TYPE LoggerPrimaryInit (USART_TypeDef* pUartInstance, UART_HandleTypeDef* pOutUartHandle);
 // void LogStackTrace (void);
 
 

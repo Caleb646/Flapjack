@@ -280,9 +280,6 @@ int main (void) {
         asm volatile ("NOP");
     }
 
-    /* USER CODE END Boot_Mode_Sequence_1 */
-    /* MCU Configuration--------------------------------------------------------*/
-
     /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
     HAL_Init ();
 
@@ -292,8 +289,6 @@ int main (void) {
 
     MX_GPIO_Init ();
     MX_SPI2_Init ();
-    // MX_TIM8_Init ();
-    // MX_TIM13_Init ();
 
     /* When system initialization is finished, Cortex-M7 will release Cortex-M4 by means of HSEM notification */
 
@@ -313,7 +308,7 @@ int main (void) {
         CriticalErrorHandler ();
     }
 
-    if (LoggerInit (NULL, NULL) != eSTATUS_SUCCESS) {
+    if (LoggerSecondaryInit () != eSTATUS_SUCCESS) {
         CriticalErrorHandler ();
     }
 
