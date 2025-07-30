@@ -37,9 +37,6 @@
 #define HSEM_ID_0 (0U) /* HW semaphore 0*/
 #endif
 
-#define UART_LOGGER_HANDLE   egHandleUSART_1
-#define UART_LOGGER_INSTANCE (USART1)
-
 CEC_HandleTypeDef hcec;
 RTC_HandleTypeDef hrtc;
 SAI_HandleTypeDef hsai_BlockA1;
@@ -61,7 +58,7 @@ void TaskMainLoop (void* pvParameters) {
     uint32_t startTime = xTaskGetTickCount ();
     uint32_t logStep   = 5000;
 
-    if (ControlStart (&UART_LOGGER_HANDLE) != eSTATUS_SUCCESS) {
+    if (ControlStart (LoggerGetUARTHandle ()) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start control module");
         CriticalErrorHandler ();
     }
@@ -112,8 +109,11 @@ int main (void) {
         CriticalErrorHandler ();
     }
 
-    if (LoggerPrimaryInit (UART_LOGGER_INSTANCE, &UART_LOGGER_HANDLE) != eSTATUS_SUCCESS) {
-        // if (LoggerInit (USART1, NULL) != eSTATUS_SUCCESS) {
+    if (UARTSystemInit () != eSTATUS_SUCCESS) {
+        CriticalErrorHandler ();
+    }
+
+    if (LoggerInit () != eSTATUS_SUCCESS) {
         CriticalErrorHandler ();
     }
 
@@ -622,30 +622,6 @@ static void MX_GPIO_Init (void) {
 
     /*AnalogSwitch Config */
     HAL_SYSCFG_AnalogSwitchConfig (SYSCFG_SWITCH_PA1, SYSCFG_SWITCH_PA1_OPEN);
-
-    /* USER CODE BEGIN MX_GPIO_Init_2 */
-
-    /* USER CODE END MX_GPIO_Init_2 */
-}
-
-/* USER CODE BEGIN 4 */
-
-/* USER CODE END 4 */
-
-/* USER CODE BEGIN Header_StartDefaultTask */
-/**
- * @brief  Function implementing the defaultTask thread.
- * @param  argument: Not used
- * @retval None
- */
-/* USER CODE END Header_StartDefaultTask */
-void StartDefaultTask (void* argument) {
-    /* USER CODE BEGIN 5 */
-    /* Infinite loop */
-    for (;;) {
-        osDelay (1);
-    }
-    /* USER CODE END 5 */
 }
 
 /**
@@ -678,21 +654,4 @@ void Error_Handler (void) {
     __disable_irq ();
     while (1) {
     }
-    /* USER CODE END Error_Handler_Debug */
 }
-
-#ifdef USE_FULL_ASSERT
-/**
- * @brief  Reports the name of the source file and the source line number
- *         where the assert_param error has occurred.
- * @param  file: pointer to the source file name
- * @param  line: assert_param error line source number
- * @retval None
- */
-void assert_failed (uint8_t* file, uint32_t line) {
-    /* USER CODE BEGIN 6 */
-    /* User can add his own implementation to report the file name and line number,
-       ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-    /* USER CODE END 6 */
-}
-#endif /* USE_FULL_ASSERT */

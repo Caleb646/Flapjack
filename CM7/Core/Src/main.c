@@ -97,7 +97,6 @@ void FCEnterRunningState (FCState curState, eREQUESTED_STATE_t requestedState) {
     if (ControlUpdateFCState (&curState) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to update fc state");
     }
-
     if (nextOpState == eOP_STATE_RUNNING) {
         LOG_INFO ("FC in running state");
     }
@@ -160,7 +159,6 @@ void TaskMainLoop (void* pvParameters) {
                 LOG_ERROR ("Received empty command");
                 break;
             case eCOMMAND_TYPE_CHANGE_OP_STATE:
-                // LOG_INFO ("Received START command");
                 ChangeOpStateCmd* opCmd = (ChangeOpStateCmd*)&cmd;
                 ProcessOPStateChange (ControlGetCopyFCState (), opCmd->requestedState);
 
@@ -308,7 +306,7 @@ int main (void) {
         CriticalErrorHandler ();
     }
 
-    if (LoggerSecondaryInit () != eSTATUS_SUCCESS) {
+    if (LoggerInit () != eSTATUS_SUCCESS) {
         CriticalErrorHandler ();
     }
 

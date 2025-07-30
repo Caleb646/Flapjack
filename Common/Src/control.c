@@ -34,9 +34,6 @@ STATIC_TESTABLE_DECL STATUS_TYPE ControlInit_CM4 (void) {
         return eSTATUS_FAILURE;
     }
 
-    HAL_NVIC_SetPriority (USART1_IRQn, 5, 5);
-    HAL_NVIC_EnableIRQ (USART1_IRQn);
-
     return eSTATUS_SUCCESS;
 }
 
