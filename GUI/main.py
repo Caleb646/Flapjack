@@ -92,9 +92,11 @@ class IMUViewer(QtWidgets.QWidget):
         
         self.serial = QSerialPort(
             "COM4",
-            baudRate=QtSerialPort.QSerialPort.Baud115200,
+            # baudRate=QtSerialPort.QSerialPort.Baud115200,
             readyRead=self.receive
         )
+        if not self.serial.setBaudRate(230400, QtSerialPort.QSerialPort.AllDirections):
+            raise RuntimeError("Could not set baud rate for serial port")
         self.buffer = b""
 
         os.makedirs("./GUI/Logs", exist_ok=True)  

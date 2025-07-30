@@ -138,8 +138,9 @@ static STATUS_TYPE LoggerUARTInit (UART_HandleTypeDef* huart1, USART_TypeDef* pU
     }
 
 #ifndef UNIT_TEST
-    huart1->Instance                    = pUARTInstance;
-    huart1->Init.BaudRate               = 115200;
+    huart1->Instance = pUARTInstance;
+    // huart1->Init.BaudRate = 115200;
+    huart1->Init.BaudRate               = 230400;
     huart1->Init.WordLength             = UART_WORDLENGTH_8B;
     huart1->Init.StopBits               = UART_STOPBITS_1;
     huart1->Init.Parity                 = UART_PARITY_NONE;

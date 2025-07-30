@@ -26,7 +26,7 @@
 #define __CORE_NAME__ "Unknown"
 #endif
 
-/* < and > delimit a message */
+/* < and > delimits a message */
 #define LOG_(lvl, ...)                                                                                                  \
     do {                                                                                                                \
         printf ("<{\"type\":\"debug\",\"lvl\":\"%s\",\"core\":\"%s\",\"file\":\"%s\",\"function\":\"%s\",\"line\":%u,\"msg\":\"", lvl, __CORE_NAME__, __FILENAME__, __func__, __LINE__); \
