@@ -36,24 +36,16 @@
 #include "log.h"
 #include "mc/actuators.h"
 #include "mc/filter.h"
+#include "periphs/gpio.h"
 #include "sensors/imu/imu.h"
 #include "sync.h"
-
-TIM_HandleTypeDef TimHandle;
-DMA_HandleTypeDef hdma_tim;
-TIM_OC_InitTypeDef sConfig;
-uint32_t aCCValue_Buffer[8] = { 0 };
-uint32_t uwTimerPeriod      = 0;
 
 #ifndef HSEM_ID_0
 #define HSEM_ID_0 (0U) /* HW semaphore 0*/
 #endif
 
 SPI_HandleTypeDef hspi2;
-TIM_HandleTypeDef htim8;
-TIM_HandleTypeDef htim13;
 
-/* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config (void);
 static void MX_GPIO_Init (void);
 static void MX_SPI2_Init (void);
@@ -67,8 +59,16 @@ Vec3f gTargetAttitude                        = { 0.0F };
 float gTargetThrottle                        = 0.25F; // 25% throttle
 // NOLINTEND
 
+/**
+ * @brief This function handles EXTI line[9:5] interrupts. Call chain is:
+ * EXTI9_5_IRQHandler -> HAL_GPIO_EXTI_IRQHandler -> HAL_GPIO_EXTI_Callback
+ */
+void EXTI9_5_IRQHandler (void) {
+    HAL_GPIO_EXTI_IRQHandler (IMU_INT_GPIO_Pin);
+}
+
 void HAL_GPIO_EXTI_Callback (uint16_t gpioPin) {
-    if (gpioPin == IMU_INT_Pin) {
+    if (gpioPin == IMU_INT_GPIO_Pin) {
         eSTATUS_t status = IMU2CPUInterruptHandler (&gIMU);
         if (status == eSTATUS_SUCCESS) {
             if (gpTaskMotionControlUpdate != NULL) {
@@ -201,26 +201,15 @@ void TaskMotionControlUpdate (void* pvParameters) {
             continue;
         }
         ulTaskNotifyTake (pdTRUE, pdMS_TO_TICKS (1000));
-        /* Add error handling */
-        if (gIMU.status != eSTATUS_SUCCESS) {
-            if (IMUHandleErr (&gIMU) != eSTATUS_SUCCESS) {
-                LOG_ERROR ("Failed to handle IMU error");
-                continue;
-            }
-        }
 
         eSTATUS_t status = eSTATUS_SUCCESS;
         Vec3f accel      = { 0.0F };
         Vec3f gyro       = { 0.0F };
-        status           = IMUConvertRaw (
-        gIMU.aconf.range, gIMU.rawAccel, gIMU.gconf.range, gIMU.rawGyro, &accel, &gyro);
-
-        if (status != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to convert IMU raw data");
+        if (IMUProcessUpdatefromINT (&gIMU, &accel, &gyro) != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to process IMU data from interrupt");
             continue;
         }
 
-        // RadioPWMChannels radio;
         float msCurrentTime = (float)xTaskGetTickCount ();
         // Convert milliseconds to seconds
         float dt    = (msCurrentTime - msStartTime) / 1000.0F;
@@ -230,7 +219,6 @@ void TaskMotionControlUpdate (void* pvParameters) {
             continue;
         }
 
-        // Vec3f currentAttitude = gFlightContext.currentAttitude;
         status =
         FilterMadgwick6DOF (&gFilterMadgwickContext, &accel, &gyro, dt, &currentAttitude);
         if (status != eSTATUS_SUCCESS) {
@@ -265,14 +253,11 @@ void TaskMotionControlUpdate (void* pvParameters) {
     }
 }
 
-/* USER CODE END 0 */
-
 /**
  * @brief  The application entry point.
  * @retval int
  */
 int main (void) {
-    /* USER CODE BEGIN Boot_Mode_Sequence_1 */
 
     /* Wait until CPU2 boots and enters in stop mode */
     while (__HAL_RCC_GET_FLAG (RCC_FLAG_D2CKRDY) != RESET) {
@@ -281,11 +266,7 @@ int main (void) {
 
     /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
     HAL_Init ();
-
-    /* Configure the system clock */
     SystemClock_Config ();
-    /* USER CODE BEGIN Boot_Mode_Sequence_2 */
-
     MX_GPIO_Init ();
     MX_SPI2_Init ();
 
@@ -396,10 +377,8 @@ int main (void) {
 
     vTaskStartScheduler ();
 
-    /* USER CODE END 2 */
     while (1) {
     }
-    /* USER CODE END 3 */
 }
 
 /**
@@ -470,13 +449,6 @@ void SystemClock_Config (void) {
  */
 static void MX_SPI2_Init (void) {
 
-    /* USER CODE BEGIN SPI2_Init 0 */
-
-    /* USER CODE END SPI2_Init 0 */
-
-    /* USER CODE BEGIN SPI2_Init 1 */
-
-    /* USER CODE END SPI2_Init 1 */
     /* SPI2 parameter configuration*/
     hspi2.Instance               = SPI2;
     hspi2.Init.Mode              = SPI_MODE_MASTER;
@@ -503,165 +475,7 @@ static void MX_SPI2_Init (void) {
     if (HAL_SPI_Init (&hspi2) != HAL_OK) {
         Error_Handler ();
     }
-    /* USER CODE BEGIN SPI2_Init 2 */
-
-    /* USER CODE END SPI2_Init 2 */
 }
-
-/**
- * @brief TIM8 Initialization Function
- * @param None
- * @retval None
- */
-// static void MX_TIM8_Init (void) {
-
-//     /* USER CODE BEGIN TIM8_Init 0 */
-
-//     /* USER CODE END TIM8_Init 0 */
-
-//     TIM_ClockConfigTypeDef sClockSourceConfig           = { 0 };
-//     TIM_MasterConfigTypeDef sMasterConfig               = { 0 };
-//     TIM_OC_InitTypeDef sConfigOC                        = { 0 };
-//     TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = { 0 };
-
-//     /* USER CODE BEGIN TIM8_Init 1 */
-
-//     /* USER CODE END TIM8_Init 1 */
-//     htim8.Instance               = TIM8;
-//     htim8.Init.Prescaler         = 0;
-//     htim8.Init.CounterMode       = TIM_COUNTERMODE_UP;
-//     htim8.Init.Period            = 65535;
-//     htim8.Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
-//     htim8.Init.RepetitionCounter = 0;
-//     htim8.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-//     if (HAL_TIM_Base_Init (&htim8) != HAL_OK) {
-//         Error_Handler ();
-//     }
-//     sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-//     if (HAL_TIM_ConfigClockSource (&htim8, &sClockSourceConfig) != HAL_OK) {
-//         Error_Handler ();
-//     }
-//     if (HAL_TIM_PWM_Init (&htim8) != HAL_OK) {
-//         Error_Handler ();
-//     }
-//     sMasterConfig.MasterOutputTrigger  = TIM_TRGO_RESET;
-//     sMasterConfig.MasterOutputTrigger2 = TIM_TRGO2_RESET;
-//     sMasterConfig.MasterSlaveMode      = TIM_MASTERSLAVEMODE_DISABLE;
-//     if (HAL_TIMEx_MasterConfigSynchronization (&htim8, &sMasterConfig) != HAL_OK) {
-//         Error_Handler ();
-//     }
-//     sConfigOC.OCMode       = TIM_OCMODE_PWM1;
-//     sConfigOC.Pulse        = 0;
-//     sConfigOC.OCPolarity   = TIM_OCPOLARITY_HIGH;
-//     sConfigOC.OCNPolarity  = TIM_OCNPOLARITY_HIGH;
-//     sConfigOC.OCFastMode   = TIM_OCFAST_DISABLE;
-//     sConfigOC.OCIdleState  = TIM_OCIDLESTATE_RESET;
-//     sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
-//     if (HAL_TIM_PWM_ConfigChannel (&htim8, &sConfigOC, TIM_CHANNEL_1) != HAL_OK) {
-//         Error_Handler ();
-//     }
-//     sBreakDeadTimeConfig.OffStateRunMode  = TIM_OSSR_DISABLE;
-//     sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
-//     sBreakDeadTimeConfig.LockLevel        = TIM_LOCKLEVEL_OFF;
-//     sBreakDeadTimeConfig.DeadTime         = 0;
-//     sBreakDeadTimeConfig.BreakState       = TIM_BREAK_DISABLE;
-//     sBreakDeadTimeConfig.BreakPolarity    = TIM_BREAKPOLARITY_HIGH;
-//     sBreakDeadTimeConfig.BreakFilter      = 0;
-//     sBreakDeadTimeConfig.Break2State      = TIM_BREAK2_DISABLE;
-//     sBreakDeadTimeConfig.Break2Polarity   = TIM_BREAK2POLARITY_HIGH;
-//     sBreakDeadTimeConfig.Break2Filter     = 0;
-//     sBreakDeadTimeConfig.AutomaticOutput  = TIM_AUTOMATICOUTPUT_DISABLE;
-//     if (HAL_TIMEx_ConfigBreakDeadTime (&htim8, &sBreakDeadTimeConfig) != HAL_OK) {
-//         Error_Handler ();
-//     }
-//     /* USER CODE BEGIN TIM8_Init 2 */
-
-//     /* USER CODE END TIM8_Init 2 */
-//     HAL_TIM_MspPostInit (&htim8);
-// }
-
-// /**
-//  * @brief TIM13 Initialization Function
-//  * @param None
-//  * @retval None
-//  */
-// static void MX_TIM13_Init (void) {
-
-//     /* USER CODE BEGIN TIM13_Init 0 */
-
-//     /* USER CODE END TIM13_Init 0 */
-
-//     TIM_OC_InitTypeDef sConfigOC = { 0 };
-
-//     /* USER CODE BEGIN TIM13_Init 1 */
-
-//     /* USER CODE END TIM13_Init 1 */
-//     htim13.Instance               = TIM13;
-//     htim13.Init.Prescaler         = 0;
-//     htim13.Init.CounterMode       = TIM_COUNTERMODE_UP;
-//     htim13.Init.Period            = 65535;
-//     htim13.Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
-//     htim13.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-//     if (HAL_TIM_Base_Init (&htim13) != HAL_OK) {
-//         Error_Handler ();
-//     }
-//     if (HAL_TIM_PWM_Init (&htim13) != HAL_OK) {
-//         Error_Handler ();
-//     }
-//     sConfigOC.OCMode     = TIM_OCMODE_PWM1;
-//     sConfigOC.Pulse      = 0;
-//     sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-//     sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-//     if (HAL_TIM_PWM_ConfigChannel (&htim13, &sConfigOC, TIM_CHANNEL_1) != HAL_OK) {
-//         Error_Handler ();
-//     }
-//     /* USER CODE BEGIN TIM13_Init 2 */
-
-//     /* USER CODE END TIM13_Init 2 */
-//     HAL_TIM_MspPostInit (&htim13);
-// }
-
-/**
- * @brief USART1 Initialization Function
- * @param None
- * @retval None
- */
-// static void MX_USART1_UART_Init (void) {
-
-//     /* USER CODE BEGIN USART1_Init 0 */
-
-//     /* USER CODE END USART1_Init 0 */
-
-//     /* USER CODE BEGIN USART1_Init 1 */
-
-//     /* USER CODE END USART1_Init 1 */
-//     huart1.Instance                    = USART1;
-//     huart1.Init.BaudRate               = 115200;
-//     huart1.Init.WordLength             = UART_WORDLENGTH_8B;
-//     huart1.Init.StopBits               = UART_STOPBITS_1;
-//     huart1.Init.Parity                 = UART_PARITY_NONE;
-//     huart1.Init.Mode                   = UART_MODE_TX_RX;
-//     huart1.Init.HwFlowCtl              = UART_HWCONTROL_NONE;
-//     huart1.Init.OverSampling           = UART_OVERSAMPLING_16;
-//     huart1.Init.OneBitSampling         = UART_ONE_BIT_SAMPLE_DISABLE;
-//     huart1.Init.ClockPrescaler         = UART_PRESCALER_DIV1;
-//     huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-//     if (HAL_UART_Init (&huart1) != HAL_OK) {
-//         Error_Handler ();
-//     }
-//     if (HAL_UARTEx_SetTxFifoThreshold (&huart1, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK) {
-//         Error_Handler ();
-//     }
-//     if (HAL_UARTEx_SetRxFifoThreshold (&huart1, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK) {
-//         Error_Handler ();
-//     }
-//     if (HAL_UARTEx_DisableFifoMode (&huart1) != HAL_OK) {
-//         Error_Handler ();
-//     }
-//     /* USER CODE BEGIN USART1_Init 2 */
-
-//     /* USER CODE END USART1_Init 2 */
-// }
 
 /**
  * @brief GPIO Initialization Function
@@ -688,16 +502,6 @@ static void MX_GPIO_Init (void) {
     GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_LOW;
     GPIO_InitStruct.Alternate = GPIO_AF0_MCO;
     HAL_GPIO_Init (CEC_CK_MCO1_GPIO_Port, &GPIO_InitStruct);
-
-    /*Configure GPIO pin : IMU_INT_Pin */
-    GPIO_InitStruct.Pin  = IMU_INT_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init (IMU_INT_GPIO_Port, &GPIO_InitStruct);
-
-    /* EXTI interrupt init*/
-    HAL_NVIC_SetPriority (IMU_INT_EXTI_IRQn, 5, 0);
-    HAL_NVIC_EnableIRQ (IMU_INT_EXTI_IRQn);
 }
 
 /**
@@ -709,15 +513,9 @@ static void MX_GPIO_Init (void) {
  * @retval None
  */
 void HAL_TIM_PeriodElapsedCallback (TIM_HandleTypeDef* htim) {
-    /* USER CODE BEGIN Callback 0 */
-
-    /* USER CODE END Callback 0 */
     if (htim->Instance == TIM4) {
         HAL_IncTick ();
     }
-    /* USER CODE BEGIN Callback 1 */
-
-    /* USER CODE END Callback 1 */
 }
 
 /**
@@ -725,26 +523,7 @@ void HAL_TIM_PeriodElapsedCallback (TIM_HandleTypeDef* htim) {
  * @retval None
  */
 void Error_Handler (void) {
-    /* USER CODE BEGIN Error_Handler_Debug */
-    /* User can add his own implementation to report the HAL error return state */
     __disable_irq ();
     while (1) {
     }
-    /* USER CODE END Error_Handler_Debug */
 }
-
-#ifdef USE_FULL_ASSERT
-/**
- * @brief  Reports the name of the source file and the source line number
- *         where the assert_param error has occurred.
- * @param  file: pointer to the source file name
- * @param  line: assert_param error line source number
- * @retval None
- */
-void assert_failed (uint8_t* file, uint32_t line) {
-    /* USER CODE BEGIN 6 */
-    /* User can add his own implementation to report the file name and line number,
-       ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-    /* USER CODE END 6 */
-}
-#endif /* USE_FULL_ASSERT */

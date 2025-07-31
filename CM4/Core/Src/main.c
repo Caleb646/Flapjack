@@ -28,10 +28,11 @@
 #include "timers.h"
 
 #include "common.h"
-#include "coms/uart.h"
 #include "control.h"
 #include "log.h"
+#include "periphs/uart.h"
 #include "sync.h"
+
 
 #ifndef HSEM_ID_0
 #define HSEM_ID_0 (0U) /* HW semaphore 0*/

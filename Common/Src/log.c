@@ -1,12 +1,13 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "coms/uart.h"
 #include "hal.h"
 #include "log.h"
 #include "mem/mem.h"
 #include "mem/ring_buff.h"
+#include "periphs/uart.h"
 #include "sync.h"
+
 
 
 #ifdef __GNUC__

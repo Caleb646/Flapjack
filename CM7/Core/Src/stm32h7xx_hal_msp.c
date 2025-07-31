@@ -329,7 +329,7 @@ void HAL_TIM_Base_MspDeInit (TIM_HandleTypeDef* htim_base) {
 //     PA10     ------> USART1_RX
 //     PA9     ------> USART1_TX
 //     */
-//     GPIO_InitStruct.Pin = STLINK_TX_Pin|STLINK_RX_Pin;
+//     GPIO_InitStruct.Pin = STLINK_TX_GPIO_Pin|STLINK_RX_GPIO_Pin;
 //     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
 //     GPIO_InitStruct.Pull = GPIO_NOPULL;
 //     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -362,7 +362,7 @@ void HAL_TIM_Base_MspDeInit (TIM_HandleTypeDef* htim_base) {
 //         PA10     ------> USART1_RX
 //         PA9     ------> USART1_TX
 //         */
-//         HAL_GPIO_DeInit (GPIOA, STLINK_TX_Pin | STLINK_RX_Pin);
+//         HAL_GPIO_DeInit (GPIOA, STLINK_TX_GPIO_Pin | STLINK_RX_GPIO_Pin);
 
 //         /* USER CODE BEGIN USART1_MspDeInit 1 */
 

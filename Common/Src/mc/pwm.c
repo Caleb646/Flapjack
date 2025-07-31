@@ -3,6 +3,7 @@
 #include "dma.h"
 #include "hal.h"
 #include "log.h"
+#include "periphs/gpio.h"
 #include <stdint.h>
 
 #define MAX_DMA_TIM_REGISTERS 7U
@@ -341,43 +342,39 @@ static eSTATUS_t PWMInitGPIO (PWMHandle* pHandle, uint32_t freq) {
     if (pTimerRegisters == TIM8) {
         /* Peripheral clock enable */
         // __HAL_RCC_TIM8_CLK_ENABLE ();
-        __HAL_RCC_GPIOC_CLK_ENABLE ();
-        __HAL_RCC_GPIOJ_CLK_ENABLE ();
+        TIM8_CH1_RCC_GPIO_CLK_ENABLE ();
+        TIM8_CH2N_RCC_GPIO_CLK_ENABLE ();
         /* TIM8 GPIO Configuration
          * PC6     ------> TIM8_CH1
          * PJ7     ------> TIM8_CH2N
          */
-        GPIO_InitStruct.Pin       = GPIO_PIN_6;
+        GPIO_InitStruct.Pin       = TIM8_CH1_GPIO_Pin;
         GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
         GPIO_InitStruct.Pull      = GPIO_NOPULL;
         GPIO_InitStruct.Speed     = freq;
         GPIO_InitStruct.Alternate = GPIO_AF3_TIM8;
-        HAL_GPIO_Init (GPIOC, &GPIO_InitStruct);
+        HAL_GPIO_Init (TIM8_CH1_GPIO_Port, &GPIO_InitStruct);
 
-        // #define ARD_D6_Pin GPIO_PIN_7
-        GPIO_InitStruct.Pin       = GPIO_PIN_7;
+        GPIO_InitStruct.Pin       = TIM8_CH2N_GPIO_Pin;
         GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
         GPIO_InitStruct.Pull      = GPIO_NOPULL;
         GPIO_InitStruct.Speed     = freq;
         GPIO_InitStruct.Alternate = GPIO_AF3_TIM8;
-        // #define ARD_D6_GPIO_Port GPIOJ
-        HAL_GPIO_Init (GPIOJ, &GPIO_InitStruct);
+        HAL_GPIO_Init (TIM8_CH2N_GPIO_Port, &GPIO_InitStruct);
 
     } else if (pTimerRegisters == TIM13) {
         /* Peripheral clock enable */
         // __HAL_RCC_TIM13_CLK_ENABLE ();
-        __HAL_RCC_GPIOF_CLK_ENABLE ();
+        TIM13_CH1_RCC_GPIO_CLK_ENABLE ();
         /* TIM13 GPIO Configuration
          * PF8     ------> TIM13_CH1
          */
-        // #define PMOD_14_ARD_D3_Pin       GPIO_PIN_8
-        GPIO_InitStruct.Pin       = GPIO_PIN_8;
+        GPIO_InitStruct.Pin       = TIM13_CH1_GPIO_Pin;
         GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
         GPIO_InitStruct.Pull      = GPIO_NOPULL;
         GPIO_InitStruct.Speed     = freq;
         GPIO_InitStruct.Alternate = GPIO_AF9_TIM13;
-        // #define PMOD_14_ARD_D3_GPIO_Port GPIOF
-        HAL_GPIO_Init (GPIOF, &GPIO_InitStruct);
+        HAL_GPIO_Init (TIM13_CH1_GPIO_Port, &GPIO_InitStruct);
     } else {
         LOG_ERROR ("Unsupported timer for PWM initialization");
         return eSTATUS_FAILURE;

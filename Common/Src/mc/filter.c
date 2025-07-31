@@ -173,12 +173,15 @@ FilterMadgwickContext* pOutContext) {
     }
 
     for (uint32_t i = 0U; i < iterations; ++i) {
-        Vec3f accel      = { 0.0F };
-        Vec3f gyro       = { 0.0F };
-        eSTATUS_t status = IMUPollData (pIMU, &accel, &gyro);
+        Vec3f accel = { 0.0F };
+        Vec3f gyro  = { 0.0F };
+        eSTATUS_t status = IMUProcessUpdatefromPolling (pIMU, &accel, &gyro);
 
         if (status != eSTATUS_SUCCESS) {
-            LOG_ERROR ("IMUPollData failed with status: [%d] at iteration [%u]", status, (uint16_t)i);
+            LOG_ERROR (
+            "IMUProcessUpdatefromPolling failed with status: [%d] at "
+            "iteration [%u]",
+            status, (uint16_t)i);
             return status;
         }
 

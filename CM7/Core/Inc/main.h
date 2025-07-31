@@ -63,9 +63,9 @@ void Error_Handler (void);
 #define OSC32_OUT_GPIO_Port      GPIOC
 #define OSC32_IN_Pin             GPIO_PIN_14
 #define OSC32_IN_GPIO_Port       GPIOC
-// #define STLINK_TX_Pin GPIO_PIN_10
+// #define STLINK_TX_GPIO_Pin GPIO_PIN_10
 // #define STLINK_TX_GPIO_Port GPIOA
-// #define STLINK_RX_Pin GPIO_PIN_9
+// #define STLINK_RX_GPIO_Pin GPIO_PIN_9
 // #define STLINK_RX_GPIO_Port GPIOA
 #define CEC_CK_MCO1_Pin          GPIO_PIN_8
 #define CEC_CK_MCO1_GPIO_Port    GPIOA
@@ -73,9 +73,9 @@ void Error_Handler (void);
 #define SPI2_SCK_GPIO_Port       GPIOA
 #define SPI2_NSS_Pin             GPIO_PIN_11
 #define SPI2_NSS_GPIO_Port       GPIOA
-#define IMU_INT_Pin              GPIO_PIN_7
-#define IMU_INT_GPIO_Port        GPIOC
-#define IMU_INT_EXTI_IRQn        EXTI9_5_IRQn
+// #define IMU_INT_GPIO_Pin              GPIO_PIN_7
+// #define IMU_INT_GPIO_Port        GPIOC
+// #define IMU_INT_EXTI_IRQn        EXTI9_5_IRQn
 #define OSC_OUT_Pin              GPIO_PIN_1
 #define OSC_OUT_GPIO_Port        GPIOH
 #define OSC_IN_Pin               GPIO_PIN_0

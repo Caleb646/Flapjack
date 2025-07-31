@@ -74,9 +74,9 @@ void MX_USART1_UART_Init (void);
 #define SAI1_FS_A_GPIO_Port   GPIOE
 #define SAI1_SD_B_Pin         GPIO_PIN_3
 #define SAI1_SD_B_GPIO_Port   GPIOE
-// #define STLINK_TX_Pin GPIO_PIN_10
+// #define STLINK_TX_GPIO_Pin GPIO_PIN_10
 // #define STLINK_TX_GPIO_Port GPIOA
-// #define STLINK_RX_Pin GPIO_PIN_9
+// #define STLINK_RX_GPIO_Pin GPIO_PIN_9
 // #define STLINK_RX_GPIO_Port GPIOA
 #define B2_Pin                GPIO_PIN_13
 #define B2_GPIO_Port          GPIOC

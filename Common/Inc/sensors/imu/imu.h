@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "hal.h"
+#include "log.h"
 #include "sensors/imu/bmixxx.h"
 #include <stdint.h>
 
@@ -92,12 +93,13 @@ typedef enum {
     eIMU_GYRO_MODE_HIGH_PERF = BMI3_GYR_MODE_HIGH_PERF
 } IMU_GYRO_MODE;
 
-typedef enum {
+typedef eSTATUS_t eIMU_STATUS;
+enum {
     eIMU_COM_FAILURE        = -1,
     eIMU_RW_BUFFER_OVERFLOW = -2,
     eIMU_NULL_PTR           = -3,
     eIMU_HARDWARE_ERR       = -4,
-} IMU_STATUS;
+};
 
 typedef struct {
     uint16_t err;
@@ -162,31 +164,44 @@ typedef struct {
     uint8_t error;
 } IMUSelfCalibResult;
 
-/*
- * Forward declared FlightContext
- */
-// typedef struct FlightContext__ FlightContext;
-// typedef IMU_STATUS (*imu_update_fn)(IMU *pIMU);
+#ifdef UNIT_TEST
 
+eSTATUS_t IMUSendCmd (IMU const* pIMU, uint16_t cmd);
+eSTATUS_t IMUGetFeatureStatus (IMU const* pIMU, uint16_t featureRegAddr, IMUFeatureStatus* pResultOut);
+eSTATUS_t IMUGetINTStatus (IMU const* pIMU, uint16_t* pOutStatus);
+eSTATUS_t IMUGetStatusReg (IMU const* pIMU, uint16_t* pOutStatus);
 eSTATUS_t IMUGetDeviceErr (IMU* pIMU, IMUErr* pOutErr);
 void IMULogDeviceErr (IMU* pIMU, IMUErr const* pErr);
-eSTATUS_t IMUEnableInterrupts (IMU const* pIMU);
-eSTATUS_t IMUHandleErr (IMU* pIMU);
-eSTATUS_t IMUPollData (IMU* pIMU, Vec3f* pOutputAccel, Vec3f* pOutputGyro);
-eSTATUS_t IMUUpdateAccel (IMU* pIMU);
+eSTATUS_t IMUReadReg (IMU const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
+eSTATUS_t IMUWriteReg (IMU const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
 eSTATUS_t IMUUpdateGyro (IMU* pIMU);
-eSTATUS_t IMUGetConf (IMU* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf);
-eSTATUS_t IMUGetAltConf (IMU* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf);
+eSTATUS_t IMUUpdateAccel (IMU* pIMU);
+eSTATUS_t IMUSoftReset (IMU* pIMU);
+eSTATUS_t IMUGetConf_ (IMU* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf, uint8_t altConfFlag);
+eSTATUS_t
+IMUSetConf_ (IMU* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf, uint8_t altConfFlag);
+eSTATUS_t
+IMUCalibrate (IMU* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSelfCalibResult* pResultOut);
+eSTATUS_t IMUSetupInterrupts (IMU const* pIMU);
+eSTATUS_t IMUEnableInterrupts (IMU const* pIMU);
+eSTATUS_t IMUDisableInterrupts (IMU const* pIMU);
 eSTATUS_t
 IMUConvertRaw (IMU_ACC_RANGE aRange, Vec3 ra, IMU_GYRO_RANGE gRange, Vec3 rg, Vec3f* pAccelOut, Vec3f* pGyroOut);
+
+#endif
+
+eSTATUS_t IMUInit (IMU* pIMU, SPI_HandleTypeDef* pSPI, IMUAccConf aconf, IMUGyroConf gconf);
+eSTATUS_t IMUStart (IMU* pIMU);
+eSTATUS_t IMUStop (IMU* pIMU);
+eSTATUS_t IMUHandleErr (IMU* pIMU);
+eSTATUS_t IMUProcessUpdatefromINT (IMU* pIMU, Vec3f* pOutputAccel, Vec3f* pOutputGyro);
+eSTATUS_t IMUProcessUpdatefromPolling (IMU* pIMU, Vec3f* pOutputAccel, Vec3f* pOutputGyro);
+eSTATUS_t IMUGetConf (IMU* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf);
+eSTATUS_t IMUGetAltConf (IMU* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf);
 eSTATUS_t IMUSetConf (IMU* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf);
 eSTATUS_t IMUSetAltConf (IMU* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf);
 eSTATUS_t IMUCompareConfs (IMUAccConf aconf, IMUGyroConf gconf, IMUAccConf aconf2, IMUGyroConf gconf2);
 eSTATUS_t IMU2CPUInterruptHandler (IMU* pIMU);
-eSTATUS_t IMUReadReg (IMU const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
-eSTATUS_t IMUWriteReg (IMU const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
-eSTATUS_t IMUInit (IMU* pIMU, SPI_HandleTypeDef* pSPI, IMUAccConf aconf, IMUGyroConf gconf);
-eSTATUS_t IMUStart (IMU* pIMU);
-eSTATUS_t IMUStop (IMU* pIMU);
+
 
 #endif // SENSORS_IMU_H
