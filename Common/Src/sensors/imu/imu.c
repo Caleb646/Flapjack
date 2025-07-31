@@ -831,11 +831,9 @@ eSTATUS_t IMUProcessUpdatefromINT (IMU* pIMU, Vec3f* pOutputAccel, Vec3f* pOutpu
         }
     }
 
-    eSTATUS_t status = eSTATUS_SUCCESS;
-    Vec3f accel      = { 0.0F };
-    Vec3f gyro       = { 0.0F };
-    status           = IMUConvertRaw (
-    pIMU->aconf.range, pIMU->rawAccel, pIMU->gconf.range, pIMU->rawGyro, &accel, &gyro);
+    eSTATUS_t status = IMUConvertRaw (
+    pIMU->aconf.range, pIMU->rawAccel, pIMU->gconf.range, pIMU->rawGyro,
+    pOutputAccel, pOutputGyro);
 
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to convert IMU raw data");
