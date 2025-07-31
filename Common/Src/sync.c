@@ -18,12 +18,14 @@ static task_handler_fn_t gHandlers[NUM_TASK_TYPES]       = { 0 };
 
 #ifndef UNIT_TEST
 
-static eSTATUS_t SyncMailBoxWrite (uint32_t mbID, uint8_t* pBuffer, uint32_t len);
-static eSTATUS_t SyncMailBoxWriteNotify (uint32_t mbID, uint8_t* pBuffer, uint32_t len);
+static eSTATUS_t SyncMailBoxWrite (uint32_t mbID, uint8_t const* pBuffer, uint32_t len);
+static eSTATUS_t
+SyncMailBoxWriteNotify (uint32_t mbID, uint8_t const* pBuffer, uint32_t len);
 static eSTATUS_t SyncMailBoxRead (uint32_t mbID, uint8_t* pBuffer, uint32_t len);
 static uint16_t SyncGetOtherCoresMailBoxID (void);
 static uint8_t SyncTaskIsValid (DefaultTask const* pTask);
 static task_handler_fn_t SyncGetTaskHandler (uint32_t taskID);
+static void SyncIRQHandler (uint16_t myCPUMailBoxId);
 
 #endif
 
@@ -75,7 +77,7 @@ STATIC_TESTABLE_DECL uint8_t volatile* SyncMailBoxGet (uint32_t mbID) {
     return pMB;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t SyncMailBoxWrite (uint32_t mbID, uint8_t* pBuffer, uint32_t len) {
+STATIC_TESTABLE_DECL eSTATUS_t SyncMailBoxWrite (uint32_t mbID, uint8_t const* pBuffer, uint32_t len) {
     if (len > MEM_SHARED_MAILBOX_LEN) {
         return eSTATUS_FAILURE;
     }
@@ -85,7 +87,8 @@ STATIC_TESTABLE_DECL eSTATUS_t SyncMailBoxWrite (uint32_t mbID, uint8_t* pBuffer
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t SyncMailBoxWriteNotify (uint32_t mbID, uint8_t* pBuffer, uint32_t len) {
+STATIC_TESTABLE_DECL eSTATUS_t
+SyncMailBoxWriteNotify (uint32_t mbID, uint8_t const* pBuffer, uint32_t len) {
     eSTATUS_t status = SyncMailBoxWrite (mbID, pBuffer, len);
     if (status != eSTATUS_SUCCESS) {
         return eSTATUS_FAILURE;
