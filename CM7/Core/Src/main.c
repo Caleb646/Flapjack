@@ -86,6 +86,7 @@ void FCEnterRunningState (FCState curState, eREQUESTED_STATE_t requestedState) {
     eOP_STATE_t nextOpState = eOP_STATE_RUNNING;
     if (curOpState == eOP_STATE_STOPPED) {
         if (requestedState == eREQUESTED_STATE_START) {
+            LOG_INFO ("Starting actuators and imu");
             if (ActuatorsStart () != eSTATUS_SUCCESS || IMUStart (&gIMU) != eSTATUS_SUCCESS) {
                 LOG_ERROR ("Failed to start");
                 nextOpState = eOP_STATE_ERROR;

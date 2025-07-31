@@ -77,7 +77,6 @@ void TaskMainLoop (void* pvParameters) {
 
 int main (void) {
 
-    /* USER CODE BEGIN Boot_Mode_Sequence_1 */
     /*HW semaphore Clock enable*/
     __HAL_RCC_HSEM_CLK_ENABLE ();
     /* Activate HSEM notification for Cortex-M4*/
@@ -91,7 +90,6 @@ int main (void) {
     /* Clear HSEM flag */
     __HAL_HSEM_CLEAR_FLAG (__HAL_HSEM_SEMID_TO_MASK (HSEM_ID_0));
 
-    /* USER CODE END Boot_Mode_Sequence_1 */
     /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
     HAL_Init ();
 
@@ -103,7 +101,6 @@ int main (void) {
     MX_SPDIFRX1_Init ();
     MX_SPI5_Init ();
     MX_USB_OTG_HS_PCD_Init ();
-    /* USER CODE BEGIN 2 */
 
     if (SyncInit () != eSTATUS_SUCCESS) {
         CriticalErrorHandler ();
@@ -134,16 +131,8 @@ int main (void) {
 
     vTaskStartScheduler ();
 
-    /* USER CODE END 2 */
-
-    /* Infinite loop */
-    /* USER CODE BEGIN WHILE */
     while (1) {
-        /* USER CODE END WHILE */
-
-        /* USER CODE BEGIN 3 */
     }
-    /* USER CODE END 3 */
 }
 
 /**

@@ -66,10 +66,10 @@ def make_axis_line(direction, color):
     color_array = np.array([color, color])
     return GLLinePlotItem(pos=pos, color=color_array, width=3.0, antialias=True)
 
-class IMUViewer(QtWidgets.QWidget):
+class FlightViewer(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("IMU Orientation Viewer")
+        self.setWindowTitle("Flight Viewer")
         self.resize(1200, 800)
 
         main_layout = QVBoxLayout(self)
@@ -106,7 +106,6 @@ class IMUViewer(QtWidgets.QWidget):
         self.max_console_lines = 200
         
     def setup_3d_viewer(self, parent_widget):
-        """Setup the 3D orientation viewer"""
         layout = QVBoxLayout(parent_widget)
         
         self.view = GLViewWidget()
@@ -908,10 +907,9 @@ class AttitudePlotter(QtWidgets.QWidget):
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to load data: {str(e)}")
 
-# ...existing letter and mesh functions...
 def main():
     app = QApplication(sys.argv)
-    viewer = IMUViewer()
+    viewer = FlightViewer()
     viewer.show()
     # Ensure log files are closed on app exit
     app.aboutToQuit.connect(viewer.close)
