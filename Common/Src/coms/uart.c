@@ -65,7 +65,7 @@ void HAL_UART_MspDeInit (UART_HandleTypeDef* huart) {
     }
 }
 
-STATUS_TYPE UARTSystemInit (void) {
+eSTATUS_t UARTSystemInit (void) {
     HAL_NVIC_SetPriority (USART1_IRQn, 5, 5);
     HAL_NVIC_EnableIRQ (USART1_IRQn);
 

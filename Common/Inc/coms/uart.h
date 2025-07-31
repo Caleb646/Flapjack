@@ -5,6 +5,6 @@
 
 extern UART_HandleTypeDef egHandleUSART_1;
 
-STATUS_TYPE UARTSystemInit (void);
+eSTATUS_t UARTSystemInit (void);
 
 #endif // COMS_UART_H

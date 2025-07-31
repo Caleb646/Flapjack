@@ -28,7 +28,7 @@ void HAL_UART_RxCpltCallback (UART_HandleTypeDef* huart) {
     HAL_UART_Receive_IT (huart, gUartInterruptBuffer, sizeof (EmptyCommand));
 }
 
-STATIC_TESTABLE_DECL STATUS_TYPE ControlInit_CM4 (void) {
+STATIC_TESTABLE_DECL eSTATUS_t ControlInit_CM4 (void) {
     if (QueueInit (&gRawCommandQueue, gRawCommandQueueBuffer, RAW_COMMAND_QUEUE_CAPACITY, sizeof (EmptyCommand)) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize raw command queue");
         return eSTATUS_FAILURE;
@@ -42,7 +42,7 @@ STATIC_TESTABLE_DECL STATUS_TYPE ControlInit_CM4 (void) {
 static Queue* gpSharedCommandQueue = NULL;
 static FCState* gpFlightState      = NULL;
 
-STATIC_TESTABLE_DECL STATUS_TYPE ControlInitCmdQueue (Queue* pQueue) {
+STATIC_TESTABLE_DECL eSTATUS_t ControlInitCmdQueue (Queue* pQueue) {
     if (pQueue == NULL) {
         LOG_ERROR ("Command queue pointer is NULL");
         return eSTATUS_FAILURE;
@@ -60,7 +60,7 @@ STATIC_TESTABLE_DECL STATUS_TYPE ControlInitCmdQueue (Queue* pQueue) {
 
     void* pBuffer =
     (void*)MEM_U32_ALIGN4 (MEM_SHARED_COMMAND_QUEUE_START + sizeof (Queue));
-    STATUS_TYPE status = QueueInit (pQueue, pBuffer, capacity, elementSize);
+    eSTATUS_t status = QueueInit (pQueue, pBuffer, capacity, elementSize);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize command queue");
         return status;
@@ -69,7 +69,7 @@ STATIC_TESTABLE_DECL STATUS_TYPE ControlInitCmdQueue (Queue* pQueue) {
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL STATUS_TYPE ControlInitFCState (FCState* pState) {
+STATIC_TESTABLE_DECL eSTATUS_t ControlInitFCState (FCState* pState) {
     if (pState == NULL) {
         LOG_ERROR ("Flight controller state pointer is NULL");
         return eSTATUS_FAILURE;
@@ -81,7 +81,7 @@ STATIC_TESTABLE_DECL STATUS_TYPE ControlInitFCState (FCState* pState) {
     return eSTATUS_SUCCESS;
 }
 
-// STATIC_TESTABLE_DECL STATUS_TYPE ControlParseRawCmd (uint8_t* pRawCmd, uint16_t cmdSize) {
+// STATIC_TESTABLE_DECL eSTATUS_t ControlParseRawCmd (uint8_t* pRawCmd, uint16_t cmdSize) {
 //     if (cmdSize != sizeof (EmptyCommand)) {
 //         LOG_ERROR ("Invalid command size");
 //         return eSTATUS_FAILURE;
@@ -112,7 +112,7 @@ STATIC_TESTABLE_DECL STATUS_TYPE ControlInitFCState (FCState* pState) {
 //     return eSTATUS_SUCCESS;
 // }
 
-STATUS_TYPE ControlInit (void) {
+eSTATUS_t ControlInit (void) {
 
     gpSharedCommandQueue = (Queue*)MEM_SHARED_COMMAND_QUEUE_START;
     gpFlightState        = (FCState*)MEM_SHARED_FLIGHT_STATE_START;
@@ -134,7 +134,7 @@ STATUS_TYPE ControlInit (void) {
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE ControlStart (UART_HandleTypeDef* huart) {
+eSTATUS_t ControlStart (UART_HandleTypeDef* huart) {
 
     if (HAL_GetCurrentCPUID () == CM4_CPUID) {
         if (huart == NULL) {
@@ -150,7 +150,7 @@ STATUS_TYPE ControlStart (UART_HandleTypeDef* huart) {
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE ControlProcessRawCmds (void) {
+eSTATUS_t ControlProcessRawCmds (void) {
 
     if (HAL_GetCurrentCPUID () == CM7_CPUID) {
         LOG_ERROR ("Should only be called on CM4");
@@ -212,7 +212,7 @@ eOP_STATE_t ControlGetOpState (void) {
     return gpFlightState->opState;
 }
 
-STATUS_TYPE ControlUpdateFCState (FCState const* pNewState) {
+eSTATUS_t ControlUpdateFCState (FCState const* pNewState) {
     if (pNewState == NULL || gpFlightState == NULL) {
         LOG_ERROR ("Invalid flight controller state pointer");
         return eSTATUS_FAILURE;

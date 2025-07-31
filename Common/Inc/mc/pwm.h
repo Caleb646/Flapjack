@@ -114,15 +114,14 @@ typedef enum {
 
 typedef void (*PWM_DMACallback) (TIM_HandleTypeDef* htim);
 
-STATUS_TYPE PWMInit (PWMConfig config, PWMHandle* pOutHandle);
-STATUS_TYPE PWMStart (PWMHandle* pHandle);
-STATUS_TYPE PWMStop (PWMHandle* pHandle);
-STATUS_TYPE PWMWrite (PWMHandle* pHandle, uint32_t usUpTime);
+eSTATUS_t PWMInit (PWMConfig config, PWMHandle* pOutHandle);
+eSTATUS_t PWMStart (PWMHandle* pHandle);
+eSTATUS_t PWMStop (PWMHandle* pHandle);
+eSTATUS_t PWMWrite (PWMHandle* pHandle, uint32_t usUpTime);
 
-STATUS_TYPE
-PWM_DMAInit (PWM_DMAConfig timConfig, DMAConfig dmaConfig, PWM_DMAHandle* pOutHandle);
-STATUS_TYPE PWM_DMAStart (PWM_DMAHandle* pHandle, uint32_t const* pData, uint16_t Length);
-STATUS_TYPE
+eSTATUS_t PWM_DMAInit (PWM_DMAConfig timConfig, DMAConfig dmaConfig, PWM_DMAHandle* pOutHandle);
+eSTATUS_t PWM_DMAStart (PWM_DMAHandle* pHandle, uint32_t const* pData, uint16_t Length);
+eSTATUS_t
 PWM_DMARegisterCallback (PWM_DMAHandle* pHandle, uint32_t channelID, PWM_DMACallback callback, ePWM_DMA_CB_TYPE cbType);
 
 

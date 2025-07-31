@@ -6,17 +6,50 @@
 #include <string.h>
 
 
-typedef enum {
+enum {
     NUM_TASK_TYPES       = 2U,
     SYNC_TASK_QUEUE_SIZE = 128U,
     TASK_MAGIC           = 0xBEEF
-} SyncConstants;
+};
 
 static DefaultTask gSyncTaskBuffer[SYNC_TASK_QUEUE_SIZE] = { 0 };
 static Queue gSyncTaskQueue                              = { 0 };
 static task_handler_fn_t gHandlers[NUM_TASK_TYPES]       = { 0 };
 
-STATIC_TESTABLE_DECL uint8_t SyncTaskIsValid (DefaultTask const* pTask) {
+#ifndef UNIT_TEST
+
+static eSTATUS_t SyncMailBoxWrite (uint32_t mbID, uint8_t* pBuffer, uint32_t len);
+static eSTATUS_t SyncMailBoxWriteNotify (uint32_t mbID, uint8_t* pBuffer, uint32_t len);
+static eSTATUS_t SyncMailBoxRead (uint32_t mbID, uint8_t* pBuffer, uint32_t len);
+static uint16_t SyncGetOtherCoresMailBoxID (void);
+static uint8_t SyncTaskIsValid (DefaultTask const* pTask);
+static task_handler_fn_t SyncGetTaskHandler (uint32_t taskID);
+
+#endif
+
+/*
+ * \brief A SEV instruction was executed by CM7
+ * and the SEV IRQ handler for CM4 was called.
+ * This function was originally defined in CM4/Core/Src/stm32h7xx_it.c
+ * by the code generator but I moved it here.
+ */
+void CM7_SEV_IRQHandler (void) {
+    // CPUID == CM4
+    SyncIRQHandler (MAILBOX_CM4_ID);
+}
+
+/*
+ * \brief A sev instruction was executed by CM4
+ * and the SEV IRQ handler for CM7 was called.
+ * This function was originally defined in CM7/Core/Src/stm32h7xx_it.c
+ * by the code generator but I moved it here.
+ */
+void CM4_SEV_IRQHandler (void) {
+    // CPUID == CM7
+    SyncIRQHandler (MAILBOX_CM7_ID);
+}
+
+STATIC_TESTABLE_DECL BOOL_t SyncTaskIsValid (DefaultTask const* pTask) {
     if (pTask == NULL) {
         return FALSE;
     }
@@ -42,7 +75,7 @@ STATIC_TESTABLE_DECL uint8_t volatile* SyncMailBoxGet (uint32_t mbID) {
     return pMB;
 }
 
-STATIC_TESTABLE_DECL STATUS_TYPE SyncMailBoxWrite (uint32_t mbID, uint8_t* pBuffer, uint32_t len) {
+STATIC_TESTABLE_DECL eSTATUS_t SyncMailBoxWrite (uint32_t mbID, uint8_t* pBuffer, uint32_t len) {
     if (len > MEM_SHARED_MAILBOX_LEN) {
         return eSTATUS_FAILURE;
     }
@@ -52,8 +85,8 @@ STATIC_TESTABLE_DECL STATUS_TYPE SyncMailBoxWrite (uint32_t mbID, uint8_t* pBuff
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL STATUS_TYPE SyncMailBoxWriteNotify (uint32_t mbID, uint8_t* pBuffer, uint32_t len) {
-    STATUS_TYPE status = SyncMailBoxWrite (mbID, pBuffer, len);
+STATIC_TESTABLE_DECL eSTATUS_t SyncMailBoxWriteNotify (uint32_t mbID, uint8_t* pBuffer, uint32_t len) {
+    eSTATUS_t status = SyncMailBoxWrite (mbID, pBuffer, len);
     if (status != eSTATUS_SUCCESS) {
         return eSTATUS_FAILURE;
     }
@@ -62,7 +95,7 @@ STATIC_TESTABLE_DECL STATUS_TYPE SyncMailBoxWriteNotify (uint32_t mbID, uint8_t*
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL STATUS_TYPE SyncMailBoxRead (uint32_t mbID, uint8_t* pBuffer, uint32_t len) {
+STATIC_TESTABLE_DECL eSTATUS_t SyncMailBoxRead (uint32_t mbID, uint8_t* pBuffer, uint32_t len) {
     if (len > MEM_SHARED_MAILBOX_LEN) {
         return eSTATUS_FAILURE;
     }
@@ -81,7 +114,7 @@ STATIC_TESTABLE_DECL task_handler_fn_t SyncGetTaskHandler (uint32_t taskID) {
 
 STATIC_TESTABLE_DECL void SyncIRQHandler (uint16_t myCPUMailBoxId) {
     DefaultTask task = { 0 };
-    STATUS_TYPE status =
+    eSTATUS_t status =
     SyncMailBoxRead (myCPUMailBoxId, (uint8_t*)&task, sizeof (DefaultTask));
 
     if (SyncTaskIsValid (&task) == FALSE || status != eSTATUS_SUCCESS) {
@@ -94,12 +127,22 @@ STATIC_TESTABLE_DECL void SyncIRQHandler (uint16_t myCPUMailBoxId) {
 /*
  * \brief Each core needs to call SyncInit
  */
-STATUS_TYPE SyncInit (void) {
+eSTATUS_t SyncInit (void) {
+    if (HAL_GetCurrentCPUID () == CM7_CPUID) {
+        // I am running on CM7 so setup the interrupt for CM4 to send me a SEV
+        HAL_NVIC_SetPriority (CM4_SEV_IRQn, 5, 0);
+        HAL_NVIC_EnableIRQ (CM4_SEV_IRQn);
+    } else {
+        // I am running on CM4 so setup the interrupt for CM7 to send me a SEV
+        HAL_NVIC_SetPriority (CM7_SEV_IRQn, 5, 0);
+        HAL_NVIC_EnableIRQ (CM7_SEV_IRQn);
+    }
+
     // Initialize the task queue
     return QueueInit (&gSyncTaskQueue, gSyncTaskBuffer, SYNC_TASK_QUEUE_SIZE, sizeof (DefaultTask));
 }
 
-STATUS_TYPE SyncRegisterHandler (eSYNC_TASKID_TYPE taskID, task_handler_fn_t fn) {
+eSTATUS_t SyncRegisterHandler (eSYNC_TASKID_t taskID, task_handler_fn_t fn) {
     if ((int32_t)taskID > (int32_t)NUM_TASK_TYPES || fn == NULL) {
         return eSTATUS_FAILURE;
     }
@@ -107,7 +150,7 @@ STATUS_TYPE SyncRegisterHandler (eSYNC_TASKID_TYPE taskID, task_handler_fn_t fn)
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE SyncProcessTasks (void) {
+eSTATUS_t SyncProcessTasks (void) {
     if (QueueIsEmpty (&gSyncTaskQueue)) {
         // No tasks to process
         return eSTATUS_SUCCESS;
@@ -128,7 +171,7 @@ STATUS_TYPE SyncProcessTasks (void) {
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE SyncNotifyTaskUartOut (uint16_t len) {
+eSTATUS_t SyncNotifyTaskUartOut (uint16_t len) {
     SyncTaskUartOut task = { 0 };
     task.header.taskID   = eSYNC_TASKID_UART_OUT;
     task.header.magic    = TASK_MAGIC;
@@ -136,26 +179,4 @@ STATUS_TYPE SyncNotifyTaskUartOut (uint16_t len) {
 
     return SyncMailBoxWriteNotify (
     SyncGetOtherCoresMailBoxID (), (uint8_t*)&task, sizeof (SyncTaskUartOut));
-}
-
-/*
- * \brief A SEV instruction was executed by CM7
- * and the SEV IRQ handler for CM4 was called.
- * This function was originally defined in CM4/Core/Src/stm32h7xx_it.c
- * by the code generator but I moved it here.
- */
-void CM7_SEV_IRQHandler (void) {
-    // CPUID == CM4
-    SyncIRQHandler (MAILBOX_CM4_ID);
-}
-
-/*
- * \brief A sev instruction was executed by CM4
- * and the SEV IRQ handler for CM7 was called.
- * This function was originally defined in CM7/Core/Src/stm32h7xx_it.c
- * by the code generator but I moved it here.
- */
-void CM4_SEV_IRQHandler (void) {
-    // CPUID == CM7
-    SyncIRQHandler (MAILBOX_CM7_ID);
 }

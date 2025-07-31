@@ -14,7 +14,7 @@ void test_FilterMadgwickInit (void) {
     FilterMadgwickContext context;
     float gyroMeasureErrorDegs = 5.0F;
 
-    STATUS_TYPE status = FilterMadgwickInit (&context, gyroMeasureErrorDegs, NULL);
+    eSTATUS_t status = FilterMadgwickInit (&context, gyroMeasureErrorDegs, NULL);
     TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
 
     // Check that quaternion is initialized to identity (no rotation)
@@ -36,7 +36,7 @@ void test_FilterMadgwick6DOF_NullPointers (void) {
     float dt = 0.01F;
 
     // Test null context
-    STATUS_TYPE status =
+    eSTATUS_t status =
     FilterMadgwick6DOF ((FilterMadgwickContext*)0, &accel, &gyro, dt, &attitude);
     TEST_ASSERT_EQUAL_INT (eSTATUS_FAILURE, status);
 
@@ -64,8 +64,7 @@ void test_FilterMadgwick6DOF_NoRotation (void) {
     float dt       = 0.01F;
 
     for (int i = 0; i < 5; i++) {
-        STATUS_TYPE status =
-        FilterMadgwick6DOF (&context, &accel, &gyro, dt, &attitude);
+        eSTATUS_t status = FilterMadgwick6DOF (&context, &accel, &gyro, dt, &attitude);
         TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
     }
 
@@ -88,8 +87,7 @@ void test_FilterMadgwick6DOF_Roll90Degrees (void) {
      * us close to 90 degrees. Especially with the 1.0F error.
      */
     for (int i = 0; i < (int)(9.0F * 1.0F / dt); i++) {
-        STATUS_TYPE status =
-        FilterMadgwick6DOF (&context, &accel, &gyro, dt, &attitude);
+        eSTATUS_t status = FilterMadgwick6DOF (&context, &accel, &gyro, dt, &attitude);
         TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
     }
 
@@ -113,8 +111,7 @@ void test_FilterMadgwick6DOF_Pitch90Degrees (void) {
      * us close to 90 degrees. Especially with the 1.0F error.
      */
     for (int i = 0; i < (int)(9.0F * (1.0F / dt)); i++) {
-        STATUS_TYPE status =
-        FilterMadgwick6DOF (&context, &accel, &gyro, dt, &attitude);
+        eSTATUS_t status = FilterMadgwick6DOF (&context, &accel, &gyro, dt, &attitude);
         TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
     }
 
@@ -143,8 +140,7 @@ void test_FilterMadgwick6DOF_GyroIntegration (void) {
     // Now apply constant yaw rate for 1 second (100 iterations * 0.01s)
     gyro.z = 45.0F; // 45 degrees/second
     for (int i = 0; i < 100; i++) {
-        STATUS_TYPE status =
-        FilterMadgwick6DOF (&context, &accel, &gyro, dt, &attitude);
+        eSTATUS_t status = FilterMadgwick6DOF (&context, &accel, &gyro, dt, &attitude);
         TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
     }
 
@@ -172,7 +168,7 @@ void test_FilterMadgwick6DOF_ZeroAcceleration (void) {
     Vec3f attitude;
     float dt = 0.01F;
 
-    STATUS_TYPE status = FilterMadgwick6DOF (&context, &accel, &gyro, dt, &attitude);
+    eSTATUS_t status = FilterMadgwick6DOF (&context, &accel, &gyro, dt, &attitude);
     TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
 
     // Should not crash and should produce valid output
@@ -192,8 +188,7 @@ void test_FilterMadgwick6DOF_QuaternionNormalization (void) {
 
     // Run several iterations
     for (int i = 0; i < 50; i++) {
-        STATUS_TYPE status =
-        FilterMadgwick6DOF (&context, &accel, &gyro, dt, &attitude);
+        eSTATUS_t status = FilterMadgwick6DOF (&context, &accel, &gyro, dt, &attitude);
         TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
 
         // Check that quaternion remains normalized
@@ -239,8 +234,7 @@ void test_FilterMadgwick6DOF_LargeTimeStep (void) {
         sqrtf ((accel.x * accel.x) + (accel.y * accel.y) + (accel.z * accel.z));
         TEST_ASSERT_FLOAT_WITHIN (0.01F, 9.81F, accel_magnitude);
 
-        STATUS_TYPE status =
-        FilterMadgwick6DOF (&context, &accel, &gyro, dt, &attitude);
+        eSTATUS_t status = FilterMadgwick6DOF (&context, &accel, &gyro, dt, &attitude);
         TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
 
         // Check that quaternion remains normalized even with large time steps

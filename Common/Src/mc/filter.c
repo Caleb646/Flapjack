@@ -13,8 +13,7 @@
  *  If not aligned, the filter will show the imu as having rotated when it has not moved.
  */
 
-STATUS_TYPE
-FilterMadgwick6DOF (
+eSTATUS_t FilterMadgwick6DOF (
 FilterMadgwickContext* pContext,
 Vec3f const* pAccel,
 Vec3f const* pGyroDegs,
@@ -147,13 +146,12 @@ Vec3f* pOutputAttitude) {
     return eSTATUS_SUCCESS;
 }
 
-// STATUS_TYPE
+// eSTATUS_t
 // FilterMadgwick9DOF (FilterMadgwickContext* pContext, Vec3f accel, Vec3f gyro, Vec3f magno, Vec3f* pOutputAttitude) {
 //     return eSTATUS_SUCCESS;
 // }
 
-STATUS_TYPE
-FilterMadgwickWarmUp (
+eSTATUS_t FilterMadgwickWarmUp (
 uint32_t iterations,
 IMU* pIMU,
 float expectedGyroErrorDegs,
@@ -175,9 +173,9 @@ FilterMadgwickContext* pOutContext) {
     }
 
     for (uint32_t i = 0U; i < iterations; ++i) {
-        Vec3f accel        = { 0.0F };
-        Vec3f gyro         = { 0.0F };
-        STATUS_TYPE status = IMUPollData (pIMU, &accel, &gyro);
+        Vec3f accel      = { 0.0F };
+        Vec3f gyro       = { 0.0F };
+        eSTATUS_t status = IMUPollData (pIMU, &accel, &gyro);
 
         if (status != eSTATUS_SUCCESS) {
             LOG_ERROR ("IMUPollData failed with status: [%d] at iteration [%u]", status, (uint16_t)i);
@@ -210,7 +208,7 @@ FilterMadgwickContext* pOutContext) {
     return FilterMadgwickInit (pOutContext, expectedGyroErrorDegs, &context.est);
 }
 
-STATUS_TYPE
+eSTATUS_t
 FilterMadgwickInit (FilterMadgwickContext* pContext, float gyroMeasureErrorDegs, Vec4f* pInitialQuaternion) {
     // Initialization values: https://courses.cs.washington.edu/courses/cse474/17wi/labs/l4/madgwick_internal_report.pdf
     memset ((void*)pContext, 0, sizeof (FilterMadgwickContext));

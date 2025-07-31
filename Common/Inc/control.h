@@ -106,12 +106,12 @@ STATIC_ASSERT (sizeof (ChangeVelocityCmd) <= sizeof (EmptyCommand), "");
 STATIC_ASSERT (sizeof (ChangePIDCmd) <= sizeof (EmptyCommand), "");
 STATIC_ASSERT (sizeof (FCState) <= MEM_SHARED_FLIGHT_STATE_TOTAL_LEN, "");
 
-STATUS_TYPE ControlInit (void);
-STATUS_TYPE ControlStart (UART_HandleTypeDef* huart);
-STATUS_TYPE ControlProcessRawCmds (void);
+eSTATUS_t ControlInit (void);
+eSTATUS_t ControlStart (UART_HandleTypeDef* huart);
+eSTATUS_t ControlProcessRawCmds (void);
 BOOL_t ControlGetNewCmd (EmptyCommand* pOutCmd);
 FCState ControlGetCopyFCState (void);
 eOP_STATE_t ControlGetOpState (void);
-STATUS_TYPE ControlUpdateFCState (FCState const* pNewState);
+eSTATUS_t ControlUpdateFCState (FCState const* pNewState);
 
 #endif /* CONTROL_H */

@@ -68,14 +68,14 @@ typedef struct {
     Vec3 right;
 } AxisMap;
 
-// STATUS_TYPE UpdateTargetAttitudeThrottle (
+// eSTATUS_t UpdateTargetAttitudeThrottle (
 // Vec3f maxAttitude,
 // RadioPWMChannels radio,
 // Vec3f* pOutputTargetAttitude,
 // float* pOutputThrottle);
-// STATUS_TYPE PIDInit (PIDContext* pContext);
+// eSTATUS_t PIDInit (PIDContext* pContext);
 
-STATUS_TYPE PIDUpdateAttitude (
+eSTATUS_t PIDUpdateAttitude (
 PIDContext* pidContext,
 Vec3f currentAttitude, // degrees
 Vec3f targetAttitude,  // degrees
@@ -84,25 +84,25 @@ float dt,
 Vec3f* pOutputPIDAttitude // degrees
 );
 
-STATUS_TYPE ServoInit (PWMConfig config, Servo* pOutServo);
-STATUS_TYPE ServoStart (Servo* pServo);
-STATUS_TYPE ServoWrite (Servo* pServo, float targetAngle);
+eSTATUS_t ServoInit (PWMConfig config, Servo* pOutServo);
+eSTATUS_t ServoStart (Servo* pServo);
+eSTATUS_t ServoWrite (Servo* pServo, float targetAngle);
 
-STATUS_TYPE MotorInit (MotorConfig config, Motor* pOutMotor);
-STATUS_TYPE MotorStart (Motor* pMotor);
-STATUS_TYPE MotorWrite (Motor* pMotor, float motorValue);
+eSTATUS_t MotorInit (MotorConfig config, Motor* pOutMotor);
+eSTATUS_t MotorStart (Motor* pMotor);
+eSTATUS_t MotorWrite (Motor* pMotor, float motorValue);
 
-STATUS_TYPE ActuatorsInit (PWMConfig left_ServoPWM, MotorConfig left_Motor);
-STATUS_TYPE ActuatorsStart (void);
-STATUS_TYPE ActuatorsStop (void);
-STATUS_TYPE ActuatorsWrite (Vec3f pidAttitude, float targetThrottle);
+eSTATUS_t ActuatorsInit (PWMConfig left_ServoPWM, MotorConfig left_Motor);
+eSTATUS_t ActuatorsStart (void);
+eSTATUS_t ActuatorsStop (void);
+eSTATUS_t ActuatorsWrite (Vec3f pidAttitude, float targetThrottle);
 Servo* ActuatorsGetLeftServo (void);
 
 
 #ifdef UNIT_TEST
 float ServoAngle2PWM (Servo* pServo, float targetAngle);
-STATUS_TYPE ActuatorsMixPair (Servo* pServo, Motor* pMotor, Vec3f pidAttitude, float tthrottle);
-STATUS_TYPE ActuatorsArm (void);
+eSTATUS_t ActuatorsMixPair (Servo* pServo, Motor* pMotor, Vec3f pidAttitude, float tthrottle);
+eSTATUS_t ActuatorsArm (void);
 #endif // UNIT_TEST
 
 

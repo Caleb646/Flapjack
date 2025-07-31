@@ -69,7 +69,7 @@ float gTargetThrottle                        = 0.25F; // 25% throttle
 
 void HAL_GPIO_EXTI_Callback (uint16_t gpioPin) {
     if (gpioPin == IMU_INT_Pin) {
-        STATUS_TYPE status = IMU2CPUInterruptHandler (&gIMU);
+        eSTATUS_t status = IMU2CPUInterruptHandler (&gIMU);
         if (status == eSTATUS_SUCCESS) {
             if (gpTaskMotionControlUpdate != NULL) {
                 xTaskNotifyFromISR (gpTaskMotionControlUpdate, 0, eSetBits, NULL);
@@ -209,10 +209,10 @@ void TaskMotionControlUpdate (void* pvParameters) {
             }
         }
 
-        STATUS_TYPE status = eSTATUS_SUCCESS;
-        Vec3f accel        = { 0.0F };
-        Vec3f gyro         = { 0.0F };
-        status             = IMUConvertRaw (
+        eSTATUS_t status = eSTATUS_SUCCESS;
+        Vec3f accel      = { 0.0F };
+        Vec3f gyro       = { 0.0F };
+        status           = IMUConvertRaw (
         gIMU.aconf.range, gIMU.rawAccel, gIMU.gconf.range, gIMU.rawGyro, &accel, &gyro);
 
         if (status != eSTATUS_SUCCESS) {
@@ -322,7 +322,7 @@ int main (void) {
         LOG_ERROR ("Failed to init DMA system");
     }
 
-    STATUS_TYPE status = eSTATUS_SUCCESS;
+    eSTATUS_t status = eSTATUS_SUCCESS;
     /*
      * Init IMU
      */

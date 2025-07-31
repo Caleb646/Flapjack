@@ -109,7 +109,7 @@ static int32_t PWMTimActiveChannel2Idx (HAL_TIM_ActiveChannel channel) {
     return -1;
 }
 
-static STATUS_TYPE PWMEnableTimClock (PWMHandle* pHandle) {
+static eSTATUS_t PWMEnableTimClock (PWMHandle* pHandle) {
 
     if (pHandle == NULL || pHandle->timer.Instance == NULL) {
         LOG_ERROR ("Invalid PWM handle or timer instance");
@@ -132,7 +132,7 @@ static STATUS_TYPE PWMEnableTimClock (PWMHandle* pHandle) {
     return eSTATUS_SUCCESS;
 }
 
-// STATUS_TYPE PWMInitTimBaseConfig (PWMHandle* pHandle) {
+// eSTATUS_t PWMInitTimBaseConfig (PWMHandle* pHandle) {
 
 //     if (pHandle == NULL || pHandle->timer.Instance == NULL) {
 //         return eSTATUS_FAILURE;
@@ -207,7 +207,7 @@ static STATUS_TYPE PWMEnableTimClock (PWMHandle* pHandle) {
 //     return eSTATUS_SUCCESS;
 // }
 
-// STATUS_TYPE PWMInitChannel (PWMHandle* pHandle) {
+// eSTATUS_t PWMInitChannel (PWMHandle* pHandle) {
 
 //     if (PWM_CHECK_OK (pHandle) == FALSE) {
 //         return eSTATUS_FAILURE;
@@ -331,7 +331,7 @@ static STATUS_TYPE PWMEnableTimClock (PWMHandle* pHandle) {
 //     return eSTATUS_SUCCESS;
 // }
 
-static STATUS_TYPE PWMInitGPIO (PWMHandle* pHandle, uint32_t freq) {
+static eSTATUS_t PWMInitGPIO (PWMHandle* pHandle, uint32_t freq) {
     if (PWM_CHECK_OK (pHandle) == FALSE) {
         LOG_ERROR ("Received invalid PWM handle or timer registers pointer");
         return eSTATUS_FAILURE;
@@ -386,7 +386,7 @@ static STATUS_TYPE PWMInitGPIO (PWMHandle* pHandle, uint32_t freq) {
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE PWMInit (PWMConfig config, PWMHandle* pOutHandle) {
+eSTATUS_t PWMInit (PWMConfig config, PWMHandle* pOutHandle) {
 
     if (pOutHandle == NULL) {
         LOG_ERROR ("PWM output handle pointer is NULL");
@@ -418,8 +418,8 @@ STATUS_TYPE PWMInit (PWMConfig config, PWMHandle* pOutHandle) {
     pOutHandle->timer.Init.RepetitionCounter = 0;
     pOutHandle->timer.Init.AutoReloadPreload = autoReload;
 
-    STATUS_TYPE status = eSTATUS_SUCCESS;
-    status             = PWMEnableTimClock (pOutHandle);
+    eSTATUS_t status = eSTATUS_SUCCESS;
+    status           = PWMEnableTimClock (pOutHandle);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to enable timer clock");
         return status;
@@ -458,7 +458,7 @@ STATUS_TYPE PWMInit (PWMConfig config, PWMHandle* pOutHandle) {
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE PWMStart (PWMHandle* pHandle) {
+eSTATUS_t PWMStart (PWMHandle* pHandle) {
     if (PWM_CHECK_OK (pHandle) == FALSE) {
         LOG_ERROR ("Received invalid PWM pointer");
         return eSTATUS_FAILURE;
@@ -481,7 +481,7 @@ STATUS_TYPE PWMStart (PWMHandle* pHandle) {
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE PWMStop (PWMHandle* pHandle) {
+eSTATUS_t PWMStop (PWMHandle* pHandle) {
     if (PWM_CHECK_OK (pHandle) == FALSE) {
         LOG_ERROR ("Received invalid PWM pointer");
         return eSTATUS_FAILURE;
@@ -495,7 +495,7 @@ STATUS_TYPE PWMStop (PWMHandle* pHandle) {
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE PWMWrite (PWMHandle* pHandle, uint32_t usUpTime) {
+eSTATUS_t PWMWrite (PWMHandle* pHandle, uint32_t usUpTime) {
 
     if (PWM_CHECK_OK (pHandle) == FALSE) {
         LOG_ERROR ("Received invalid PWM pointer");
@@ -511,8 +511,7 @@ STATUS_TYPE PWMWrite (PWMHandle* pHandle, uint32_t usUpTime) {
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE
-PWM_DMAInit (PWM_DMAConfig timConfig, DMAConfig dmaConfig, PWM_DMAHandle* pOutHandle) {
+eSTATUS_t PWM_DMAInit (PWM_DMAConfig timConfig, DMAConfig dmaConfig, PWM_DMAHandle* pOutHandle) {
 
     if (pOutHandle == NULL) {
         LOG_ERROR ("Received nullptr for PWM_DMAHandle");
@@ -526,7 +525,7 @@ PWM_DMAInit (PWM_DMAConfig timConfig, DMAConfig dmaConfig, PWM_DMAHandle* pOutHa
 
     memset (pOutHandle, 0, sizeof (PWM_DMAHandle));
     PWMConfig pwmConfig = { .base = timConfig.base };
-    STATUS_TYPE status  = PWMInit (pwmConfig, &pOutHandle->pwm);
+    eSTATUS_t status    = PWMInit (pwmConfig, &pOutHandle->pwm);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize PWM for DMA");
         return status;
@@ -560,7 +559,7 @@ PWM_DMAInit (PWM_DMAConfig timConfig, DMAConfig dmaConfig, PWM_DMAHandle* pOutHa
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE PWM_DMAStart (PWM_DMAHandle* pHandle, uint32_t const* pData, uint16_t Length) {
+eSTATUS_t PWM_DMAStart (PWM_DMAHandle* pHandle, uint32_t const* pData, uint16_t Length) {
 
     if (HAL_TIM_PWM_Start_DMA (&pHandle->pwm.timer, pHandle->pwm.channelID, (uint32_t*)pData, Length) != HAL_OK) {
         LOG_ERROR ("Failed to start PWM DMA");
@@ -570,7 +569,7 @@ STATUS_TYPE PWM_DMAStart (PWM_DMAHandle* pHandle, uint32_t const* pData, uint16_
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE
+eSTATUS_t
 PWM_DMARegisterCallback (PWM_DMAHandle* pHandle, uint32_t channelID, PWM_DMACallback callback, ePWM_DMA_CB_TYPE cbType) {
 
     if (pHandle == NULL || callback == NULL) {

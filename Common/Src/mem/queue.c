@@ -2,7 +2,7 @@
 #include <string.h>
 
 
-STATUS_TYPE QueueInit (Queue* pQueue, void* pBuffer, uint16_t capacity, uint16_t elementSize) {
+eSTATUS_t QueueInit (Queue* pQueue, void* pBuffer, uint16_t capacity, uint16_t elementSize) {
     if (pQueue == NULL || pBuffer == NULL || capacity == 0 || elementSize == 0) {
         return eSTATUS_FAILURE;
     }
@@ -50,7 +50,7 @@ uint16_t QueueCapacity (Queue const* pQueue) {
     return pQueue->capacity;
 }
 
-STATUS_TYPE QueueEnqueue (Queue* pQueue, void const* pElement) {
+eSTATUS_t QueueEnqueue (Queue* pQueue, void const* pElement) {
     if (pQueue == NULL || pElement == NULL) {
         return eSTATUS_FAILURE;
     }
@@ -74,7 +74,7 @@ STATUS_TYPE QueueEnqueue (Queue* pQueue, void const* pElement) {
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE QueueDequeue (Queue* pQueue, void* pOutElement) {
+eSTATUS_t QueueDequeue (Queue* pQueue, void* pOutElement) {
     if (pQueue == NULL || pOutElement == NULL) {
         return eSTATUS_FAILURE;
     }
@@ -98,7 +98,7 @@ STATUS_TYPE QueueDequeue (Queue* pQueue, void* pOutElement) {
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE QueuePeek (Queue const* pQueue, void* pOutElement) {
+eSTATUS_t QueuePeek (Queue const* pQueue, void* pOutElement) {
     if (pQueue == NULL || pOutElement == NULL) {
         return eSTATUS_FAILURE;
     }

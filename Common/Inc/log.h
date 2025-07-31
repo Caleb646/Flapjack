@@ -80,7 +80,7 @@
 
 // clang-format on
 
-STATUS_TYPE LoggerInit (void);
+eSTATUS_t LoggerInit (void);
 UART_HandleTypeDef* LoggerGetUARTHandle (void);
 // void LogStackTrace (void);
 

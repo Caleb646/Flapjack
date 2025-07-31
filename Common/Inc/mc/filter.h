@@ -15,20 +15,23 @@ typedef struct {
     float beta;
 } FilterMadgwickContext;
 
-STATUS_TYPE
-FilterMadgwick6DOF (
+eSTATUS_t FilterMadgwick6DOF (
 FilterMadgwickContext* pContext,
 Vec3f const* pAccel,
 Vec3f const* pGyroDegs,
 float dt,
 Vec3f* pOutputAttitude);
-// STATUS_TYPE
+// eSTATUS_t
 // FilterMadgwick9DOF (FilterMadgwickContext* pContext, Vec3f accel, Vec3f gyro, Vec3f magno, float dt, Vec3f* pOutputAttitude);
-// STATUS_TYPE FilterMadgwickInit (FilterMadgwickContext* pContext, float gyroMeasureErrorDegs);
+// eSTATUS_t FilterMadgwickInit (FilterMadgwickContext* pContext, float gyroMeasureErrorDegs);
 
-STATUS_TYPE
-FilterMadgwickWarmUp (uint32_t iterations, IMU* pIMU, float expectedGyroErrorDegs, float beta, FilterMadgwickContext* pOutContext);
-STATUS_TYPE
+eSTATUS_t FilterMadgwickWarmUp (
+uint32_t iterations,
+IMU* pIMU,
+float expectedGyroErrorDegs,
+float beta,
+FilterMadgwickContext* pOutContext);
+eSTATUS_t
 FilterMadgwickInit (FilterMadgwickContext* pContext, float gyroMeasureErrorDegs, Vec4f* pInitialQuaternion);
 
 #endif // MOTION_CONTROL_FILTER_H

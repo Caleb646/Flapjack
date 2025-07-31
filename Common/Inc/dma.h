@@ -52,8 +52,8 @@ typedef void (*DMACallback) (struct __DMA_HandleTypeDef* hdma);
 // Forward declaration of the PWM DMA handle structure
 // typedef struct __PWMDMAHandle PWM_DMAHandle;
 
-STATUS_TYPE DMASystemInit (void);
-STATUS_TYPE DMA_Init (DMAConfig config, DMA_HandleTypeDef** ppOutHandle);
+eSTATUS_t DMASystemInit (void);
+eSTATUS_t DMA_Init (DMAConfig config, DMA_HandleTypeDef** ppOutHandle);
 DMA_HandleTypeDef* DMAGetUnusedStreamHandle (void);
 
 #endif /* DMA_H */

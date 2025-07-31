@@ -27,9 +27,9 @@ typedef struct {
  * @param pBuffer Pointer to the memory buffer for storing elements
  * @param capacity Maximum number of elements the queue can hold
  * @param elementSize Size of each element in bytes
- * @return STATUS_TYPE eSTATUS_SUCCESS on success, eSTATUS_FAILURE on failure
+ * @return eSTATUS_t eSTATUS_SUCCESS on success, eSTATUS_FAILURE on failure
  */
-STATUS_TYPE QueueInit (Queue* pQueue, void* pBuffer, uint16_t capacity, uint16_t elementSize);
+eSTATUS_t QueueInit (Queue* pQueue, void* pBuffer, uint16_t capacity, uint16_t elementSize);
 
 /**
  * @brief Check if the queue is empty
@@ -68,27 +68,27 @@ uint16_t QueueCapacity (Queue const* pQueue);
  *
  * @param queue Pointer to the queue structure
  * @param element Pointer to the element to be added
- * @return STATUS_TYPE eSTATUS_SUCCESS on success, eSTATUS_FAILURE if queue is full
+ * @return eSTATUS_t eSTATUS_SUCCESS on success, eSTATUS_FAILURE if queue is full
  */
-STATUS_TYPE QueueEnqueue (Queue* pQueue, void const* pElement);
+eSTATUS_t QueueEnqueue (Queue* pQueue, void const* pElement);
 
 /**
  * @brief Remove and return an element from the front of the queue
  *
  * @param queue Pointer to the queue structure
  * @param out_element Pointer to store the dequeued element
- * @return STATUS_TYPE eSTATUS_SUCCESS on success, eSTATUS_FAILURE if queue is empty
+ * @return eSTATUS_t eSTATUS_SUCCESS on success, eSTATUS_FAILURE if queue is empty
  */
-STATUS_TYPE QueueDequeue (Queue* pQueue, void* pOutElement);
+eSTATUS_t QueueDequeue (Queue* pQueue, void* pOutElement);
 
 /**
  * @brief Get the front element without removing it from the queue
  *
  * @param queue Pointer to the queue structure
  * @param out_element Pointer to store the front element
- * @return STATUS_TYPE eSTATUS_SUCCESS on success, eSTATUS_FAILURE if queue is empty
+ * @return eSTATUS_t eSTATUS_SUCCESS on success, eSTATUS_FAILURE if queue is empty
  */
-STATUS_TYPE QueuePeek (Queue const* pQueue, void* pOutElement);
+eSTATUS_t QueuePeek (Queue const* pQueue, void* pOutElement);
 
 /**
  * @brief Clear all elements from the queue
@@ -107,7 +107,7 @@ void QueueClear (Queue* pQueue);
 #define QUEUE_DECLARE_STATIC(name, type, capacity)                        \
     static type name##_buffer[capacity];                                  \
     static Queue name = { 0 };                                            \
-    static inline STATUS_TYPE name##_Init (void) {                        \
+    static inline eSTATUS_t name##_Init (void) {                          \
         return QueueInit (&name, name##_buffer, capacity, sizeof (type)); \
     }
 
@@ -117,15 +117,15 @@ void QueueClear (Queue* pQueue);
  * @param name Name prefix for the functions
  * @param type Type of elements to store
  */
-#define QUEUE_DEFINE_TYPE_SAFE(name, type)                                          \
-    static inline STATUS_TYPE name##_Enqueue (Queue* queue, const type* element) {  \
-        return QueueEnqueue (queue, element);                                       \
-    }                                                                               \
-    static inline STATUS_TYPE name##_Dequeue (Queue* queue, type* out_element) {    \
-        return QueueDequeue (queue, out_element);                                   \
-    }                                                                               \
-    static inline STATUS_TYPE name##_Peek (const Queue* queue, type* out_element) { \
-        return QueuePeek (queue, out_element);                                      \
+#define QUEUE_DEFINE_TYPE_SAFE(name, type)                                        \
+    static inline eSTATUS_t name##_Enqueue (Queue* queue, const type* element) {  \
+        return QueueEnqueue (queue, element);                                     \
+    }                                                                             \
+    static inline eSTATUS_t name##_Dequeue (Queue* queue, type* out_element) {    \
+        return QueueDequeue (queue, out_element);                                 \
+    }                                                                             \
+    static inline eSTATUS_t name##_Peek (const Queue* queue, type* out_element) { \
+        return QueuePeek (queue, out_element);                                    \
     }
 
 #endif // MEM_QUEUE_H

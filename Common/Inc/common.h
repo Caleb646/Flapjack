@@ -9,11 +9,8 @@
 
 // Test visibility macros
 #ifdef UNIT_TEST
-// #define STATIC_TESTABLE
-// extern
 #define STATIC_TESTABLE_DECL
 #else
-// #define STATIC_TESTABLE      static
 #define STATIC_TESTABLE_DECL static
 #endif
 
@@ -34,14 +31,14 @@
 typedef uint8_t BOOL_t;
 enum { FALSE = 0, TRUE = 1 };
 
-
-typedef enum {
+typedef int8_t eSTATUS_t;
+enum {
     eSTATUS_SUCCESS = 0,
     eSTATUS_BUSY    = -1,
 
 
-    eSTATUS_FAILURE = -127
-} STATUS_TYPE;
+    eSTATUS_FAILURE = -126
+};
 
 typedef struct {
     int32_t x, y, z;

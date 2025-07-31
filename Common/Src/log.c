@@ -25,10 +25,10 @@ static RingBuff volatile* gpCM4RingBuf = NULL;
 static RingBuff volatile* gpCM7RingBuf = NULL;
 // NOLINTEND
 
-static STATUS_TYPE LoggerSyncUARTTaskHandler (DefaultTask const* pTask);
-static STATUS_TYPE LoggerWriteToUART (RingBuff volatile* pRingBuf, int32_t totalLen);
+static eSTATUS_t LoggerSyncUARTTaskHandler (DefaultTask const* pTask);
+static eSTATUS_t LoggerWriteToUART (RingBuff volatile* pRingBuf, int32_t totalLen);
 
-static STATUS_TYPE LoggerWriteToUART (RingBuff volatile* pRingBuf, int32_t totalLen) {
+static eSTATUS_t LoggerWriteToUART (RingBuff volatile* pRingBuf, int32_t totalLen) {
 
     if (pRingBuf == NULL || UART_LOGGER_HANDLE.Instance == NULL) {
         return eSTATUS_FAILURE;
@@ -47,7 +47,7 @@ static STATUS_TYPE LoggerWriteToUART (RingBuff volatile* pRingBuf, int32_t total
     return eSTATUS_SUCCESS;
 }
 
-static STATUS_TYPE LoggerSyncUARTTaskHandler (DefaultTask const* pTask) {
+static eSTATUS_t LoggerSyncUARTTaskHandler (DefaultTask const* pTask) {
     // Write the other core's ring buffer out to the UART
     if (HAL_GetCurrentCPUID () == PRIMARY_LOGGER_ROLE) {
         SyncTaskUartOut const* pSyncTaskUartOut = (SyncTaskUartOut const*)pTask;
@@ -61,7 +61,7 @@ static STATUS_TYPE LoggerSyncUARTTaskHandler (DefaultTask const* pTask) {
 /*
  * The GPIO setup happens in uart.c
  */
-static STATUS_TYPE LoggerUARTInit (void) {
+static eSTATUS_t LoggerUARTInit (void) {
 
 #ifndef UNIT_TEST
     // puart->Init.BaudRate = 115200;
@@ -119,7 +119,7 @@ PUTCHAR_PROTOTYPE {
     return ch;
 }
 
-STATUS_TYPE LoggerInit (void) {
+eSTATUS_t LoggerInit (void) {
 
     if (HAL_GetCurrentCPUID () == PRIMARY_LOGGER_ROLE) {
         if (LoggerUARTInit () != eSTATUS_SUCCESS) {

@@ -152,7 +152,7 @@ static void dshot_dma_start (DShotHandle* pDShotHandle) {
 }
 
 
-STATUS_TYPE
+eSTATUS_t
 DShotInit (DShotConfig dConfig, PWMConfig timConfig, DMAConfig dmaConfig, DShotHandle* pOutHandle) {
 
     if (pOutHandle == NULL) {
@@ -171,7 +171,7 @@ DShotInit (DShotConfig dConfig, PWMConfig timConfig, DMAConfig dmaConfig, DShotH
     pwm_DmaConfig.dmaRegIDXs[0]  = timDmaRegIdx;
     pwm_DmaConfig.dmaRegIDXCount = 1;
 
-    STATUS_TYPE status = PWM_DMAInit (pwm_DmaConfig, dmaConfig, &pOutHandle->pwmdma);
+    eSTATUS_t status = PWM_DMAInit (pwm_DmaConfig, dmaConfig, &pOutHandle->pwmdma);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize PWM DMA for DShot");
         return eSTATUS_FAILURE;
@@ -242,7 +242,7 @@ DShotInit (DShotConfig dConfig, PWMConfig timConfig, DMAConfig dmaConfig, DShotH
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE DShotStart (DShotHandle* pDShotHandle) {
+eSTATUS_t DShotStart (DShotHandle* pDShotHandle) {
     /* NOTE: Do NOT start PWM timer yet. Let it be started by DShotWrite */
     return eSTATUS_SUCCESS;
 }
@@ -251,7 +251,7 @@ STATUS_TYPE DShotStart (DShotHandle* pDShotHandle) {
  * Because the last sent timer CCR value is always 0, no shutdown is needed.
  * The PWM line will never go high until DShotWrite is called again.
  */
-STATUS_TYPE DShotStop (DShotHandle* pDShotHandle) {
+eSTATUS_t DShotStop (DShotHandle* pDShotHandle) {
     if (pDShotHandle == NULL) {
         LOG_ERROR ("Received NULL pointer for DShot handle");
         return eSTATUS_FAILURE;
@@ -259,7 +259,7 @@ STATUS_TYPE DShotStop (DShotHandle* pDShotHandle) {
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE DShotWrite (DShotHandle* pDShotHandle, uint16_t motorVal) {
+eSTATUS_t DShotWrite (DShotHandle* pDShotHandle, uint16_t motorVal) {
     if (pDShotHandle == NULL) {
         LOG_ERROR ("Received NULL pointer for DShot handle");
         return eSTATUS_FAILURE;

@@ -116,7 +116,7 @@ void test_IMUInit (void) {
     gconf.bw          = eIMU_GYRO_BW_HALF;
     gconf.mode        = eIMU_GYRO_MODE_HIGH_PERF;
 
-    STATUS_TYPE status = IMUInit (&imu, &spi, aconf, gconf);
+    eSTATUS_t status = IMUInit (&imu, &spi, aconf, gconf);
     TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
     TEST_ASSERT_EQUAL_UINT32 (IMU_MAGIC, imu.magic);
     TEST_ASSERT_EQUAL_PTR (&spi, imu.pSPI);
@@ -161,8 +161,8 @@ void test_IMUConf (void) {
     gHAL_SPI_Transmit_CB        = SPITransmitCB;
     gHAL_SPI_TransmitReceive_CB = SPITransmitReceiveCB;
 
-    STATUS_TYPE status = eSTATUS_SUCCESS;
-    IMU imu            = { .nDummyBytes = 1U };
+    eSTATUS_t status = eSTATUS_SUCCESS;
+    IMU imu          = { .nDummyBytes = 1U };
     {
         IMUAccConf aconf  = { 0 };
         aconf.odr         = eIMU_ACC_ODR_100;
@@ -237,7 +237,7 @@ void test_IMUConf (void) {
 }
 
 void test_IMUUpdate (void) {
-    STATUS_TYPE status = eSTATUS_SUCCESS;
+    eSTATUS_t status = eSTATUS_SUCCESS;
     IMU imu;
     SPI_HandleTypeDef spi;
 
@@ -524,7 +524,7 @@ void test_IMUSelfCalibrate (void) {
     gconf.bw          = eIMU_GYRO_BW_HALF;
     gconf.mode        = eIMU_GYRO_MODE_HIGH_PERF;
 
-    STATUS_TYPE status = IMUInit (&imu, &spi, aconf, gconf);
+    eSTATUS_t status = IMUInit (&imu, &spi, aconf, gconf);
     TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
 
     // Test successful self-calibration

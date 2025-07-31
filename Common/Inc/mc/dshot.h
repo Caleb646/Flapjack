@@ -63,11 +63,11 @@ typedef struct {
 
 
 /* Functions */
-STATUS_TYPE
+eSTATUS_t
 DShotInit (DShotConfig dConfig, PWMConfig timConfig, DMAConfig dmaConfig, DShotHandle* pOutHandle);
-STATUS_TYPE DShotStart (DShotHandle* pDShotHandle);
-STATUS_TYPE DShotStop (DShotHandle* pDShotHandle);
-STATUS_TYPE DShotWrite (DShotHandle* pDShotHandle, uint16_t motor_value);
+eSTATUS_t DShotStart (DShotHandle* pDShotHandle);
+eSTATUS_t DShotStop (DShotHandle* pDShotHandle);
+eSTATUS_t DShotWrite (DShotHandle* pDShotHandle, uint16_t motor_value);
 
 
 #endif /* __MOTION_CONTROL_DSHOT_H__ */

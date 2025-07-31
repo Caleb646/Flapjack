@@ -13,7 +13,7 @@
 #define CHECK_SERVO_OK(pServo) \
     ((pServo) != NULL && PWM_CHECK_OK (&((pServo)->pwm)))
 
-// STATUS_TYPE RadioUpdateTargetAttitudeThrottle (
+// eSTATUS_t RadioUpdateTargetAttitudeThrottle (
 // Vec3f maxAttitude,
 // RadioPWMChannels radio,
 // Vec3f* pOutputTargetAttitude,
@@ -32,7 +32,7 @@
 //     return eSTATUS_SUCCESS;
 // }
 
-STATUS_TYPE PIDUpdateAttitude (
+eSTATUS_t PIDUpdateAttitude (
 PIDContext* pidContext,
 Vec3f currentAttitude, // degrees
 Vec3f targetAttitude,  // degrees
@@ -131,7 +131,7 @@ STATIC_TESTABLE_DECL float ServoAngle2PWM (Servo* pServo, float targetAngle) {
     return (float)pDesc->usMiddleDutyCycle;
 }
 
-STATUS_TYPE ServoInit (PWMConfig config, Servo* pOutServo) {
+eSTATUS_t ServoInit (PWMConfig config, Servo* pOutServo) {
     if (pOutServo == NULL) {
         LOG_ERROR ("Received NULL pointer for Servo");
         return eSTATUS_FAILURE;
@@ -160,7 +160,7 @@ STATUS_TYPE ServoInit (PWMConfig config, Servo* pOutServo) {
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE ServoStart (Servo* pServo) {
+eSTATUS_t ServoStart (Servo* pServo) {
     if (CHECK_SERVO_OK (pServo) != TRUE) {
         LOG_ERROR ("Received invalid Servo pointer");
         return eSTATUS_FAILURE;
@@ -175,7 +175,7 @@ STATUS_TYPE ServoStart (Servo* pServo) {
     return ServoWrite (pServo, 0.0F);
 }
 
-STATUS_TYPE ServoStop (Servo* pServo) {
+eSTATUS_t ServoStop (Servo* pServo) {
     if (CHECK_SERVO_OK (pServo) != TRUE) {
         LOG_ERROR ("Received invalid Servo pointer");
         return eSTATUS_FAILURE;
@@ -189,7 +189,7 @@ STATUS_TYPE ServoStop (Servo* pServo) {
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE ServoWrite (Servo* pServo, float targetAngle) {
+eSTATUS_t ServoWrite (Servo* pServo, float targetAngle) {
     if (CHECK_SERVO_OK (pServo) != TRUE) {
         LOG_ERROR ("Received invalid Servo pointer");
         return eSTATUS_FAILURE;
@@ -200,7 +200,7 @@ STATUS_TYPE ServoWrite (Servo* pServo, float targetAngle) {
     return PWMWrite (&pServo->pwm, (uint32_t)ServoAngle2PWM (pServo, targetAngle));
 }
 
-STATUS_TYPE MotorInit (MotorConfig config, Motor* pOutMotor) {
+eSTATUS_t MotorInit (MotorConfig config, Motor* pOutMotor) {
     if (pOutMotor == NULL) {
         LOG_ERROR ("Received NULL pointer for Motor");
         return eSTATUS_FAILURE;
@@ -223,7 +223,7 @@ STATUS_TYPE MotorInit (MotorConfig config, Motor* pOutMotor) {
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE MotorStart (Motor* pMotor) {
+eSTATUS_t MotorStart (Motor* pMotor) {
     if (pMotor == NULL) {
         LOG_ERROR ("Received NULL pointer for Motor");
         return eSTATUS_FAILURE;
@@ -239,7 +239,7 @@ STATUS_TYPE MotorStart (Motor* pMotor) {
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE MotorStop (Motor* pMotor) {
+eSTATUS_t MotorStop (Motor* pMotor) {
     if (pMotor == NULL) {
         LOG_ERROR ("Received NULL pointer for Motor");
         return eSTATUS_FAILURE;
@@ -260,7 +260,7 @@ STATUS_TYPE MotorStop (Motor* pMotor) {
 /*
  * throttle is between 0.0F and 1.0F
  */
-STATUS_TYPE MotorWrite (Motor* pMotor, float throttle) {
+eSTATUS_t MotorWrite (Motor* pMotor, float throttle) {
 
     if (pMotor == NULL) {
         LOG_ERROR ("Received NULL pointer for Motor");
@@ -272,7 +272,7 @@ STATUS_TYPE MotorWrite (Motor* pMotor, float throttle) {
         return eSTATUS_FAILURE;
     }
 
-    STATUS_TYPE status =
+    eSTATUS_t status =
     DShotWrite (&pMotor->dshot, DSHOT_MIN_THROTTLE + (uint16_t)(throttle * (float)DSHOT_RANGE));
     if (status != eSTATUS_SUCCESS && status != eSTATUS_BUSY) {
         LOG_ERROR ("Failed to write to motor");
@@ -296,7 +296,7 @@ static Servo gLeftServo;
 /*
  * \param pidAttitude roll, pitch, and yaw are between -1 and 1
  */
-STATIC_TESTABLE_DECL STATUS_TYPE
+STATIC_TESTABLE_DECL eSTATUS_t
 ActuatorsMixPair (Servo* pServo, Motor* pMotor, Vec3f pidAttitude, float targetThrottle) {
     /*
      *   NWU coordinate system:
@@ -342,9 +342,9 @@ ActuatorsMixPair (Servo* pServo, Motor* pMotor, Vec3f pidAttitude, float targetT
  * \brief After motors are armed, a motor write has to be issued at
  * least every 5ms or the motor ESC will stop the motor.
  */
-STATIC_TESTABLE_DECL STATUS_TYPE ActuatorsArm (void) {
+STATIC_TESTABLE_DECL eSTATUS_t ActuatorsArm (void) {
 
-    // STATUS_TYPE status = eSTATUS_SUCCESS;
+    // eSTATUS_t status = eSTATUS_SUCCESS;
     for (uint32_t i = 0; i < 300; ++i) {
         /* NOTE: A DShot value of all 0s is a special command to
          * the esc to arm/disarm the motor depending on the esc's current state.
@@ -384,9 +384,9 @@ STATIC_TESTABLE_DECL STATUS_TYPE ActuatorsArm (void) {
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE ActuatorsInit (PWMConfig left_ServoPWM, MotorConfig left_Motor) {
+eSTATUS_t ActuatorsInit (PWMConfig left_ServoPWM, MotorConfig left_Motor) {
 
-    STATUS_TYPE status = ServoInit (left_ServoPWM, &gLeftServo);
+    eSTATUS_t status = ServoInit (left_ServoPWM, &gLeftServo);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize left servo");
         return status;
@@ -401,9 +401,9 @@ STATUS_TYPE ActuatorsInit (PWMConfig left_ServoPWM, MotorConfig left_Motor) {
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE ActuatorsStart (void) {
+eSTATUS_t ActuatorsStart (void) {
 
-    STATUS_TYPE status = ServoStart (&gLeftServo);
+    eSTATUS_t status = ServoStart (&gLeftServo);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start left servo");
         return status;
@@ -424,7 +424,7 @@ STATUS_TYPE ActuatorsStart (void) {
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE ActuatorsStop (void) {
+eSTATUS_t ActuatorsStop (void) {
     if (MotorStop (&gLeftMotor) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to stop left motor");
         return eSTATUS_FAILURE;
@@ -438,7 +438,7 @@ STATUS_TYPE ActuatorsStop (void) {
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE ActuatorsWrite (Vec3f pidAttitude, float targetThrottle) {
+eSTATUS_t ActuatorsWrite (Vec3f pidAttitude, float targetThrottle) {
     return ActuatorsMixPair (&gLeftServo, &gLeftMotor, pidAttitude, targetThrottle);
 }
 

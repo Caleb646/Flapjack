@@ -118,7 +118,7 @@ static DMA_HandleTypeDef* DMAGetHandleByStream (DMA_Stream_TypeDef* pStream) {
     return NULL;
 }
 
-STATUS_TYPE DMASystemInit (void) {
+eSTATUS_t DMASystemInit (void) {
     LOG_INFO ("Initializing DMA1 system");
     __HAL_RCC_DMA1_CLK_ENABLE ();
 
@@ -156,7 +156,7 @@ STATUS_TYPE DMASystemInit (void) {
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE DMA_Init (DMAConfig config, DMA_HandleTypeDef** ppOutHandle) {
+eSTATUS_t DMA_Init (DMAConfig config, DMA_HandleTypeDef** ppOutHandle) {
 
     if (ppOutHandle == NULL) {
         LOG_ERROR ("Output handle is NULL");
@@ -214,7 +214,7 @@ STATUS_TYPE DMA_Init (DMAConfig config, DMA_HandleTypeDef** ppOutHandle) {
     return eSTATUS_SUCCESS;
 }
 
-STATUS_TYPE DMASetTimCallback (DMA_HandleTypeDef* hdma, DMACallback cb, eDMA_CB_TYPE cbType) {
+eSTATUS_t DMASetTimCallback (DMA_HandleTypeDef* hdma, DMACallback cb, eDMA_CB_TYPE cbType) {
 
     if (hdma == NULL || cb == NULL) {
         LOG_ERROR ("Invalid DMA handle or callback");
