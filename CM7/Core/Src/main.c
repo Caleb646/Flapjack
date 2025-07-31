@@ -282,7 +282,6 @@ int main (void) {
     while (__HAL_RCC_GET_FLAG (RCC_FLAG_D2CKRDY) == RESET) {
         asm volatile ("NOP");
     }
-    /* USER CODE END Boot_Mode_Sequence_2 */
 
     if (SyncInit () != eSTATUS_SUCCESS) {
         CriticalErrorHandler ();
@@ -325,7 +324,8 @@ int main (void) {
         }
     }
 
-    /* USER CODE BEGIN 2 */
+    PID_INIT (gPIDAngleContext);
+
     /* With an ODR of 100 Hz on the IMU 1000 iterations will take 10 seconds */
     /* With an ODR of 200 Hz on the IMU 1000 iterations will take 5 seconds */
     status = FilterMadgwickWarmUp (500U, &gIMU, 1.5F, 3.0F, &gFilterMadgwickContext);

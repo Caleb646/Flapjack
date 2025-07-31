@@ -4,7 +4,6 @@
 #include "mc/pwm.h"
 #include <string.h>
 
-
 #define CHECK_SERVO_DESCRIPTOR_OK(pServoDesc)                      \
     (                                                              \
     (pServoDesc) != NULL && (pServoDesc)->usLeftDutyCycle != 0U && \
@@ -41,12 +40,14 @@ float dt,
 Vec3f* pOutputPIDAttitude // degrees
 ) {
 
-    float P            = 0.0F;
-    float I            = 0.0F;
-    float D            = 0.0F;
-    P                  = pidContext->rollP;
-    I                  = pidContext->rollI;
-    D                  = pidContext->rollD;
+    if (pidContext == NULL || pOutputPIDAttitude == NULL) {
+        LOG_ERROR ("PIDContext or output pointer is NULL");
+        return eSTATUS_FAILURE;
+    }
+
+    float P            = pidContext->rollP;
+    float I            = pidContext->rollI;
+    float D            = pidContext->rollD;
     float rollError    = targetAttitude.roll - currentAttitude.roll;
     float rollIntegral = clipf32 (
     pidContext->prevIntegral.roll + rollError * dt,

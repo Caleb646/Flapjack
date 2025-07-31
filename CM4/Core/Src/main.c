@@ -1,4 +1,3 @@
-/* USER CODE BEGIN Header */
 /**
  ******************************************************************************
  * @file           : main.c
@@ -15,8 +14,6 @@
  *
  ******************************************************************************
  */
-/* USER CODE END Header */
-/* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "cmsis_os.h"
 
@@ -73,8 +70,6 @@ void TaskMainLoop (void* pvParameters) {
         }
     }
 }
-
-/* USER CODE END 0 */
 
 int main (void) {
 
@@ -176,16 +171,7 @@ int main (void) {
  */
 static void MX_RTC_Init (void) {
 
-    /* USER CODE BEGIN RTC_Init 0 */
-
-    /* USER CODE END RTC_Init 0 */
-
     RTC_TamperTypeDef sTamper = { 0 };
-
-    /* USER CODE BEGIN RTC_Init 1 */
-
-    /* USER CODE END RTC_Init 1 */
-
     /** Initialize RTC Only
      */
     hrtc.Instance            = RTC;
@@ -214,9 +200,6 @@ static void MX_RTC_Init (void) {
     if (HAL_RTCEx_SetTamper (&hrtc, &sTamper) != HAL_OK) {
         Error_Handler ();
     }
-    /* USER CODE BEGIN RTC_Init 2 */
-
-    /* USER CODE END RTC_Init 2 */
 }
 
 /**
@@ -226,13 +209,6 @@ static void MX_RTC_Init (void) {
  */
 static void MX_SAI1_Init (void) {
 
-    /* USER CODE BEGIN SAI1_Init 0 */
-
-    /* USER CODE END SAI1_Init 0 */
-
-    /* USER CODE BEGIN SAI1_Init 1 */
-
-    /* USER CODE END SAI1_Init 1 */
     hsai_BlockA1.Instance                 = SAI1_Block_A;
     hsai_BlockA1.Init.Protocol            = SAI_FREE_PROTOCOL;
     hsai_BlockA1.Init.AudioMode           = SAI_MODEMASTER_TX;
@@ -281,9 +257,6 @@ static void MX_SAI1_Init (void) {
     if (HAL_SAI_Init (&hsai_BlockB1) != HAL_OK) {
         Error_Handler ();
     }
-    /* USER CODE BEGIN SAI1_Init 2 */
-
-    /* USER CODE END SAI1_Init 2 */
 }
 
 /**
@@ -292,14 +265,6 @@ static void MX_SAI1_Init (void) {
  * @retval None
  */
 static void MX_SPDIFRX1_Init (void) {
-
-    /* USER CODE BEGIN SPDIFRX1_Init 0 */
-
-    /* USER CODE END SPDIFRX1_Init 0 */
-
-    /* USER CODE BEGIN SPDIFRX1_Init 1 */
-
-    /* USER CODE END SPDIFRX1_Init 1 */
     hspdif1.Instance                  = SPDIFRX;
     hspdif1.Init.InputSelection       = SPDIFRX_INPUT_IN0;
     hspdif1.Init.Retries              = SPDIFRX_MAXRETRIES_NONE;
@@ -316,9 +281,6 @@ static void MX_SPDIFRX1_Init (void) {
     if (HAL_SPDIFRX_Init (&hspdif1) != HAL_OK) {
         Error_Handler ();
     }
-    /* USER CODE BEGIN SPDIFRX1_Init 2 */
-
-    /* USER CODE END SPDIFRX1_Init 2 */
 }
 
 /**
@@ -327,15 +289,6 @@ static void MX_SPDIFRX1_Init (void) {
  * @retval None
  */
 static void MX_SPI5_Init (void) {
-
-    /* USER CODE BEGIN SPI5_Init 0 */
-
-    /* USER CODE END SPI5_Init 0 */
-
-    /* USER CODE BEGIN SPI5_Init 1 */
-
-    /* USER CODE END SPI5_Init 1 */
-    /* SPI5 parameter configuration*/
     hspi5.Instance               = SPI5;
     hspi5.Init.Mode              = SPI_MODE_MASTER;
     hspi5.Init.Direction         = SPI_DIRECTION_2LINES;
@@ -361,9 +314,6 @@ static void MX_SPI5_Init (void) {
     if (HAL_SPI_Init (&hspi5) != HAL_OK) {
         Error_Handler ();
     }
-    /* USER CODE BEGIN SPI5_Init 2 */
-
-    /* USER CODE END SPI5_Init 2 */
 }
 
 /**
@@ -372,14 +322,6 @@ static void MX_SPI5_Init (void) {
  * @retval None
  */
 static void MX_USB_OTG_HS_PCD_Init (void) {
-
-    /* USER CODE BEGIN USB_OTG_HS_Init 0 */
-
-    /* USER CODE END USB_OTG_HS_Init 0 */
-
-    /* USER CODE BEGIN USB_OTG_HS_Init 1 */
-
-    /* USER CODE END USB_OTG_HS_Init 1 */
     hpcd_USB_OTG_HS.Instance                 = USB_OTG_HS;
     hpcd_USB_OTG_HS.Init.dev_endpoints       = 9;
     hpcd_USB_OTG_HS.Init.speed               = PCD_SPEED_HIGH;
@@ -394,9 +336,6 @@ static void MX_USB_OTG_HS_PCD_Init (void) {
     if (HAL_PCD_Init (&hpcd_USB_OTG_HS) != HAL_OK) {
         Error_Handler ();
     }
-    /* USER CODE BEGIN USB_OTG_HS_Init 2 */
-
-    /* USER CODE END USB_OTG_HS_Init 2 */
 }
 
 /**
@@ -406,10 +345,6 @@ static void MX_USB_OTG_HS_PCD_Init (void) {
  */
 static void MX_GPIO_Init (void) {
     GPIO_InitTypeDef GPIO_InitStruct = { 0 };
-    /* USER CODE BEGIN MX_GPIO_Init_1 */
-
-    /* USER CODE END MX_GPIO_Init_1 */
-
     /* GPIO Ports Clock Enable */
     __HAL_RCC_GPIOI_CLK_ENABLE ();
     __HAL_RCC_GPIOB_CLK_ENABLE ();
@@ -623,15 +558,9 @@ static void MX_GPIO_Init (void) {
  * @retval None
  */
 void HAL_TIM_PeriodElapsedCallback (TIM_HandleTypeDef* htim) {
-    /* USER CODE BEGIN Callback 0 */
-
-    /* USER CODE END Callback 0 */
     if (htim->Instance == TIM3) {
         HAL_IncTick ();
     }
-    /* USER CODE BEGIN Callback 1 */
-
-    /* USER CODE END Callback 1 */
 }
 
 /**
@@ -639,7 +568,6 @@ void HAL_TIM_PeriodElapsedCallback (TIM_HandleTypeDef* htim) {
  * @retval None
  */
 void Error_Handler (void) {
-    /* USER CODE BEGIN Error_Handler_Debug */
     /* User can add his own implementation to report the HAL error return state */
     __disable_irq ();
     while (1) {

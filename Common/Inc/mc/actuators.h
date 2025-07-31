@@ -12,6 +12,24 @@
     { .pwm = PWM_CREATE_CONF (PTR_TIMER, CHANNEL_ID, 0, FALSE),              \
       .dma = DMA_CREATE_PWM_CONF (DMA_STREAM, eDMA_DIRECTION_MEMORY_TO_PERIPH, eDMA_PRIORITY_HIGH, DMA_REQUEST_ID) }
 
+#define PID_INIT(PID_CONTEXT)              \
+    PID_CONTEXT.rollP          = 0.2F;     \
+    PID_CONTEXT.rollI          = 0.3F;     \
+    PID_CONTEXT.rollD          = 0.05F;    \
+    PID_CONTEXT.pitchP         = 0.2F;     \
+    PID_CONTEXT.pitchI         = 0.3F;     \
+    PID_CONTEXT.pitchD         = 0.05F;    \
+    PID_CONTEXT.yawP           = 0.3F;     \
+    PID_CONTEXT.yawI           = 0.05F;    \
+    PID_CONTEXT.yawD           = 0.00015F; \
+    PID_CONTEXT.integralLimit  = 25.0F;    \
+    PID_CONTEXT.prevError.x    = 0.0F;     \
+    PID_CONTEXT.prevError.y    = 0.0F;     \
+    PID_CONTEXT.prevError.z    = 0.0F;     \
+    PID_CONTEXT.prevIntegral.x = 0.0F;     \
+    PID_CONTEXT.prevIntegral.y = 0.0F;     \
+    PID_CONTEXT.prevIntegral.z = 0.0F;
+
 typedef struct {
     uint32_t channel1;
     uint32_t channel2;
