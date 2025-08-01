@@ -53,7 +53,8 @@ typedef struct {
     uint32_t usMiddleDutyCycle;
     uint32_t usRightDutyCycle;
     float maxAngle;
-    // Between -max angle and +max angle
+    float usableMaxAngle;
+    // Between -usableMaxAngle angle and +usableMaxAngle angle
     float curAngle;
     float pitchMix;
     float yawMix;
@@ -102,26 +103,35 @@ float dt,
 Vec3f* pOutputPIDAttitude // degrees
 );
 
+#ifdef UNIT_TEST
+
+float ServoAngle2PWM (Servo* pServo, float targetAngle);
+
+#endif // UNIT_TEST
+
 eSTATUS_t ServoInit (PWMConfig config, Servo* pOutServo);
 eSTATUS_t ServoStart (Servo* pServo);
 eSTATUS_t ServoWrite (Servo* pServo, float targetAngle);
 
+#ifdef UNIT_TEST
+
+#endif // UNIT_TEST
+
 eSTATUS_t MotorInit (MotorConfig config, Motor* pOutMotor);
 eSTATUS_t MotorStart (Motor* pMotor);
 eSTATUS_t MotorWrite (Motor* pMotor, float motorValue);
+
+#ifdef UNIT_TEST
+
+eSTATUS_t ActuatorsMixPair (Servo* pServo, Motor* pMotor, Vec3f pidAttitude, float tthrottle);
+eSTATUS_t ActuatorsArm (void);
+
+#endif // UNIT_TEST
 
 eSTATUS_t ActuatorsInit (PWMConfig left_ServoPWM, MotorConfig left_Motor);
 eSTATUS_t ActuatorsStart (void);
 eSTATUS_t ActuatorsStop (void);
 eSTATUS_t ActuatorsWrite (Vec3f pidAttitude, float targetThrottle);
 Servo* ActuatorsGetLeftServo (void);
-
-
-#ifdef UNIT_TEST
-float ServoAngle2PWM (Servo* pServo, float targetAngle);
-eSTATUS_t ActuatorsMixPair (Servo* pServo, Motor* pMotor, Vec3f pidAttitude, float tthrottle);
-eSTATUS_t ActuatorsArm (void);
-#endif // UNIT_TEST
-
 
 #endif // MOTION_CONTROL_ACTUATORS_H

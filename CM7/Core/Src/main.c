@@ -341,10 +341,6 @@ int main (void) {
         LOG_ERROR ("Failed to init Actuators");
     }
 
-    // NOTE: Temporary wait. Wait 10 seconds to allow esc to be connected
-    // to battery. LOG_INFO ("Waiting for ESC to be connected to battery");
-    // HAL_Delay (10000);
-
     /*
      *
      * Setup FreeRTOS Tasks

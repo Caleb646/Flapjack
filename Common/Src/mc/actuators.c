@@ -108,12 +108,25 @@ Vec3f* pOutputPIDAttitude // degrees
     return eSTATUS_SUCCESS;
 }
 
+#ifndef UNIT_TEST
+
+static float ServoAngle2PWM (Servo* pServo, float targetAngle);
+
+#endif // UNIT_TEST
+
 STATIC_TESTABLE_DECL float ServoAngle2PWM (Servo* pServo, float targetAngle) {
     if (CHECK_SERVO_OK (pServo) != TRUE) {
         LOG_ERROR ("ServoDescriptor is not valid");
         return 0.0F;
     }
-
+    /*
+     * NOTE: The servo on its own can move between -maxAngle and +maxAngle. But when placed
+     * in the drone, it may only be able to move between -usableMaxAngle and +usableMaxAngle.
+     *
+     * Clip the target angle to the usable range first, then map it to the PWM duty cycle using the max angle.
+     */
+    targetAngle =
+    clipf32 (targetAngle, -pServo->desc.usableMaxAngle, pServo->desc.usableMaxAngle);
     ServoDescriptor* pDesc = &pServo->desc;
     // Handle asymmetric servo ranges: map negative angles to
     // [usLeftDutyCycle, usMiddleDutyCycle], positive to [usMiddleDutyCycle, usRightDutyCycle]
@@ -152,6 +165,7 @@ eSTATUS_t ServoInit (PWMConfig config, Servo* pOutServo) {
     servoDescriptor.usMiddleDutyCycle = 1600;
     servoDescriptor.usRightDutyCycle  = 2650;
     servoDescriptor.maxAngle          = 90;
+    servoDescriptor.usableMaxAngle    = 10;
     servoDescriptor.curAngle          = 0;
     servoDescriptor.rollMix           = -0.25F;
     servoDescriptor.yawMix            = 0.5F;
@@ -195,11 +209,13 @@ eSTATUS_t ServoWrite (Servo* pServo, float targetAngle) {
         LOG_ERROR ("Received invalid Servo pointer");
         return eSTATUS_FAILURE;
     }
-
-    targetAngle =
-    clipf32 (targetAngle, -pServo->desc.maxAngle, pServo->desc.maxAngle);
     return PWMWrite (&pServo->pwm, (uint32_t)ServoAngle2PWM (pServo, targetAngle));
 }
+
+
+#ifndef UNIT_TEST
+
+#endif // UNIT_TEST
 
 eSTATUS_t MotorInit (MotorConfig config, Motor* pOutMotor) {
     if (pOutMotor == NULL) {
@@ -293,6 +309,14 @@ static Servo gLeftServo;
 
 // static Motor rightMotor;
 // static Servo rightServo;
+
+#ifndef UNIT_TEST
+
+static eSTATUS_t
+ActuatorsMixPair (Servo* pServo, Motor* pMotor, Vec3f pidAttitude, float targetThrottle);
+static eSTATUS_t ActuatorsArm (void);
+
+#endif // UNIT_TEST
 
 /*
  * \param pidAttitude roll, pitch, and yaw are between -1 and 1
