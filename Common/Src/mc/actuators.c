@@ -1,8 +1,10 @@
 #include "mc/actuators.h"
+#include "conf.h"
 #include "log.h"
 #include "mc/dshot.h"
 #include "mc/pwm.h"
 #include <string.h>
+
 
 #define CHECK_SERVO_DESCRIPTOR_OK(pServoDesc)                      \
     (                                                              \
@@ -157,21 +159,19 @@ eSTATUS_t ServoInit (PWMConfig config, Servo* pOutServo) {
         return eSTATUS_FAILURE;
     }
 
-    ServoDescriptor servoDescriptor = { 0 };
     // servoDescriptor.usLeftDutyCycle   = 1000;
     // servoDescriptor.usMiddleDutyCycle = 1500;
     // servoDescriptor.usRightDutyCycle  = 2000;
-    servoDescriptor.usLeftDutyCycle   = 550;
-    servoDescriptor.usMiddleDutyCycle = 1600;
-    servoDescriptor.usRightDutyCycle  = 2650;
-    servoDescriptor.maxAngle          = 90.0F;
-    servoDescriptor.usableMaxAngle    = 10.0F;
-    servoDescriptor.curTargetAngle    = 0.0F;
-    servoDescriptor.rollMix           = -0.25F;
-    servoDescriptor.yawMix            = 0.5F;
-    servoDescriptor.pitchMix          = 0.5F;
+    pOutServo->desc.usLeftDutyCycle   = 550;
+    pOutServo->desc.usMiddleDutyCycle = 1600;
+    pOutServo->desc.usRightDutyCycle  = 2650;
+    pOutServo->desc.maxAngle          = 90.0F;
+    pOutServo->desc.usableMaxAngle    = 20.0F;
+    pOutServo->desc.curTargetAngle    = 0.0F;
+    pOutServo->desc.rollMix           = -0.25F;
+    pOutServo->desc.yawMix            = 0.5F;
+    pOutServo->desc.pitchMix          = 1.0F; // 0.5F;
 
-    pOutServo->desc = servoDescriptor;
     return eSTATUS_SUCCESS;
 }
 
@@ -218,6 +218,9 @@ eSTATUS_t ServoWrite (Servo* pServo, float targetAngle) {
 #endif // UNIT_TEST
 
 eSTATUS_t MotorInit (MotorConfig config, Motor* pOutMotor) {
+
+#ifndef USE_SERVOS_ONLY
+
     if (pOutMotor == NULL) {
         LOG_ERROR ("Received NULL pointer for Motor");
         return eSTATUS_FAILURE;
@@ -237,10 +240,16 @@ eSTATUS_t MotorInit (MotorConfig config, Motor* pOutMotor) {
     // motorDescriptor.usMaxDutyCycle  = 2000;
 
     pOutMotor->desc = motorDescriptor;
+
+#endif
+
     return eSTATUS_SUCCESS;
 }
 
 eSTATUS_t MotorStart (Motor* pMotor) {
+
+#ifndef USE_SERVOS_ONLY
+
     if (pMotor == NULL) {
         LOG_ERROR ("Received NULL pointer for Motor");
         return eSTATUS_FAILURE;
@@ -251,12 +260,17 @@ eSTATUS_t MotorStart (Motor* pMotor) {
         return eSTATUS_FAILURE;
     }
 
+#endif
+
     // Set initial throttle to minimum
     // return DShotWrite (&pMotor->dshot, DSHOT_MIN_THROTTLE);
     return eSTATUS_SUCCESS;
 }
 
 eSTATUS_t MotorStop (Motor* pMotor) {
+
+#ifndef USE_SERVOS_ONLY
+
     if (pMotor == NULL) {
         LOG_ERROR ("Received NULL pointer for Motor");
         return eSTATUS_FAILURE;
@@ -270,6 +284,7 @@ eSTATUS_t MotorStop (Motor* pMotor) {
         LOG_ERROR ("Failed to stop dshot");
         return eSTATUS_FAILURE;
     }
+#endif
 
     return eSTATUS_SUCCESS;
 }
@@ -278,6 +293,8 @@ eSTATUS_t MotorStop (Motor* pMotor) {
  * throttle is between 0.0F and 1.0F
  */
 eSTATUS_t MotorWrite (Motor* pMotor, float throttle) {
+
+#ifndef USE_SERVOS_ONLY
 
     if (pMotor == NULL) {
         LOG_ERROR ("Received NULL pointer for Motor");
@@ -295,6 +312,8 @@ eSTATUS_t MotorWrite (Motor* pMotor, float throttle) {
         LOG_ERROR ("Failed to write to motor");
         return status;
     }
+
+#endif
     /*
      * NOTE: DShotWrite returns eSTATUS_BUSY when a write is in progress.
      * Don't consider this a failure.
@@ -358,8 +377,10 @@ ActuatorsMixPair (Servo* pServo, Motor* pMotor, Vec3f pidAttitude, float targetT
     target = clipf32 (target, -1.0F, 1.0F) * pServoDesc->maxAngle;
     pServoDesc->curTargetAngle = target;
 
+#ifndef USE_SERVOS_ONLY
     /* Motor throttle should be between 0 and 1 */
     MotorWrite (pMotor, targetThrottle);
+#endif
     ServoWrite (pServo, target);
     return eSTATUS_SUCCESS;
 }
@@ -369,6 +390,8 @@ ActuatorsMixPair (Servo* pServo, Motor* pMotor, Vec3f pidAttitude, float targetT
  * least every 5ms or the motor ESC will stop the motor.
  */
 STATIC_TESTABLE_DECL eSTATUS_t ActuatorsArm (void) {
+
+#ifndef USE_SERVOS_ONLY
 
     // eSTATUS_t status = eSTATUS_SUCCESS;
     uint16_t msDelay    = 2;
@@ -382,19 +405,15 @@ STATIC_TESTABLE_DECL eSTATUS_t ActuatorsArm (void) {
             LOG_ERROR ("Failed to arm left motor");
             return eSTATUS_FAILURE;
         }
-        // if (MotorWrite (&gLeftMotor, 0.0F) != eSTATUS_SUCCESS) {
-        //     LOG_ERROR ("Failed to arm left motor");
-        //     return eSTATUS_FAILURE;
-        // }
         // NOTE: assumes DShot150 is used.
         vTaskDelay (pdMS_TO_TICKS (msDelay));
     }
 
-    // Slowly increase the throttle to 25%
+    // Slowly increase the throttle to 15%
     msDelay              = 4;
     msMaxTime            = 3000;
     float i              = 0.05F; // start at 5% throttle
-    float targetThrottle = 0.25F;
+    float targetThrottle = 0.15F;
     float increment      = targetThrottle / (float)(msMaxTime / msDelay);
     while (i < targetThrottle) {
         if (MotorWrite (&gLeftMotor, i) != eSTATUS_SUCCESS) {
@@ -405,14 +424,7 @@ STATIC_TESTABLE_DECL eSTATUS_t ActuatorsArm (void) {
         i += increment;
     }
 
-    // while (1) {
-    //     if (MotorWrite (&gLeftMotor, 0.5F) != eSTATUS_SUCCESS) {
-    //         LOG_ERROR ("Failed to arm left motor");
-    //         return eSTATUS_FAILURE;
-    //     }
-    //     // DelayMicroseconds (5);
-    //     vTaskDelay (pdMS_TO_TICKS (5));
-    // }
+#endif
 
     return eSTATUS_SUCCESS;
 }
@@ -425,12 +437,15 @@ eSTATUS_t ActuatorsInit (PWMConfig left_ServoPWM, MotorConfig left_Motor) {
         return status;
     }
 
+#ifndef USE_SERVOS_ONLY
+
     status = MotorInit (left_Motor, &gLeftMotor);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize left motor");
         return status;
     }
 
+#endif
     return eSTATUS_SUCCESS;
 }
 
@@ -441,6 +456,8 @@ eSTATUS_t ActuatorsStart (void) {
         LOG_ERROR ("Failed to start left servo");
         return status;
     }
+
+#ifndef USE_SERVOS_ONLY
 
     status = MotorStart (&gLeftMotor);
     if (status != eSTATUS_SUCCESS) {
@@ -454,14 +471,19 @@ eSTATUS_t ActuatorsStart (void) {
         return status;
     }
 
+#endif
+
     return eSTATUS_SUCCESS;
 }
 
 eSTATUS_t ActuatorsStop (void) {
+
+#ifndef USE_SERVOS_ONLY
     if (MotorStop (&gLeftMotor) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to stop left motor");
         return eSTATUS_FAILURE;
     }
+#endif
 
     if (ServoStop (&gLeftServo) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to stop left servo");

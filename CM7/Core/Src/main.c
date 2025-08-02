@@ -31,6 +31,7 @@
 #include "timers.h"
 
 #include "common.h"
+#include "conf.h"
 #include "control.h"
 #include "dma.h"
 #include "log.h"
@@ -39,6 +40,7 @@
 #include "periphs/gpio.h"
 #include "sensors/imu/imu.h"
 #include "sync.h"
+
 
 #ifndef HSEM_ID_0
 #define HSEM_ID_0 (0U) /* HW semaphore 0*/
@@ -342,8 +344,9 @@ int main (void) {
     }
 
     MotorConfig left_Motor =
-    MOTOR_CREATE_CONF (TIM8, TIM_CHANNEL_1, DMA1_Stream0, DMA_REQUEST_TIM8_CH1);
-    PWMConfig left_Servo = PWM_CREATE_CONF (TIM13, TIM_CHANNEL_1, 50, TRUE);
+    MOTOR_CREATE_CONF (LEFT_MOTOR_PWM_TIMER, LEFT_MOTOR_PWM_CHANNEL, LEFT_MOTOR_DMA_STREAM, LEFT_MOTOR_DMA_REQUEST);
+    PWMConfig left_Servo =
+    PWM_CREATE_CONF (LEFT_SERVO_PWM_TIMER, LEFT_SERVO_PWM_CHANNEL, LEFT_SERVO_PWM_FREQUENCY, TRUE);
     status = ActuatorsInit (left_Servo, left_Motor);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to init Actuators");

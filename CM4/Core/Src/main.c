@@ -114,6 +114,14 @@ int main (void) {
         LOG_ERROR ("Failed to init control module");
         CriticalErrorHandler ();
     }
+    /*
+     * NOTE: Wait for Control to be initialized before starting UART interrupts.
+     * This is because Control module will use UART to recv commands.
+     */
+    if (UARTSystemEnableInterrupts () != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to enable UART interrupts");
+        CriticalErrorHandler ();
+    }
     HAL_Delay (1000);
 
     uint16_t taskPriority = 1;

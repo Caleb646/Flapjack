@@ -6,5 +6,6 @@
 extern UART_HandleTypeDef egHandleUSART_1;
 
 eSTATUS_t UARTSystemInit (void);
+eSTATUS_t UARTSystemEnableInterrupts (void);
 
 #endif // PERIPHS_UART_H
