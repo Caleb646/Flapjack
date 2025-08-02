@@ -55,7 +55,7 @@ typedef struct {
     float maxAngle;
     float usableMaxAngle;
     // Between -usableMaxAngle angle and +usableMaxAngle angle
-    float curAngle;
+    float curTargetAngle;
     float pitchMix;
     float yawMix;
     float rollMix;
@@ -72,8 +72,7 @@ typedef struct {
 } MotorConfig;
 
 typedef struct {
-    uint32_t unused;
-    // uint32_t usMaxDutyCycle;
+    float curTargetThrottle;
 } MotorDescriptor;
 
 typedef struct {
@@ -133,5 +132,6 @@ eSTATUS_t ActuatorsStart (void);
 eSTATUS_t ActuatorsStop (void);
 eSTATUS_t ActuatorsWrite (Vec3f pidAttitude, float targetThrottle);
 Servo* ActuatorsGetLeftServo (void);
+void ActuatorsLogData (void);
 
 #endif // MOTION_CONTROL_ACTUATORS_H

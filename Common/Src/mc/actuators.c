@@ -164,9 +164,9 @@ eSTATUS_t ServoInit (PWMConfig config, Servo* pOutServo) {
     servoDescriptor.usLeftDutyCycle   = 550;
     servoDescriptor.usMiddleDutyCycle = 1600;
     servoDescriptor.usRightDutyCycle  = 2650;
-    servoDescriptor.maxAngle          = 90;
-    servoDescriptor.usableMaxAngle    = 10;
-    servoDescriptor.curAngle          = 0;
+    servoDescriptor.maxAngle          = 90.0F;
+    servoDescriptor.usableMaxAngle    = 10.0F;
+    servoDescriptor.curTargetAngle    = 0.0F;
     servoDescriptor.rollMix           = -0.25F;
     servoDescriptor.yawMix            = 0.5F;
     servoDescriptor.pitchMix          = 0.5F;
@@ -334,7 +334,7 @@ ActuatorsMixPair (Servo* pServo, Motor* pMotor, Vec3f pidAttitude, float targetT
      */
 
     /*
-     *  Left Motor Mixing
+     *  Motor Mixing
      */
     // float target        = 0.0F;
     // MotorDescriptor* pM = &gLeftMotor.pwmDescriptor;
@@ -342,9 +342,10 @@ ActuatorsMixPair (Servo* pServo, Motor* pMotor, Vec3f pidAttitude, float targetT
     // targetThrottle - pidAttitude.pitch + pidAttitude.roll + pidAttitude.yaw;
     // uint32_t usMotorTargetDutyCycle = (uint32_t)mapf32 (
     // target, -3.0F, 4.0F, (float)pM->usMinDutyCycle, (float)pM->usMaxDutyCycle);
+    pMotor->desc.curTargetThrottle = targetThrottle;
 
     /*
-     *  Left Servo Mixing
+     *  Servo Mixing
      */
     ServoDescriptor* pServoDesc = &gLeftServo.desc;
     float target = pServoDesc->pitchMix * pidAttitude.pitch +
@@ -355,7 +356,7 @@ ActuatorsMixPair (Servo* pServo, Motor* pMotor, Vec3f pidAttitude, float targetT
     // float target = pSer->pitchMix * pidAttitude.pitch + pSer->yawMix * pidAttitude.yaw;
     // pSer->targetAngle = ( clipf32(target, -1.0f, 1.0f) * pSer->maxAngle ) / ( clipf32(pSer->rollMix * pidAttitude.roll, -1.0f, 1.0f) * pSer->maxAngle );
     target = clipf32 (target, -1.0F, 1.0F) * pServoDesc->maxAngle;
-    pServoDesc->curAngle = target;
+    pServoDesc->curTargetAngle = target;
 
     /* Motor throttle should be between 0 and 1 */
     MotorWrite (pMotor, targetThrottle);
@@ -476,4 +477,8 @@ eSTATUS_t ActuatorsWrite (Vec3f pidAttitude, float targetThrottle) {
 
 Servo* ActuatorsGetLeftServo (void) {
     return &gLeftServo;
+}
+
+void ActuatorsLogData (void) {
+    LOG_DATA_ACTUATORS_DATA ("Left Motor", gLeftMotor, "Left Servo", gLeftServo);
 }

@@ -83,6 +83,9 @@ class FlightViewer(QtWidgets.QWidget):
         self.plotter_tab = AttitudePlotter()
         self.tab_widget.addTab(self.plotter_tab, "Attitude Graphs")
         
+        self.actuator_tab = ActuatorPlotter()
+        self.tab_widget.addTab(self.actuator_tab, "Actuator Graphs")
+        
         self.control_tab = FlightControlTab(self)
         self.tab_widget.addTab(self.control_tab, "Flight Control")
         
@@ -214,6 +217,9 @@ class FlightViewer(QtWidgets.QWidget):
                     elif data.get("type") == "imu_data":
                         imu_data = data.get("data", {})
                         self.plotter_tab.add_imu_data(imu_data)
+                    elif data.get("type") == "actuators":
+                        actuator_data = data.get("data", {})
+                        self.actuator_tab.add_actuator_data(actuator_data)
             except json.JSONDecodeError:
                 print(f"Failed to decode JSON: {message}")
                 continue
@@ -425,6 +431,287 @@ class FlightControlTab(QtWidgets.QWidget):
         """Send stop command as 8-byte packet"""
         self.parent_viewer.send_stop_command()
         self.last_command_label.setText("Last Command: STOP")
+
+class ActuatorPlotter(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setup_ui()
+        self.setup_data()
+        
+    def setup_ui(self):
+        layout = QVBoxLayout(self)
+        
+        # Control panel
+        controls = QHBoxLayout()
+        
+        # Checkboxes to toggle data series for motors
+        motor_group = QtWidgets.QGroupBox("Motor Data")
+        motor_layout = QHBoxLayout(motor_group)
+        
+        self.motor_throttle_checkbox = QCheckBox("Motor Throttle")
+        self.motor_throttle_checkbox.setChecked(True)
+        self.motor_throttle_checkbox.stateChanged.connect(self.toggle_motor_throttle)
+        
+        self.motor_target_throttle_checkbox = QCheckBox("Motor Target Throttle")
+        self.motor_target_throttle_checkbox.setChecked(True)
+        self.motor_target_throttle_checkbox.stateChanged.connect(self.toggle_motor_target_throttle)
+        
+        motor_layout.addWidget(self.motor_throttle_checkbox)
+        motor_layout.addWidget(self.motor_target_throttle_checkbox)
+        
+        # Checkboxes to toggle data series for servos
+        servo_group = QtWidgets.QGroupBox("Servo Data")
+        servo_layout = QHBoxLayout(servo_group)
+        
+        self.servo_angle_checkbox = QCheckBox("Servo Angle")
+        self.servo_angle_checkbox.setChecked(True)
+        self.servo_angle_checkbox.stateChanged.connect(self.toggle_servo_angle)
+        
+        self.servo_target_angle_checkbox = QCheckBox("Servo Target Angle")
+        self.servo_target_angle_checkbox.setChecked(True)
+        self.servo_target_angle_checkbox.stateChanged.connect(self.toggle_servo_target_angle)
+        
+        servo_layout.addWidget(self.servo_angle_checkbox)
+        servo_layout.addWidget(self.servo_target_angle_checkbox)
+        
+        # Control buttons
+        buttons_group = QtWidgets.QGroupBox("Controls")
+        buttons_layout = QHBoxLayout(buttons_group)
+        
+        self.clear_btn = QPushButton("Clear Data")
+        self.clear_btn.clicked.connect(self.clear_data)
+        
+        self.load_btn = QPushButton("Load from File")
+        self.load_btn.clicked.connect(self.load_from_file)
+        
+        buttons_layout.addWidget(self.clear_btn)
+        buttons_layout.addWidget(self.load_btn)
+        
+        controls.addWidget(motor_group)
+        controls.addWidget(servo_group)
+        controls.addWidget(buttons_group)
+        controls.addStretch()
+        
+        layout.addLayout(controls)
+        
+        # Create the plot widgets
+        # Motor throttle plot
+        self.motor_widget = pg.PlotWidget()
+        self.motor_widget.setLabel('left', 'Throttle (%)')
+        self.motor_widget.setLabel('bottom', 'Time (seconds)')
+        self.motor_widget.setTitle('Motor Throttle Data')
+        self.motor_widget.addLegend()
+        self.motor_widget.showGrid(x=True, y=True)
+        
+        # Servo angle plot
+        self.servo_widget = pg.PlotWidget()
+        self.servo_widget.setLabel('left', 'Angle (degrees)')
+        self.servo_widget.setLabel('bottom', 'Time (seconds)')
+        self.servo_widget.setTitle('Servo Angle Data')
+        self.servo_widget.addLegend()
+        self.servo_widget.showGrid(x=True, y=True)
+        
+        layout.addWidget(self.motor_widget)
+        layout.addWidget(self.servo_widget)
+        
+    def setup_data(self):
+        # Data storage - using deque for efficient append/pop operations
+        self.max_points = 1000  # Maximum number of points to display
+        self.start_time = None
+        
+        # Time data (shared across all plots)
+        self.time_data = deque(maxlen=self.max_points)
+        
+        # Motor data - store data for each motor by name
+        self.motor_data = {}  # Will store {motor_name: {'throttle': deque, 'target_throttle': deque}}
+        
+        # Servo data - store data for each servo by name
+        self.servo_data = {}  # Will store {servo_name: {'angle': deque, 'target_angle': deque}}
+        
+        # Plot curves - will be created dynamically as motors/servos are encountered
+        self.motor_curves = {}  # Will store {motor_name: {'throttle': curve, 'target_throttle': curve}}
+        self.servo_curves = {}  # Will store {servo_name: {'angle': curve, 'target_angle': curve}}
+        
+    def add_actuator_data(self, actuator_data):
+        """Add new actuator data point"""
+        current_time = datetime.now()
+        
+        if self.start_time is None:
+            self.start_time = current_time
+            
+        # Calculate time relative to start
+        time_seconds = (current_time - self.start_time).total_seconds()
+        
+        # Add time point
+        self.time_data.append(time_seconds)
+        
+        # Process motor data
+        for actuator_name, actuator_info in actuator_data.items():
+            if actuator_info.get("type") == "motor":
+                # Initialize motor data if first time seeing this motor
+                if actuator_name not in self.motor_data:
+                    self.motor_data[actuator_name] = {
+                        'throttle': deque(maxlen=self.max_points),
+                        'target_throttle': deque(maxlen=self.max_points)
+                    }
+                    # Create plot curves for this motor
+                    self.motor_curves[actuator_name] = {
+                        'throttle': self.motor_widget.plot(
+                            pen=pg.mkPen(color='r', width=2), 
+                            name=f'{actuator_name} Throttle'
+                        ),
+                        'target_throttle': self.motor_widget.plot(
+                            pen=pg.mkPen(color='r', width=2, style=QtCore.Qt.DashLine), 
+                            name=f'{actuator_name} Target Throttle'
+                        )
+                    }
+                
+                # Add data points
+                throttle = actuator_info.get("throttle", 0)
+                target_throttle = actuator_info.get("target_throttle", 0)
+                
+                self.motor_data[actuator_name]['throttle'].append(throttle)
+                self.motor_data[actuator_name]['target_throttle'].append(target_throttle)
+                
+            elif actuator_info.get("type") == "servo":
+                # Initialize servo data if first time seeing this servo
+                if actuator_name not in self.servo_data:
+                    self.servo_data[actuator_name] = {
+                        'angle': deque(maxlen=self.max_points),
+                        'target_angle': deque(maxlen=self.max_points)
+                    }
+                    # Create plot curves for this servo
+                    self.servo_curves[actuator_name] = {
+                        'angle': self.servo_widget.plot(
+                            pen=pg.mkPen(color='b', width=2), 
+                            name=f'{actuator_name} Angle'
+                        ),
+                        'target_angle': self.servo_widget.plot(
+                            pen=pg.mkPen(color='b', width=2, style=QtCore.Qt.DashLine), 
+                            name=f'{actuator_name} Target Angle'
+                        )
+                    }
+                
+                # Add data points
+                angle = actuator_info.get("angle", 0)
+                target_angle = actuator_info.get("target_angle", 0)
+                
+                self.servo_data[actuator_name]['angle'].append(angle)
+                self.servo_data[actuator_name]['target_angle'].append(target_angle)
+        
+        # Update plots
+        self.update_plots()
+        
+    def update_plots(self):
+        """Update the plot curves with current data"""
+        time_array = np.array(self.time_data)
+        
+        # Update motor plots
+        for motor_name, motor_curves in self.motor_curves.items():
+            if motor_name in self.motor_data:
+                if self.motor_throttle_checkbox.isChecked():
+                    motor_curves['throttle'].setData(
+                        time_array, 
+                        np.array(self.motor_data[motor_name]['throttle'])
+                    )
+                else:
+                    motor_curves['throttle'].setData([], [])
+                    
+                if self.motor_target_throttle_checkbox.isChecked():
+                    motor_curves['target_throttle'].setData(
+                        time_array, 
+                        np.array(self.motor_data[motor_name]['target_throttle'])
+                    )
+                else:
+                    motor_curves['target_throttle'].setData([], [])
+        
+        # Update servo plots
+        for servo_name, servo_curves in self.servo_curves.items():
+            if servo_name in self.servo_data:
+                if self.servo_angle_checkbox.isChecked():
+                    servo_curves['angle'].setData(
+                        time_array, 
+                        np.array(self.servo_data[servo_name]['angle'])
+                    )
+                else:
+                    servo_curves['angle'].setData([], [])
+                    
+                if self.servo_target_angle_checkbox.isChecked():
+                    servo_curves['target_angle'].setData(
+                        time_array, 
+                        np.array(self.servo_data[servo_name]['target_angle'])
+                    )
+                else:
+                    servo_curves['target_angle'].setData([], [])
+    
+    def toggle_motor_throttle(self):
+        """Toggle motor throttle visibility"""
+        self.update_plots()
+        
+    def toggle_motor_target_throttle(self):
+        """Toggle motor target throttle visibility"""
+        self.update_plots()
+        
+    def toggle_servo_angle(self):
+        """Toggle servo angle visibility"""
+        self.update_plots()
+        
+    def toggle_servo_target_angle(self):
+        """Toggle servo target angle visibility"""
+        self.update_plots()
+    
+    def clear_data(self):
+        """Clear all data and reset plots"""
+        self.time_data.clear()
+        
+        # Clear motor data
+        for motor_name in self.motor_data:
+            self.motor_data[motor_name]['throttle'].clear()
+            self.motor_data[motor_name]['target_throttle'].clear()
+            
+        # Clear servo data
+        for servo_name in self.servo_data:
+            self.servo_data[servo_name]['angle'].clear()
+            self.servo_data[servo_name]['target_angle'].clear()
+            
+        # Clear plots
+        for motor_curves in self.motor_curves.values():
+            motor_curves['throttle'].setData([], [])
+            motor_curves['target_throttle'].setData([], [])
+            
+        for servo_curves in self.servo_curves.values():
+            servo_curves['angle'].setData([], [])
+            servo_curves['target_angle'].setData([], [])
+            
+        self.start_time = None
+        
+    def load_from_file(self):
+        """Load actuator data from a log file"""
+        file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self, "Load Actuator Data", "", "Log Files (*.log);;All Files (*)"
+        )
+        
+        if file_path:
+            try:
+                with open(file_path, 'r') as file:
+                    # Clear existing data first
+                    self.clear_data()
+                    
+                    for line_num, line in enumerate(file, 1):
+                        try:
+                            data = json.loads(line.strip())
+                            if data.get("type") == "actuators":
+                                actuator_data = data.get("data", {})
+                                self.add_actuator_data(actuator_data)
+                        except json.JSONDecodeError:
+                            print(f"Warning: Skipping invalid JSON on line {line_num}")
+                            continue
+                            
+            except Exception as e:
+                QtWidgets.QMessageBox.critical(
+                    self, "Error", f"Failed to load file: {str(e)}"
+                )
+
 
 class AttitudePlotter(QtWidgets.QWidget):
     def __init__(self):

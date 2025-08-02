@@ -248,6 +248,7 @@ void TaskMotionControlUpdate (void* pvParameters) {
 
             LOG_DATA_IMU_DATA (a, g);
             LOG_DATA_CURRENT_ATTITUDE (ca);
+            ActuatorsLogData ();
         }
     }
 }

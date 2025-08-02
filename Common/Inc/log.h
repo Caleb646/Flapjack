@@ -64,6 +64,11 @@
     LOG_DATA (LOG_DATA_TYPE_ATTITUDE, "{\"roll\":%d,\"pitch\":%d,\"yaw\":%d}", \
               (int16_t)(attitude.roll), (int16_t)(attitude.pitch), (int16_t)(attitude.yaw))
 
+#define LOG_DATA_ACTUATORS_DATA(motorName, motor, servoName, servo) \
+    LOG_DATA ("actuators", "{\"%s\":{\"type\":\"motor\",\"throttle\":%d,\"target_throttle\":%d},\"%s\":{\"type\":\"servo\",\"angle\":%d,\"target_angle\":%d}}", \
+              motorName, (int16_t)((motor).desc.curTargetThrottle * 100.0F), (int16_t)((motor).desc.curTargetThrottle * 100.0F), \
+              servoName, (int16_t)((servo).desc.curTargetAngle), (int16_t)((servo).desc.curTargetAngle))
+
 // clang-format on
 
 eSTATUS_t LoggerInit (void);
