@@ -200,12 +200,6 @@ FilterMadgwickContext* pOutContext) {
         }
     }
 
-    // // Copy the final filter estimate to the output context
-    // pOutContext->beta = sqrtf (3.0F / 4.0F) * DEG2RAD (expectedGyroErrorDegs);
-    // pOutContext->est.q1 = context.est.q1;
-    // pOutContext->est.q2 = context.est.q2;
-    // pOutContext->est.q3 = context.est.q3;
-    // pOutContext->est.q4 = context.est.q4;
     LOG_INFO ("Madgwick finished warmup");
     LOG_DATA_CURRENT_ATTITUDE (attitude);
     return FilterMadgwickInit (pOutContext, expectedGyroErrorDegs, &context.est);

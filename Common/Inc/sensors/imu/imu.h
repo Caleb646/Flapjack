@@ -144,6 +144,34 @@ typedef struct {
     uint8_t systemState;
 } IMUFeatureStatus;
 
+/*
+ *   0x0 --> x=x; y=y; z=z;
+ *   0x1 --> x=y; y=x; z=z;
+ *   0x2 --> x=x; y=z; z=y;
+ *   0x3 --> x=z; y=x; z=y;
+ *   0x4 --> x=y; y=z; z=x;
+ *   0x5 --> x=z; y=y; z=x;
+ */
+typedef uint8_t eIMU_AXES_REMAP_t;
+enum {
+    eIMU_AXES_REMAP_XYZ = 0x00,
+    eIMU_AXES_REMAP_YXZ = 0x01,
+    eIMU_AXES_REMAP_ZXY = 0x02,
+    eIMU_AXES_REMAP_XZY = 0x03,
+    eIMU_AXES_REMAP_YZX = 0x04,
+    eIMU_AXES_REMAP_ZYX = 0x05
+};
+
+typedef uint8_t eIMU_AXES_DIR_t;
+enum { eIMU_AXES_DIR_DEFAULT = 0x00, eIMU_AXES_DIR_INVERTED = 0x01 };
+
+typedef struct {
+    eIMU_AXES_REMAP_t remap;
+    eIMU_AXES_DIR_t xDir;
+    eIMU_AXES_DIR_t yDir;
+    eIMU_AXES_DIR_t zDir;
+} IMUAxesRemapConf;
+
 typedef struct {
     SPI_HandleTypeDef* pSPI;
     Vec3 volatile rawAccel;
@@ -153,6 +181,7 @@ typedef struct {
     IMUAccConf aconf;
     IMUGyroConf gconf;
     eSTATUS_t volatile status;
+    IMUAxesRemapConf axesRemapConf;
     uint32_t nDummyBytes;
     uint32_t magic;
 } IMU;
@@ -176,6 +205,7 @@ eSTATUS_t IMUReadReg (IMU const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len)
 eSTATUS_t IMUWriteReg (IMU const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
 eSTATUS_t IMUUpdateGyro (IMU* pIMU);
 eSTATUS_t IMUUpdateAccel (IMU* pIMU);
+eSTATUS_t IMUSetAxesRemap (IMU* pIMU, IMUAxesRemapConf remap);
 eSTATUS_t IMUSoftReset (IMU* pIMU);
 eSTATUS_t IMUGetConf_ (IMU* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf, uint8_t altConfFlag);
 eSTATUS_t
@@ -190,7 +220,8 @@ IMUConvertRaw (IMU_ACC_RANGE aRange, Vec3 ra, IMU_GYRO_RANGE gRange, Vec3 rg, Ve
 
 #endif
 
-eSTATUS_t IMUInit (IMU* pIMU, SPI_HandleTypeDef* pSPI, IMUAccConf aconf, IMUGyroConf gconf);
+eSTATUS_t
+IMUInit (IMU* pIMU, SPI_HandleTypeDef* pSPI, IMUAccConf aconf, IMUGyroConf gconf, IMUAxesRemapConf* pAxesRemapConf);
 eSTATUS_t IMUStart (IMU* pIMU);
 eSTATUS_t IMUStop (IMU* pIMU);
 eSTATUS_t IMUHandleErr (IMU* pIMU);

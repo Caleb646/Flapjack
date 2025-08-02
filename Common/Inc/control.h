@@ -23,7 +23,7 @@ enum {
 typedef uint8_t eOP_STATE_t;
 enum {
     /* These are the states the FC can transition to based on the context and sent op state */
-    eOP_STATE_STOPPED,
+    eOP_STATE_STOPPED = 0,
     eOP_STATE_RUNNING,
     eOP_STATE_ERROR
 };

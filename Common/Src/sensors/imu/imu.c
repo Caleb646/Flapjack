@@ -37,6 +37,7 @@ static eSTATUS_t IMUReadReg (IMU const* pIMU, uint8_t reg, uint8_t* pBuf, uint32
 static eSTATUS_t IMUWriteReg (IMU const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
 static eSTATUS_t IMUUpdateGyro (IMU* pIMU);
 static eSTATUS_t IMUUpdateAccel (IMU* pIMU);
+static eSTATUS_t IMUSetAxesRemap (IMU* pIMU, IMUAxesRemapConf remap);
 static eSTATUS_t IMUSoftReset (IMU* pIMU);
 static eSTATUS_t
 IMUGetConf_ (IMU* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf, uint8_t altConfFlag);
@@ -248,6 +249,68 @@ STATIC_TESTABLE_DECL eSTATUS_t IMUUpdateAccel (IMU* pIMU) { // , Vec3 curVel, Ve
     pIMU->rawAccel.z =
     (int16_t)((((uint16_t)pBuffer[5]) << 8U) | ((uint16_t)pBuffer[4]));
 
+    return eSTATUS_SUCCESS;
+}
+
+STATIC_TESTABLE_DECL eSTATUS_t IMUSetAxesRemap (IMU* pIMU, IMUAxesRemapConf remap) {
+
+    uint8_t addr[2] = { BMI3_BASE_ADDR_AXIS_REMAP, 0 };
+    uint8_t data    = 0;
+
+    /* Set the configuration to feature engine register */
+    eSTATUS_t status = IMUWriteReg (pIMU, BMI3_REG_FEATURE_DATA_ADDR, addr, 2);
+    if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to set IMU feature data address for axis remap");
+        return status;
+    }
+
+    data = BMI3_SET_BIT_POS0 (data, BMI3_XYZ_AXIS, remap.remap);
+    data |= BMI3_SET_BITS (data, BMI3_X_AXIS_SIGN, remap.xDir);
+    data |= BMI3_SET_BITS (data, BMI3_Y_AXIS_SIGN, remap.yDir);
+    data |= BMI3_SET_BITS (data, BMI3_Z_AXIS_SIGN, remap.zDir);
+    uint8_t aSend[2] = { data, 0 };
+
+    status = IMUWriteReg (pIMU, BMI3_REG_FEATURE_DATA_TX, aSend, 2);
+    if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to set IMU feature data TX for axis remap");
+        return status;
+    }
+
+    /*
+     * NOTE: The command to start the axis remap update can be sent without
+     * checking the enabled/disabled status of the accel because this
+     * function is only called after an IMU soft reset.
+     */
+    status = IMUSendCmd (pIMU, BMI3_CMD_AXIS_MAP_UPDATE);
+    if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to send IMU command to update axis remap");
+        return status;
+    }
+
+    int16_t wait = 1000;
+    status       = eSTATUS_FAILURE;
+    while (wait-- > 0) {
+        IMUFeatureStatus featStatus = { 0 };
+        status = IMUGetFeatureStatus (pIMU, BMI3_REG_FEATURE_IO1, &featStatus);
+        if (status != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to get IMU feature status");
+            return status;
+        }
+        if ((featStatus.errStatus & BMI3_NO_ERROR_MASK) && featStatus.axisRemapComplete > 0) {
+            LOG_INFO ("IMU axis remap complete");
+            status = eSTATUS_SUCCESS;
+            break;
+        }
+        HAL_Delay (1);
+    }
+
+    if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("IMU axis remap did not complete in time");
+        IMULogDeviceErr (pIMU, NULL);
+        return status;
+    }
+
+    pIMU->axesRemapConf.remap = remap.remap;
     return eSTATUS_SUCCESS;
 }
 
@@ -692,7 +755,8 @@ IMUConvertRaw (IMU_ACC_RANGE aRange, Vec3 ra, IMU_GYRO_RANGE gRange, Vec3 rg, Ve
 }
 
 
-eSTATUS_t IMUInit (IMU* pIMU, SPI_HandleTypeDef* pSPI, IMUAccConf aconf, IMUGyroConf gconf) {
+eSTATUS_t
+IMUInit (IMU* pIMU, SPI_HandleTypeDef* pSPI, IMUAccConf aconf, IMUGyroConf gconf, IMUAxesRemapConf* pAxesRemapConf) {
 
     memset (pIMU, 0, sizeof (IMU));
     pIMU->pSPI                 = pSPI;
@@ -710,6 +774,16 @@ eSTATUS_t IMUInit (IMU* pIMU, SPI_HandleTypeDef* pSPI, IMUAccConf aconf, IMUGyro
         LOG_ERROR ("Failed to soft reset IMU");
         return status;
     }
+
+    if (pAxesRemapConf != NULL) {
+        status = IMUSetAxesRemap (pIMU, *pAxesRemapConf);
+        if (status != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to set IMU axes remap");
+            return status;
+        }
+        LOG_INFO ("Successfully remapped IMU axes");
+    }
+
     /*
      * Setup the accel and gyro using the provided configurations
      */

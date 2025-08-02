@@ -162,18 +162,17 @@ void TaskMainLoop (void* pvParameters) {
             case eCOMMAND_TYPE_CHANGE_OP_STATE:
                 ChangeOpStateCmd* opCmd = (ChangeOpStateCmd*)&cmd;
                 ProcessOPStateChange (ControlGetCopyFCState (), opCmd->requestedState);
-
                 break;
             case eCOMMAND_TYPE_CHANGE_FLIGHT_MODE:
-                ChangeFlightModeCmd* flightModeCmd = (ChangeFlightModeCmd*)&cmd;
+                // ChangeFlightModeCmd* flightModeCmd = (ChangeFlightModeCmd*)&cmd;
                 // ProcessFlightModeChange (ControlGetCopyFCState (), flightModeCmd->requestedMode);
                 break;
             case eCOMMAND_TYPE_CHANGE_VELOCITY:
-                ChangeVelocityCmd* velocityCmd = (ChangeVelocityCmd*)&cmd;
+                // ChangeVelocityCmd* velocityCmd = (ChangeVelocityCmd*)&cmd;
                 // ProcessVelocityChange (ControlGetCopyFCState (), velocityCmd->requestedVelocity);
                 break;
             case eCOMMAND_TYPE_CHANGE_PID:
-                ChangePIDCmd* pidCmd = (ChangePIDCmd*)&cmd;
+                // ChangePIDCmd* pidCmd = (ChangePIDCmd*)&cmd;
                 // ProcessPIDChange (ControlGetCopyFCState (), pidCmd->pidType, pidCmd->pidValue);
                 break;
             default:
@@ -307,19 +306,24 @@ int main (void) {
      * Init IMU
      */
     {
-        IMUAccConf aconf  = { 0 };
-        aconf.odr         = eIMU_ACC_ODR_200;
-        aconf.range       = eIMU_ACC_RANGE_2G;
-        aconf.avg         = eIMU_ACC_AVG_16;
-        aconf.bw          = eIMU_ACC_BW_HALF;
-        aconf.mode        = eIMU_ACC_MODE_HIGH_PERF;
-        IMUGyroConf gconf = { 0 };
-        gconf.odr         = eIMU_GYRO_ODR_200;
-        gconf.range       = eIMU_GYRO_RANGE_250;
-        gconf.avg         = eIMU_GYRO_AVG_16;
-        gconf.bw          = eIMU_GYRO_BW_HALF;
-        gconf.mode        = eIMU_GYRO_MODE_HIGH_PERF;
-        if (IMUInit (&gIMU, &hspi2, aconf, gconf) != eSTATUS_SUCCESS) {
+        IMUAccConf aconf           = { 0 };
+        aconf.odr                  = eIMU_ACC_ODR_200;
+        aconf.range                = eIMU_ACC_RANGE_2G;
+        aconf.avg                  = eIMU_ACC_AVG_16;
+        aconf.bw                   = eIMU_ACC_BW_HALF;
+        aconf.mode                 = eIMU_ACC_MODE_HIGH_PERF;
+        IMUGyroConf gconf          = { 0 };
+        gconf.odr                  = eIMU_GYRO_ODR_200;
+        gconf.range                = eIMU_GYRO_RANGE_250;
+        gconf.avg                  = eIMU_GYRO_AVG_16;
+        gconf.bw                   = eIMU_GYRO_BW_HALF;
+        gconf.mode                 = eIMU_GYRO_MODE_HIGH_PERF;
+        IMUAxesRemapConf axesRemap = { 0 };
+        axesRemap.remap            = eIMU_AXES_REMAP_YXZ;
+        axesRemap.xDir             = eIMU_AXES_DIR_INVERTED;
+        axesRemap.yDir             = eIMU_AXES_DIR_INVERTED;
+        axesRemap.zDir             = eIMU_AXES_DIR_DEFAULT;
+        if (IMUInit (&gIMU, &hspi2, aconf, gconf, &axesRemap) != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to init IMU");
         }
     }
@@ -328,6 +332,9 @@ int main (void) {
 
     /* With an ODR of 100 Hz on the IMU 1000 iterations will take 10 seconds */
     /* With an ODR of 200 Hz on the IMU 1000 iterations will take 5 seconds */
+    /*
+     * NOTE: During filter warmup the IMU is polled and interrupts are disabled. So IMUStart doesnt need to be called
+     */
     status = FilterMadgwickWarmUp (500U, &gIMU, 1.5F, 3.0F, &gFilterMadgwickContext);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to warm up Madgwick Filter");

@@ -287,6 +287,8 @@ class FlightViewer(QtWidgets.QWidget):
         else:
             # NOTE: Send stop command when disconnecting the GUI
             self.send_stop_command()
+            # Make sure the stop command is sent before closing
+            self.serial.flush()
 
             self.close_session_files()
             self.serial.close()

@@ -370,7 +370,10 @@ ActuatorsMixPair (Servo* pServo, Motor* pMotor, Vec3f pidAttitude, float targetT
 STATIC_TESTABLE_DECL eSTATUS_t ActuatorsArm (void) {
 
     // eSTATUS_t status = eSTATUS_SUCCESS;
-    for (uint32_t i = 0; i < 300; ++i) {
+    uint16_t msDelay    = 2;
+    uint16_t msMaxTime  = 350;
+    uint16_t iterations = msMaxTime / msDelay;
+    for (uint32_t i = 0; i < iterations; ++i) {
         /* NOTE: A DShot value of all 0s is a special command to
          * the esc to arm/disarm the motor depending on the esc's current state.
          * The reason MotorWrite isn't used is because it uses a valid throttle value between > 48 and < 2048 */
@@ -383,18 +386,22 @@ STATIC_TESTABLE_DECL eSTATUS_t ActuatorsArm (void) {
         //     return eSTATUS_FAILURE;
         // }
         // NOTE: assumes DShot150 is used.
-        vTaskDelay (pdMS_TO_TICKS (1));
+        vTaskDelay (pdMS_TO_TICKS (msDelay));
     }
 
-    // Slowly increase the throttle to 50%
-    float i = 0.0F;
-    while (i < 0.50F) {
+    // Slowly increase the throttle to 25%
+    msDelay              = 4;
+    msMaxTime            = 3000;
+    float i              = 0.05F; // start at 5% throttle
+    float targetThrottle = 0.25F;
+    float increment      = targetThrottle / (float)(msMaxTime / msDelay);
+    while (i < targetThrottle) {
         if (MotorWrite (&gLeftMotor, i) != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to arm left motor");
+            LOG_ERROR ("Failed warm up left motor");
             return eSTATUS_FAILURE;
         }
-        vTaskDelay (pdMS_TO_TICKS (5));
-        i += 0.01F;
+        vTaskDelay (pdMS_TO_TICKS (msDelay));
+        i += increment;
     }
 
     // while (1) {
