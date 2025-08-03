@@ -82,104 +82,59 @@ void HAL_GPIO_EXTI_Callback (uint16_t gpioPin) {
     }
 }
 
-void FCEnterRunningState (FCState curState, eREQUESTED_STATE_t requestedState) {
+BOOL_t StateTransitionFromStopped2Running (FCState curState) {
 
-    eOP_STATE_t curOpState  = curState.opState;
-    eOP_STATE_t nextOpState = eOP_STATE_RUNNING;
-    if (curOpState == eOP_STATE_STOPPED) {
-        if (requestedState == eREQUESTED_STATE_START) {
-            LOG_INFO ("Starting actuators and imu");
-            if (ActuatorsStart () != eSTATUS_SUCCESS || IMUStart (&gIMU) != eSTATUS_SUCCESS) {
-                LOG_ERROR ("Failed to start");
-                nextOpState = eOP_STATE_ERROR;
-            }
-        }
+    BOOL_t doTransition = TRUE;
+    if (ActuatorsStart () != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to start Actuators");
+        doTransition = FALSE;
     }
 
-    curState.opState = nextOpState;
-    if (ControlUpdateFCState (&curState) != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to update fc state");
+    if (IMUStart (&gIMU) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to start IMU");
+        doTransition = FALSE;
     }
-    if (nextOpState == eOP_STATE_RUNNING) {
-        LOG_INFO ("FC in running state");
-    }
+
+    return doTransition;
 }
 
-void FCEnterStoppedState (FCState curState, eREQUESTED_STATE_t requestedState) {
+BOOL_t StateTransitionFromRunning2Stopped (FCState curState) {
 
-    eOP_STATE_t curOpState  = curState.opState;
-    eOP_STATE_t nextOpState = eOP_STATE_STOPPED;
-    if (curOpState == eOP_STATE_RUNNING) {
-        if (requestedState == eREQUESTED_STATE_STOP) {
-            if (IMUStop (&gIMU) != eSTATUS_SUCCESS || ActuatorsStop () != eSTATUS_SUCCESS) {
-                LOG_ERROR ("Failed to stop");
-                nextOpState = eOP_STATE_ERROR;
-            }
-        }
+    BOOL_t doTransition = TRUE;
+    if (IMUStop (&gIMU) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to stop IMU");
+        doTransition = FALSE;
     }
 
-    curState.opState = nextOpState;
-    if (ControlUpdateFCState (&curState) != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to update fc state");
+    if (ActuatorsStop () != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to stop Actuators");
+        doTransition = FALSE;
     }
 
-    if (nextOpState == eOP_STATE_STOPPED) {
-        LOG_INFO ("FC in stopped state");
-    }
-}
-
-void ProcessOPStateChange (FCState curState, eREQUESTED_STATE_t requestedState) {
-
-    if (curState.opState == requestedState) {
-        LOG_INFO ("Already in state: %d", curState.opState);
-        return;
-    }
-
-    if (requestedState == eREQUESTED_STATE_START) {
-        FCEnterRunningState (curState, requestedState);
-        return;
-    }
-    if (requestedState == eREQUESTED_STATE_STOP) {
-        FCEnterStoppedState (curState, requestedState);
-        return;
-    }
+    return doTransition;
 }
 
 void TaskMainLoop (void* pvParameters) {
-    uint32_t startTime = xTaskGetTickCount ();
-    uint32_t logStep   = 5000;
+    uint32_t msLogStart      = xTaskGetTickCount ();
+    uint32_t const msLogStep = 1000;
     LOG_INFO ("Main loop started");
 
     if (ControlStart (NULL) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start control module");
         CriticalErrorHandler ();
     }
+
+    ControlRegisterOPStateTransitionHandler (eOP_STATE_STOPPED, eOP_STATE_RUNNING, StateTransitionFromStopped2Running);
+    ControlRegisterOPStateTransitionHandler (eOP_STATE_RUNNING, eOP_STATE_STOPPED, StateTransitionFromRunning2Stopped);
+
     while (1) {
-        EmptyCommand cmd = { 0 };
-        if (ControlGetNewCmd (&cmd) == TRUE) {
-            switch (cmd.header.commandType) {
-            case eCOMMAND_TYPE_EMPTY:
-                LOG_ERROR ("Received empty command");
-                break;
-            case eCOMMAND_TYPE_CHANGE_OP_STATE:
-                ChangeOpStateCmd* opCmd = (ChangeOpStateCmd*)&cmd;
-                ProcessOPStateChange (ControlGetCopyFCState (), opCmd->requestedState);
-                break;
-            case eCOMMAND_TYPE_CHANGE_FLIGHT_MODE:
-                // ChangeFlightModeCmd* flightModeCmd = (ChangeFlightModeCmd*)&cmd;
-                // ProcessFlightModeChange (ControlGetCopyFCState (), flightModeCmd->requestedMode);
-                break;
-            case eCOMMAND_TYPE_CHANGE_VELOCITY:
-                // ChangeVelocityCmd* velocityCmd = (ChangeVelocityCmd*)&cmd;
-                // ProcessVelocityChange (ControlGetCopyFCState (), velocityCmd->requestedVelocity);
-                break;
-            case eCOMMAND_TYPE_CHANGE_PID:
-                // ChangePIDCmd* pidCmd = (ChangePIDCmd*)&cmd;
-                // ProcessPIDChange (ControlGetCopyFCState (), pidCmd->pidType, pidCmd->pidValue);
-                break;
-            default:
-                LOG_ERROR ("Unknown command type: %d", cmd.header.commandType);
-            }
+        if (ControlProcessCmds () != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to process control commands");
+        }
+
+        if ((xTaskGetTickCount () - msLogStart) >= msLogStep) {
+            msLogStart = xTaskGetTickCount ();
+            LOG_INFO ("Main loop is running, current state: %s", ControlOpState2Char (ControlGetOpState ()));
         }
         // Aim for 500Hz
         vTaskDelay (pdMS_TO_TICKS (2));
@@ -323,9 +278,9 @@ int main (void) {
         gconf.mode                 = eIMU_GYRO_MODE_HIGH_PERF;
         IMUAxesRemapConf axesRemap = { 0 };
         axesRemap.remap            = eIMU_AXES_REMAP_YXZ;
-        axesRemap.xDir             = eIMU_AXES_DIR_INVERTED;
+        axesRemap.xDir             = eIMU_AXES_DIR_DEFAULT;
         axesRemap.yDir             = eIMU_AXES_DIR_INVERTED;
-        axesRemap.zDir             = eIMU_AXES_DIR_DEFAULT;
+        axesRemap.zDir             = eIMU_AXES_DIR_INVERTED;
         if (IMUInit (&gIMU, &hspi2, aconf, gconf, &axesRemap) != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to init IMU");
         }

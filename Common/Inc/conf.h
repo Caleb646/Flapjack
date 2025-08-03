@@ -11,6 +11,6 @@
 #define LEFT_SERVO_PWM_CHANNEL   TIM_CHANNEL_1
 #define LEFT_SERVO_PWM_FREQUENCY 50 // 50 Hz
 
-#define USE_SERVOS_ONLY
+// #define USE_SERVOS_ONLY
 
 #endif // CONF_H

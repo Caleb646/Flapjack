@@ -66,6 +66,12 @@ typedef struct {
     ServoDescriptor desc;
 } Servo;
 
+typedef uint8_t eMOTOR_CMD_t;
+enum {
+    eMOTOR_CMD_ARM    = 0x00,
+    eMOTOR_CMD_DISARM = 0x00,
+};
+
 typedef struct {
     PWMConfig pwm;
     DMAConfig dma;
@@ -119,6 +125,7 @@ eSTATUS_t ServoWrite (Servo* pServo, float targetAngle);
 eSTATUS_t MotorInit (MotorConfig config, Motor* pOutMotor);
 eSTATUS_t MotorStart (Motor* pMotor);
 eSTATUS_t MotorWrite (Motor* pMotor, float motorValue);
+eSTATUS_t MotorWriteCmd (Motor* pMotor, eMOTOR_CMD_t command);
 
 #ifdef UNIT_TEST
 

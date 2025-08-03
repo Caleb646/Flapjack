@@ -321,6 +321,33 @@ eSTATUS_t MotorWrite (Motor* pMotor, float throttle) {
     return eSTATUS_SUCCESS;
 }
 
+eSTATUS_t MotorWriteCmd (Motor* pMotor, eMOTOR_CMD_t command) {
+
+#ifndef USE_SERVOS_ONLY
+
+    if (pMotor == NULL) {
+        LOG_ERROR ("Received NULL pointer for Motor");
+        return eSTATUS_FAILURE;
+    }
+
+    switch (command) {
+    // NOTE: The arm and disarm command values are the same and depend on the ESC's current state.
+    case eMOTOR_CMD_ARM: break;
+    // case eMOTOR_CMD_DISARM: break;
+    default: LOG_ERROR ("Unknown motor command"); return eSTATUS_FAILURE;
+    }
+
+    eSTATUS_t status = DShotWrite (&pMotor->dshot, command);
+    if (status != eSTATUS_SUCCESS && status != eSTATUS_BUSY) {
+        LOG_ERROR ("Failed to write command to motor");
+        return status;
+    }
+
+#endif // USE_SERVOS_ONLY
+
+    return eSTATUS_SUCCESS;
+}
+
 // NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
 static Motor gLeftMotor;
 static Servo gLeftServo;
@@ -377,10 +404,10 @@ ActuatorsMixPair (Servo* pServo, Motor* pMotor, Vec3f pidAttitude, float targetT
     target = clipf32 (target, -1.0F, 1.0F) * pServoDesc->maxAngle;
     pServoDesc->curTargetAngle = target;
 
-#ifndef USE_SERVOS_ONLY
+    // #ifndef USE_SERVOS_ONLY
     /* Motor throttle should be between 0 and 1 */
     MotorWrite (pMotor, targetThrottle);
-#endif
+    // #endif
     ServoWrite (pServo, target);
     return eSTATUS_SUCCESS;
 }
@@ -391,9 +418,8 @@ ActuatorsMixPair (Servo* pServo, Motor* pMotor, Vec3f pidAttitude, float targetT
  */
 STATIC_TESTABLE_DECL eSTATUS_t ActuatorsArm (void) {
 
-#ifndef USE_SERVOS_ONLY
+    // #ifndef USE_SERVOS_ONLY
 
-    // eSTATUS_t status = eSTATUS_SUCCESS;
     uint16_t msDelay    = 2;
     uint16_t msMaxTime  = 350;
     uint16_t iterations = msMaxTime / msDelay;
@@ -401,7 +427,7 @@ STATIC_TESTABLE_DECL eSTATUS_t ActuatorsArm (void) {
         /* NOTE: A DShot value of all 0s is a special command to
          * the esc to arm/disarm the motor depending on the esc's current state.
          * The reason MotorWrite isn't used is because it uses a valid throttle value between > 48 and < 2048 */
-        if (DShotWrite (&gLeftMotor.dshot, 0U) != eSTATUS_SUCCESS) {
+        if (MotorWriteCmd (&gLeftMotor, eMOTOR_CMD_ARM) != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to arm left motor");
             return eSTATUS_FAILURE;
         }
@@ -424,7 +450,7 @@ STATIC_TESTABLE_DECL eSTATUS_t ActuatorsArm (void) {
         i += increment;
     }
 
-#endif
+    // #endif
 
     return eSTATUS_SUCCESS;
 }
@@ -437,7 +463,7 @@ eSTATUS_t ActuatorsInit (PWMConfig left_ServoPWM, MotorConfig left_Motor) {
         return status;
     }
 
-#ifndef USE_SERVOS_ONLY
+    // #ifndef USE_SERVOS_ONLY
 
     status = MotorInit (left_Motor, &gLeftMotor);
     if (status != eSTATUS_SUCCESS) {
@@ -445,7 +471,7 @@ eSTATUS_t ActuatorsInit (PWMConfig left_ServoPWM, MotorConfig left_Motor) {
         return status;
     }
 
-#endif
+    // #endif
     return eSTATUS_SUCCESS;
 }
 
@@ -457,7 +483,7 @@ eSTATUS_t ActuatorsStart (void) {
         return status;
     }
 
-#ifndef USE_SERVOS_ONLY
+    // #ifndef USE_SERVOS_ONLY
 
     status = MotorStart (&gLeftMotor);
     if (status != eSTATUS_SUCCESS) {
@@ -471,7 +497,7 @@ eSTATUS_t ActuatorsStart (void) {
         return status;
     }
 
-#endif
+    // #endif
 
     return eSTATUS_SUCCESS;
 }

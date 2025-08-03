@@ -11,21 +11,22 @@
 typedef uint8_t eFLIGHT_MODE_t;
 enum { eFLIGHT_MODE_HOVER = 0, eFLIGHT_MODE_AIRPLANE };
 
-typedef uint8_t eREQUESTED_STATE_t;
-enum {
-    /* These are the command states that a gui or radio controller can send */
-    eREQUESTED_STATE_STOP = 0,
-    eREQUESTED_STATE_START
+// typedef uint8_t eREQUESTED_STATE_t;
+// enum {
+//     /* These are the command states that a gui or radio controller can
+//     send */ eREQUESTED_STATE_STOP = 0, eREQUESTED_STATE_START,
 
-    // eREQUESTED_STATE_SENSOR_ONLY
-};
+//     // eREQUESTED_STATE_SENSOR_ONLY
+//     eNUMBER_OF_REQUESTED_STATES
+// };
 
 typedef uint8_t eOP_STATE_t;
 enum {
-    /* These are the states the FC can transition to based on the context and sent op state */
     eOP_STATE_STOPPED = 0,
     eOP_STATE_RUNNING,
-    eOP_STATE_ERROR
+    eOP_STATE_ERROR,
+
+    eNUMBER_OF_OP_STATES
 };
 
 typedef uint8_t eCOMMAND_t;
@@ -34,7 +35,9 @@ enum {
     eCOMMAND_TYPE_CHANGE_OP_STATE,
     eCOMMAND_TYPE_CHANGE_FLIGHT_MODE,
     eCOMMAND_TYPE_CHANGE_VELOCITY,
-    eCOMMAND_TYPE_CHANGE_PID
+    eCOMMAND_TYPE_CHANGE_PID,
+
+    eNUMBER_OF_COMMAND_TYPES
 };
 
 typedef int8_t velocity_t;
@@ -53,7 +56,7 @@ typedef struct {
 
 typedef struct {
     CommandHeader header;
-    eREQUESTED_STATE_t requestedState;
+    eOP_STATE_t requestedState;
 } ChangeOpStateCmd;
 
 typedef struct {
@@ -106,10 +109,18 @@ STATIC_ASSERT (sizeof (ChangeVelocityCmd) <= sizeof (EmptyCommand), "");
 STATIC_ASSERT (sizeof (ChangePIDCmd) <= sizeof (EmptyCommand), "");
 STATIC_ASSERT (sizeof (FCState) <= MEM_SHARED_FLIGHT_STATE_TOTAL_LEN, "");
 
+typedef BOOL_t (*OpStateTransitionHandler_t) (FCState curState);
+typedef eSTATUS_t (*CmdHandler_t) (EmptyCommand cmd);
+
 eSTATUS_t ControlInit (void);
 eSTATUS_t ControlStart (UART_HandleTypeDef* huart);
 eSTATUS_t ControlProcessRawCmds (void);
-BOOL_t ControlGetNewCmd (EmptyCommand* pOutCmd);
+eSTATUS_t ControlProcessCmds (void);
+eSTATUS_t
+ControlRegisterOPStateTransitionHandler (eOP_STATE_t fromState, eOP_STATE_t toState, OpStateTransitionHandler_t handler);
+eSTATUS_t ControlRegisterCmdHandler (eCOMMAND_t cmdType, CmdHandler_t handler);
+char const* ControlOpState2Char (eOP_STATE_t opState);
+char const* ControlCmdType2Char (eCOMMAND_t commandType);
 FCState ControlGetCopyFCState (void);
 eOP_STATE_t ControlGetOpState (void);
 eSTATUS_t ControlUpdateFCState (FCState const* pNewState);
