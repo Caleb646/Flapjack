@@ -58,7 +58,7 @@ FilterMadgwickContext gFilterMadgwickContext = { 0 };
 PIDContext gPIDAngleContext                  = { 0 };
 TaskHandle_t gpTaskMotionControlUpdate       = { 0 };
 Vec3f gTargetAttitude                        = { 0.0F };
-float gTargetThrottle                        = 0.25F; // 25% throttle
+float gTargetThrottle                        = MOTOR_STARTUP_THROTTLE;
 // NOLINTEND
 
 /**
@@ -115,17 +115,18 @@ BOOL_t StateTransitionFromRunning2Stopped (FCState curState) {
 }
 
 void TaskMainLoop (void* pvParameters) {
+
     uint32_t msLogStart      = xTaskGetTickCount ();
     uint32_t const msLogStep = 1000;
     LOG_INFO ("Main loop started");
+
+    ControlRegisterOPStateTransitionHandler (eOP_STATE_STOPPED, eOP_STATE_RUNNING, StateTransitionFromStopped2Running);
+    ControlRegisterOPStateTransitionHandler (eOP_STATE_RUNNING, eOP_STATE_STOPPED, StateTransitionFromRunning2Stopped);
 
     if (ControlStart (NULL) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start control module");
         CriticalErrorHandler ();
     }
-
-    ControlRegisterOPStateTransitionHandler (eOP_STATE_STOPPED, eOP_STATE_RUNNING, StateTransitionFromStopped2Running);
-    ControlRegisterOPStateTransitionHandler (eOP_STATE_RUNNING, eOP_STATE_STOPPED, StateTransitionFromRunning2Stopped);
 
     while (1) {
         if (ControlProcessCmds () != eSTATUS_SUCCESS) {

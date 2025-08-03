@@ -66,8 +66,8 @@
 
 #define LOG_DATA_ACTUATORS_DATA(motorName, motor, servoName, servo) \
     LOG_DATA ("actuators", "{\"%s\":{\"type\":\"motor\",\"throttle\":%d,\"target_throttle\":%d},\"%s\":{\"type\":\"servo\",\"angle\":%d,\"target_angle\":%d}}", \
-              motorName, (int16_t)((motor).desc.curTargetThrottle * 100.0F), (int16_t)((motor).desc.curTargetThrottle * 100.0F), \
-              servoName, (int16_t)((servo).desc.curTargetAngle), (int16_t)((servo).desc.curTargetAngle))
+              motorName, (int16_t)((motor).desc.curThrottle * 100.0F), (int16_t)((motor).desc.curTargetThrottle * 100.0F), \
+              servoName, (int16_t)((servo).desc.curAngle), (int16_t)((servo).desc.curTargetAngle))
 
 // clang-format on
 

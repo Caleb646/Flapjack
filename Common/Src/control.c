@@ -340,7 +340,7 @@ eSTATUS_t ControlProcessCmds (void) {
     case eCOMMAND_TYPE_CHANGE_VELOCITY:
     case eCOMMAND_TYPE_CHANGE_PID: break;
     default:
-        LOG_ERROR ("Unknown command type: %d", cmd.header.commandType);
+        LOG_ERROR ("Unknown command type: %u", cmd.header.commandType);
         return eSTATUS_FAILURE;
     }
 

@@ -55,6 +55,7 @@ typedef struct {
     float maxAngle;
     float usableMaxAngle;
     // Between -usableMaxAngle angle and +usableMaxAngle angle
+    float curAngle;
     float curTargetAngle;
     float pitchMix;
     float yawMix;
@@ -78,6 +79,7 @@ typedef struct {
 } MotorConfig;
 
 typedef struct {
+    float curThrottle; // Between 0.0 and 1.0
     float curTargetThrottle;
 } MotorDescriptor;
 

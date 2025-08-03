@@ -11,6 +11,10 @@
 #define LEFT_SERVO_PWM_CHANNEL   TIM_CHANNEL_1
 #define LEFT_SERVO_PWM_FREQUENCY 50 // 50 Hz
 
+#define MOTOR_MAX_THROTTLE       0.25F // 25% throttle
+#define MOTOR_STARTUP_THROTTLE   0.10F // 10% throttle
+#define MOTOR_MIN_THROTTLE       0.05F // 5% throttle
+
 // #define USE_SERVOS_ONLY
 
 #endif // CONF_H

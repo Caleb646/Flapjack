@@ -127,8 +127,6 @@ STATIC_TESTABLE_DECL float ServoAngle2PWM (Servo* pServo, float targetAngle) {
      *
      * Clip the target angle to the usable range first, then map it to the PWM duty cycle using the max angle.
      */
-    targetAngle =
-    clipf32 (targetAngle, -pServo->desc.usableMaxAngle, pServo->desc.usableMaxAngle);
     ServoDescriptor* pDesc = &pServo->desc;
     // Handle asymmetric servo ranges: map negative angles to
     // [usLeftDutyCycle, usMiddleDutyCycle], positive to [usMiddleDutyCycle, usRightDutyCycle]
@@ -209,6 +207,10 @@ eSTATUS_t ServoWrite (Servo* pServo, float targetAngle) {
         LOG_ERROR ("Received invalid Servo pointer");
         return eSTATUS_FAILURE;
     }
+    targetAngle =
+    clipf32 (targetAngle, -pServo->desc.usableMaxAngle, pServo->desc.usableMaxAngle);
+    pServo->desc.curAngle = targetAngle;
+
     return PWMWrite (&pServo->pwm, (uint32_t)ServoAngle2PWM (pServo, targetAngle));
 }
 
@@ -305,6 +307,9 @@ eSTATUS_t MotorWrite (Motor* pMotor, float throttle) {
         LOG_ERROR ("Motor throttle out of range: %u", (uint16_t)(throttle * 100.0F));
         return eSTATUS_FAILURE;
     }
+
+    throttle = clipf32 (throttle, MOTOR_MIN_THROTTLE, MOTOR_MAX_THROTTLE);
+    pMotor->desc.curThrottle = throttle;
 
     eSTATUS_t status =
     DShotWrite (&pMotor->dshot, DSHOT_MIN_THROTTLE + (uint16_t)(throttle * (float)DSHOT_RANGE));
@@ -438,8 +443,8 @@ STATIC_TESTABLE_DECL eSTATUS_t ActuatorsArm (void) {
     // Slowly increase the throttle to 15%
     msDelay              = 4;
     msMaxTime            = 3000;
-    float i              = 0.05F; // start at 5% throttle
-    float targetThrottle = 0.15F;
+    float i              = MOTOR_MIN_THROTTLE;
+    float targetThrottle = MOTOR_STARTUP_THROTTLE;
     float increment      = targetThrottle / (float)(msMaxTime / msDelay);
     while (i < targetThrottle) {
         if (MotorWrite (&gLeftMotor, i) != eSTATUS_SUCCESS) {
