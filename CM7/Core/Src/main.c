@@ -152,6 +152,7 @@ void TaskMotionControlUpdate (void* pvParameters) {
     LOG_INFO ("Motion control update task started");
 
     while (1) {
+
         if (ControlGetOpState () != eOP_STATE_RUNNING) {
             // Limit state checks to 1000Hz
             vTaskDelay (pdMS_TO_TICKS (1));
