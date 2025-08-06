@@ -15,6 +15,10 @@
 #define MOTOR_STARTUP_THROTTLE   0.10F // 10% throttle
 #define MOTOR_MIN_THROTTLE       0.05F // 5% throttle
 
-// #define USE_SERVOS_ONLY
+#define LEFT_SERVO_ROLL_MIX      0.0F
+#define LEFT_SERVO_PITCH_MIX     (-1.0F * 1.0F)
+#define LEFT_SERVO_YAW_MIX       0.0F
+
+#define USE_SERVOS_ONLY
 
 #endif // CONF_H

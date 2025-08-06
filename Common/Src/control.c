@@ -323,8 +323,8 @@ eSTATUS_t ControlProcessRawCmds (void) {
 
 eSTATUS_t ControlProcessCmds (void) {
 
-    if (HAL_GetCurrentCPUID () == CONTROL_CONSUMER_CORE) {
-        LOG_ERROR ("Should only be called for the core that is producing");
+    if (HAL_GetCurrentCPUID () == CONTROL_PRODUCER_CORE) {
+        LOG_ERROR ("Should only be called by the core that is consuming");
         return eSTATUS_FAILURE;
     }
 

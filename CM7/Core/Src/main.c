@@ -117,7 +117,7 @@ BOOL_t StateTransitionFromRunning2Stopped (FCState curState) {
 void TaskMainLoop (void* pvParameters) {
 
     uint32_t msLogStart      = xTaskGetTickCount ();
-    uint32_t const msLogStep = 1000;
+    uint32_t const msLogStep = 3000;
     LOG_INFO ("Main loop started");
 
     ControlRegisterOPStateTransitionHandler (eOP_STATE_STOPPED, eOP_STATE_RUNNING, StateTransitionFromStopped2Running);

@@ -166,9 +166,10 @@ eSTATUS_t ServoInit (PWMConfig config, Servo* pOutServo) {
     pOutServo->desc.maxAngle          = 90.0F;
     pOutServo->desc.usableMaxAngle    = 20.0F;
     pOutServo->desc.curTargetAngle    = 0.0F;
-    pOutServo->desc.rollMix           = -0.25F;
-    pOutServo->desc.yawMix            = 0.5F;
-    pOutServo->desc.pitchMix          = 1.0F; // 0.5F;
+    // TODO: Make these configurable
+    pOutServo->desc.rollMix  = LEFT_SERVO_ROLL_MIX;  // -0.25F;
+    pOutServo->desc.yawMix   = LEFT_SERVO_YAW_MIX;   // 0.5F;
+    pOutServo->desc.pitchMix = LEFT_SERVO_PITCH_MIX; // 0.5F;
 
     return eSTATUS_SUCCESS;
 }
