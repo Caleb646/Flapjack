@@ -48,7 +48,23 @@ typedef struct {
     Vec3f prevIntegral;
 } PIDContext;
 
+typedef uint8_t eACTUATOR_ID_t;
+enum {
+    /* Servo IDS */
+    eACTUATOR_ID_LEFT_SERVO = 0,
+    eACTUATOR_ID_RIGHT_SERVO,
+
+    eACTUATOR_NUMBEROF_SERVOS,
+
+    /* Motor IDS */
+    eACTUATOR_ID_RIGHT_MOTOR,
+    eACTUATOR_ID_LEFT_MOTOR,
+
+    eACTUATOR_NUMBEROF_MOTORS,
+};
+
 typedef struct {
+    eACTUATOR_ID_t id;
     uint32_t usLeftDutyCycle;
     uint32_t usMiddleDutyCycle;
     uint32_t usRightDutyCycle;
@@ -79,6 +95,7 @@ typedef struct {
 } MotorConfig;
 
 typedef struct {
+    eACTUATOR_ID_t id;
     float curThrottle; // Between 0.0 and 1.0
     float curTargetThrottle;
 } MotorDescriptor;
@@ -116,7 +133,7 @@ float ServoAngle2PWM (Servo* pServo, float targetAngle);
 
 #endif // UNIT_TEST
 
-eSTATUS_t ServoInit (PWMConfig config, Servo* pOutServo);
+eSTATUS_t ServoInit (eACTUATOR_ID_t id, PWMConfig config, Servo* pOutServo);
 eSTATUS_t ServoStart (Servo* pServo);
 eSTATUS_t ServoWrite (Servo* pServo, float targetAngle);
 
@@ -124,7 +141,7 @@ eSTATUS_t ServoWrite (Servo* pServo, float targetAngle);
 
 #endif // UNIT_TEST
 
-eSTATUS_t MotorInit (MotorConfig config, Motor* pOutMotor);
+eSTATUS_t MotorInit (eACTUATOR_ID_t id, MotorConfig config, Motor* pOutMotor);
 eSTATUS_t MotorStart (Motor* pMotor);
 eSTATUS_t MotorWrite (Motor* pMotor, float motorValue);
 eSTATUS_t MotorWriteCmd (Motor* pMotor, eMOTOR_CMD_t command);

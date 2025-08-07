@@ -47,6 +47,11 @@ Vec3f* pOutputPIDAttitude // degrees
         return eSTATUS_FAILURE;
     }
 
+    if (dt == 0.0F) {
+        LOG_ERROR ("dt cannot be zero");
+        return eSTATUS_FAILURE;
+    }
+
     float P            = pidContext->rollP;
     float I            = pidContext->rollI;
     float D            = pidContext->rollD;
@@ -54,8 +59,7 @@ Vec3f* pOutputPIDAttitude // degrees
     float rollIntegral = clipf32 (
     pidContext->prevIntegral.roll + rollError * dt,
     -pidContext->integralLimit, pidContext->integralLimit);
-    float rollDerivative =
-    (dt != 0.0F) ? (rollError - pidContext->prevError.roll) / dt : 0.0F;
+    float rollDerivative = (rollError - pidContext->prevError.roll) / dt;
     // pOutputPIDAttitude->roll = 0.01f * (P * rollError + I * rollIntegral - D * rollDerivative);
 
     // Scale PID output between -1 and 1
@@ -71,8 +75,7 @@ Vec3f* pOutputPIDAttitude // degrees
     float pitchIntegral = clipf32 (
     pidContext->prevIntegral.pitch + pitchError * dt,
     -pidContext->integralLimit, pidContext->integralLimit);
-    float pitchDerivative =
-    (dt != 0.0F) ? (pitchError - pidContext->prevError.pitch) / dt : 0.0F;
+    float pitchDerivative = (pitchError - pidContext->prevError.pitch) / dt;
     // pOutputPIDAttitude->pitch = 0.01f * (P * pitchError + I * pitchIntegral - D * pitchDerivative);
 
     // Scale PID output between -1 and 1
@@ -89,8 +92,7 @@ Vec3f* pOutputPIDAttitude // degrees
     float yawIntegral = clipf32 (
     pidContext->prevIntegral.yaw + yawError * dt,
     -pidContext->integralLimit, pidContext->integralLimit);
-    float yawDerivative =
-    (dt != 0.0F) ? (yawError - pidContext->prevError.yaw) / dt : 0.0F;
+    float yawDerivative = (yawError - pidContext->prevError.yaw) / dt;
     // pOutputPIDAttitude->yaw = 0.01f * (P * yawError + I * yawIntegral - D * yawDerivative);
 
     // Scale PID output between -1 and 1
@@ -145,7 +147,7 @@ STATIC_TESTABLE_DECL float ServoAngle2PWM (Servo* pServo, float targetAngle) {
     return (float)pDesc->usMiddleDutyCycle;
 }
 
-eSTATUS_t ServoInit (PWMConfig config, Servo* pOutServo) {
+eSTATUS_t ServoInit (eACTUATOR_ID_t id, PWMConfig config, Servo* pOutServo) {
     if (pOutServo == NULL) {
         LOG_ERROR ("Received NULL pointer for Servo");
         return eSTATUS_FAILURE;
@@ -156,20 +158,36 @@ eSTATUS_t ServoInit (PWMConfig config, Servo* pOutServo) {
         LOG_ERROR ("Failed to initialize PWM for Servo");
         return eSTATUS_FAILURE;
     }
-
-    // servoDescriptor.usLeftDutyCycle   = 1000;
-    // servoDescriptor.usMiddleDutyCycle = 1500;
-    // servoDescriptor.usRightDutyCycle  = 2000;
+    pOutServo->desc.id                = id;
     pOutServo->desc.usLeftDutyCycle   = 550;
     pOutServo->desc.usMiddleDutyCycle = 1600;
     pOutServo->desc.usRightDutyCycle  = 2650;
     pOutServo->desc.maxAngle          = 90.0F;
     pOutServo->desc.usableMaxAngle    = 20.0F;
     pOutServo->desc.curTargetAngle    = 0.0F;
-    // TODO: Make these configurable
-    pOutServo->desc.rollMix  = LEFT_SERVO_ROLL_MIX;  // -0.25F;
-    pOutServo->desc.yawMix   = LEFT_SERVO_YAW_MIX;   // 0.5F;
-    pOutServo->desc.pitchMix = LEFT_SERVO_PITCH_MIX; // 0.5F;
+    /*
+     * NOTE: When given a duty cycle of 2500us the servo spins CW (POV is
+     * servo shaft is pointed to the ceiling and its being viewed from
+     * above). For example, if the servo is mounted on the left side of the
+     * drone (POV directly behind drone), pid will respond to a positive
+     * roll with a negative pid roll. The left servo should respond to the
+     * negative pid roll by spinning CW (positive angle, duty cycle >
+     * 1600us) so the sign of servo pitch mix needs to be negative. This
+     * flips the sign of the pid pitch from negative to positive so the
+     * left servo spins CW.
+     */
+    if (id == eACTUATOR_ID_LEFT_SERVO) {
+        pOutServo->desc.rollMix = LEFT_SERVO_PID_ROLL_MIX_DIR * SERVO_PID_ROLL_MIX;
+        pOutServo->desc.yawMix = LEFT_SERVO_PID_YAW_MIX_DIR * SERVO_PID_YAW_MIX;
+        pOutServo->desc.pitchMix = LEFT_SERVO_PID_PITCH_MIX_DIR * SERVO_PID_PITCH_MIX;
+    } else if (id == eACTUATOR_ID_RIGHT_SERVO) {
+        pOutServo->desc.rollMix = RIGHT_SERVO_PID_ROLL_MIX_DIR * SERVO_PID_ROLL_MIX;
+        pOutServo->desc.yawMix = RIGHT_SERVO_PID_YAW_MIX_DIR * SERVO_PID_YAW_MIX;
+        pOutServo->desc.pitchMix = RIGHT_SERVO_PID_PITCH_MIX_DIR * SERVO_PID_PITCH_MIX;
+    } else {
+        LOG_ERROR ("Invalid actuator ID for Servo: %u", id);
+        return eSTATUS_FAILURE;
+    }
 
     return eSTATUS_SUCCESS;
 }
@@ -208,11 +226,13 @@ eSTATUS_t ServoWrite (Servo* pServo, float targetAngle) {
         LOG_ERROR ("Received invalid Servo pointer");
         return eSTATUS_FAILURE;
     }
-    targetAngle =
-    clipf32 (targetAngle, -pServo->desc.usableMaxAngle, pServo->desc.usableMaxAngle);
-    pServo->desc.curAngle = targetAngle;
 
-    return PWMWrite (&pServo->pwm, (uint32_t)ServoAngle2PWM (pServo, targetAngle));
+    float clippedAngle =
+    clipf32 (targetAngle, -pServo->desc.usableMaxAngle, pServo->desc.usableMaxAngle);
+    pServo->desc.curAngle       = clippedAngle;
+    pServo->desc.curTargetAngle = targetAngle;
+
+    return PWMWrite (&pServo->pwm, (uint32_t)ServoAngle2PWM (pServo, clippedAngle));
 }
 
 
@@ -220,7 +240,7 @@ eSTATUS_t ServoWrite (Servo* pServo, float targetAngle) {
 
 #endif // UNIT_TEST
 
-eSTATUS_t MotorInit (MotorConfig config, Motor* pOutMotor) {
+eSTATUS_t MotorInit (eACTUATOR_ID_t id, MotorConfig config, Motor* pOutMotor) {
 
 #ifndef USE_SERVOS_ONLY
 
@@ -238,11 +258,9 @@ eSTATUS_t MotorInit (MotorConfig config, Motor* pOutMotor) {
         return eSTATUS_FAILURE;
     }
 
-    MotorDescriptor motorDescriptor = { 0 };
-    // motorDescriptor.usMinDutyCycle  = 50;
-    // motorDescriptor.usMaxDutyCycle  = 2000;
-
-    pOutMotor->desc = motorDescriptor;
+    pOutMotor->desc.id                = id;
+    pOutMotor->desc.curThrottle       = 0.0F;
+    pOutMotor->desc.curTargetThrottle = 0.0F;
 
 #endif
 
@@ -287,6 +305,7 @@ eSTATUS_t MotorStop (Motor* pMotor) {
         LOG_ERROR ("Failed to stop dshot");
         return eSTATUS_FAILURE;
     }
+
 #endif
 
     return eSTATUS_SUCCESS;
@@ -295,7 +314,7 @@ eSTATUS_t MotorStop (Motor* pMotor) {
 /*
  * throttle is between 0.0F and 1.0F
  */
-eSTATUS_t MotorWrite (Motor* pMotor, float throttle) {
+eSTATUS_t MotorWrite (Motor* pMotor, float targetThrottle) {
 
 #ifndef USE_SERVOS_ONLY
 
@@ -304,16 +323,18 @@ eSTATUS_t MotorWrite (Motor* pMotor, float throttle) {
         return eSTATUS_FAILURE;
     }
 
-    if (throttle < 0.0F || throttle > 1.0F) {
-        LOG_ERROR ("Motor throttle out of range: %u", (uint16_t)(throttle * 100.0F));
+    if (targetThrottle < 0.0F || targetThrottle > 1.0F) {
+        LOG_ERROR ("Motor throttle out of range: %u", (uint16_t)(targetThrottle * 100.0F));
         return eSTATUS_FAILURE;
     }
 
-    throttle = clipf32 (throttle, MOTOR_MIN_THROTTLE, MOTOR_MAX_THROTTLE);
-    pMotor->desc.curThrottle = throttle;
+    float clippedThrottle =
+    clipf32 (targetThrottle, MOTOR_MIN_THROTTLE, MOTOR_MAX_THROTTLE);
+    pMotor->desc.curThrottle       = clippedThrottle;
+    pMotor->desc.curTargetThrottle = targetThrottle;
 
     eSTATUS_t status =
-    DShotWrite (&pMotor->dshot, DSHOT_MIN_THROTTLE + (uint16_t)(throttle * (float)DSHOT_RANGE));
+    DShotWrite (&pMotor->dshot, DSHOT_MIN_THROTTLE + (uint16_t)(clippedThrottle * (float)DSHOT_RANGE));
     if (status != eSTATUS_SUCCESS && status != eSTATUS_BUSY) {
         LOG_ERROR ("Failed to write to motor");
         return status;
@@ -394,7 +415,7 @@ ActuatorsMixPair (Servo* pServo, Motor* pMotor, Vec3f pidAttitude, float targetT
     // targetThrottle - pidAttitude.pitch + pidAttitude.roll + pidAttitude.yaw;
     // uint32_t usMotorTargetDutyCycle = (uint32_t)mapf32 (
     // target, -3.0F, 4.0F, (float)pM->usMinDutyCycle, (float)pM->usMaxDutyCycle);
-    pMotor->desc.curTargetThrottle = targetThrottle;
+    // pMotor->desc.curTargetThrottle = targetThrottle;
 
     /*
      *  Servo Mixing
@@ -408,7 +429,7 @@ ActuatorsMixPair (Servo* pServo, Motor* pMotor, Vec3f pidAttitude, float targetT
     // float target = pSer->pitchMix * pidAttitude.pitch + pSer->yawMix * pidAttitude.yaw;
     // pSer->targetAngle = ( clipf32(target, -1.0f, 1.0f) * pSer->maxAngle ) / ( clipf32(pSer->rollMix * pidAttitude.roll, -1.0f, 1.0f) * pSer->maxAngle );
     target = clipf32 (target, -1.0F, 1.0F) * pServoDesc->maxAngle;
-    pServoDesc->curTargetAngle = target;
+    // pServoDesc->curTargetAngle = target;
 
     // #ifndef USE_SERVOS_ONLY
     /* Motor throttle should be between 0 and 1 */
@@ -463,21 +484,18 @@ STATIC_TESTABLE_DECL eSTATUS_t ActuatorsArm (void) {
 
 eSTATUS_t ActuatorsInit (PWMConfig left_ServoPWM, MotorConfig left_Motor) {
 
-    eSTATUS_t status = ServoInit (left_ServoPWM, &gLeftServo);
+    eSTATUS_t status = ServoInit (eACTUATOR_ID_LEFT_SERVO, left_ServoPWM, &gLeftServo);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize left servo");
         return status;
     }
 
-    // #ifndef USE_SERVOS_ONLY
-
-    status = MotorInit (left_Motor, &gLeftMotor);
+    status = MotorInit (eACTUATOR_ID_LEFT_MOTOR, left_Motor, &gLeftMotor);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize left motor");
         return status;
     }
 
-    // #endif
     return eSTATUS_SUCCESS;
 }
 
@@ -488,8 +506,6 @@ eSTATUS_t ActuatorsStart (void) {
         LOG_ERROR ("Failed to start left servo");
         return status;
     }
-
-    // #ifndef USE_SERVOS_ONLY
 
     status = MotorStart (&gLeftMotor);
     if (status != eSTATUS_SUCCESS) {
@@ -503,19 +519,15 @@ eSTATUS_t ActuatorsStart (void) {
         return status;
     }
 
-    // #endif
-
     return eSTATUS_SUCCESS;
 }
 
 eSTATUS_t ActuatorsStop (void) {
 
-#ifndef USE_SERVOS_ONLY
     if (MotorStop (&gLeftMotor) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to stop left motor");
         return eSTATUS_FAILURE;
     }
-#endif
 
     if (ServoStop (&gLeftServo) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to stop left servo");

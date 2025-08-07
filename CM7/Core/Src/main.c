@@ -266,18 +266,26 @@ int main (void) {
      * Init IMU
      */
     {
-        IMUAccConf aconf           = { 0 };
-        aconf.odr                  = eIMU_ACC_ODR_200;
-        aconf.range                = eIMU_ACC_RANGE_2G;
-        aconf.avg                  = eIMU_ACC_AVG_16;
-        aconf.bw                   = eIMU_ACC_BW_HALF;
-        aconf.mode                 = eIMU_ACC_MODE_HIGH_PERF;
-        IMUGyroConf gconf          = { 0 };
-        gconf.odr                  = eIMU_GYRO_ODR_200;
-        gconf.range                = eIMU_GYRO_RANGE_250;
-        gconf.avg                  = eIMU_GYRO_AVG_16;
-        gconf.bw                   = eIMU_GYRO_BW_HALF;
-        gconf.mode                 = eIMU_GYRO_MODE_HIGH_PERF;
+        IMUAccConf aconf  = { 0 };
+        aconf.odr         = eIMU_ACC_ODR_200;
+        aconf.range       = eIMU_ACC_RANGE_2G;
+        aconf.avg         = eIMU_ACC_AVG_16;
+        aconf.bw          = eIMU_ACC_BW_HALF;
+        aconf.mode        = eIMU_ACC_MODE_HIGH_PERF;
+        IMUGyroConf gconf = { 0 };
+        gconf.odr         = eIMU_GYRO_ODR_200;
+        gconf.range       = eIMU_GYRO_RANGE_250;
+        gconf.avg         = eIMU_GYRO_AVG_16;
+        gconf.bw          = eIMU_GYRO_BW_HALF;
+        gconf.mode        = eIMU_GYRO_MODE_HIGH_PERF;
+        /*
+         * NOTE: Target LOCAL coordinate system is FRD (Forward, Right, Down).
+         * So +x is forward, +y is right, +z is down.
+         * +roll is right wing down, +pitch is nose up, +yaw is nose moves right / right wing tip moves right.
+         *
+         * On a flat surface if the IMU z axis is pointing up (opposite of gravity) then the sign of g is positive.
+         * With FRD, if the IMU is on a flat surface the expected returned IMU measured acceleration is: (0, 0, +1g).
+         */
         IMUAxesRemapConf axesRemap = { 0 };
         axesRemap.remap            = eIMU_AXES_REMAP_YXZ;
         axesRemap.xDir             = eIMU_AXES_DIR_DEFAULT;

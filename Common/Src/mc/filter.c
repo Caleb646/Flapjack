@@ -7,12 +7,13 @@
 
 
 /*
- *  The initial sensor frame (x, y, z) needs to be aligned with the
- *  world frame (X, Y, Z). For example if the world frame is (0, 0, 1 [gravity])
- *  then the initial sensor frame should be [using accelerometer data] (0, 0, 9.8m/s^2).
- *  If not aligned, the filter will show the imu as having rotated when it has not moved.
+ * The filter expects the accel and gyro data to be in the FRD coordinate
+ * system. For example, an accel reading of (0, 0, +1g) means the sensor is
+ * stationary and level. So the returned attitude will move towards (0, 0,
+ * 0). If the IMU is stationary and level but has an accel reading of (0,
+ * 1g, 0) then the returned attitude will move towards (0, -90, 0).
+ * Which is incorrect so the IMU data needs to be in FRD frame.
  */
-
 eSTATUS_t FilterMadgwick6DOF (
 FilterMadgwickContext* pContext,
 Vec3f const* pAccel,
@@ -21,6 +22,11 @@ float dt,
 Vec3f* pOutputAttitude) {
     // Source: https://courses.cs.washington.edu/courses/cse474/17wi/labs/l4/madgwick_internal_report.pdf
     if (pContext == NULL || pAccel == NULL || pGyroDegs == NULL || pOutputAttitude == NULL) {
+        return eSTATUS_FAILURE;
+    }
+
+    if (dt == 0.0F) {
+        LOG_ERROR ("dt cannot be zero");
         return eSTATUS_FAILURE;
     }
 
@@ -131,10 +137,11 @@ Vec3f* pOutputAttitude) {
 
     // Compute quaternion angles.
     // Then convert angles in radians to degrees.
-    // NOTE: page 6 of Madgwick report
-    // Roll is about the x axis, represented as phi
-    // Pitch is about the y axis, represented as theta
-    // Yaw is about the z axis, represented as psi
+    // Source: page 6 of Madgwick report
+    /*
+     * NOTE: atan2f returns values between -pi and +pi. It wraps at 0 --> +pi to -pi --> 0 .
+     * Pitch and roll should never wrap but yaw can wrap.
+     */
     pOutputAttitude->yaw = RAD2DEG (
     atan2f (2.0F * q2 * q3 - 2.0F * q1 * q4, 2.0F * q1 * q1 + 2.0F * q2 * q2 - 1));
 
@@ -158,6 +165,11 @@ float expectedGyroErrorDegs,
 float warmUpBeta,
 FilterMadgwickContext* pOutContext) {
 
+    if (pIMU == NULL || pOutContext == NULL) {
+        LOG_ERROR ("Invalid parameters: pIMU or pOutContext is NULL");
+        return eSTATUS_FAILURE;
+    }
+
     FilterMadgwickContext context = { 0 };
     context.beta                  = warmUpBeta;
     context.est.q1                = 1.0F;
@@ -167,21 +179,14 @@ FilterMadgwickContext* pOutContext) {
     Vec3f attitude                = { 0.0F };
     float startTime               = (float)HAL_GetTick ();
 
-    if (pIMU == NULL || pOutContext == NULL) {
-        LOG_ERROR ("Invalid parameters: pIMU or pOutContext is NULL");
-        return eSTATUS_FAILURE;
-    }
 
-    for (uint32_t i = 0U; i < iterations; ++i) {
+    for (uint32_t i = 0; i < iterations; ++i) {
         Vec3f accel = { 0.0F };
         Vec3f gyro  = { 0.0F };
         eSTATUS_t status = IMUProcessUpdatefromPolling (pIMU, &accel, &gyro);
 
         if (status != eSTATUS_SUCCESS) {
-            LOG_ERROR (
-            "IMUProcessUpdatefromPolling failed with status: [%d] at "
-            "iteration [%u]",
-            status, (uint16_t)i);
+            LOG_ERROR ("Failed to poll IMU");
             return status;
         }
 

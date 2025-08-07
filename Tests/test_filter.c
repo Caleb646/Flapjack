@@ -91,7 +91,6 @@ void test_FilterMadgwick6DOF_Roll90Degrees (void) {
         TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
     }
 
-    // Should converge to 90-degree roll (or -90 depending on convention)
     TEST_ASSERT_FLOAT_WITHIN (2.0F, 90.0F, fabs (attitude.roll));
     TEST_ASSERT_FLOAT_WITHIN (0.01F, 0.0F, attitude.pitch);
     TEST_ASSERT_FLOAT_WITHIN (0.01F, 0.0F, attitude.yaw);
@@ -115,7 +114,7 @@ void test_FilterMadgwick6DOF_Pitch90Degrees (void) {
         TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
     }
 
-    // Should converge to 90-degree pitch (or -90 depending on convention)
+    // Should converge to 90-degree pitch
     TEST_ASSERT_FLOAT_WITHIN (0.01F, 0.0F, attitude.roll);
     TEST_ASSERT_FLOAT_WITHIN (2.0F, 90.0F, fabs (attitude.pitch));
     TEST_ASSERT_FLOAT_WITHIN (0.01F, 0.0F, attitude.yaw);
