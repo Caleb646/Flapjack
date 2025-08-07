@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "conf.h"
 #include "hal.h"
 #include "log.h"
 #include "mem/mem.h"
@@ -9,16 +10,20 @@
 #include "sync.h"
 
 
-
 #ifdef __GNUC__
 #define PUTCHAR_PROTOTYPE int __io_putchar (int ch)
 #else
 #define PUTCHAR_PROTOTYPE int fputc (int ch, FILE* f)
 #endif
 
+#ifdef LOGGER_SHOULD_BLOCK_ON_OVERRUN == 1
+#define LOGGER_WRITE_CHAR LoggerWriteChar_Blocking
+#else
+#define LOGGER_WRITE_CHAR LoggerWriteChar_NonBlocking
+#endif
+
 #define UART_LOGGER_HANDLE   egHandleUSART_1
 #define UART_LOGGER_INSTANCE USART1
-#define PRIMARY_LOGGER_ROLE  CM4_CPUID
 
 // NOLINTBEGIN
 static uint8_t gaBuffer[512]           = { 0 };
@@ -100,8 +105,13 @@ static eSTATUS_t LoggerUARTInit (void) {
     return eSTATUS_SUCCESS;
 }
 
-PUTCHAR_PROTOTYPE {
+static void LoggerWriteChar_Blocking (char ch) {
+    if (HAL_GetCurrentCPUID () != PRIMARY_LOGGER_ROLE) {
+        return;
+    }
+}
 
+static void LoggerWriteChar_NonBlocking (char ch) {
     RingBuff volatile* pMyRingBuf =
     (HAL_GetCurrentCPUID () == CM7_CPUID) ? gpCM7RingBuf : gpCM4RingBuf;
 
@@ -117,6 +127,10 @@ PUTCHAR_PROTOTYPE {
             SyncNotifyTaskUartOut (RingBuffGetFull (pMyRingBuf));
         }
     }
+}
+
+PUTCHAR_PROTOTYPE {
+    LOGGER_WRITE_CHAR ((char)ch);
     return ch;
 }
 

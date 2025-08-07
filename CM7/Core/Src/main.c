@@ -284,7 +284,7 @@ int main (void) {
          * +roll is right wing down, +pitch is nose up, +yaw is nose moves right / right wing tip moves right.
          *
          * On a flat surface if the IMU z axis is pointing up (opposite of gravity) then the sign of g is positive.
-         * With FRD, if the IMU is on a flat surface the expected returned IMU measured acceleration is: (0, 0, +1g).
+         * In FRD, if the IMU is on a flat surface the expected IMU measured acceleration is: (0, 0, +1g).
          */
         IMUAxesRemapConf axesRemap = { 0 };
         axesRemap.remap            = eIMU_AXES_REMAP_YXZ;
