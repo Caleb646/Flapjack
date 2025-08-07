@@ -163,9 +163,10 @@ uint32_t iterations,
 IMU* pIMU,
 float expectedGyroErrorDegs,
 float warmUpBeta,
-FilterMadgwickContext* pOutContext) {
+FilterMadgwickContext* pOutContext,
+Vec3f* pOutAttitude) {
 
-    if (pIMU == NULL || pOutContext == NULL) {
+    if (pIMU == NULL || pOutContext == NULL || pOutAttitude == NULL) {
         LOG_ERROR ("Invalid parameters: pIMU or pOutContext is NULL");
         return eSTATUS_FAILURE;
     }
@@ -176,7 +177,6 @@ FilterMadgwickContext* pOutContext) {
     context.est.q2                = 0.0F;
     context.est.q3                = 0.0F;
     context.est.q4                = 0.0F;
-    Vec3f attitude                = { 0.0F };
     float startTime               = (float)HAL_GetTick ();
 
 
@@ -198,7 +198,7 @@ FilterMadgwickContext* pOutContext) {
 
         startTime = HAL_GetTick ();
 
-        status = FilterMadgwick6DOF (&context, &accel, &gyro, dt, &attitude);
+        status = FilterMadgwick6DOF (&context, &accel, &gyro, dt, pOutAttitude);
         if (status != eSTATUS_SUCCESS) {
             LOG_ERROR ("FilterMadgwick6DOF failed with status: %d", status);
             return status;
@@ -206,7 +206,7 @@ FilterMadgwickContext* pOutContext) {
     }
 
     LOG_INFO ("Madgwick finished warmup");
-    LOG_DATA_CURRENT_ATTITUDE (attitude);
+    LOG_DATA_CURRENT_ATTITUDE (*pOutAttitude);
     return FilterMadgwickInit (pOutContext, expectedGyroErrorDegs, &context.est);
 }
 

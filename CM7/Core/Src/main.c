@@ -57,6 +57,7 @@ IMU gIMU                                     = { 0 };
 FilterMadgwickContext gFilterMadgwickContext = { 0 };
 PIDContext gPIDAngleContext                  = { 0 };
 TaskHandle_t gpTaskMotionControlUpdate       = { 0 };
+Vec3f gCurrentAttitude                       = { 0.0F };
 Vec3f gTargetAttitude                        = { 0.0F };
 float gTargetThrottle                        = MOTOR_STARTUP_THROTTLE;
 // NOLINTEND
@@ -146,14 +147,18 @@ void TaskMotionControlUpdate (void* pvParameters) {
 
     float msStartTime        = (float)xTaskGetTickCount ();
     uint32_t msLogStart      = xTaskGetTickCount ();
-    uint32_t const msLogStep = 500;
-    Vec3f currentAttitude    = { 0.0F };
+    uint32_t const msLogStep = MS_PER_LOG_DATA_UPDATE;
     Vec3f maxAttitude = { .roll = 45.0F, .pitch = 45.0F, .yaw = 180.0F };
     LOG_INFO ("Motion control update task started");
 
     while (1) {
 
         if (ControlGetOpState () != eOP_STATE_RUNNING) {
+            /*
+             * Update msStartTime and msLogStart so dt does not get too large.
+             */
+            msStartTime = (float)xTaskGetTickCount ();
+            msLogStart  = xTaskGetTickCount ();
             // Limit state checks to 1000Hz
             vTaskDelay (pdMS_TO_TICKS (1));
             continue;
@@ -178,7 +183,7 @@ void TaskMotionControlUpdate (void* pvParameters) {
         }
 
         status =
-        FilterMadgwick6DOF (&gFilterMadgwickContext, &accel, &gyro, dt, &currentAttitude);
+        FilterMadgwick6DOF (&gFilterMadgwickContext, &accel, &gyro, dt, &gCurrentAttitude);
         if (status != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to filter IMU data with Madgwick filter");
             continue;
@@ -186,7 +191,8 @@ void TaskMotionControlUpdate (void* pvParameters) {
 
         Vec3f pidAttitude = { 0.0F };
         status            = PIDUpdateAttitude (
-        &gPIDAngleContext, currentAttitude, gTargetAttitude, maxAttitude, dt, &pidAttitude);
+        &gPIDAngleContext, gCurrentAttitude, gTargetAttitude, maxAttitude,
+        dt, &pidAttitude);
         if (status != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to update PID attitude");
             continue;
@@ -203,7 +209,7 @@ void TaskMotionControlUpdate (void* pvParameters) {
 
             Vec3f a  = accel;
             Vec3f g  = gyro;
-            Vec3f ca = currentAttitude;
+            Vec3f ca = gCurrentAttitude;
 
             LOG_DATA_IMU_DATA (a, g);
             LOG_DATA_CURRENT_ATTITUDE (ca);
@@ -288,9 +294,9 @@ int main (void) {
          */
         IMUAxesRemapConf axesRemap = { 0 };
         axesRemap.remap            = eIMU_AXES_REMAP_YXZ;
-        axesRemap.xDir             = eIMU_AXES_DIR_DEFAULT;
-        axesRemap.yDir             = eIMU_AXES_DIR_INVERTED;
-        axesRemap.zDir             = eIMU_AXES_DIR_INVERTED;
+        axesRemap.xDir = eIMU_AXES_DIR_INVERTED; // eIMU_AXES_DIR_DEFAULT;
+        axesRemap.yDir = eIMU_AXES_DIR_INVERTED;
+        axesRemap.zDir = eIMU_AXES_DIR_INVERTED;
         if (IMUInit (&gIMU, &hspi2, aconf, gconf, &axesRemap) != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to init IMU");
         }
@@ -303,7 +309,8 @@ int main (void) {
     /*
      * NOTE: During filter warmup the IMU is polled and interrupts are disabled. So IMUStart doesnt need to be called
      */
-    status = FilterMadgwickWarmUp (500U, &gIMU, 1.5F, 3.0F, &gFilterMadgwickContext);
+    status =
+    FilterMadgwickWarmUp (500U, &gIMU, 1.0F, 3.0F, &gFilterMadgwickContext, &gCurrentAttitude);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to warm up Madgwick Filter");
     }

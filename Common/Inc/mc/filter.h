@@ -21,6 +21,7 @@ Vec3f const* pAccel,
 Vec3f const* pGyroDegs,
 float dt,
 Vec3f* pOutputAttitude);
+
 // eSTATUS_t
 // FilterMadgwick9DOF (FilterMadgwickContext* pContext, Vec3f accel, Vec3f gyro, Vec3f magno, float dt, Vec3f* pOutputAttitude);
 // eSTATUS_t FilterMadgwickInit (FilterMadgwickContext* pContext, float gyroMeasureErrorDegs);
@@ -30,7 +31,9 @@ uint32_t iterations,
 IMU* pIMU,
 float expectedGyroErrorDegs,
 float beta,
-FilterMadgwickContext* pOutContext);
+FilterMadgwickContext* pOutContext,
+Vec3f* pOutAttitude);
+
 eSTATUS_t
 FilterMadgwickInit (FilterMadgwickContext* pContext, float gyroMeasureErrorDegs, Vec4f* pInitialQuaternion);
 

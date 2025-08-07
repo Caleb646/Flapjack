@@ -62,7 +62,7 @@
 /* attitude is in degrees */
 #define LOG_DATA_CURRENT_ATTITUDE(attitude) \
     LOG_DATA (LOG_DATA_TYPE_ATTITUDE, "{\"roll\":%d,\"pitch\":%d,\"yaw\":%d}", \
-              (int16_t)(attitude.roll), (int16_t)(attitude.pitch), (int16_t)(attitude.yaw))
+              (int16_t)((attitude).roll), (int16_t)((attitude).pitch), (int16_t)((attitude).yaw))
 
 #define LOG_DATA_ACTUATORS_DATA(motorName, motor, servoName, servo) \
     LOG_DATA ("actuators", "{\"%s\":{\"type\":\"motor\",\"throttle\":%d,\"target_throttle\":%d},\"%s\":{\"type\":\"servo\",\"angle\":%d,\"target_angle\":%d}}", \

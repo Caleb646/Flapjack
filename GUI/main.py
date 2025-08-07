@@ -309,9 +309,13 @@ class FlightViewer(QtWidgets.QWidget):
  
         self.airplane.resetTransform()
         self.airplane.scale(self.airplane_scale, self.airplane_scale, self.airplane_scale)  # Reset scale
+        # print(f"Updating orientation: Roll={roll_deg}, Pitch={pitch_deg}, Yaw={yaw_deg}")
         self.airplane.rotate(yaw_deg, 0, 0, 1)    # Yaw (Z axis)
-        self.airplane.rotate(pitch_deg, 0, 1, 0)  # Pitch (Y axis)
-        self.airplane.rotate(roll_deg, 1, 0, 0)   # Roll (X axis)
+        # self.airplane.rotate(pitch_deg, 0, 1, 0)  # Pitch (Y axis)
+        # self.airplane.rotate(roll_deg, 1, 0, 0)   # Roll (X axis)
+
+        self.airplane.rotate(pitch_deg, 1, 0, 0)  # Pitch (Y axis)
+        self.airplane.rotate(roll_deg, 0, 1, 0)   # Roll (X axis)
 
     def closeEvent(self, event):
         # Ensure session files are properly closed on exit

@@ -16,10 +16,10 @@
 #define PUTCHAR_PROTOTYPE int fputc (int ch, FILE* f)
 #endif
 
-#ifdef LOGGER_SHOULD_BLOCK_ON_OVERRUN == 1
-#define LOGGER_WRITE_CHAR LoggerWriteChar_Blocking
+#if LOGGER_SHOULD_BLOCK_ON_OVERRUN == 1
+#define LOGGER_WRITE_CHAR(ch) LoggerWriteChar_Blocking (ch)
 #else
-#define LOGGER_WRITE_CHAR LoggerWriteChar_NonBlocking
+#define LOGGER_WRITE_CHAR(ch) LoggerWriteChar_NonBlocking (ch)
 #endif
 
 #define UART_LOGGER_HANDLE   egHandleUSART_1
@@ -33,6 +33,8 @@ static RingBuff volatile* gpCM7RingBuf = NULL;
 
 static eSTATUS_t LoggerSyncUARTTaskHandler (DefaultTask const* pTask);
 static eSTATUS_t LoggerWriteToUART (RingBuff volatile* pRingBuf, int32_t totalLen);
+static void LoggerWriteChar_Blocking (char ch);
+static void LoggerWriteChar_NonBlocking (char ch);
 
 static eSTATUS_t LoggerWriteToUART (RingBuff volatile* pRingBuf, int32_t totalLen) {
 
@@ -106,8 +108,31 @@ static eSTATUS_t LoggerUARTInit (void) {
 }
 
 static void LoggerWriteChar_Blocking (char ch) {
-    if (HAL_GetCurrentCPUID () != PRIMARY_LOGGER_ROLE) {
+    RingBuff volatile* pMyRingBuf =
+    (HAL_GetCurrentCPUID () == CM7_CPUID) ? gpCM7RingBuf : gpCM4RingBuf;
+
+    if (RingBuffIsValid (pMyRingBuf) != TRUE) {
         return;
+    }
+
+    /*
+     * NOTE: Block until there is space in the ring buffer
+     */
+    // if (HAL_GetCurrentCPUID () == PRIMARY_LOGGER_ROLE) {
+    //     LoggerWriteToUART (pMyRingBuf, RingBuffGetFull (pMyRingBuf));
+    // } else {
+    //     // clang-format off
+    //     while (pMyRingBuf->w == (pMyRingBuf->r + 1) && RingBuffGetFull(pMyRingBuf) > 0);
+    //     // clang-format on
+    // }
+
+    RingBuffWrite (pMyRingBuf, (void*)&ch, 1);
+    if ((char)ch == '\n') {
+        if (HAL_GetCurrentCPUID () == PRIMARY_LOGGER_ROLE) {
+            LoggerWriteToUART (pMyRingBuf, RingBuffGetFull (pMyRingBuf));
+        } else {
+            SyncNotifyTaskUartOut (RingBuffGetFull (pMyRingBuf));
+        }
     }
 }
 
@@ -116,7 +141,7 @@ static void LoggerWriteChar_NonBlocking (char ch) {
     (HAL_GetCurrentCPUID () == CM7_CPUID) ? gpCM7RingBuf : gpCM4RingBuf;
 
     if (RingBuffIsValid (pMyRingBuf) != TRUE) {
-        return ch;
+        return;
     }
 
     RingBuffWrite (pMyRingBuf, (void*)&ch, 1);

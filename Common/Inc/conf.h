@@ -2,8 +2,10 @@
 #define CONF_H
 #include "hal.h"
 
+#define MS_PER_LOG_DATA_UPDATE         100U // 100 ms data update interval
+
 #define PRIMARY_LOGGER_ROLE            CM4_CPUID
-#define LOGGER_SHOULD_BLOCK_ON_OVERRUN 1
+#define LOGGER_SHOULD_BLOCK_ON_OVERRUN 0
 
 #define LEFT_MOTOR_PWM_TIMER           TIM8
 #define LEFT_MOTOR_PWM_CHANNEL         TIM_CHANNEL_1
@@ -30,6 +32,6 @@
 #define RIGHT_SERVO_PID_PITCH_MIX_DIR  1.0F
 #define RIGHT_SERVO_PID_YAW_MIX_DIR    1.0F
 
-// #define USE_SERVOS_ONLY
+#define USE_SERVOS_ONLY
 
 #endif // CONF_H
