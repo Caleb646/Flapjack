@@ -2,6 +2,8 @@
 #define CONF_H
 #include "hal.h"
 
+// #define USE_SERVOS_ONLY
+
 #define MS_PER_LOG_DATA_UPDATE           100U // 100 ms data update interval
 
 #define PRIMARY_LOGGER_ROLE              CM4_CPUID
@@ -24,14 +26,12 @@
 #define SERVO_PID_PITCH_MIX              1.0F
 #define SERVO_PID_YAW_MIX                0.0F
 
-#define LEFT_SERVO_PID_ROLL_MIX_DIR      1.0F
-#define LEFT_SERVO_PID_PITCH_MIX_DIR     (-1.0F)
-#define LEFT_SERVO_PID_YAW_MIX_DIR       1.0F
+#define LEFT_SERVO_PID_ROLL_MIX_DIR      (1.0F)
+#define LEFT_SERVO_PID_PITCH_MIX_DIR     (1.0F)
+#define LEFT_SERVO_PID_YAW_MIX_DIR       (1.0F)
 
-#define RIGHT_SERVO_PID_ROLL_MIX_DIR     1.0F
-#define RIGHT_SERVO_PID_PITCH_MIX_DIR    1.0F
-#define RIGHT_SERVO_PID_YAW_MIX_DIR      1.0F
-
-#define USE_SERVOS_ONLY
+#define RIGHT_SERVO_PID_ROLL_MIX_DIR     (1.0F)
+#define RIGHT_SERVO_PID_PITCH_MIX_DIR    (1.0F)
+#define RIGHT_SERVO_PID_YAW_MIX_DIR      (1.0F)
 
 #endif // CONF_H

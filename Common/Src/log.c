@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "common.h"
 #include "conf.h"
 #include "hal.h"
 #include "log.h"
@@ -24,7 +25,7 @@
 
 #define PRIMARY_LOGGER_IS_ME() \
     (HAL_GetCurrentCPUID () == PRIMARY_LOGGER_ROLE)
-#define TEMP_BUFFER_SIZE     512
+#define TEMP_BUFFER_SIZE     512U
 #define UART_LOGGER_HANDLE   egHandleUSART_1
 #define UART_LOGGER_INSTANCE USART1
 
@@ -58,16 +59,21 @@ static eSTATUS_t LoggerWriteToUART (RingBuff volatile* pRingBuf, uint32_t totalL
         return eSTATUS_FAILURE;
     }
 
-    if (totalLen > TEMP_BUFFER_SIZE) {
-        return eSTATUS_FAILURE;
+    uint32_t nTotalBytes   = totalLen;
+    uint32_t maxIterations = 100;
+    while (nTotalBytes != 0U && maxIterations-- > 0) {
+        /*
+         * Read totalLen bytes from ringbuffer and this will include bytes
+         * that overflowed (wrapped around to the beginning of the buffer)
+         */
+        uint32_t toWrite = MIN_U32 (nTotalBytes, TEMP_BUFFER_SIZE);
+        uint32_t bytesRead = RingBuffRead (pRingBuf, (void*)gaTempReadBuffer, toWrite);
+        if (HAL_UART_Transmit (&UART_LOGGER_HANDLE, gaTempReadBuffer, bytesRead, 1000) != HAL_OK) {
+            return eSTATUS_FAILURE;
+        }
+        nTotalBytes -= bytesRead;
     }
-    /* Read totalLen bytes from ringbuffer and this will include bytes
-     * that overflowed (wrapped around to the beginning of the buffer)
-     */
-    uint32_t bytesRead = RingBuffRead (pRingBuf, (void*)gaTempReadBuffer, totalLen);
-    if (HAL_UART_Transmit (&UART_LOGGER_HANDLE, gaTempReadBuffer, bytesRead, 1000) != HAL_OK) {
-        return eSTATUS_FAILURE;
-    }
+
     return eSTATUS_SUCCESS;
 }
 
@@ -97,12 +103,15 @@ static void LoggerWriteChar_Blocking (char ch) {
         if (PRIMARY_LOGGER_IS_ME () == TRUE) {
             LoggerWriteToUART (pMyRingBuf, RingBuffGetFull (pMyRingBuf));
         } else {
-            int32_t timeout = 1000;
+            int32_t timeout = 10000;
             while (timeout-- > 0) {
                 if (RingBuffGetFree (pMyRingBuf) > 0) {
                     break;
                 }
             }
+            // if(timeout == 0) {
+            // 	timeout = 0; // for debugger
+            // }
         }
     }
     LoggerWriteChar_NonBlocking (ch);

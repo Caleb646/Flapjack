@@ -153,6 +153,8 @@ void TaskMotionControlUpdate (void* pvParameters) {
 
     while (1) {
 
+        LOG_INFO ("Motion control update task running");
+
         if (ControlGetOpState () != eOP_STATE_RUNNING) {
             /*
              * Update msStartTime and msLogStart so dt does not get too large.
