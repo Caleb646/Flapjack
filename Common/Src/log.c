@@ -16,54 +16,110 @@
 #define PUTCHAR_PROTOTYPE int fputc (int ch, FILE* f)
 #endif
 
-#if LOGGER_SHOULD_BLOCK_ON_OVERRUN == 1
+#if LOGGER_SHOULD_BLOCK_ON_OVERWRITE == 1
 #define LOGGER_WRITE_CHAR(ch) LoggerWriteChar_Blocking (ch)
 #else
 #define LOGGER_WRITE_CHAR(ch) LoggerWriteChar_NonBlocking (ch)
 #endif
 
+#define PRIMARY_LOGGER_IS_ME() \
+    (HAL_GetCurrentCPUID () == PRIMARY_LOGGER_ROLE)
+#define TEMP_BUFFER_SIZE     512
 #define UART_LOGGER_HANDLE   egHandleUSART_1
 #define UART_LOGGER_INSTANCE USART1
 
 // NOLINTBEGIN
-static uint8_t gaBuffer[512]           = { 0 };
-static RingBuff volatile* gpCM4RingBuf = NULL;
-static RingBuff volatile* gpCM7RingBuf = NULL;
+static uint8_t gaTempReadBuffer[TEMP_BUFFER_SIZE] = { 0 };
+static RingBuff volatile* gpCM4RingBuf            = NULL;
+static RingBuff volatile* gpCM7RingBuf            = NULL;
 // NOLINTEND
 
 static eSTATUS_t LoggerSyncUARTTaskHandler (DefaultTask const* pTask);
-static eSTATUS_t LoggerWriteToUART (RingBuff volatile* pRingBuf, int32_t totalLen);
+static eSTATUS_t LoggerWriteToUART (RingBuff volatile* pRingBuf, uint32_t totalLen);
+static RingBuff volatile* LoggerGetMyRingBuf (void);
+static RingBuff volatile* LoggerGetOtherRingBuf (void);
 static void LoggerWriteChar_Blocking (char ch);
 static void LoggerWriteChar_NonBlocking (char ch);
-
-static eSTATUS_t LoggerWriteToUART (RingBuff volatile* pRingBuf, int32_t totalLen) {
-
-    if (pRingBuf == NULL || UART_LOGGER_HANDLE.Instance == NULL) {
-        return eSTATUS_FAILURE;
-    }
-
-    if (totalLen <= 0 || totalLen > sizeof (gaBuffer)) {
-        return eSTATUS_FAILURE;
-    }
-    /* Read totalLen bytes from ringbuffer and this will include bytes
-     * that overflowed (wrapped around to the beginning of the buffer)
-     */
-    uint32_t bytesRead = RingBuffRead (pRingBuf, (void*)gaBuffer, totalLen);
-    if (HAL_UART_Transmit (&UART_LOGGER_HANDLE, gaBuffer, bytesRead, 1000) != HAL_OK) {
-        return eSTATUS_FAILURE;
-    }
-    return eSTATUS_SUCCESS;
-}
+static eSTATUS_t LoggerUARTInit (void);
 
 static eSTATUS_t LoggerSyncUARTTaskHandler (DefaultTask const* pTask) {
     // Write the other core's ring buffer out to the UART
     if (HAL_GetCurrentCPUID () == PRIMARY_LOGGER_ROLE) {
         SyncTaskUartOut const* pSyncTaskUartOut = (SyncTaskUartOut const*)pTask;
-        RingBuff volatile* pMyRingBuf =
-        (HAL_GetCurrentCPUID () == CM7_CPUID) ? gpCM4RingBuf : gpCM7RingBuf;
-        return LoggerWriteToUART (pMyRingBuf, pSyncTaskUartOut->len);
+        return LoggerWriteToUART (
+        LoggerGetOtherRingBuf (), pSyncTaskUartOut->len);
     }
     return eSTATUS_SUCCESS;
+}
+
+static eSTATUS_t LoggerWriteToUART (RingBuff volatile* pRingBuf, uint32_t totalLen) {
+
+    if (RingBuffIsValid (pRingBuf) != TRUE || UART_LOGGER_HANDLE.Instance == NULL) {
+        return eSTATUS_FAILURE;
+    }
+
+    if (totalLen > TEMP_BUFFER_SIZE) {
+        return eSTATUS_FAILURE;
+    }
+    /* Read totalLen bytes from ringbuffer and this will include bytes
+     * that overflowed (wrapped around to the beginning of the buffer)
+     */
+    uint32_t bytesRead = RingBuffRead (pRingBuf, (void*)gaTempReadBuffer, totalLen);
+    if (HAL_UART_Transmit (&UART_LOGGER_HANDLE, gaTempReadBuffer, bytesRead, 1000) != HAL_OK) {
+        return eSTATUS_FAILURE;
+    }
+    return eSTATUS_SUCCESS;
+}
+
+/*
+ * Returns the CURRENT core's ring buffer
+ */
+static RingBuff volatile* LoggerGetMyRingBuf (void) {
+    return (HAL_GetCurrentCPUID () == CM7_CPUID) ? gpCM7RingBuf : gpCM4RingBuf;
+}
+
+/*
+ * Returns the OTHER core's ring buffer
+ */
+static RingBuff volatile* LoggerGetOtherRingBuf (void) {
+    return (HAL_GetCurrentCPUID () == CM7_CPUID) ? gpCM4RingBuf : gpCM7RingBuf;
+}
+
+static void LoggerWriteChar_Blocking (char ch) {
+
+    RingBuff volatile* pMyRingBuf = LoggerGetMyRingBuf ();
+    /*
+     * If the char will cause an overwrite in the ring buffer:
+     *   Primary Logger = write what is currently in ring buffer to uart
+     *   Secondary Logger = wait until primary logger writes my ring buffer out to the uart and makes more space.
+     */
+    if (RingBuffGetFree (pMyRingBuf) == 0U) {
+        if (PRIMARY_LOGGER_IS_ME () == TRUE) {
+            LoggerWriteToUART (pMyRingBuf, RingBuffGetFull (pMyRingBuf));
+        } else {
+            int32_t timeout = 1000;
+            while (timeout-- > 0) {
+                if (RingBuffGetFree (pMyRingBuf) > 0) {
+                    break;
+                }
+            }
+        }
+    }
+    LoggerWriteChar_NonBlocking (ch);
+}
+
+static void LoggerWriteChar_NonBlocking (char ch) {
+
+    RingBuff volatile* pMyRingBuf = LoggerGetMyRingBuf ();
+    RingBuffWrite (pMyRingBuf, (void*)&ch, 1);
+
+    if ((char)ch == '\n') {
+        if (PRIMARY_LOGGER_IS_ME () == TRUE) {
+            LoggerWriteToUART (pMyRingBuf, RingBuffGetFull (pMyRingBuf));
+        } else {
+            SyncNotifyTaskUartOut (RingBuffGetFull (pMyRingBuf));
+        }
+    }
 }
 
 /*
@@ -105,53 +161,6 @@ static eSTATUS_t LoggerUARTInit (void) {
     }
 #endif // UNIT_TEST
     return eSTATUS_SUCCESS;
-}
-
-static void LoggerWriteChar_Blocking (char ch) {
-    RingBuff volatile* pMyRingBuf =
-    (HAL_GetCurrentCPUID () == CM7_CPUID) ? gpCM7RingBuf : gpCM4RingBuf;
-
-    if (RingBuffIsValid (pMyRingBuf) != TRUE) {
-        return;
-    }
-
-    /*
-     * NOTE: Block until there is space in the ring buffer
-     */
-    // if (HAL_GetCurrentCPUID () == PRIMARY_LOGGER_ROLE) {
-    //     LoggerWriteToUART (pMyRingBuf, RingBuffGetFull (pMyRingBuf));
-    // } else {
-    //     // clang-format off
-    //     while (pMyRingBuf->w == (pMyRingBuf->r + 1) && RingBuffGetFull(pMyRingBuf) > 0);
-    //     // clang-format on
-    // }
-
-    RingBuffWrite (pMyRingBuf, (void*)&ch, 1);
-    if ((char)ch == '\n') {
-        if (HAL_GetCurrentCPUID () == PRIMARY_LOGGER_ROLE) {
-            LoggerWriteToUART (pMyRingBuf, RingBuffGetFull (pMyRingBuf));
-        } else {
-            SyncNotifyTaskUartOut (RingBuffGetFull (pMyRingBuf));
-        }
-    }
-}
-
-static void LoggerWriteChar_NonBlocking (char ch) {
-    RingBuff volatile* pMyRingBuf =
-    (HAL_GetCurrentCPUID () == CM7_CPUID) ? gpCM7RingBuf : gpCM4RingBuf;
-
-    if (RingBuffIsValid (pMyRingBuf) != TRUE) {
-        return;
-    }
-
-    RingBuffWrite (pMyRingBuf, (void*)&ch, 1);
-    if ((char)ch == '\n') {
-        if (HAL_GetCurrentCPUID () == PRIMARY_LOGGER_ROLE) {
-            LoggerWriteToUART (pMyRingBuf, RingBuffGetFull (pMyRingBuf));
-        } else {
-            SyncNotifyTaskUartOut (RingBuffGetFull (pMyRingBuf));
-        }
-    }
 }
 
 PUTCHAR_PROTOTYPE {
