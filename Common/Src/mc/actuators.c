@@ -159,9 +159,9 @@ eSTATUS_t ServoInit (eACTUATOR_ID_t id, PWMConfig config, Servo* pOutServo) {
         return eSTATUS_FAILURE;
     }
     pOutServo->desc.id                = id;
-    pOutServo->desc.usLeftDutyCycle   = 550;
-    pOutServo->desc.usMiddleDutyCycle = 1600;
-    pOutServo->desc.usRightDutyCycle  = 2650;
+    pOutServo->desc.usLeftDutyCycle   = 500;  // 550;
+    pOutServo->desc.usMiddleDutyCycle = 1500; // 1600;
+    pOutServo->desc.usRightDutyCycle  = 2500; // 2650;
     pOutServo->desc.maxAngle          = 90.0F;
     pOutServo->desc.usableMaxAngle    = 20.0F;
     pOutServo->desc.curTargetAngle    = 0.0F;
