@@ -55,11 +55,12 @@ static void MX_SPI2_Init (void);
 // NOLINTBEGIN
 IMU gIMU                                     = { 0 };
 FilterMadgwickContext gFilterMadgwickContext = { 0 };
-PIDContext gPIDAngleContext                  = { 0 };
+PIDContext gPIDContext                       = { 0 };
 TaskHandle_t gpTaskMotionControlUpdate       = { 0 };
-Vec3f gCurrentAttitude                       = { 0.0F };
-Vec3f gTargetAttitude                        = { 0.0F };
-float gTargetThrottle                        = MOTOR_STARTUP_THROTTLE;
+Vec3f gMaxAttitude     = { .roll = 45.0F, .pitch = 45.0F, .yaw = 180.0F };
+Vec3f gCurrentAttitude = { 0.0F };
+Vec3f gTargetAttitude  = { 0.0F };
+float gTargetThrottle  = MOTOR_STARTUP_THROTTLE;
 // NOLINTEND
 
 /**
@@ -71,16 +72,50 @@ void EXTI9_5_IRQHandler (void) {
 }
 
 void HAL_GPIO_EXTI_Callback (uint16_t gpioPin) {
+
     if (gpioPin == IMU_INT_GPIO_Pin) {
-        eSTATUS_t status = IMU2CPUInterruptHandler (&gIMU);
-        if (status == eSTATUS_SUCCESS) {
-            if (gpTaskMotionControlUpdate != NULL) {
-                xTaskNotifyFromISR (gpTaskMotionControlUpdate, 0, eSetBits, NULL);
-            }
-        } else {
-            gIMU.status = status;
+        IMU2CPUInterruptHandler (&gIMU);
+        if (gpTaskMotionControlUpdate != NULL) {
+            xTaskNotifyFromISR (gpTaskMotionControlUpdate, 0, eSetBits, NULL);
         }
     }
+}
+
+eSTATUS_t ProcessPIDChange (EmptyCommand cmd) {
+
+    ChangePIDCmd* pChangePIDCmd = (ChangePIDCmd*)cmd.data;
+    float p = mapf32 ((float)pChangePIDCmd->P.v, 0.0F, 65535.0F, PID_MIN_VALUE, PID_MAX_VALUE);
+    float i = mapf32 ((float)pChangePIDCmd->I.v, 0.0F, 65535.0F, PID_MIN_VALUE, PID_MAX_VALUE);
+    float d = mapf32 ((float)pChangePIDCmd->D.v, 0.0F, 65535.0F, PID_MIN_VALUE, PID_MAX_VALUE);
+
+    if (pChangePIDCmd->pidType == eCMD_PID_ROLL) {
+        gPIDContext.rollP = p;
+        gPIDContext.rollI = i;
+        gPIDContext.rollD = d;
+    } else if (pChangePIDCmd->pidType == eCMD_PID_PITCH) {
+        gPIDContext.pitchP = p;
+        gPIDContext.pitchI = i;
+        gPIDContext.pitchD = d;
+    } else if (pChangePIDCmd->pidType == eCMD_PID_YAW) {
+        gPIDContext.yawP = p;
+        gPIDContext.yawI = i;
+        gPIDContext.yawD = d;
+    } else if (pChangePIDCmd->pidType == eCMD_PID_THROTTLE) {
+        LOG_ERROR ("Throttle PID change is not supported");
+        return eSTATUS_FAILURE;
+    } else {
+        LOG_ERROR ("Unknown PID command type: %d", pChangePIDCmd->pidType);
+        return eSTATUS_FAILURE;
+    }
+    return eSTATUS_SUCCESS;
+}
+
+eSTATUS_t ProcessVelocityChange (EmptyCommand cmd) {
+    // TODO: need work out how I will change forward/backward/right...
+    // velocity values to a target attitude
+    ChangeVelocityCmd* pChangeVelocityCmd = (ChangeVelocityCmd*)cmd.data;
+    gTargetThrottle = 100.0F / (float)pChangeVelocityCmd->vThrottle;
+    return eSTATUS_SUCCESS;
 }
 
 BOOL_t StateTransitionFromStopped2Running (FCState curState) {
@@ -121,8 +156,12 @@ void TaskMainLoop (void* pvParameters) {
     uint32_t const msLogStep = 3000;
     LOG_INFO ("Main loop started");
 
-    ControlRegisterOPStateTransitionHandler (eOP_STATE_STOPPED, eOP_STATE_RUNNING, StateTransitionFromStopped2Running);
-    ControlRegisterOPStateTransitionHandler (eOP_STATE_RUNNING, eOP_STATE_STOPPED, StateTransitionFromRunning2Stopped);
+    ControlRegister_CmdHandler (eCMD_TYPE_CHANGE_PID, ProcessPIDChange);
+    ControlRegister_CmdHandler (eCMD_TYPE_CHANGE_VELOCITY, ProcessVelocityChange);
+    ControlRegister_OPStateTransitionHandler (
+    eCMD_OP_STATE_STOPPED, eCMD_OP_STATE_RUNNING, StateTransitionFromStopped2Running);
+    ControlRegister_OPStateTransitionHandler (
+    eCMD_OP_STATE_RUNNING, eCMD_OP_STATE_STOPPED, StateTransitionFromRunning2Stopped);
 
     if (ControlStart (NULL) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start control module");
@@ -148,12 +187,11 @@ void TaskMotionControlUpdate (void* pvParameters) {
     float msStartTime        = (float)xTaskGetTickCount ();
     uint32_t msLogStart      = xTaskGetTickCount ();
     uint32_t const msLogStep = MS_PER_LOG_DATA_UPDATE;
-    Vec3f maxAttitude = { .roll = 45.0F, .pitch = 45.0F, .yaw = 180.0F };
     LOG_INFO ("Motion control update task started");
 
     while (1) {
 
-        if (ControlGetOpState () != eOP_STATE_RUNNING) {
+        if (ControlGetOpState () != eCMD_OP_STATE_RUNNING) {
             /*
              * Update msStartTime and msLogStart so dt does not get too large.
              */
@@ -191,8 +229,7 @@ void TaskMotionControlUpdate (void* pvParameters) {
 
         Vec3f pidAttitude = { 0.0F };
         status            = PIDUpdateAttitude (
-        &gPIDAngleContext, gCurrentAttitude, gTargetAttitude, maxAttitude,
-        dt, &pidAttitude);
+        &gPIDContext, gCurrentAttitude, gTargetAttitude, gMaxAttitude, dt, &pidAttitude);
         if (status != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to update PID attitude");
             continue;
@@ -207,12 +244,17 @@ void TaskMotionControlUpdate (void* pvParameters) {
         if ((xTaskGetTickCount () - msLogStart) >= msLogStep) {
             msLogStart = xTaskGetTickCount ();
 
-            Vec3f a  = accel;
-            Vec3f g  = gyro;
-            Vec3f ca = gCurrentAttitude;
+            Vec3f a   = accel;
+            Vec3f g   = gyro;
+            Vec3f ca  = gCurrentAttitude;
+            Vec3f pid = pidAttitude;
+            pid.roll *= gMaxAttitude.roll;
+            pid.pitch *= gMaxAttitude.pitch;
+            pid.yaw *= gMaxAttitude.yaw;
 
             LOG_DATA_IMU_DATA (a, g);
             LOG_DATA_CURRENT_ATTITUDE (ca);
+            LOG_DATA_CURRENT_PID_ATTITUDE (pid);
             ActuatorsLogData ();
         }
     }
@@ -302,7 +344,7 @@ int main (void) {
         }
     }
 
-    PID_INIT (gPIDAngleContext);
+    PID_INIT (gPIDContext);
 
     /* With an ODR of 100 Hz on the IMU 1000 iterations will take 10 seconds */
     /* With an ODR of 200 Hz on the IMU 1000 iterations will take 5 seconds */

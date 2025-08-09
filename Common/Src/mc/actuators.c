@@ -1,4 +1,5 @@
 #include "mc/actuators.h"
+#include "common.h"
 #include "conf.h"
 #include "log.h"
 #include "mc/dshot.h"
@@ -35,10 +36,10 @@
 
 eSTATUS_t PIDUpdateAttitude (
 PIDContext* pidContext,
-Vec3f currentAttitude, // degrees
-Vec3f targetAttitude,  // degrees
-Vec3f maxAttitude,     // degrees
-float dt,
+Vec3f currentAttitude,    // degrees
+Vec3f targetAttitude,     // degrees
+Vec3f maxAttitude,        // degrees
+float dt,                 // seconds
 Vec3f* pOutputPIDAttitude // degrees
 ) {
 
@@ -163,8 +164,7 @@ eSTATUS_t ServoInit (eACTUATOR_ID_t id, PWMConfig config, Servo* pOutServo) {
     pOutServo->desc.usMiddleDutyCycle = 1500; // 1600;
     pOutServo->desc.usRightDutyCycle  = 2500; // 2650;
     pOutServo->desc.maxAngle          = 90.0F;
-    pOutServo->desc.usableMaxAngle    = 20.0F;
-    pOutServo->desc.curTargetAngle    = 0.0F;
+    pOutServo->desc.usableMaxAngle    = 25.0F;
     /*
      * NOTE: When given a duty cycle of 2500us the servo spins CW (POV is
      * servo shaft is pointed to the ceiling and its being viewed from
@@ -229,8 +229,8 @@ eSTATUS_t ServoWrite (Servo* pServo, float targetAngle) {
 
     float clippedAngle =
     clipf32 (targetAngle, -pServo->desc.usableMaxAngle, pServo->desc.usableMaxAngle);
-    pServo->desc.curAngle       = clippedAngle;
-    pServo->desc.curTargetAngle = targetAngle;
+    pServo->curAngle       = clippedAngle;
+    pServo->curTargetAngle = targetAngle;
 
     return PWMWrite (&pServo->pwm, (uint32_t)ServoAngle2PWM (pServo, clippedAngle));
 }
@@ -258,9 +258,20 @@ eSTATUS_t MotorInit (eACTUATOR_ID_t id, MotorConfig config, Motor* pOutMotor) {
         return eSTATUS_FAILURE;
     }
 
-    pOutMotor->desc.id                = id;
-    pOutMotor->desc.curThrottle       = 0.0F;
-    pOutMotor->desc.curTargetThrottle = 0.0F;
+    pOutMotor->desc.id = id;
+    if (id == eACTUATOR_ID_LEFT_MOTOR) {
+        pOutMotor->desc.pitchMix = MOTOR_PID_PITCH_MIX * LEFT_MOTOR_PID_PITCH_MIX_DIR;
+        pOutMotor->desc.yawMix = MOTOR_PID_YAW_MIX * LEFT_MOTOR_PID_YAW_MIX_DIR;
+        pOutMotor->desc.rollMix = MOTOR_PID_ROLL_MIX * LEFT_MOTOR_PID_ROLL_MIX_DIR;
+
+    } else if (id == eACTUATOR_ID_RIGHT_MOTOR) {
+        pOutMotor->desc.pitchMix = MOTOR_PID_PITCH_MIX * RIGHT_MOTOR_PID_PITCH_MIX_DIR;
+        pOutMotor->desc.yawMix = MOTOR_PID_YAW_MIX * RIGHT_MOTOR_PID_YAW_MIX_DIR;
+        pOutMotor->desc.rollMix = MOTOR_PID_ROLL_MIX * RIGHT_MOTOR_PID_ROLL_MIX_DIR;
+    } else {
+        LOG_ERROR ("Invalid actuator ID for Motor: %u", id);
+        return eSTATUS_FAILURE;
+    }
 
 #endif
 
@@ -330,8 +341,8 @@ eSTATUS_t MotorWrite (Motor* pMotor, float targetThrottle) {
 
     float clippedThrottle =
     clipf32 (targetThrottle, MOTOR_MIN_THROTTLE, MOTOR_MAX_THROTTLE);
-    pMotor->desc.curThrottle       = clippedThrottle;
-    pMotor->desc.curTargetThrottle = targetThrottle;
+    pMotor->curThrottle       = clippedThrottle;
+    pMotor->curTargetThrottle = targetThrottle;
 
     eSTATUS_t status =
     DShotWrite (&pMotor->dshot, DSHOT_MIN_THROTTLE + (uint16_t)(clippedThrottle * (float)DSHOT_RANGE));
@@ -397,45 +408,34 @@ static eSTATUS_t ActuatorsArm (void);
 STATIC_TESTABLE_DECL eSTATUS_t
 ActuatorsMixPair (Servo* pServo, Motor* pMotor, Vec3f pidAttitude, float targetThrottle) {
     /*
-     *   NWU coordinate system:
-     *       + x-axis pointing to the North
-     *       + y-axis pointing to the West
-     *       + z-axis pointing away from the surface of the Earth
-     *   + roll (pivot on x axis) right motor is higher
-     *   + pitch (pivot on y axis) nose is higher than tail
-     *   + yaw (pivot on z axis) right wing tip is more forward
-     */
-
-    /*
      *  Motor Mixing
      */
-    // float target        = 0.0F;
-    // MotorDescriptor* pM = &gLeftMotor.pwmDescriptor;
-    // target =
-    // targetThrottle - pidAttitude.pitch + pidAttitude.roll + pidAttitude.yaw;
-    // uint32_t usMotorTargetDutyCycle = (uint32_t)mapf32 (
-    // target, -3.0F, 4.0F, (float)pM->usMinDutyCycle, (float)pM->usMaxDutyCycle);
-    // pMotor->desc.curTargetThrottle = targetThrottle;
+    MotorDescriptor* pMotorDesc = &gLeftMotor.desc;
+    float mixedThrottle         = targetThrottle; // between 0 and 1
+    /*
+     * NOTE: A PID pitch value should always increase the throttle of both
+     * motors regardless of the sign of the PID pitch value.
+     */
+    mixedThrottle += pMotorDesc->pitchMix * ABS_F32 (pidAttitude.pitch) +
+                     pMotorDesc->rollMix * pidAttitude.roll +
+                     pMotorDesc->yawMix * pidAttitude.yaw;
+    mixedThrottle = clipf32 (mixedThrottle, 0.0F, 1.0F);
 
     /*
      *  Servo Mixing
      */
     ServoDescriptor* pServoDesc = &gLeftServo.desc;
-    float target = pServoDesc->pitchMix * pidAttitude.pitch +
-                   pServoDesc->rollMix * pidAttitude.roll +
-                   pServoDesc->yawMix * pidAttitude.yaw;
-    // NOTE: Maybe Roll should have a negative impact on target angle. Meaning the magnitude of the target angle is closer to 0
-    // the larger pid roll is.
-    // float target = pSer->pitchMix * pidAttitude.pitch + pSer->yawMix * pidAttitude.yaw;
-    // pSer->targetAngle = ( clipf32(target, -1.0f, 1.0f) * pSer->maxAngle ) / ( clipf32(pSer->rollMix * pidAttitude.roll, -1.0f, 1.0f) * pSer->maxAngle );
-    target = clipf32 (target, -1.0F, 1.0F) * pServoDesc->maxAngle;
-    // pServoDesc->curTargetAngle = target;
+    float mixedAngle = pServoDesc->pitchMix * pidAttitude.pitch +
+                       pServoDesc->rollMix * pidAttitude.roll +
+                       pServoDesc->yawMix * pidAttitude.yaw;
+    // NOTE: Maybe Roll should have a negative impact on target angle.
+    // Meaning the magnitude of the target angle is closer to 0 the larger
+    // pid roll is.
+    mixedAngle = clipf32 (mixedAngle, -1.0F, 1.0F) * pServoDesc->maxAngle;
 
-    // #ifndef USE_SERVOS_ONLY
     /* Motor throttle should be between 0 and 1 */
-    MotorWrite (pMotor, targetThrottle);
-    // #endif
-    ServoWrite (pServo, target);
+    MotorWrite (pMotor, mixedThrottle);
+    ServoWrite (pServo, mixedAngle);
     return eSTATUS_SUCCESS;
 }
 

@@ -27,6 +27,7 @@ GUI/Logs/**
 Drone_CM7.list
 Drone_CM4.list
 
+**__pycache__**
 # Prerequisites
 *.d
 

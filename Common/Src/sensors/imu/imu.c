@@ -1001,31 +1001,33 @@ eSTATUS_t IMUHandleErr (IMU* pIMU) {
     return eSTATUS_FAILURE;
 }
 
-eSTATUS_t IMU2CPUInterruptHandler (IMU* pIMU) {
+void IMU2CPUInterruptHandler (IMU* pIMU) {
+
+    eSTATUS_t status = eSTATUS_SUCCESS;
     if (pIMU == NULL || pIMU->pSPI == NULL) {
-        return (eSTATUS_t)eIMU_NULL_PTR;
+        status = (eSTATUS_t)eIMU_NULL_PTR;
+        goto error;
     }
 
     // read both status registers
     uint8_t pBuf[2] = { 0 };
-    eSTATUS_t status = IMUReadReg (pIMU, BMI3_REG_INT_STATUS_INT1, pBuf, 2);
-
+    status          = IMUReadReg (pIMU, BMI3_REG_INT_STATUS_INT1, pBuf, 2);
     if (status != eSTATUS_SUCCESS) {
-        return status;
+        goto error;
     }
 
     uint16_t intStatus1 = ((uint16_t)pBuf[1]) << 8U | ((uint16_t)pBuf[0]);
     /* check if error status bit is set */
     if (BIT_ISSET (intStatus1, ((uint8_t)INT_ERR_STATUS_BIT << 1U))) {
-        return (eSTATUS_t)eIMU_HARDWARE_ERR;
+        status = (eSTATUS_t)eIMU_HARDWARE_ERR;
+        goto error;
     }
-    // LOG_INFO ("IMU interrupt status: 0x%04X", intStatus1);
+
     /* check if accel data is ready */
     if (BIT_ISSET (intStatus1, INT1_ACCEL_DATA_RDY_BIT)) {
-        // LOG_INFO ("IMU accel data ready");
         status = IMUUpdateAccel (pIMU);
         if (status != eSTATUS_SUCCESS) {
-            return status;
+            goto error;
         }
     }
 
@@ -1033,16 +1035,19 @@ eSTATUS_t IMU2CPUInterruptHandler (IMU* pIMU) {
     if (BIT_ISSET (intStatus1, INT1_GYRO_DATA_RDY_BIT)) {
         status = IMUUpdateGyro (pIMU);
         if (status != eSTATUS_SUCCESS) {
-            return status;
+            goto error;
         }
     }
+
     /* check if temperature data is ready */
     if (BIT_ISSET (intStatus1, INT1_TEMP_DATA_RDY_BIT)) {
         // if (status != eSTATUS_SUCCESS) {
-        //     return status;
+        //     goto error;
         // }
     };
-    return status;
+
+error:
+    pIMU->status = status;
 }
 
 eSTATUS_t IMUGetConf (IMU* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf) {

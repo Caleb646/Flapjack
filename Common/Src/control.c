@@ -10,15 +10,15 @@
 #define RAW_COMMAND_QUEUE_CAPACITY 8U
 
 /* Consumer global variables */
-// A local only buffer to store raw commands during the interrupt handler
 static Queue gRawCommandQueue = { 0 };
 static uint8_t gRawCommandQueueBuffer[RAW_COMMAND_QUEUE_CAPACITY * sizeof (EmptyCommand)] = { 0 };
+// A local only buffer to store raw commands during the interrupt handler
 static uint8_t gUartInterruptBuffer[sizeof (EmptyCommand)] = { 0 };
 
 /* Producer global variables */
 static OpStateTransitionHandler_t
 gaaOpStateTransitionHandlers[eNUMBER_OF_OP_STATES][eNUMBER_OF_OP_STATES] = { 0 };
-static CmdHandler_t gaCmdHandlers[eNUMBER_OF_COMMAND_TYPES] = { 0 };
+static CmdHandler_t gaCmdHandlers[eNUMBER_OF_CMD_TYPES] = { 0 };
 
 /* Shared global variables */
 static Queue* gpSharedCommandQueue = NULL;
@@ -93,27 +93,27 @@ STATIC_TESTABLE_DECL eSTATUS_t ControlInitCmdQueue (Queue* pQueue) {
 
 STATIC_TESTABLE_DECL eSTATUS_t ControlInit_Consumer (void) {
 
-    if (ControlRegisterCmdHandler (eCOMMAND_TYPE_EMPTY, ControlProcessEmptyCmd) != eSTATUS_SUCCESS) {
+    if (ControlRegister_CmdHandler (eCMD_TYPE_EMPTY, ControlProcessEmptyCmd) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to register empty command handler");
         return eSTATUS_FAILURE;
     }
 
-    if (ControlRegisterCmdHandler (eCOMMAND_TYPE_CHANGE_OP_STATE, ControlProcessOpStateChange) != eSTATUS_SUCCESS) {
+    if (ControlRegister_CmdHandler (eCMD_TYPE_CHANGE_OP_STATE, ControlProcessOpStateChange) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to register change op state command handler");
         return eSTATUS_FAILURE;
     }
 
-    if (ControlRegisterCmdHandler (eCOMMAND_TYPE_CHANGE_FLIGHT_MODE, ControlProcessFlightModeChange) != eSTATUS_SUCCESS) {
+    if (ControlRegister_CmdHandler (eCMD_TYPE_CHANGE_FLIGHT_MODE, ControlProcessFlightModeChange) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to register change flight mode command handler");
         return eSTATUS_FAILURE;
     }
 
-    if (ControlRegisterCmdHandler (eCOMMAND_TYPE_CHANGE_VELOCITY, ControlProcessVelocityChange) != eSTATUS_SUCCESS) {
+    if (ControlRegister_CmdHandler (eCMD_TYPE_CHANGE_VELOCITY, ControlProcessVelocityChange) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to register change velocity command handler");
         return eSTATUS_FAILURE;
     }
 
-    if (ControlRegisterCmdHandler (eCOMMAND_TYPE_CHANGE_PID, ControlProcessPIDChange) != eSTATUS_SUCCESS) {
+    if (ControlRegister_CmdHandler (eCMD_TYPE_CHANGE_PID, ControlProcessPIDChange) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to register change pid command handler");
         return eSTATUS_FAILURE;
     }
@@ -128,8 +128,8 @@ STATIC_TESTABLE_DECL eSTATUS_t ControlInitFCState (FCState* pState) {
         return eSTATUS_FAILURE;
     }
 
-    pState->flightMode = eFLIGHT_MODE_HOVER;
-    pState->opState    = eOP_STATE_STOPPED;
+    pState->flightMode = eCMD_FLIGHT_MODE_HOVER;
+    pState->opState    = eCMD_OP_STATE_STOPPED;
 
     return eSTATUS_SUCCESS;
 }
@@ -142,8 +142,8 @@ STATIC_TESTABLE_DECL eSTATUS_t ControlProcessEmptyCmd (EmptyCommand cmd) {
 
 STATIC_TESTABLE_DECL eSTATUS_t ControlProcessOpStateChange (EmptyCommand cmd) {
 
-    FCState curState           = ControlGetCopyFCState ();
-    eOP_STATE_t requestedState = ((ChangeOpStateCmd*)&cmd)->requestedState;
+    FCState curState = ControlGetCopyFCState ();
+    eCMD_OP_STATE_t requestedState = ((ChangeOpStateCmd*)&cmd)->requestedState;
 
     if (curState.opState == requestedState) {
         LOG_INFO ("Already in state: %s", ControlOpState2Char (curState.opState));
@@ -151,9 +151,9 @@ STATIC_TESTABLE_DECL eSTATUS_t ControlProcessOpStateChange (EmptyCommand cmd) {
     }
 
     switch (requestedState) {
-    case eOP_STATE_STOPPED:
-    case eOP_STATE_RUNNING:
-    case eOP_STATE_ERROR: break;
+    case eCMD_OP_STATE_STOPPED:
+    case eCMD_OP_STATE_RUNNING:
+    case eCMD_OP_STATE_ERROR: break;
     default:
         LOG_ERROR ("Invalid requested state: %s", ControlOpState2Char (requestedState));
         return eSTATUS_FAILURE;
@@ -225,19 +225,19 @@ STATIC_TESTABLE_DECL BOOL_t ControlGetNewCmd (EmptyCommand* pOutCmd) {
 //     EmptyCommand* pCmd = (EmptyCommand*)pRawCmd;
 //     uint8_t* cmdData   = pCmd->data;
 //     switch (pCmd->header.commandType) {
-//     case eCOMMAND_TYPE_CHANGE_OP_STATE: {
+//     case eCMD_TYPE_CHANGE_OP_STATE: {
 //         ChangeOpStateCmd* pChangeOpStateCmd = (ChangeOpStateCmd*)pRawCmd;
 //         break;
 //     }
-//     case eCOMMAND_TYPE_CHANGE_FLIGHT_MODE: {
+//     case eCMD_TYPE_CHANGE_FLIGHT_MODE: {
 //         ChangeFlightModeCmd* pChangeFlightModeCmd = (ChangeFlightModeCmd*)pRawCmd;
 //         break;
 //     }
-//     case eCOMMAND_TYPE_CHANGE_VELOCITY: {
+//     case eCMD_TYPE_CHANGE_VELOCITY: {
 //         ChangeVelocityCmd* pChangeVelocityCmd = (ChangeVelocityCmd*)pRawCmd;
 //         break;
 //     }
-//     case eCOMMAND_TYPE_CHANGE_PID: {
+//     case eCMD_TYPE_CHANGE_PID: {
 //         ChangePIDCmd* pChangePIDCmd = (ChangePIDCmd*)pRawCmd;
 //         break;
 //     }
@@ -334,11 +334,11 @@ eSTATUS_t ControlProcessCmds (void) {
     }
 
     switch (cmd.header.commandType) {
-    case eCOMMAND_TYPE_EMPTY:
-    case eCOMMAND_TYPE_CHANGE_OP_STATE:
-    case eCOMMAND_TYPE_CHANGE_FLIGHT_MODE:
-    case eCOMMAND_TYPE_CHANGE_VELOCITY:
-    case eCOMMAND_TYPE_CHANGE_PID: break;
+    case eCMD_TYPE_EMPTY:
+    case eCMD_TYPE_CHANGE_OP_STATE:
+    case eCMD_TYPE_CHANGE_FLIGHT_MODE:
+    case eCMD_TYPE_CHANGE_VELOCITY:
+    case eCMD_TYPE_CHANGE_PID: break;
     default:
         LOG_ERROR ("Unknown command type: %u", cmd.header.commandType);
         return eSTATUS_FAILURE;
@@ -361,8 +361,10 @@ eSTATUS_t ControlProcessCmds (void) {
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t
-ControlRegisterOPStateTransitionHandler (eOP_STATE_t fromState, eOP_STATE_t toState, OpStateTransitionHandler_t handler) {
+eSTATUS_t ControlRegister_OPStateTransitionHandler (
+eCMD_OP_STATE_t fromState,
+eCMD_OP_STATE_t toState,
+OpStateTransitionHandler_t handler) {
 
     if (fromState >= eNUMBER_OF_OP_STATES || toState >= eNUMBER_OF_OP_STATES) {
         LOG_ERROR ("Invalid state transition: %d -> %d", fromState, toState);
@@ -373,9 +375,9 @@ ControlRegisterOPStateTransitionHandler (eOP_STATE_t fromState, eOP_STATE_t toSt
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t ControlRegisterCmdHandler (eCOMMAND_t cmdType, CmdHandler_t handler) {
+eSTATUS_t ControlRegister_CmdHandler (eCMD_t cmdType, CmdHandler_t handler) {
 
-    if (cmdType >= eNUMBER_OF_COMMAND_TYPES) {
+    if (cmdType >= eNUMBER_OF_CMD_TYPES) {
         LOG_ERROR ("Invalid command type: %d", cmdType);
         return eSTATUS_FAILURE;
     }
@@ -384,24 +386,24 @@ eSTATUS_t ControlRegisterCmdHandler (eCOMMAND_t cmdType, CmdHandler_t handler) {
     return eSTATUS_SUCCESS;
 }
 
-char const* ControlOpState2Char (eOP_STATE_t opState) {
+char const* ControlOpState2Char (eCMD_OP_STATE_t opState) {
 
     switch (opState) {
-    case eOP_STATE_STOPPED: return "[STOPPED]";
-    case eOP_STATE_RUNNING: return "[RUNNING]";
-    case eOP_STATE_ERROR: return "[ERROR]";
+    case eCMD_OP_STATE_STOPPED: return "[STOPPED]";
+    case eCMD_OP_STATE_RUNNING: return "[RUNNING]";
+    case eCMD_OP_STATE_ERROR: return "[ERROR]";
     default: return "[UNKNOWN]";
     }
 }
 
-char const* ControlCmdType2Char (eCOMMAND_t commandType) {
+char const* ControlCmdType2Char (eCMD_t commandType) {
 
     switch (commandType) {
-    case eCOMMAND_TYPE_EMPTY: return "[EMPTY]";
-    case eCOMMAND_TYPE_CHANGE_OP_STATE: return "[CHANGE_OP_STATE]";
-    case eCOMMAND_TYPE_CHANGE_FLIGHT_MODE: return "[CHANGE_FLIGHT_MODE]";
-    case eCOMMAND_TYPE_CHANGE_VELOCITY: return "[CHANGE_VELOCITY]";
-    case eCOMMAND_TYPE_CHANGE_PID: return "[CHANGE_PID]";
+    case eCMD_TYPE_EMPTY: return "[EMPTY]";
+    case eCMD_TYPE_CHANGE_OP_STATE: return "[CHANGE_OP_STATE]";
+    case eCMD_TYPE_CHANGE_FLIGHT_MODE: return "[CHANGE_FLIGHT_MODE]";
+    case eCMD_TYPE_CHANGE_VELOCITY: return "[CHANGE_VELOCITY]";
+    case eCMD_TYPE_CHANGE_PID: return "[CHANGE_PID]";
     default: return "[UNKNOWN_COMMAND_TYPE]";
     }
 }
@@ -418,11 +420,11 @@ FCState ControlGetCopyFCState (void) {
     return *gpFlightState;
 }
 
-eOP_STATE_t ControlGetOpState (void) {
+eCMD_OP_STATE_t ControlGetOpState (void) {
 
     if (gpFlightState == NULL) {
         LOG_ERROR ("Flight controller state pointer is NULL");
-        return eOP_STATE_ERROR;
+        return eCMD_OP_STATE_ERROR;
     }
     return gpFlightState->opState;
 }

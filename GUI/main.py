@@ -5,13 +5,15 @@ from collections import deque
 from PyQt5 import QtCore, QtWidgets, QtSerialPort
 from PyQt5.QtWidgets import QApplication, QTabWidget, QVBoxLayout, QHBoxLayout, QPushButton, QCheckBox
 from PyQt5.QtSerialPort import QSerialPort
-from pyqtgraph.opengl import GLViewWidget, GLBoxItem, GLGridItem, GLLinePlotItem, GLMeshItem, MeshData
-from pyqtgraph import Vector
+from pyqtgraph.opengl import GLViewWidget, GLGridItem, GLLinePlotItem, GLMeshItem, MeshData
 import pyqtgraph as pg
 from datetime import datetime
 import trimesh
 import os
 import struct
+import conf
+
+CONF = conf.conf_init()
 
 START_DELIM = b"<"
 END_DELIM = b">"
@@ -88,6 +90,9 @@ class FlightViewer(QtWidgets.QWidget):
         
         self.control_tab = FlightControlTab(self)
         self.tab_widget.addTab(self.control_tab, "Flight Control")
+        
+        self.config_tab = ConfigurationTab(self)
+        self.tab_widget.addTab(self.config_tab, "Configuration")
         
         main_layout.addWidget(self.tab_widget)
 
@@ -198,7 +203,7 @@ class FlightViewer(QtWidgets.QWidget):
             self.buffer = self.buffer[end + 1:]
             try:
                 data = json.loads(message)
-                if data.get("type") == "debug":
+                if data.get("type") == CONF.LOG_DATA_TYPE_DEBUG:
                     msg = json.dumps(data)
                     if self.debug_log:
                         self.debug_log.write(msg + "\n")
@@ -210,14 +215,17 @@ class FlightViewer(QtWidgets.QWidget):
                     if self.flight_data_log: 
                         self.flight_data_log.write(json.dumps(data) + "\n")
                         self.flight_data_log.flush()
-                    if data.get("type") == "attitude":  # Fixed typo from "attidude"
+                    if data.get("type") == CONF.LOG_DATA_TYPE_ATTITUDE:
                         attitude_data = data.get("data", {})
                         self.update_orientation(attitude_data)
                         self.plotter_tab.add_attitude_data(attitude_data)
-                    elif data.get("type") == "imu_data":
+                    elif data.get("type") == CONF.LOG_DATA_TYPE_PID_ATTITUDE:
+                        pid_attitude_data = data.get("data", {})
+                        self.plotter_tab.add_pid_attitude_data(pid_attitude_data)
+                    elif data.get("type") == CONF.LOG_DATA_TYPE_IMU_DATA:
                         imu_data = data.get("data", {})
                         self.plotter_tab.add_imu_data(imu_data)
-                    elif data.get("type") == "actuators":
+                    elif data.get("type") == CONF.LOG_DATA_TYPE_ACTUATORS:
                         actuator_data = data.get("data", {})
                         self.actuator_tab.add_actuator_data(actuator_data)
             except json.JSONDecodeError:
@@ -245,9 +253,9 @@ class FlightViewer(QtWidgets.QWidget):
         # CommandHeader: { uint8_t commandType; }
         # eREQUESTED_STATE_t: uint8_t
         
-        COMMAND_TYPE_CHANGE_OP_STATE = 1
-        REQUESTED_STATE_START = 1        
-        
+        COMMAND_TYPE_CHANGE_OP_STATE = CONF.eCMD_TYPE_CHANGE_OP_STATE
+        REQUESTED_STATE_START = CONF.eCMD_OP_STATE_RUNNING
+
         # Create 8-byte packet: commandType(1) + requestedState(1) + padding(6)
         # B = uint8_t and 6x = 6 bytes of padding
         packet = struct.pack('<BB6x', COMMAND_TYPE_CHANGE_OP_STATE, REQUESTED_STATE_START)
@@ -263,10 +271,10 @@ class FlightViewer(QtWidgets.QWidget):
         if not self.serial.isOpen():
             self.append_debug_console("Serial port not connected!", "[ERROR]")
             return
-        
-        COMMAND_TYPE_CHANGE_OP_STATE = 1
-        REQUESTED_STATE_STOP = 0        
-        
+
+        COMMAND_TYPE_CHANGE_OP_STATE = CONF.eCMD_TYPE_CHANGE_OP_STATE
+        REQUESTED_STATE_STOP = CONF.eCMD_OP_STATE_STOPPED
+
         # Create 8-byte packet: commandType(1) + requestedState(1) + padding(6)
         packet = struct.pack('<BB6x', COMMAND_TYPE_CHANGE_OP_STATE, REQUESTED_STATE_STOP)
         
@@ -275,6 +283,65 @@ class FlightViewer(QtWidgets.QWidget):
             self.append_debug_console(f"Sent STOP command: {packet.hex()}", "[INFO]")
         except Exception as e:
             self.append_debug_console(f"Failed to send STOP command: {e}", "[ERROR]")
+    
+    def send_velocity_command(self, v_forward, v_right, v_throttle):
+        """Send velocity command as 8-byte packet"""
+        if not self.serial.isOpen():
+            self.append_debug_console("Serial port not connected!", "[ERROR]")
+            return
+
+        COMMAND_TYPE_VELOCITY = CONF.eCMD_TYPE_CHANGE_VELOCITY
+        v_min = CONF.CMD_TYPE_VELOCITY_CHANGE_MIN
+        v_max = CONF.CMD_TYPE_VELOCITY_CHANGE_MAX
+
+        v_forward = max(v_min, min(v_max, v_forward))
+        v_right = max(v_min, min(v_max, v_right))
+        v_throttle = max(v_min, min(v_max, v_throttle))
+
+        packet = struct.pack('<BBBB3x', COMMAND_TYPE_VELOCITY, v_forward, v_right, v_throttle)
+
+        try:
+            self.serial.write(packet)
+            self.append_debug_console(
+                f"Sent VELOCITY command - Forward: {v_forward}, Right: {v_right}, Throttle: {v_throttle}: {packet.hex()}"
+                )
+        except Exception as e:
+            self.append_debug_console(f"Failed to send VELOCITY command: {e}", "[ERROR]")
+    
+    def send_pid_command(self, axis, p_value, i_value, d_value):
+        """Send PID update command as 8-byte packet"""
+        if not self.serial.isOpen():
+            self.append_debug_console("Serial port not connected!", "[ERROR]")
+            return
+        
+        COMMAND_TYPE_PID_UPDATE = CONF.eCMD_TYPE_CHANGE_PID
+        
+        # Map axis to axis code
+        axis_map = {
+            "roll": CONF.eCMD_PID_ROLL,
+            "pitch": CONF.eCMD_PID_PITCH,
+            "yaw": CONF.eCMD_PID_YAW
+        }
+        
+        axis_code = axis_map.get(axis, 0)
+        
+        # Convert PID values (0.0 to 5.0) to uint16_t (0 to 65535)
+        def map_range(value, in_min, in_max, out_min, out_max):
+            return int(round((value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min, 0))
+
+        p_uint16 = map_range(p_value, CONF.PID_MIN_VALUE, CONF.PID_MAX_VALUE, 0, 65535)
+        i_uint16 = map_range(i_value, CONF.PID_MIN_VALUE, CONF.PID_MAX_VALUE, 0, 65535)
+        d_uint16 = map_range(d_value, CONF.PID_MIN_VALUE, CONF.PID_MAX_VALUE, 0, 65535)
+
+        # Create 8-byte packet: commandType(1) + axis(1) + P(2) + I(2) + D(2)
+        # H = uint16_t (2 bytes each)
+        packet = struct.pack('<BBHHH', COMMAND_TYPE_PID_UPDATE, axis_code, p_uint16, i_uint16, d_uint16)
+        
+        try:
+            self.serial.write(packet)
+            self.append_debug_console(f"Sent PID command - Axis: {axis}, P: {p_value:.3f}, I: {i_value:.3f}, D: {d_value:.3f}: {packet.hex()}", "[INFO]")
+        except Exception as e:
+            self.append_debug_console(f"Failed to send PID command: {e}", "[ERROR]")
 
     @QtCore.pyqtSlot(bool)
     def on_toggled(self, checked):
@@ -289,6 +356,7 @@ class FlightViewer(QtWidgets.QWidget):
                 else:
                     # Enable command buttons when connected
                     self.control_tab.set_buttons_enabled(True)
+                    self.config_tab.set_buttons_enabled(True)
                     self.append_debug_console("Connected to flight controller", "[INFO]")
         else:
             # NOTE: Send stop command when disconnecting the GUI
@@ -300,6 +368,7 @@ class FlightViewer(QtWidgets.QWidget):
             self.serial.close()
             # Disable command buttons when disconnected
             self.control_tab.set_buttons_enabled(False)
+            self.config_tab.set_buttons_enabled(False)
             self.append_debug_console("Disconnected from flight controller", "[INFO]")
 
     def update_orientation(self, orientation):
@@ -374,12 +443,18 @@ class FlightControlTab(QtWidgets.QWidget):
     def __init__(self, parent_viewer):
         super().__init__()
         self.parent_viewer = parent_viewer
+        
+        # Velocity values (CMD_TYPE_VELOCITY_CHANGE_MIN to CMD_TYPE_VELOCITY_CHANGE_MAX)
+        self.v_forward = 0
+        self.v_right = 0
+        # MOTOR STARTUP THROTTLE is between 0 and 1 so * by 100
+        self.v_throttle = int(CONF.MOTOR_STARTUP_THROTTLE * CONF.CMD_TYPE_VELOCITY_CHANGE_MAX)
+        
         self.setup_ui()
         
     def setup_ui(self):
         layout = QVBoxLayout(self)
         
-        # Flight Controller Commands
         flight_control_group = QtWidgets.QGroupBox("Flight Controller Commands")
         flight_control_layout = QHBoxLayout(flight_control_group)
         
@@ -396,7 +471,90 @@ class FlightControlTab(QtWidgets.QWidget):
         
         layout.addWidget(flight_control_group)
         
-        # Status display
+        # Velocity Control Section
+        velocity_control_group = QtWidgets.QGroupBox("Velocity Control")
+        velocity_layout = QHBoxLayout(velocity_control_group)
+        
+        # Horizontal movement controls (Forward/Backward/Left/Right)
+        horizontal_group = QtWidgets.QGroupBox("Horizontal Movement")
+        horizontal_layout = QtWidgets.QGridLayout(horizontal_group)
+        
+        # Forward arrow button
+        self.forward_btn = QtWidgets.QPushButton("↑\nForward")
+        self.forward_btn.setStyleSheet("QPushButton { font-size: 14px; padding: 15px; }")
+        self.forward_btn.clicked.connect(lambda: self.send_velocity_command("forward"))
+        self.forward_btn.setEnabled(False)
+        
+        # Left arrow button
+        self.left_btn = QtWidgets.QPushButton("←\nLeft")
+        self.left_btn.setStyleSheet("QPushButton { font-size: 14px; padding: 15px; }")
+        self.left_btn.clicked.connect(lambda: self.send_velocity_command("left"))
+        self.left_btn.setEnabled(False)
+        
+        # Right arrow button
+        self.right_btn = QtWidgets.QPushButton("→\nRight")
+        self.right_btn.setStyleSheet("QPushButton { font-size: 14px; padding: 15px; }")
+        self.right_btn.clicked.connect(lambda: self.send_velocity_command("right"))
+        self.right_btn.setEnabled(False)
+        
+        # Backward arrow button
+        self.backward_btn = QtWidgets.QPushButton("↓\nBackward")
+        self.backward_btn.setStyleSheet("QPushButton { font-size: 14px; padding: 15px; }")
+        self.backward_btn.clicked.connect(lambda: self.send_velocity_command("backward"))
+        self.backward_btn.setEnabled(False)
+        
+        # Arrange in arrow keypad pattern
+        horizontal_layout.addWidget(self.forward_btn, 0, 1)
+        horizontal_layout.addWidget(self.left_btn, 1, 0)
+        horizontal_layout.addWidget(self.right_btn, 1, 2)
+        horizontal_layout.addWidget(self.backward_btn, 2, 1)
+
+        # Throttle controls (Up/Down)
+        throttle_group = QtWidgets.QGroupBox("Throttle")
+        throttle_layout = QtWidgets.QVBoxLayout(throttle_group)
+
+        # Up arrow button
+        self.up_btn = QtWidgets.QPushButton("↑\nUp")
+        self.up_btn.setStyleSheet("QPushButton { font-size: 14px; padding: 15px; }")
+        self.up_btn.clicked.connect(lambda: self.send_velocity_command("up"))
+        self.up_btn.setEnabled(False)
+        
+        # Down arrow button
+        self.down_btn = QtWidgets.QPushButton("↓\nDown")
+        self.down_btn.setStyleSheet("QPushButton { font-size: 14px; padding: 15px; }")
+        self.down_btn.clicked.connect(lambda: self.send_velocity_command("down"))
+        self.down_btn.setEnabled(False)
+
+        throttle_layout.addWidget(self.up_btn)
+        throttle_layout.addWidget(self.down_btn)
+
+        velocity_layout.addWidget(horizontal_group)
+        velocity_layout.addWidget(throttle_group)
+
+        layout.addWidget(velocity_control_group)
+        
+        # Current Velocity Display
+        velocity_display_group = QtWidgets.QGroupBox("Current Velocity Values")
+        velocity_display_layout = QtWidgets.QGridLayout(velocity_display_group)
+        
+        # Create labels for each direction
+        self.forward_velocity_label = QtWidgets.QLabel(f"B/F (-100 to 100): {self.v_forward}")
+        self.right_velocity_label = QtWidgets.QLabel(f"L/R (-100 to 100): {self.v_right}")
+        self.up_velocity_label = QtWidgets.QLabel(f"Throttle (0 to 100): {self.v_throttle}")
+
+        # Style the velocity labels
+        label_style = "QLabel { font-size: 12px; padding: 5px; border: 1px solid gray; background-color: #f0f0f0; }"
+        self.forward_velocity_label.setStyleSheet(label_style)
+        self.right_velocity_label.setStyleSheet(label_style)
+        self.up_velocity_label.setStyleSheet(label_style)
+        
+        # Arrange velocity labels in a grid
+        velocity_display_layout.addWidget(self.forward_velocity_label, 0, 0)
+        velocity_display_layout.addWidget(self.right_velocity_label, 0, 1)
+        velocity_display_layout.addWidget(self.up_velocity_label, 0, 2)
+        
+        layout.addWidget(velocity_display_group)
+        
         status_group = QtWidgets.QGroupBox("Status")
         status_layout = QVBoxLayout(status_group)
         
@@ -415,9 +573,15 @@ class FlightControlTab(QtWidgets.QWidget):
         layout.addStretch()
         
     def set_buttons_enabled(self, enabled):
-        """Enable or disable command buttons"""
+
         self.start_btn.setEnabled(enabled)
         self.stop_btn.setEnabled(enabled)
+        self.forward_btn.setEnabled(enabled)
+        self.backward_btn.setEnabled(enabled)
+        self.left_btn.setEnabled(enabled)
+        self.right_btn.setEnabled(enabled)
+        self.up_btn.setEnabled(enabled)
+        self.down_btn.setEnabled(enabled)
         
         if enabled:
             self.status_label.setText("Connected")
@@ -425,7 +589,39 @@ class FlightControlTab(QtWidgets.QWidget):
         else:
             self.status_label.setText("Disconnected")
             self.status_label.setStyleSheet("QLabel { font-weight: bold; padding: 5px; color: red; }")
-            
+    
+    def send_velocity_command(self, direction):
+        # Velocity is between -100 and 100
+        mov_min = CONF.CMD_TYPE_VELOCITY_CHANGE_MIN
+        mov_max = CONF.CMD_TYPE_VELOCITY_CHANGE_MAX
+        throttle_min = 0
+        throttle_max = CONF.CMD_TYPE_VELOCITY_CHANGE_MAX
+
+        if direction == "forward":
+            self.v_forward = min(mov_max, max(mov_min, self.v_forward + 1))
+        elif direction == "backward":
+            self.v_forward = min(mov_max, max(mov_min, self.v_forward - 1))
+
+        elif direction == "right":
+            self.v_right = min(mov_max, max(mov_min, self.v_right + 1))
+        elif direction == "left":
+            self.v_right = min(mov_max, max(mov_min, self.v_right - 1))
+
+        elif direction == "up":
+            self.v_throttle = min(throttle_max, max(throttle_min, self.v_throttle + 1))
+        elif direction == "down":
+            self.v_throttle = min(throttle_max, max(throttle_min, self.v_throttle - 1))
+
+        self.update_velocity_display()
+        self.parent_viewer.send_velocity_command(direction, self.v_forward, self.v_right, self.v_throttle)
+        self.last_command_label.setText(f"Last Command: VELOCITY {direction.upper()}")
+    
+    def update_velocity_display(self):
+        """Update the velocity display labels"""
+        self.forward_velocity_label.setText(f"B/F (-100 to 100): {self.v_forward}")
+        self.right_velocity_label.setText(f"L/R (-100 to 100): {self.v_right}")
+        self.up_velocity_label.setText(f"Throttle (0 to 100): {self.v_throttle}")
+
     def send_start_command(self):
         """Send start command as 8-byte packet"""
         self.parent_viewer.send_start_command()
@@ -435,6 +631,191 @@ class FlightControlTab(QtWidgets.QWidget):
         """Send stop command as 8-byte packet"""
         self.parent_viewer.send_stop_command()
         self.last_command_label.setText("Last Command: STOP")
+
+class ConfigurationTab(QtWidgets.QWidget):
+    def __init__(self, parent_viewer):
+        super().__init__()
+        self.parent_viewer = parent_viewer
+        self.setup_ui()
+        
+    def setup_ui(self):
+        layout = QVBoxLayout(self)
+        
+        # PID Configuration Section
+        pid_group = QtWidgets.QGroupBox("PID Configuration")
+        pid_layout = QtWidgets.QGridLayout(pid_group)
+        
+        # Create headers
+        pid_layout.addWidget(QtWidgets.QLabel(""), 0, 0)  # Empty corner
+        pid_layout.addWidget(QtWidgets.QLabel("P"), 0, 1)
+        pid_layout.addWidget(QtWidgets.QLabel("I"), 0, 2)
+        pid_layout.addWidget(QtWidgets.QLabel("D"), 0, 3)
+        pid_layout.addWidget(QtWidgets.QLabel("Update"), 0, 4)
+        
+        # Roll PID
+        pid_layout.addWidget(QtWidgets.QLabel("Roll:"), 1, 0)
+        self.roll_p_field = QtWidgets.QDoubleSpinBox()
+        self.roll_p_field.setRange(CONF.PID_MIN_VALUE, CONF.PID_MAX_VALUE)
+        self.roll_p_field.setDecimals(6)
+        self.roll_p_field.setSingleStep(0.001)
+        self.roll_p_field.setValue(CONF.PID_STARTING_ROLL_P)
+        pid_layout.addWidget(self.roll_p_field, 1, 1)
+        
+        self.roll_i_field = QtWidgets.QDoubleSpinBox()
+        self.roll_i_field.setRange(CONF.PID_MIN_VALUE, CONF.PID_MAX_VALUE)
+        self.roll_i_field.setDecimals(6)
+        self.roll_i_field.setSingleStep(0.001)
+        self.roll_i_field.setValue(CONF.PID_STARTING_ROLL_I)
+        pid_layout.addWidget(self.roll_i_field, 1, 2)
+        
+        self.roll_d_field = QtWidgets.QDoubleSpinBox()
+        self.roll_d_field.setRange(CONF.PID_MIN_VALUE, CONF.PID_MAX_VALUE)
+        self.roll_d_field.setDecimals(6)
+        self.roll_d_field.setSingleStep(0.001)
+        self.roll_d_field.setValue(CONF.PID_STARTING_ROLL_D)
+        pid_layout.addWidget(self.roll_d_field, 1, 3)
+        
+        self.update_roll_btn = QtWidgets.QPushButton("Update Roll PID")
+        self.update_roll_btn.setStyleSheet("QPushButton { background-color: #2196F3; color: white; font-weight: bold; padding: 5px; }")
+        self.update_roll_btn.clicked.connect(self.update_roll_pid)
+        self.update_roll_btn.setEnabled(False)
+        pid_layout.addWidget(self.update_roll_btn, 1, 4)
+        
+        # Pitch PID
+        pid_layout.addWidget(QtWidgets.QLabel("Pitch:"), 2, 0)
+        self.pitch_p_field = QtWidgets.QDoubleSpinBox()
+        self.pitch_p_field.setRange(CONF.PID_MIN_VALUE, CONF.PID_MAX_VALUE)
+        self.pitch_p_field.setDecimals(6)
+        self.pitch_p_field.setSingleStep(0.001)
+        self.pitch_p_field.setValue(CONF.PID_STARTING_PITCH_P)
+        pid_layout.addWidget(self.pitch_p_field, 2, 1)
+        
+        self.pitch_i_field = QtWidgets.QDoubleSpinBox()
+        self.pitch_i_field.setRange(CONF.PID_MIN_VALUE, CONF.PID_MAX_VALUE)
+        self.pitch_i_field.setDecimals(6)
+        self.pitch_i_field.setSingleStep(0.001)
+        self.pitch_i_field.setValue(CONF.PID_STARTING_PITCH_I)
+        pid_layout.addWidget(self.pitch_i_field, 2, 2)
+        
+        self.pitch_d_field = QtWidgets.QDoubleSpinBox()
+        self.pitch_d_field.setRange(CONF.PID_MIN_VALUE, CONF.PID_MAX_VALUE)
+        self.pitch_d_field.setDecimals(6)
+        self.pitch_d_field.setSingleStep(0.001)
+        self.pitch_d_field.setValue(CONF.PID_STARTING_PITCH_D)
+        pid_layout.addWidget(self.pitch_d_field, 2, 3)
+        
+        self.update_pitch_btn = QtWidgets.QPushButton("Update Pitch PID")
+        self.update_pitch_btn.setStyleSheet("QPushButton { background-color: #2196F3; color: white; font-weight: bold; padding: 5px; }")
+        self.update_pitch_btn.clicked.connect(self.update_pitch_pid)
+        self.update_pitch_btn.setEnabled(False)
+        pid_layout.addWidget(self.update_pitch_btn, 2, 4)
+        
+        # Yaw PID
+        pid_layout.addWidget(QtWidgets.QLabel("Yaw:"), 3, 0)
+        self.yaw_p_field = QtWidgets.QDoubleSpinBox()
+        self.yaw_p_field.setRange(CONF.PID_MIN_VALUE, CONF.PID_MAX_VALUE)
+        self.yaw_p_field.setDecimals(6)
+        self.yaw_p_field.setSingleStep(0.001)
+        self.yaw_p_field.setValue(CONF.PID_STARTING_YAW_P)
+        pid_layout.addWidget(self.yaw_p_field, 3, 1)
+        
+        self.yaw_i_field = QtWidgets.QDoubleSpinBox()
+        self.yaw_i_field.setRange(CONF.PID_MIN_VALUE, CONF.PID_MAX_VALUE)
+        self.yaw_i_field.setDecimals(6)
+        self.yaw_i_field.setSingleStep(0.001)
+        self.yaw_i_field.setValue(CONF.PID_STARTING_YAW_I)
+        pid_layout.addWidget(self.yaw_i_field, 3, 2)
+        
+        self.yaw_d_field = QtWidgets.QDoubleSpinBox()
+        self.yaw_d_field.setRange(CONF.PID_MIN_VALUE, CONF.PID_MAX_VALUE)
+        self.yaw_d_field.setDecimals(6)
+        self.yaw_d_field.setSingleStep(0.001)
+        self.yaw_d_field.setValue(CONF.PID_STARTING_YAW_D)
+        pid_layout.addWidget(self.yaw_d_field, 3, 3)
+        
+        self.update_yaw_btn = QtWidgets.QPushButton("Update Yaw PID")
+        self.update_yaw_btn.setStyleSheet("QPushButton { background-color: #2196F3; color: white; font-weight: bold; padding: 5px; }")
+        self.update_yaw_btn.clicked.connect(self.update_yaw_pid)
+        self.update_yaw_btn.setEnabled(False)
+        pid_layout.addWidget(self.update_yaw_btn, 3, 4)
+        
+        layout.addWidget(pid_group)
+        
+        # Control buttons
+        # button_group = QtWidgets.QGroupBox("Global PID Controls")
+        # button_layout = QHBoxLayout(button_group)
+        
+        # self.update_all_btn = QtWidgets.QPushButton("Update All PID Values")
+        # self.update_all_btn.setStyleSheet("QPushButton { background-color: #4CAF50; color: white; font-weight: bold; padding: 10px; }")
+        # self.update_all_btn.clicked.connect(self.update_all_pid)
+        # self.update_all_btn.setEnabled(False)
+        
+        # button_layout.addWidget(self.update_all_btn)
+        
+        # layout.addWidget(button_group)
+        
+        # Status display
+        status_group = QtWidgets.QGroupBox("Status")
+        status_layout = QVBoxLayout(status_group)
+        
+        self.status_label = QtWidgets.QLabel("Disconnected")
+        self.status_label.setStyleSheet("QLabel { font-weight: bold; padding: 5px; }")
+        
+        self.last_update_label = QtWidgets.QLabel("Last Update: None")
+        self.last_update_label.setStyleSheet("QLabel { padding: 5px; }")
+        
+        status_layout.addWidget(self.status_label)
+        status_layout.addWidget(self.last_update_label)
+        
+        layout.addWidget(status_group)
+        
+        # Add spacer to push everything to the top
+        layout.addStretch()
+    
+    def set_buttons_enabled(self, enabled):
+        """Enable or disable PID update buttons"""
+        self.update_roll_btn.setEnabled(enabled)
+        self.update_pitch_btn.setEnabled(enabled)
+        self.update_yaw_btn.setEnabled(enabled)
+        self.update_all_btn.setEnabled(enabled)
+        
+        if enabled:
+            self.status_label.setText("Connected")
+            self.status_label.setStyleSheet("QLabel { font-weight: bold; padding: 5px; color: green; }")
+        else:
+            self.status_label.setText("Disconnected")
+            self.status_label.setStyleSheet("QLabel { font-weight: bold; padding: 5px; color: red; }")
+    
+    def update_roll_pid(self):
+        """Update Roll PID values"""
+        p_value = self.roll_p_field.value()
+        i_value = self.roll_i_field.value()
+        d_value = self.roll_d_field.value()
+        self.parent_viewer.send_pid_command("roll", p_value, i_value, d_value)
+        self.last_update_label.setText(f"Last Update: Roll PID (P:{p_value:.3f}, I:{i_value:.3f}, D:{d_value:.3f})")
+    
+    def update_pitch_pid(self):
+        """Update Pitch PID values"""
+        p_value = self.pitch_p_field.value()
+        i_value = self.pitch_i_field.value()
+        d_value = self.pitch_d_field.value()
+        self.parent_viewer.send_pid_command("pitch", p_value, i_value, d_value)
+        self.last_update_label.setText(f"Last Update: Pitch PID (P:{p_value:.3f}, I:{i_value:.3f}, D:{d_value:.3f})")
+    
+    def update_yaw_pid(self):
+        """Update Yaw PID values"""
+        p_value = self.yaw_p_field.value()
+        i_value = self.yaw_i_field.value()
+        d_value = self.yaw_d_field.value()
+        self.parent_viewer.send_pid_command("yaw", p_value, i_value, d_value)
+        self.last_update_label.setText(f"Last Update: Yaw PID (P:{p_value:.3f}, I:{i_value:.3f}, D:{d_value:.3f})")
+    
+    def update_all_pid(self):
+        """Update all PID values"""
+        self.update_roll_pid()
+        self.update_pitch_pid() 
+        self.update_yaw_pid()
+        self.last_update_label.setText("Last Update: All PID values updated")
 
 class ActuatorPlotter(QtWidgets.QWidget):
     def __init__(self):
@@ -749,6 +1130,26 @@ class AttitudePlotter(QtWidgets.QWidget):
         attitude_layout.addWidget(self.pitch_checkbox)
         attitude_layout.addWidget(self.yaw_checkbox)
         
+        # Checkboxes to toggle data series for PID attitude
+        pid_attitude_group = QtWidgets.QGroupBox("PID Attitude Data")
+        pid_attitude_layout = QHBoxLayout(pid_attitude_group)
+        
+        self.pid_roll_checkbox = QCheckBox("PID Roll (X)")
+        self.pid_roll_checkbox.setChecked(True)
+        self.pid_roll_checkbox.stateChanged.connect(self.toggle_pid_roll)
+        
+        self.pid_pitch_checkbox = QCheckBox("PID Pitch (Y)")
+        self.pid_pitch_checkbox.setChecked(True)
+        self.pid_pitch_checkbox.stateChanged.connect(self.toggle_pid_pitch)
+        
+        self.pid_yaw_checkbox = QCheckBox("PID Yaw (Z)")
+        self.pid_yaw_checkbox.setChecked(True)
+        self.pid_yaw_checkbox.stateChanged.connect(self.toggle_pid_yaw)
+        
+        pid_attitude_layout.addWidget(self.pid_roll_checkbox)
+        pid_attitude_layout.addWidget(self.pid_pitch_checkbox)
+        pid_attitude_layout.addWidget(self.pid_yaw_checkbox)
+        
         # Checkboxes to toggle data series for IMU
         imu_group = QtWidgets.QGroupBox("IMU Data")
         imu_layout = QHBoxLayout(imu_group)
@@ -798,6 +1199,7 @@ class AttitudePlotter(QtWidgets.QWidget):
         buttons_layout.addWidget(self.load_btn)
         
         controls.addWidget(attitude_group)
+        controls.addWidget(pid_attitude_group)
         controls.addWidget(imu_group)
         controls.addWidget(buttons_group)
         controls.addStretch()
@@ -835,7 +1237,7 @@ class AttitudePlotter(QtWidgets.QWidget):
         
     def setup_data(self):
         # Data storage - using deque for efficient append/pop operations
-        self.max_points = 1000  # Maximum number of points to display
+        self.max_points = 10_000  # Maximum number of points to display
         self.start_time = None
         
         # Time data (shared across all plots)
@@ -845,6 +1247,11 @@ class AttitudePlotter(QtWidgets.QWidget):
         self.roll_data = deque(maxlen=self.max_points)
         self.pitch_data = deque(maxlen=self.max_points)
         self.yaw_data = deque(maxlen=self.max_points)
+        
+        # PID Attitude data
+        self.pid_roll_data = deque(maxlen=self.max_points)
+        self.pid_pitch_data = deque(maxlen=self.max_points)
+        self.pid_yaw_data = deque(maxlen=self.max_points)
         
         # IMU accelerometer data (in m/s²)
         self.ax_data = deque(maxlen=self.max_points)
@@ -868,6 +1275,20 @@ class AttitudePlotter(QtWidgets.QWidget):
         self.yaw_curve = self.attitude_widget.plot(
             pen=pg.mkPen(color='b', width=2), 
             name='Yaw (Z)'
+        )
+        
+        # PID Attitude plot curves (dashed lines)
+        self.pid_roll_curve = self.attitude_widget.plot(
+            pen=pg.mkPen(color='r', width=2, style=QtCore.Qt.DashLine), 
+            name='PID Roll (X)'
+        )
+        self.pid_pitch_curve = self.attitude_widget.plot(
+            pen=pg.mkPen(color='g', width=2, style=QtCore.Qt.DashLine), 
+            name='PID Pitch (Y)'
+        )
+        self.pid_yaw_curve = self.attitude_widget.plot(
+            pen=pg.mkPen(color='b', width=2, style=QtCore.Qt.DashLine), 
+            name='PID Yaw (Z)'
         )
         
         # Accelerometer plot curves
@@ -918,6 +1339,16 @@ class AttitudePlotter(QtWidgets.QWidget):
         self.roll_data.append(roll)
         self.pitch_data.append(pitch)
         self.yaw_data.append(yaw)
+        
+        # Add current PID attitude data if available, otherwise use last values or zeros
+        if len(self.pid_roll_data) > 0:
+            self.pid_roll_data.append(self.pid_roll_data[-1])
+            self.pid_pitch_data.append(self.pid_pitch_data[-1])
+            self.pid_yaw_data.append(self.pid_yaw_data[-1])
+        else:
+            self.pid_roll_data.append(0)
+            self.pid_pitch_data.append(0)
+            self.pid_yaw_data.append(0)
         
         # Add current IMU data if available, otherwise use last values or zeros
         if len(self.ax_data) > 0:
@@ -975,6 +1406,66 @@ class AttitudePlotter(QtWidgets.QWidget):
             self.pitch_data.append(0)
             self.yaw_data.append(0)
         
+        # Add current PID attitude data if available, otherwise use last values or zeros
+        if len(self.pid_roll_data) > 0:
+            self.pid_roll_data.append(self.pid_roll_data[-1])
+            self.pid_pitch_data.append(self.pid_pitch_data[-1])
+            self.pid_yaw_data.append(self.pid_yaw_data[-1])
+        else:
+            self.pid_roll_data.append(0)
+            self.pid_pitch_data.append(0)
+            self.pid_yaw_data.append(0)
+        
+        # Update plots
+        self.update_plots()
+        
+    def add_pid_attitude_data(self, pid_attitude_data):
+        """Add new PID attitude data point"""
+        current_time = datetime.now()
+        
+        if self.start_time is None:
+            self.start_time = current_time
+            
+        # Calculate time relative to start
+        time_seconds = (current_time - self.start_time).total_seconds()
+        
+        # Extract PID attitude values
+        pid_roll = pid_attitude_data.get("roll", 0)
+        pid_pitch = pid_attitude_data.get("pitch", 0)
+        pid_yaw = pid_attitude_data.get("yaw", 0)
+        
+        # Add data points
+        self.time_data.append(time_seconds)
+        self.pid_roll_data.append(pid_roll)
+        self.pid_pitch_data.append(pid_pitch)
+        self.pid_yaw_data.append(pid_yaw)
+        
+        # Add current attitude data if available, otherwise use last values or zeros
+        if len(self.roll_data) > 0:
+            self.roll_data.append(self.roll_data[-1])
+            self.pitch_data.append(self.pitch_data[-1])
+            self.yaw_data.append(self.yaw_data[-1])
+        else:
+            self.roll_data.append(0)
+            self.pitch_data.append(0)
+            self.yaw_data.append(0)
+        
+        # Add current IMU data if available, otherwise use last values or zeros
+        if len(self.ax_data) > 0:
+            self.ax_data.append(self.ax_data[-1])
+            self.ay_data.append(self.ay_data[-1])
+            self.az_data.append(self.az_data[-1])
+            self.gx_data.append(self.gx_data[-1])
+            self.gy_data.append(self.gy_data[-1])
+            self.gz_data.append(self.gz_data[-1])
+        else:
+            self.ax_data.append(0)
+            self.ay_data.append(0)
+            self.az_data.append(0)
+            self.gx_data.append(0)
+            self.gy_data.append(0)
+            self.gz_data.append(0)
+        
         # Update plots
         self.update_plots()
         
@@ -991,6 +1482,16 @@ class AttitudePlotter(QtWidgets.QWidget):
             
         if self.yaw_checkbox.isChecked():
             self.yaw_curve.setData(time_array, np.array(self.yaw_data))
+            
+        # Update PID attitude plots
+        if self.pid_roll_checkbox.isChecked():
+            self.pid_roll_curve.setData(time_array, np.array(self.pid_roll_data))
+        
+        if self.pid_pitch_checkbox.isChecked():
+            self.pid_pitch_curve.setData(time_array, np.array(self.pid_pitch_data))
+            
+        if self.pid_yaw_checkbox.isChecked():
+            self.pid_yaw_curve.setData(time_array, np.array(self.pid_yaw_data))
             
         # Update accelerometer plots
         if self.ax_checkbox.isChecked():
@@ -1032,6 +1533,27 @@ class AttitudePlotter(QtWidgets.QWidget):
             self.yaw_curve.setData(np.array(self.time_data), np.array(self.yaw_data))
         else:
             self.yaw_curve.setData([], [])
+            
+    def toggle_pid_roll(self, state):
+        """Toggle PID roll data visibility"""
+        if state:
+            self.pid_roll_curve.setData(np.array(self.time_data), np.array(self.pid_roll_data))
+        else:
+            self.pid_roll_curve.setData([], [])
+            
+    def toggle_pid_pitch(self, state):
+        """Toggle PID pitch data visibility"""
+        if state:
+            self.pid_pitch_curve.setData(np.array(self.time_data), np.array(self.pid_pitch_data))
+        else:
+            self.pid_pitch_curve.setData([], [])
+            
+    def toggle_pid_yaw(self, state):
+        """Toggle PID yaw data visibility"""
+        if state:
+            self.pid_yaw_curve.setData(np.array(self.time_data), np.array(self.pid_yaw_data))
+        else:
+            self.pid_yaw_curve.setData([], [])
             
     def toggle_ax(self, state):
         """Toggle accelerometer X data visibility"""
@@ -1081,6 +1603,9 @@ class AttitudePlotter(QtWidgets.QWidget):
         self.roll_data.clear()
         self.pitch_data.clear()
         self.yaw_data.clear()
+        self.pid_roll_data.clear()
+        self.pid_pitch_data.clear()
+        self.pid_yaw_data.clear()
         self.ax_data.clear()
         self.ay_data.clear()
         self.az_data.clear()
@@ -1093,6 +1618,9 @@ class AttitudePlotter(QtWidgets.QWidget):
         self.roll_curve.setData([], [])
         self.pitch_curve.setData([], [])
         self.yaw_curve.setData([], [])
+        self.pid_roll_curve.setData([], [])
+        self.pid_pitch_curve.setData([], [])
+        self.pid_yaw_curve.setData([], [])
         self.ax_curve.setData([], [])
         self.ay_curve.setData([], [])
         self.az_curve.setData([], [])
@@ -1151,6 +1679,11 @@ class AttitudePlotter(QtWidgets.QWidget):
                         self.pitch_data.append(pitch)
                         self.yaw_data.append(yaw)
                         
+                        # Add placeholder PID attitude data if not present
+                        self.pid_roll_data.append(0)
+                        self.pid_pitch_data.append(0)
+                        self.pid_yaw_data.append(0)
+                        
                         # Add placeholder IMU data if not present
                         self.ax_data.append(0)
                         self.ay_data.append(0)
@@ -1188,7 +1721,42 @@ class AttitudePlotter(QtWidgets.QWidget):
                         self.pitch_data.append(0)
                         self.yaw_data.append(0)
                         
+                        # Add placeholder PID attitude data if not present
+                        self.pid_roll_data.append(0)
+                        self.pid_pitch_data.append(0)
+                        self.pid_yaw_data.append(0)
+                        
                         imu_count += 1
+                        
+                    elif data.get("type") == "pid_attitude":
+                        pid_attitude_data = data.get("data", {})
+                        
+                        # Use line number as time for file data
+                        time_seconds = i * 0.1  # Assume 10Hz data rate
+                        
+                        pid_roll = pid_attitude_data.get("roll", 0)
+                        pid_pitch = pid_attitude_data.get("pitch", 0)
+                        pid_yaw = pid_attitude_data.get("yaw", 0)
+                        
+                        self.time_data.append(time_seconds)
+                        self.pid_roll_data.append(pid_roll)
+                        self.pid_pitch_data.append(pid_pitch)
+                        self.pid_yaw_data.append(pid_yaw)
+                        
+                        # Add placeholder attitude data if not present
+                        self.roll_data.append(0)
+                        self.pitch_data.append(0)
+                        self.yaw_data.append(0)
+                        
+                        # Add placeholder IMU data if not present
+                        self.ax_data.append(0)
+                        self.ay_data.append(0)
+                        self.az_data.append(0)
+                        self.gx_data.append(0)
+                        self.gy_data.append(0)
+                        self.gz_data.append(0)
+                        
+                        attitude_count += 1
                         
                 except json.JSONDecodeError:
                     continue  # Skip invalid JSON lines

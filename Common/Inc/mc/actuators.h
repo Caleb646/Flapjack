@@ -2,32 +2,34 @@
 #define MOTION_CONTROL_ACTUATORS_H
 
 #include "common.h"
+#include "conf.h"
 #include "dma.h"
 #include "hal.h"
 #include "mc/dshot.h"
 #include "mc/pwm.h"
 #include <stdint.h>
 
+
 #define MOTOR_CREATE_CONF(PTR_TIMER, CHANNEL_ID, DMA_STREAM, DMA_REQUEST_ID) \
     { .pwm = PWM_CREATE_CONF (PTR_TIMER, CHANNEL_ID, 0, FALSE),              \
       .dma = DMA_CREATE_PWM_CONF (DMA_STREAM, eDMA_DIRECTION_MEMORY_TO_PERIPH, eDMA_PRIORITY_HIGH, DMA_REQUEST_ID) }
 
-#define PID_INIT(PID_CONTEXT)              \
-    PID_CONTEXT.rollP          = 0.2F;     \
-    PID_CONTEXT.rollI          = 0.3F;     \
-    PID_CONTEXT.rollD          = 0.05F;    \
-    PID_CONTEXT.pitchP         = 0.2F;     \
-    PID_CONTEXT.pitchI         = 0.3F;     \
-    PID_CONTEXT.pitchD         = 0.05F;    \
-    PID_CONTEXT.yawP           = 0.3F;     \
-    PID_CONTEXT.yawI           = 0.05F;    \
-    PID_CONTEXT.yawD           = 0.00015F; \
-    PID_CONTEXT.integralLimit  = 25.0F;    \
-    PID_CONTEXT.prevError.x    = 0.0F;     \
-    PID_CONTEXT.prevError.y    = 0.0F;     \
-    PID_CONTEXT.prevError.z    = 0.0F;     \
-    PID_CONTEXT.prevIntegral.x = 0.0F;     \
-    PID_CONTEXT.prevIntegral.y = 0.0F;     \
+#define PID_INIT(PID_CONTEXT)                                 \
+    PID_CONTEXT.rollP          = PID_STARTING_ROLL_P;         \
+    PID_CONTEXT.rollI          = PID_STARTING_ROLL_I;         \
+    PID_CONTEXT.rollD          = PID_STARTING_ROLL_D;         \
+    PID_CONTEXT.pitchP         = PID_STARTING_PITCH_P;        \
+    PID_CONTEXT.pitchI         = PID_STARTING_PITCH_I;        \
+    PID_CONTEXT.pitchD         = PID_STARTING_PITCH_D;        \
+    PID_CONTEXT.yawP           = PID_STARTING_YAW_P;          \
+    PID_CONTEXT.yawI           = PID_STARTING_YAW_I;          \
+    PID_CONTEXT.yawD           = PID_STARTING_YAW_D;          \
+    PID_CONTEXT.integralLimit  = PID_STARTING_INTEGRAL_LIMIT; \
+    PID_CONTEXT.prevError.x    = 0.0F;                        \
+    PID_CONTEXT.prevError.y    = 0.0F;                        \
+    PID_CONTEXT.prevError.z    = 0.0F;                        \
+    PID_CONTEXT.prevIntegral.x = 0.0F;                        \
+    PID_CONTEXT.prevIntegral.y = 0.0F;                        \
     PID_CONTEXT.prevIntegral.z = 0.0F;
 
 typedef struct {
@@ -70,9 +72,6 @@ typedef struct {
     uint32_t usRightDutyCycle;
     float maxAngle;
     float usableMaxAngle;
-    // Between -usableMaxAngle angle and +usableMaxAngle angle
-    float curAngle;
-    float curTargetAngle;
     float pitchMix;
     float yawMix;
     float rollMix;
@@ -81,6 +80,9 @@ typedef struct {
 typedef struct {
     PWMHandle pwm;
     ServoDescriptor desc;
+    // Between -usableMaxAngle angle and +usableMaxAngle angle
+    float curAngle;
+    float curTargetAngle;
 } Servo;
 
 typedef uint8_t eMOTOR_CMD_t;
@@ -96,13 +98,16 @@ typedef struct {
 
 typedef struct {
     eACTUATOR_ID_t id;
-    float curThrottle; // Between 0.0 and 1.0
-    float curTargetThrottle;
+    float pitchMix;
+    float yawMix;
+    float rollMix;
 } MotorDescriptor;
 
 typedef struct {
     DShotHandle dshot;
     MotorDescriptor desc;
+    float curThrottle; // Between 0.0 and 1.0
+    float curTargetThrottle;
 } Motor;
 
 typedef struct {

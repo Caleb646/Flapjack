@@ -39,9 +39,11 @@
 #define LOG_ERROR(...)          LOG_ ("[ERROR]", __VA_ARGS__)
 
 #define LOG_DATA_TYPE_ATTITUDE  "attitude"
+#define LOG_DATA_TYPE_PID_ATTITUDE  "pid_attitude"
 #define LOG_DATA_TYPE_IMU_CALIB "imu_calib"
 #define LOG_DATA_TYPE_IMU_DATA  "imu_data"
 #define LOG_DATA_TYPE_RAW_IMU_DATA  "imu_raw_data"
+#define LOG_DATA_TYPE_ACTUATORS "actuators"
 // Example usage: LOG_DATA("imu", "{\"roll\":%.2f,\"pitch\":%.2f,\"yaw\":%.2f}", roll, pitch, yaw);
 #define LOG_DATA(type, fmt, ...)                      \
     do {                                              \
@@ -64,10 +66,15 @@
     LOG_DATA (LOG_DATA_TYPE_ATTITUDE, "{\"roll\":%d,\"pitch\":%d,\"yaw\":%d}", \
               (int16_t)((attitude).roll), (int16_t)((attitude).pitch), (int16_t)((attitude).yaw))
 
+/* pid attitude is in degrees */
+#define LOG_DATA_CURRENT_PID_ATTITUDE(PID) \
+    LOG_DATA (LOG_DATA_TYPE_PID_ATTITUDE, "{\"roll\":%d,\"pitch\":%d,\"yaw\":%d}", \
+              (int16_t)((PID).roll), (int16_t)((PID).pitch), (int16_t)((PID).yaw))
+
 #define LOG_DATA_ACTUATORS_DATA(motorName, motor, servoName, servo) \
-    LOG_DATA ("actuators", "{\"%s\":{\"type\":\"motor\",\"throttle\":%d,\"target_throttle\":%d},\"%s\":{\"type\":\"servo\",\"angle\":%d,\"target_angle\":%d}}", \
-              motorName, (int16_t)((motor).desc.curThrottle * 100.0F), (int16_t)((motor).desc.curTargetThrottle * 100.0F), \
-              servoName, (int16_t)((servo).desc.curAngle), (int16_t)((servo).desc.curTargetAngle))
+    LOG_DATA (LOG_DATA_TYPE_ACTUATORS, "{\"%s\":{\"type\":\"motor\",\"throttle\":%d,\"target_throttle\":%d},\"%s\":{\"type\":\"servo\",\"angle\":%d,\"target_angle\":%d}}", \
+              motorName, (int16_t)((motor).curThrottle * 100.0F), (int16_t)((motor).curTargetThrottle * 100.0F), \
+              servoName, (int16_t)((servo).curAngle), (int16_t)((servo).curTargetAngle))
 
 // clang-format on
 

@@ -14,7 +14,8 @@
         "log.h": "c",
         "common.h": "c",
         "pwm.h": "c",
-        "ranges": "c"
+        "ranges": "c",
+        "functional": "c"
     },
     "C_Cpp.codeAnalysis.clangTidy.enabled": true,
     // "C_Cpp.codeAnalysis.clangTidy.path": "${Env:CLANG_TIDY_PATH}",

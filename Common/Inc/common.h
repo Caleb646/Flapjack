@@ -24,6 +24,7 @@
 #define MAX_I32(x, y)            ((x > y) ? x : y)
 #define MAX_U32(x, y)            ((x > y) ? x : y)
 #define MAX_F32(x, y)            ((x > y) ? x : y)
+#define ABS_F32(x)               (((x) < 0.0F) ? -(x) : (x))
 
 #define DEG2RAD(x)               (((float)x) * 0.017453292519943295F) // (π / 180)
 #define RAD2DEG(x)               (((float)x) * 57.29577951308232F) // (180 / π)

@@ -232,7 +232,7 @@ eSTATUS_t IMUGetAltConf (IMU* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf);
 eSTATUS_t IMUSetConf (IMU* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf);
 eSTATUS_t IMUSetAltConf (IMU* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf);
 eSTATUS_t IMUCompareConfs (IMUAccConf aconf, IMUGyroConf gconf, IMUAccConf aconf2, IMUGyroConf gconf2);
-eSTATUS_t IMU2CPUInterruptHandler (IMU* pIMU);
+void IMU2CPUInterruptHandler (IMU* pIMU);
 
 
 #endif // SENSORS_IMU_H

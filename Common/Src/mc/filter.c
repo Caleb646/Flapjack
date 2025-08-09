@@ -141,6 +141,8 @@ Vec3f* pOutputAttitude) {
     /*
      * NOTE: atan2f returns values between -pi and +pi. It wraps at 0 --> +pi to -pi --> 0 .
      * Pitch and roll should never wrap but yaw can wrap.
+     *
+     * NOTE: atan and asin are NON reentrant
      */
     pOutputAttitude->yaw = RAD2DEG (
     atan2f (2.0F * q2 * q3 - 2.0F * q1 * q4, 2.0F * q1 * q1 + 2.0F * q2 * q2 - 1));
