@@ -18,16 +18,16 @@
 #define ASSERT(expr)             assert ((expr))
 #define MASSERT(expr, __VARGS__) assert ((expr))
 
-#define MIN_I32(x, y)            ((x < y) ? x : y)
-#define MIN_U32(x, y)            ((x < y) ? x : y)
-#define MIN_F32(x, y)            ((x < y) ? x : y)
-#define MAX_I32(x, y)            ((x > y) ? x : y)
-#define MAX_U32(x, y)            ((x > y) ? x : y)
-#define MAX_F32(x, y)            ((x > y) ? x : y)
-#define ABS_F32(x)               (((x) < 0.0F) ? -(x) : (x))
+#define MIN_I32(x, y)            (((x) < (y)) ? (x) : (y))
+#define MIN_U32(x, y)            (((x) < (y)) ? (x) : (y))
+#define MIN_F32(x, y)            (((x) < (y)) ? (x) : (y))
+#define MAX_I32(x, y)            (((x) > (y)) ? (x) : (y))
+#define MAX_U32(x, y)            (((x) > (y)) ? (x) : (y))
+#define MAX_F32(x, y)            (((x) > (y)) ? (x) : (y))
+#define ABS_F32(x)               (((float)(x) < 0.0F) ? -((float)(x)) : (float)(x))
 
-#define DEG2RAD(x)               (((float)x) * 0.017453292519943295F) // (π / 180)
-#define RAD2DEG(x)               (((float)x) * 57.29577951308232F) // (180 / π)
+#define DEG2RAD(x)               (((float)(x)) * 0.017453292519943295F) // (π / 180)
+#define RAD2DEG(x)               (((float)(x)) * 57.29577951308232F) // (180 / π)
 
 typedef uint8_t BOOL_t;
 enum { FALSE = 0, TRUE = 1 };
