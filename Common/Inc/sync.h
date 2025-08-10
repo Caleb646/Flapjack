@@ -12,7 +12,7 @@ typedef uint8_t eSYNC_TASKID_t;
 enum {
     eSYNC_TASKID_UART_OUT = 0U,
 
-
+    NUMBER_OF_SYNC_TASKS,
     eSYNC_TASKID_MAX = 256U
 };
 

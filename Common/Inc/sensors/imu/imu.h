@@ -165,6 +165,9 @@ enum {
 typedef uint8_t eIMU_AXES_DIR_t;
 enum { eIMU_AXES_DIR_DEFAULT = 0x00, eIMU_AXES_DIR_INVERTED = 0x01 };
 
+typedef uint8_t eIMU_DATA_MODE_t;
+enum { eIMU_DATA_MODE_POLLING = 0x00, eIMU_DATA_MODE_INT = 0x01 };
+
 typedef struct {
     eIMU_AXES_REMAP_t remap;
     eIMU_AXES_DIR_t xDir;
@@ -222,7 +225,7 @@ IMUConvertRaw (IMU_ACC_RANGE aRange, Vec3 ra, IMU_GYRO_RANGE gRange, Vec3 rg, Ve
 
 eSTATUS_t
 IMUInit (IMU* pIMU, SPI_HandleTypeDef* pSPI, IMUAccConf aconf, IMUGyroConf gconf, IMUAxesRemapConf* pAxesRemapConf);
-eSTATUS_t IMUStart (IMU* pIMU);
+eSTATUS_t IMUStart (IMU* pIMU, eIMU_DATA_MODE_t dataMode);
 eSTATUS_t IMUStop (IMU* pIMU);
 eSTATUS_t IMUHandleErr (IMU* pIMU);
 eSTATUS_t IMUProcessUpdatefromINT (IMU* pIMU, Vec3f* pOutputAccel, Vec3f* pOutputGyro);

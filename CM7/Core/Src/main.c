@@ -53,7 +53,9 @@ static void MX_GPIO_Init (void);
 static void MX_SPI2_Init (void);
 
 // NOLINTBEGIN
-IMU gIMU                                     = { 0 };
+IMU gIMU                      = { 0 };
+eIMU_DATA_MODE_t gIMUDataMode = eIMU_DATA_MODE_POLLING;
+
 FilterMadgwickContext gFilterMadgwickContext = { 0 };
 PIDContext gPIDContext                       = { 0 };
 TaskHandle_t gpTaskMotionControlUpdate       = { 0 };
@@ -83,7 +85,7 @@ void HAL_GPIO_EXTI_Callback (uint16_t gpioPin) {
 
 eSTATUS_t ProcessPIDChange (EmptyCommand cmd) {
 
-    ChangePIDCmd* pChangePIDCmd = (ChangePIDCmd*)cmd.data;
+    ChangePIDCmd* pChangePIDCmd = (ChangePIDCmd*)&cmd;
     float p = mapf32 ((float)pChangePIDCmd->P.v, 0.0F, 65535.0F, PID_MIN_VALUE, PID_MAX_VALUE);
     float i = mapf32 ((float)pChangePIDCmd->I.v, 0.0F, 65535.0F, PID_MIN_VALUE, PID_MAX_VALUE);
     float d = mapf32 ((float)pChangePIDCmd->D.v, 0.0F, 65535.0F, PID_MIN_VALUE, PID_MAX_VALUE);
@@ -107,14 +109,21 @@ eSTATUS_t ProcessPIDChange (EmptyCommand cmd) {
         LOG_ERROR ("Unknown PID command type: %d", pChangePIDCmd->pidType);
         return eSTATUS_FAILURE;
     }
+    LOG_INFO ("PID values updated");
     return eSTATUS_SUCCESS;
 }
 
 eSTATUS_t ProcessVelocityChange (EmptyCommand cmd) {
     // TODO: need work out how I will change forward/backward/right...
     // velocity values to a target attitude
-    ChangeVelocityCmd* pChangeVelocityCmd = (ChangeVelocityCmd*)cmd.data;
-    gTargetThrottle = 100.0F / (float)pChangeVelocityCmd->vThrottle;
+    int8_t vThrottle = 0;
+    // LOG_INFO ("5");
+    ChangeVelocityCmd* pChangeVelocityCmd = (ChangeVelocityCmd*)&cmd;
+    gTargetThrottle = (float)pChangeVelocityCmd->vThrottle / 100.0F;
+
+    // LOG_INFO (
+    //"Forward: [%d] Right: [%d] Throttle: [%d]", pChangeVelocityCmd->vForward,
+    // pChangeVelocityCmd->vRight, pChangeVelocityCmd->vThrottle);
     return eSTATUS_SUCCESS;
 }
 
@@ -126,7 +135,7 @@ BOOL_t StateTransitionFromStopped2Running (FCState curState) {
         doTransition = FALSE;
     }
 
-    if (IMUStart (&gIMU) != eSTATUS_SUCCESS) {
+    if (IMUStart (&gIMU, gIMUDataMode) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start IMU");
         doTransition = FALSE;
     }
@@ -169,13 +178,17 @@ void TaskMainLoop (void* pvParameters) {
     }
 
     while (1) {
-        if (ControlProcessCmds () != eSTATUS_SUCCESS) {
+        if (ControlProcess_Cmds () != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to process control commands");
         }
 
         if ((xTaskGetTickCount () - msLogStart) >= msLogStep) {
             msLogStart = xTaskGetTickCount ();
+            portENTER_CRITICAL ();
+
             LOG_INFO ("Main loop is running, current state: %s", ControlOpState2Char (ControlGetOpState ()));
+
+            portEXIT_CRITICAL ();
         }
         // Aim for 500Hz
         vTaskDelay (pdMS_TO_TICKS (2));
@@ -201,13 +214,21 @@ void TaskMotionControlUpdate (void* pvParameters) {
             vTaskDelay (pdMS_TO_TICKS (1));
             continue;
         }
-        ulTaskNotifyTake (pdTRUE, pdMS_TO_TICKS (1000));
+        /*
+         * TODO: notifications from IMU started breaking FreeRTOS.
+         * I am hitting this assert sometimes: configASSERT( listLIST_ITEM_CONTAINER( &( pxTCB->xEventListItem ) ) == NULL in tasks.c
+         */
+        // ulTaskNotifyTake (pdTRUE, pdMS_TO_TICKS (1000));
 
         eSTATUS_t status = eSTATUS_SUCCESS;
         Vec3f accel      = { 0.0F };
         Vec3f gyro       = { 0.0F };
-        if (IMUProcessUpdatefromINT (&gIMU, &accel, &gyro) != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to process IMU data from interrupt");
+        // if (IMUProcessUpdatefromINT (&gIMU, &accel, &gyro) != eSTATUS_SUCCESS) {
+        //     LOG_ERROR ("Failed to process IMU data from interrupt");
+        //     continue;
+        // }
+        if (IMUProcessUpdatefromPolling (&gIMU, &accel, &gyro) != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to process IMU data from polling");
             continue;
         }
 
@@ -252,11 +273,20 @@ void TaskMotionControlUpdate (void* pvParameters) {
             pid.pitch *= gMaxAttitude.pitch;
             pid.yaw *= gMaxAttitude.yaw;
 
+            portENTER_CRITICAL ();
+
             LOG_DATA_IMU_DATA (a, g);
             LOG_DATA_CURRENT_ATTITUDE (ca);
             LOG_DATA_CURRENT_PID_ATTITUDE (pid);
             ActuatorsLogData ();
+
+            portEXIT_CRITICAL ();
         }
+        if (HZ_SENSOR_UPDATE_RATE > 1000U) {
+            LOG_ERROR ("Sensor update rate exceeds 1000Hz");
+        }
+        // Limit loop to sensor update rate
+        vTaskDelay (pdMS_TO_TICKS (1000U / HZ_SENSOR_UPDATE_RATE));
     }
 }
 
@@ -326,6 +356,11 @@ int main (void) {
         gconf.avg         = eIMU_GYRO_AVG_16;
         gconf.bw          = eIMU_GYRO_BW_HALF;
         gconf.mode        = eIMU_GYRO_MODE_HIGH_PERF;
+        if (gconf.odr != eIMU_GYRO_ODR_200) {
+            LOG_ERROR (
+            "IMU Gyro ODR is not set to 200Hz, current: %d", gconf.odr);
+            CriticalErrorHandler ();
+        }
         /*
          * NOTE: Target LOCAL coordinate system is FRD (Forward, Right, Down).
          * So +x is forward, +y is right, +z is down.

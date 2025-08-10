@@ -4,7 +4,9 @@
 
 // #define USE_SERVOS_ONLY
 
-#define MS_PER_LOG_DATA_UPDATE           100U // 100 ms data update interval
+#define MS_PER_LOG_DATA_UPDATE           250U // 250 ms data update interval
+
+#define HZ_SENSOR_UPDATE_RATE            200U // 200 Hz sensor update rate
 
 #define PRIMARY_LOGGER_ROLE              CM4_CPUID
 #define LOGGER_SHOULD_BLOCK_ON_OVERWRITE 1

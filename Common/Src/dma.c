@@ -130,7 +130,7 @@ eSTATUS_t DMASystemInit (void) {
     gDMAStream_5.Instance = DMA1_Stream5;
     gDMAStream_6.Instance = DMA1_Stream6;
 
-    uint32_t p = 6;
+    uint32_t p = 10;
 
     HAL_NVIC_SetPriority (DMA1_Stream0_IRQn, p, p);
     HAL_NVIC_EnableIRQ (DMA1_Stream0_IRQn);

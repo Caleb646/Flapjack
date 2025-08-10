@@ -15,7 +15,16 @@
         "common.h": "c",
         "pwm.h": "c",
         "ranges": "c",
-        "functional": "c"
+        "functional": "c",
+        "array": "c",
+        "compare": "c",
+        "istream": "c",
+        "ostream": "c",
+        "tuple": "c",
+        "type_traits": "c",
+        "utility": "c",
+        "typeinfo": "c",
+        "vector": "c"
     },
     "C_Cpp.codeAnalysis.clangTidy.enabled": true,
     // "C_Cpp.codeAnalysis.clangTidy.path": "${Env:CLANG_TIDY_PATH}",

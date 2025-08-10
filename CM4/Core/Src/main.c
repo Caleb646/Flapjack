@@ -63,7 +63,7 @@ void TaskMainLoop (void* pvParameters) {
 
     while (1) {
         SyncProcessTasks ();
-        ControlProcessRawCmds ();
+        ControlProcess_RawCmds ();
         if ((xTaskGetTickCount () - startTime) >= logStep) {
             startTime = xTaskGetTickCount ();
             LOG_INFO ("Main loop running");

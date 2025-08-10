@@ -49,7 +49,14 @@ typedef struct {
 
 typedef struct {
     CommandHeader header;
-    uint8_t data[COMMAND_DATA_SIZE];
+    // uint8_t data[COMMAND_DATA_SIZE];
+    uint8_t unused1;
+    uint8_t unused2;
+    uint8_t unused3;
+    uint8_t unused4;
+    uint8_t unused5;
+    uint8_t unused6;
+    uint8_t unused7;
 } EmptyCommand;
 
 typedef struct {
@@ -64,9 +71,11 @@ typedef struct {
 
 typedef struct {
     CommandHeader header;
+    // uint8_t padding;
     cmd_velocity_t vThrottle; // -100 to 100
     cmd_velocity_t vRight;    // -100 to 100
     cmd_velocity_t vForward;  // -100 to 100
+    // uint8_t padding[4];
 } ChangeVelocityCmd;
 
 typedef struct {
@@ -115,8 +124,8 @@ typedef eSTATUS_t (*CmdHandler_t) (EmptyCommand cmd);
 
 eSTATUS_t ControlInit (void);
 eSTATUS_t ControlStart (UART_HandleTypeDef* huart);
-eSTATUS_t ControlProcessRawCmds (void);
-eSTATUS_t ControlProcessCmds (void);
+eSTATUS_t ControlProcess_RawCmds (void);
+eSTATUS_t ControlProcess_Cmds (void);
 eSTATUS_t ControlRegister_OPStateTransitionHandler (
 eCMD_OP_STATE_t fromState,
 eCMD_OP_STATE_t toState,
@@ -125,7 +134,7 @@ eSTATUS_t ControlRegister_CmdHandler (eCMD_t cmdType, CmdHandler_t handler);
 char const* ControlOpState2Char (eCMD_OP_STATE_t opState);
 char const* ControlCmdType2Char (eCMD_t commandType);
 FCState ControlGetCopyFCState (void);
-eCMD_OP_STATE_t ControlGetOpState (void);
 eSTATUS_t ControlUpdateFCState (FCState const* pNewState);
+eCMD_OP_STATE_t ControlGetOpState (void);
 
 #endif /* CONTROL_H */

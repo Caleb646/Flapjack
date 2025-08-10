@@ -129,7 +129,7 @@ def parse_enums(raw_text: str):
         for entry in entries:
             if '=' in entry:
                 name, val_str = map(str.strip, entry.split("=", 1))
-                value = int(val_str, 0)  # Support hex etc.
+                value = int(val_str, 0)
             else:
                 name = entry
             enums[name] = value

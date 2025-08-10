@@ -35,6 +35,11 @@ LETTER_Z = [
     [(-0.05, -0.05, 0), (0.05, -0.05, 0)],
 ]
 
+def write_cmd_packet(serial: QSerialPort, packet: bytes):
+    assert len(packet) == 8, "PID command packet must be exactly 8 bytes"
+    serial.write(packet)
+    serial.flush()
+
 def load_mesh(filename, translate=(0, 0, 0), color=(0.8, 0.8, 0.8, 1.0)):
     mesh = trimesh.load_mesh(filename)
     vertices = mesh.vertices - mesh.centroid
@@ -261,7 +266,7 @@ class FlightViewer(QtWidgets.QWidget):
         packet = struct.pack('<BB6x', COMMAND_TYPE_CHANGE_OP_STATE, REQUESTED_STATE_START)
         
         try:
-            self.serial.write(packet)
+            write_cmd_packet(self.serial, packet)
             self.append_debug_console(f"Sent START command: {packet.hex()}", "[INFO]")
         except Exception as e:
             self.append_debug_console(f"Failed to send START command: {e}", "[ERROR]")
@@ -279,7 +284,7 @@ class FlightViewer(QtWidgets.QWidget):
         packet = struct.pack('<BB6x', COMMAND_TYPE_CHANGE_OP_STATE, REQUESTED_STATE_STOP)
         
         try:
-            self.serial.write(packet)
+            write_cmd_packet(self.serial, packet)
             self.append_debug_console(f"Sent STOP command: {packet.hex()}", "[INFO]")
         except Exception as e:
             self.append_debug_console(f"Failed to send STOP command: {e}", "[ERROR]")
@@ -298,12 +303,13 @@ class FlightViewer(QtWidgets.QWidget):
         v_right = max(v_min, min(v_max, v_right))
         v_throttle = max(v_min, min(v_max, v_throttle))
 
-        packet = struct.pack('<BBBB3x', COMMAND_TYPE_VELOCITY, v_forward, v_right, v_throttle)
+        # packet = struct.pack('<B1xbbb3x', COMMAND_TYPE_VELOCITY, v_throttle, v_right, v_forward)
+        packet = struct.pack('<Bbbb4x', COMMAND_TYPE_VELOCITY, v_throttle, v_right, v_forward)
 
         try:
-            self.serial.write(packet)
+            write_cmd_packet(self.serial, packet)
             self.append_debug_console(
-                f"Sent VELOCITY command - Forward: {v_forward}, Right: {v_right}, Throttle: {v_throttle}: {packet.hex()}"
+                f"Sent VELOCITY command - Forward: {v_forward}, Right: {v_right}, Throttle: {v_throttle}: {packet.hex()} {len(packet)}"
                 )
         except Exception as e:
             self.append_debug_console(f"Failed to send VELOCITY command: {e}", "[ERROR]")
@@ -333,12 +339,13 @@ class FlightViewer(QtWidgets.QWidget):
         i_uint16 = map_range(i_value, CONF.PID_MIN_VALUE, CONF.PID_MAX_VALUE, 0, 65535)
         d_uint16 = map_range(d_value, CONF.PID_MIN_VALUE, CONF.PID_MAX_VALUE, 0, 65535)
 
-        # Create 8-byte packet: commandType(1) + axis(1) + P(2) + I(2) + D(2)
+        # Create 8-byte packet: commandType(1) + PID Axis(1) P(2) + I(2) + D(2)
         # H = uint16_t (2 bytes each)
-        packet = struct.pack('<BBHHH', COMMAND_TYPE_PID_UPDATE, axis_code, p_uint16, i_uint16, d_uint16)
+        packet = struct.pack('<BBHHH4x', COMMAND_TYPE_PID_UPDATE, axis_code, p_uint16, i_uint16, d_uint16)
+        assert len(packet) == 8, "PID command packet must be exactly 8 bytes"
         
         try:
-            self.serial.write(packet)
+            write_cmd_packet(self.serial, packet)
             self.append_debug_console(f"Sent PID command - Axis: {axis}, P: {p_value:.3f}, I: {i_value:.3f}, D: {d_value:.3f}: {packet.hex()}", "[INFO]")
         except Exception as e:
             self.append_debug_console(f"Failed to send PID command: {e}", "[ERROR]")
@@ -613,7 +620,7 @@ class FlightControlTab(QtWidgets.QWidget):
             self.v_throttle = min(throttle_max, max(throttle_min, self.v_throttle - 1))
 
         self.update_velocity_display()
-        self.parent_viewer.send_velocity_command(direction, self.v_forward, self.v_right, self.v_throttle)
+        self.parent_viewer.send_velocity_command(self.v_forward, self.v_right, self.v_throttle)
         self.last_command_label.setText(f"Last Command: VELOCITY {direction.upper()}")
     
     def update_velocity_display(self):
@@ -777,7 +784,7 @@ class ConfigurationTab(QtWidgets.QWidget):
         self.update_roll_btn.setEnabled(enabled)
         self.update_pitch_btn.setEnabled(enabled)
         self.update_yaw_btn.setEnabled(enabled)
-        self.update_all_btn.setEnabled(enabled)
+        # self.update_all_btn.setEnabled(enabled)
         
         if enabled:
             self.status_label.setText("Connected")
