@@ -3,9 +3,10 @@
 
 #include "common.h"
 #include "hal.h"
+#include "log/format.h"
 #include <stdint.h>
-#include <stdio.h>
 #include <string.h>
+// #include <stdio.h>
 
 // Macro to extract filename from __FILE__ at compile time
 #ifdef _WIN32
@@ -29,9 +30,9 @@
 /* < and > delimits a message */
 #define LOG_(lvl, ...)                                                                                                  \
     do {                                                                                                                \
-        printf ("<{\"type\":\"debug\",\"lvl\":\"%s\",\"core\":\"%s\",\"file\":\"%s\",\"function\":\"%s\",\"line\":%u,\"msg\":\"", lvl, __CORE_NAME__, __FILENAME__, __func__, __LINE__); \
-        printf (__VA_ARGS__);                                                                                           \
-        printf ("\"}>\r\n");                                                                                            \
+        tfp_printf ("<{\"type\":\"debug\",\"lvl\":\"%s\",\"core\":\"%s\",\"file\":\"%s\",\"function\":\"%s\",\"line\":%u,\"msg\":\"", lvl, __CORE_NAME__, __FILENAME__, __func__, __LINE__); \
+        tfp_printf (__VA_ARGS__);                                                                                           \
+        tfp_printf ("\"}>\r\n");                                                                                            \
     } while (0)
 #define LOG_INFO(...)           LOG_ ("[INFO]", __VA_ARGS__)
 #define LOG_DEBUG(...)          LOG_ ("[DEBUG]", __VA_ARGS__)
@@ -47,9 +48,9 @@
 // Example usage: LOG_DATA("imu", "{\"roll\":%.2f,\"pitch\":%.2f,\"yaw\":%.2f}", roll, pitch, yaw);
 #define LOG_DATA(type, fmt, ...)                      \
     do {                                              \
-        printf ("<{\"type\":\"%s\",\"core\":\"%s\",\"data\":", type, __CORE_NAME__); \
-        printf (fmt, __VA_ARGS__);                      \
-        printf ("}>\r\n");                            \
+        tfp_printf ("<{\"type\":\"%s\",\"core\":\"%s\",\"data\":", type, __CORE_NAME__); \
+        tfp_printf (fmt, __VA_ARGS__);                      \
+        tfp_printf ("}>\r\n");                            \
     } while (0)
 
 #define LOG_DATA_IMU_CALIB(calib) \

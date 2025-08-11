@@ -1,7 +1,7 @@
 #include "mc/actuators.h"
 #include "common.h"
 #include "conf.h"
-#include "log.h"
+#include "log/logger.h"
 #include "mc/dshot.h"
 #include "mc/pwm.h"
 #include <string.h>

@@ -24,7 +24,8 @@
         "type_traits": "c",
         "utility": "c",
         "typeinfo": "c",
-        "vector": "c"
+        "vector": "c",
+        "uart.h": "c"
     },
     "C_Cpp.codeAnalysis.clangTidy.enabled": true,
     // "C_Cpp.codeAnalysis.clangTidy.path": "${Env:CLANG_TIDY_PATH}",

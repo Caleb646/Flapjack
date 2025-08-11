@@ -2,7 +2,7 @@
 #define DMA_H
 #include "common.h"
 #include "hal.h"
-#include "log.h"
+#include "log/logger.h"
 #include <stdint.h>
 
 #define DMA_CHECK_CONF_OK(pDMAConf) \

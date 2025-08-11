@@ -3,7 +3,7 @@
 
 #include "common.h"
 #include "hal.h"
-#include "log.h"
+#include "log/logger.h"
 #include "mem/mem.h"
 
 #define COMMAND_TOTAL_SIZE  8U

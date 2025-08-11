@@ -26,7 +26,7 @@
 
 #include "common.h"
 #include "control.h"
-#include "log.h"
+#include "log/logger.h"
 #include "periphs/uart.h"
 #include "sync.h"
 

@@ -34,7 +34,7 @@
 #include "conf.h"
 #include "control.h"
 #include "dma.h"
-#include "log.h"
+#include "log/logger.h"
 #include "mc/actuators.h"
 #include "mc/filter.h"
 #include "periphs/gpio.h"
@@ -57,10 +57,10 @@ IMU gIMU                                     = { 0 };
 FilterMadgwickContext gFilterMadgwickContext = { 0 };
 PIDContext gPIDContext                       = { 0 };
 TaskHandle_t gpTaskMotionControlUpdate       = { 0 };
-Vec3f gMaxAttitude     = { .roll = 45.0F, .pitch = 45.0F, .yaw = 180.0F };
-Vec3f gCurrentAttitude = { 0.0F };
-Vec3f gTargetAttitude  = { 0.0F };
-float gTargetThrottle  = MOTOR_STARTUP_THROTTLE;
+Vec3f gCurrentAttitude                       = { 0.0F };
+Vec3f gTargetAttitude                        = { 0.0F };
+Vec3f gMaxAttitude    = { .roll = 45.0F, .pitch = 45.0F, .yaw = 180.0F };
+float gTargetThrottle = MOTOR_STARTUP_THROTTLE;
 // NOLINTEND
 
 /**
@@ -166,7 +166,8 @@ void TaskMainLoop (void* pvParameters) {
 
     if (ControlStart (NULL) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start control module");
-        CriticalErrorHandler ();
+        configASSERT (0);
+        // CriticalErrorHandler ();
     }
 
     while (1) {

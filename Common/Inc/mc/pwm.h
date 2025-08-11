@@ -4,7 +4,7 @@
 #include "common.h"
 #include "dma.h"
 #include "hal.h"
-#include "log.h"
+#include "log/logger.h"
 
 
 #define PWM_CHECK_OK(pPwmHandle) \

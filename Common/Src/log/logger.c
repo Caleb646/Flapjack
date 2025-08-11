@@ -1,21 +1,21 @@
-#include <stdio.h>
-#include <string.h>
-
+#include "log/logger.h"
 #include "common.h"
 #include "conf.h"
 #include "hal.h"
-#include "log.h"
+#include "log/format.h"
 #include "mem/mem.h"
 #include "mem/ring_buff.h"
 #include "periphs/uart.h"
 #include "sync.h"
+#include <stdio.h>
+#include <string.h>
 
 
-#ifdef __GNUC__
-#define PUTCHAR_PROTOTYPE int __io_putchar (int ch)
-#else
-#define PUTCHAR_PROTOTYPE int fputc (int ch, FILE* f)
-#endif
+// #ifdef __GNUC__
+// #define PUTCHAR_PROTOTYPE int __io_putchar (int ch)
+// #else
+// #define PUTCHAR_PROTOTYPE int fputc (int ch, FILE* f)
+// #endif
 
 #if LOGGER_SHOULD_BLOCK_ON_OVERWRITE == 1
 #define LOGGER_WRITE_CHAR(ch) LoggerWriteChar_Blocking (ch)
@@ -42,6 +42,7 @@ static RingBuff volatile* LoggerGetOtherRingBuf (void);
 static void LoggerWriteChar_Blocking (char ch);
 static void LoggerWriteChar_NonBlocking (char ch);
 static eSTATUS_t LoggerUARTInit (void);
+static void LoggerPutChar (void* p, char ch);
 
 static eSTATUS_t LoggerSyncUARTTaskHandler (DefaultTask const* pTask) {
     // Write the other core's ring buffer out to the UART
@@ -172,14 +173,23 @@ static eSTATUS_t LoggerUARTInit (void) {
     return eSTATUS_SUCCESS;
 }
 
-PUTCHAR_PROTOTYPE {
+/*
+ * Used by printf impl in format.c
+ */
+static void LoggerPutChar (void* p, char ch) {
     LOGGER_WRITE_CHAR ((char)ch);
-    return ch;
 }
+
+// PUTCHAR_PROTOTYPE {
+//     LOGGER_WRITE_CHAR ((char)ch);
+//     return ch;
+// }
 
 eSTATUS_t LoggerInit (void) {
 
-    if (HAL_GetCurrentCPUID () == PRIMARY_LOGGER_ROLE) {
+    init_printf (NULL, LoggerPutChar);
+
+    if (PRIMARY_LOGGER_IS_ME () == TRUE) {
         if (LoggerUARTInit () != eSTATUS_SUCCESS) {
             return eSTATUS_FAILURE;
         }

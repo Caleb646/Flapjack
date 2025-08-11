@@ -1,7 +1,7 @@
 #include "sensors/imu/imu.h"
 #include "common.h"
 #include "conf.h"
-#include "log.h"
+#include "log/logger.h"
 #include "periphs/gpio.h"
 #include "sensors/imu/bmixxx.h"
 #include <stdint.h>

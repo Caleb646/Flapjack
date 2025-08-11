@@ -33,7 +33,7 @@
 #include "common.h"
 #include "dma.h"
 #include "hal.h"
-#include "log.h"
+#include "log/logger.h"
 #include "mc/pwm.h"
 #include <stdint.h>
 

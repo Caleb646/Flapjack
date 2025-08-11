@@ -1,7 +1,7 @@
 #include "dma.h"
 #include "common.h"
 #include "hal.h"
-#include "log.h"
+#include "log/logger.h"
 #include <stdint.h>
 
 #define CHECK_DMA1_STREAM_VALID(stream)                     \
