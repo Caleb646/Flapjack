@@ -482,7 +482,7 @@ IMUSetConf_ (IMU* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf, uin
             // LOG_ERROR ("Failed to configure IMU accelerometer");
             return status;
         }
-        if (status == eSTATUS_SUCCESS && altConfFlag == 0) {
+        if (status == eSTATUS_SUCCESS && altConfFlag == FALSE) {
             pIMU->aconf = *pAConf;
         }
     }
@@ -519,7 +519,7 @@ IMUSetConf_ (IMU* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf, uin
             LOG_ERROR ("Failed to configure IMU gyroscope");
             return eSTATUS_FAILURE;
         }
-        if (status == eSTATUS_SUCCESS && altConfFlag == 0) {
+        if (status == eSTATUS_SUCCESS && altConfFlag == FALSE) {
             pIMU->gconf = *pGConf;
         }
     }
@@ -556,7 +556,7 @@ IMUCalibrate (IMU* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSel
     status                = IMUSetConf (pIMU, &calibAConf, NULL);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to set IMU accelerometer configuration for calibration");
-        return status;
+        goto error;
     }
     HAL_Delay (100);
 
@@ -566,7 +566,7 @@ IMUCalibrate (IMU* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSel
     status = IMUGetAltConf (pIMU, &altAConf, &altGConf);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to get IMU alternate configuration to save before calibration");
-        return status;
+        goto error;
     }
 
     altAConf.mode = eIMU_ACC_MODE_DISABLE;
@@ -574,7 +574,7 @@ IMUCalibrate (IMU* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSel
     status        = IMUSetAltConf (pIMU, &altAConf, &altGConf);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to disable IMU alternate configuration before calibration");
-        return status;
+        goto error;
     }
     HAL_Delay (100);
 
@@ -582,7 +582,7 @@ IMUCalibrate (IMU* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSel
     status = IMUSendCmd (pIMU, BMI3_CMD_SELF_CALIB_TRIGGER);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to trigger IMU self-calibration");
-        return status;
+        goto error;
     }
     HAL_Delay (100);
 
@@ -592,7 +592,7 @@ IMUCalibrate (IMU* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSel
         status = IMUGetFeatureStatus (pIMU, BMI3_REG_FEATURE_IO1, &featureStatus);
         if (status != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to get IMU feature status");
-            return status;
+            goto error;
         }
         if (featureStatus.systemState != 0x1U) {
             LOG_ERROR (
@@ -600,7 +600,7 @@ IMUCalibrate (IMU* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSel
             "[0x%X]",
             featureStatus.systemState);
             IMULogDeviceErr (pIMU, NULL);
-            return eSTATUS_FAILURE;
+            goto error;
         }
     }
 
@@ -613,7 +613,7 @@ IMUCalibrate (IMU* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSel
             status             = IMUGetINTStatus (pIMU, &intStatus);
             if (status != eSTATUS_SUCCESS) {
                 LOG_ERROR ("Failed to read IMU interrupt status");
-                return status;
+                goto error;
             }
             if (CHECK_INT_ERR_STATUS (intStatus)) {
                 break;
@@ -624,7 +624,7 @@ IMUCalibrate (IMU* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSel
         status = IMUGetFeatureStatus (pIMU, BMI3_REG_FEATURE_IO1, &featureStatus);
         if (status != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to get IMU feature status");
-            return status;
+            goto error;
         }
         uint16_t scErrStatus = featureStatus.errStatus;
         uint16_t scComplete  = featureStatus.selfCalibComplete;
@@ -634,16 +634,16 @@ IMUCalibrate (IMU* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSel
         if (scComplete > 0 && scResult > 0 && scErrStatus == 0x5U && systemState == 0x00) {
             pResultOut->result = TRUE;
             pResultOut->error  = 0;
-            return status;
+        } else {
+            pResultOut->result = FALSE;
+            pResultOut->error  = (uint8_t)scErrStatus;
+            LOG_ERROR ("IMU self-calibration failed. SC Err Status [0x%X] System State [0x%X]", scErrStatus, systemState);
+            IMULogDeviceErr (pIMU, NULL);
         }
-
-        pResultOut->result = FALSE;
-        pResultOut->error  = (uint8_t)scErrStatus;
-        LOG_ERROR ("IMU self-calibration failed. SC Err Status [0x%X] System State [0x%X]", scErrStatus, systemState);
-        IMULogDeviceErr (pIMU, NULL);
     }
     HAL_Delay (20);
-    /* Restore configs */
+/* Restore configs */
+error:
     status = IMUSetConf (pIMU, &aconf, &gconf);
     HAL_Delay (100);
     return status;
@@ -783,15 +783,13 @@ eSTATUS_t IMUInit (IMU* pIMU, SPI_HandleTypeDef* pSPI, IMUAxesRemapConf* pAxesRe
     gconf.bw          = eIMU_GYRO_BW_HALF;
     gconf.mode        = eIMU_GYRO_MODE_HIGH_PERF;
 
-    if (HZ_SENSOR_UPDATE_RATE >= 200U) {
+    if (HZ_SENSOR_UPDATE_RATE >= 200U && HZ_SENSOR_UPDATE_RATE < 400U) {
         aconf.odr = eIMU_ACC_ODR_200;
         gconf.odr = eIMU_GYRO_ODR_200;
-    }
-    if (HZ_SENSOR_UPDATE_RATE >= 400U) {
+    } else if (HZ_SENSOR_UPDATE_RATE >= 400U && HZ_SENSOR_UPDATE_RATE < 800U) {
         aconf.odr = eIMU_ACC_ODR_400;
         gconf.odr = eIMU_GYRO_ODR_400;
-    }
-    if (HZ_SENSOR_UPDATE_RATE >= 800U && HZ_SENSOR_UPDATE_RATE <= 1000U) {
+    } else if (HZ_SENSOR_UPDATE_RATE >= 800U && HZ_SENSOR_UPDATE_RATE <= 1000U) {
         aconf.odr = eIMU_ACC_ODR_800;
         gconf.odr = eIMU_GYRO_ODR_800;
     } else {

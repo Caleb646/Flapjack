@@ -177,11 +177,9 @@ void TaskMainLoop (void* pvParameters) {
 
         if ((xTaskGetTickCount () - msLogStart) >= msLogStep) {
             msLogStart = xTaskGetTickCount ();
-            portENTER_CRITICAL ();
-
+            // portENTER_CRITICAL ();
             LOG_INFO ("Main loop is running, current state: %s", ControlOpState2Char (ControlGetOpState ()));
-
-            portEXIT_CRITICAL ();
+            // portEXIT_CRITICAL ();
         }
         // Aim for 500Hz
         vTaskDelay (pdMS_TO_TICKS (2));
@@ -266,14 +264,12 @@ void TaskMotionControlUpdate (void* pvParameters) {
             pid.pitch *= gMaxAttitude.pitch;
             pid.yaw *= gMaxAttitude.yaw;
 
-            portENTER_CRITICAL ();
-
+            // portENTER_CRITICAL ();
             LOG_DATA_IMU_DATA (a, g);
             LOG_DATA_CURRENT_ATTITUDE (ca);
             LOG_DATA_CURRENT_PID_ATTITUDE (pid);
             ActuatorsLogData ();
-
-            portEXIT_CRITICAL ();
+            // portEXIT_CRITICAL ();
         }
         if (HZ_SENSOR_UPDATE_RATE > 1000U || HZ_SENSOR_UPDATE_RATE < 0U) {
             LOG_ERROR ("Sensor update rate invalid");

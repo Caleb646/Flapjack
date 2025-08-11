@@ -1,5 +1,5 @@
-#ifndef _LOG_FORMAT
-#define _LOG_FORMAT
+#ifndef _LOG_FORMAT_H
+#define _LOG_FORMAT_H
 
 /*
 File: printf.h
@@ -103,4 +103,4 @@ void tfp_format (void* putp, void (*putf) (void*, char), char* fmt, va_list va);
 // #define GCC_CACHE_ALIGNED         GCC_ALIGN_ADDR (CACHE_LINE_NBYTES)
 // #define GCC_PACKED                __attribute__ ((packed))
 
-#endif /*_LOG_FORMAT */
+#endif /*_LOG_FORMAT_H */

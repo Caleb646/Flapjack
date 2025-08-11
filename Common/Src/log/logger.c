@@ -7,6 +7,7 @@
 #include "mem/ring_buff.h"
 #include "periphs/uart.h"
 #include "sync.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -30,9 +31,9 @@
 #define UART_LOGGER_INSTANCE USART1
 
 // NOLINTBEGIN
-static uint8_t gaTempReadBuffer[TEMP_BUFFER_SIZE] = { 0 };
-static RingBuff volatile* gpCM4RingBuf            = NULL;
-static RingBuff volatile* gpCM7RingBuf            = NULL;
+static uint8_t ga_TempReadBuffer[TEMP_BUFFER_SIZE] = { 0 };
+static RingBuff volatile* gp_CM4_RingBuf           = NULL;
+static RingBuff volatile* gp_CM7_RingBuf           = NULL;
 // NOLINTEND
 
 static eSTATUS_t LoggerSyncUARTTaskHandler (DefaultTask const* pTask);
@@ -46,7 +47,7 @@ static void LoggerPutChar (void* p, char ch);
 
 static eSTATUS_t LoggerSyncUARTTaskHandler (DefaultTask const* pTask) {
     // Write the other core's ring buffer out to the UART
-    if (HAL_GetCurrentCPUID () == PRIMARY_LOGGER_ROLE) {
+    if (PRIMARY_LOGGER_IS_ME () == TRUE) {
         SyncTaskUartOut const* pSyncTaskUartOut = (SyncTaskUartOut const*)pTask;
         return LoggerWriteToUART (
         LoggerGetOtherRingBuf (), pSyncTaskUartOut->len);
@@ -68,8 +69,9 @@ static eSTATUS_t LoggerWriteToUART (RingBuff volatile* pRingBuf, uint32_t totalL
          * that overflowed (wrapped around to the beginning of the buffer)
          */
         uint32_t toWrite = MIN_U32 (nTotalBytes, TEMP_BUFFER_SIZE);
-        uint32_t bytesRead = RingBuffRead (pRingBuf, (void*)gaTempReadBuffer, toWrite);
-        if (HAL_UART_Transmit (&UART_LOGGER_HANDLE, gaTempReadBuffer, bytesRead, 1000) != HAL_OK) {
+        uint32_t bytesRead =
+        RingBuffRead (pRingBuf, (void*)ga_TempReadBuffer, toWrite);
+        if (HAL_UART_Transmit (&UART_LOGGER_HANDLE, ga_TempReadBuffer, bytesRead, 1000) != HAL_OK) {
             return eSTATUS_FAILURE;
         }
         nTotalBytes -= bytesRead;
@@ -82,14 +84,14 @@ static eSTATUS_t LoggerWriteToUART (RingBuff volatile* pRingBuf, uint32_t totalL
  * Returns the CURRENT core's ring buffer
  */
 static RingBuff volatile* LoggerGetMyRingBuf (void) {
-    return (HAL_GetCurrentCPUID () == CM7_CPUID) ? gpCM7RingBuf : gpCM4RingBuf;
+    return (HAL_GetCurrentCPUID () == CM7_CPUID) ? gp_CM7_RingBuf : gp_CM4_RingBuf;
 }
 
 /*
  * Returns the OTHER core's ring buffer
  */
 static RingBuff volatile* LoggerGetOtherRingBuf (void) {
-    return (HAL_GetCurrentCPUID () == CM7_CPUID) ? gpCM4RingBuf : gpCM7RingBuf;
+    return (HAL_GetCurrentCPUID () == CM7_CPUID) ? gp_CM4_RingBuf : gp_CM7_RingBuf;
 }
 
 static void LoggerWriteChar_Blocking (char ch) {
@@ -110,9 +112,6 @@ static void LoggerWriteChar_Blocking (char ch) {
                     break;
                 }
             }
-            // if(timeout == 0) {
-            // 	timeout = 0; // for debugger
-            // }
         }
     }
     LoggerWriteChar_NonBlocking (ch);
@@ -205,18 +204,18 @@ eSTATUS_t LoggerInit (void) {
      * Local variables are not shared among the cores.
      * So each ring buffer pointer needs to be inited for each core
      */
-    gpCM4RingBuf =
+    gp_CM4_RingBuf =
     RingBuffCreate ((void*)MEM_SHARED_CM4_UART_RINGBUFF_START, MEM_SHARED_CM4_UART_RINGBUFF_TOTAL_LEN);
-    gpCM7RingBuf =
+    gp_CM7_RingBuf =
     RingBuffCreate ((void*)MEM_SHARED_CM7_UART_RINGBUFF_START, MEM_SHARED_CM7_UART_RINGBUFF_TOTAL_LEN);
-    if (gpCM4RingBuf == NULL || gpCM7RingBuf == NULL) {
+    if (gp_CM4_RingBuf == NULL || gp_CM7_RingBuf == NULL) {
         return eSTATUS_FAILURE;
     }
     return eSTATUS_SUCCESS;
 }
 
 UART_HandleTypeDef* LoggerGetUARTHandle (void) {
-    if (HAL_GetCurrentCPUID () == PRIMARY_LOGGER_ROLE) {
+    if (PRIMARY_LOGGER_IS_ME () == TRUE) {
         return &UART_LOGGER_HANDLE;
     }
     return NULL;

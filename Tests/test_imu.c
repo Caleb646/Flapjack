@@ -4,7 +4,6 @@
 #include "sensors/imu/imu.h"
 #include "unity/unity.h"
 #include <math.h>
-
 #include <stdio.h>
 
 #ifndef UNIT_TEST
@@ -104,13 +103,13 @@ void test_IMUInit (void) {
     IMU imu;
     SPI_HandleTypeDef spi;
     IMUAccConf aconf  = { 0 };
-    aconf.odr         = eIMU_ACC_ODR_100;
-    aconf.range       = eIMU_ACC_RANGE_4G;
-    aconf.avg         = eIMU_ACC_AVG_32;
+    aconf.odr         = eIMU_ACC_ODR_200;
+    aconf.range       = eIMU_ACC_RANGE_2G;
+    aconf.avg         = eIMU_ACC_AVG_16;
     aconf.bw          = eIMU_ACC_BW_HALF;
     aconf.mode        = eIMU_ACC_MODE_HIGH_PERF;
     IMUGyroConf gconf = { 0 };
-    gconf.odr         = eIMU_GYRO_ODR_100;
+    gconf.odr         = eIMU_GYRO_ODR_200;
     gconf.range       = eIMU_GYRO_RANGE_250;
     gconf.avg         = eIMU_GYRO_AVG_16;
     gconf.bw          = eIMU_GYRO_BW_HALF;

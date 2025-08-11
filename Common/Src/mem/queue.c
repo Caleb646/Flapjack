@@ -5,7 +5,6 @@
 #include <stdint.h>
 #include <string.h>
 
-
 #define SEMAPHORE_ID            1U
 #define IS_QUEUE_SHARED(pQueue) ((pQueue)->processID != 0U)
 
@@ -15,6 +14,11 @@
 static uint32_t g_ProcessID = 1;
 
 #ifndef UNIT_TEST
+
+static eSTATUS_t Queue_EnterCritical (Queue const* pQueue);
+static void Queue_ExitCritical (Queue const* pQueue);
+
+#endif // UNIT_TEST
 
 static eSTATUS_t Queue_EnterCritical (Queue const* pQueue) {
     /*
@@ -56,8 +60,6 @@ static void Queue_ExitCritical (Queue const* pQueue) {
     // __enable_irq ();
 #endif
 }
-
-#endif // UNIT_TEST
 
 eSTATUS_t
 QueueInit (Queue* pQueue, void* pBuffer, uint16_t capacity, uint16_t elementSize, BOOL_t isShared) {

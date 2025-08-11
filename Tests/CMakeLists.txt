@@ -83,6 +83,7 @@ set(ALL_TEST_SOURCES
     ../Common/Src/mc/filter.c
     ../Common/Src/mem/queue.c
     ../Common/Src/common.c
+    # ../Common/Src/log/format.c
 )
 
 # Build single test executable that includes all tests
