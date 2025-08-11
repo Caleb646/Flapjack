@@ -1,5 +1,6 @@
 #include "sensors/imu/imu.h"
 #include "common.h"
+#include "conf.h"
 #include "log.h"
 #include "periphs/gpio.h"
 #include "sensors/imu/bmixxx.h"
@@ -755,16 +756,47 @@ IMUConvertRaw (IMU_ACC_RANGE aRange, Vec3 ra, IMU_GYRO_RANGE gRange, Vec3 rg, Ve
 }
 
 
-eSTATUS_t
-IMUInit (IMU* pIMU, SPI_HandleTypeDef* pSPI, IMUAccConf aconf, IMUGyroConf gconf, IMUAxesRemapConf* pAxesRemapConf) {
+eSTATUS_t IMUInit (IMU* pIMU, SPI_HandleTypeDef* pSPI, IMUAxesRemapConf* pAxesRemapConf) {
+
+    if (pIMU == NULL || pSPI == NULL) {
+        LOG_ERROR ("IMU or SPI pointer is NULL");
+        return (eSTATUS_t)eIMU_NULL_PTR;
+    }
 
     memset (pIMU, 0, sizeof (IMU));
     pIMU->pSPI                 = pSPI;
-    pIMU->msLastAccUpdateTime  = HAL_GetTick ();
-    pIMU->msLastGyroUpdateTime = HAL_GetTick ();
+    pIMU->msLastAccUpdateTime  = 0;
+    pIMU->msLastGyroUpdateTime = 0;
     /* SPI reads have 1 dummy byte at the beginning */
     pIMU->nDummyBytes = 1;
-    pIMU->magic       = IMU_MAGIC;
+
+    IMUAccConf aconf  = { 0 };
+    aconf.odr         = eIMU_ACC_ODR_100;
+    aconf.range       = eIMU_ACC_RANGE_2G;
+    aconf.avg         = eIMU_ACC_AVG_16;
+    aconf.bw          = eIMU_ACC_BW_HALF;
+    aconf.mode        = eIMU_ACC_MODE_HIGH_PERF;
+    IMUGyroConf gconf = { 0 };
+    gconf.odr         = eIMU_GYRO_ODR_100;
+    gconf.range       = eIMU_GYRO_RANGE_250;
+    gconf.avg         = eIMU_GYRO_AVG_16;
+    gconf.bw          = eIMU_GYRO_BW_HALF;
+    gconf.mode        = eIMU_GYRO_MODE_HIGH_PERF;
+
+    if (HZ_SENSOR_UPDATE_RATE >= 200U) {
+        aconf.odr = eIMU_ACC_ODR_200;
+        gconf.odr = eIMU_GYRO_ODR_200;
+    }
+    if (HZ_SENSOR_UPDATE_RATE >= 400U) {
+        aconf.odr = eIMU_ACC_ODR_400;
+        gconf.odr = eIMU_GYRO_ODR_400;
+    }
+    if (HZ_SENSOR_UPDATE_RATE >= 800U && HZ_SENSOR_UPDATE_RATE <= 1000U) {
+        aconf.odr = eIMU_ACC_ODR_800;
+        gconf.odr = eIMU_GYRO_ODR_800;
+    } else {
+        LOG_ERROR ("IMU update rate [%d] is not supported", (uint16_t)HZ_SENSOR_UPDATE_RATE);
+    }
 
     /*
      * Soft reset IMU and switch to SPI
@@ -880,8 +912,8 @@ IMUInit (IMU* pIMU, SPI_HandleTypeDef* pSPI, IMUAccConf aconf, IMUGyroConf gconf
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t IMUStart (IMU* pIMU, eIMU_DATA_MODE_t dataMode) {
-    if (dataMode == eIMU_DATA_MODE_INT) {
+eSTATUS_t IMUStart (IMU* pIMU) {
+    if (SENSOR_UPDATE_MODE_IS_INTERRUPT == TRUE) {
         if (IMUEnableInterrupts (pIMU) != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to enable IMU interrupts");
             return eSTATUS_FAILURE;
@@ -988,7 +1020,7 @@ eSTATUS_t IMUStop (IMU* pIMU) {
 }
 
 /*
- * Attempts to handle IMU errors via soft reset
+ * Attempts to handle IMU errors
  */
 eSTATUS_t IMUHandleErr (IMU* pIMU) {
 

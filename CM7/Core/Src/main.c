@@ -53,9 +53,7 @@ static void MX_GPIO_Init (void);
 static void MX_SPI2_Init (void);
 
 // NOLINTBEGIN
-IMU gIMU                      = { 0 };
-eIMU_DATA_MODE_t gIMUDataMode = eIMU_DATA_MODE_POLLING;
-
+IMU gIMU                                     = { 0 };
 FilterMadgwickContext gFilterMadgwickContext = { 0 };
 PIDContext gPIDContext                       = { 0 };
 TaskHandle_t gpTaskMotionControlUpdate       = { 0 };
@@ -116,14 +114,8 @@ eSTATUS_t ProcessPIDChange (EmptyCommand cmd) {
 eSTATUS_t ProcessVelocityChange (EmptyCommand cmd) {
     // TODO: need work out how I will change forward/backward/right...
     // velocity values to a target attitude
-    int8_t vThrottle = 0;
-    // LOG_INFO ("5");
     ChangeVelocityCmd* pChangeVelocityCmd = (ChangeVelocityCmd*)&cmd;
     gTargetThrottle = (float)pChangeVelocityCmd->vThrottle / 100.0F;
-
-    // LOG_INFO (
-    //"Forward: [%d] Right: [%d] Throttle: [%d]", pChangeVelocityCmd->vForward,
-    // pChangeVelocityCmd->vRight, pChangeVelocityCmd->vThrottle);
     return eSTATUS_SUCCESS;
 }
 
@@ -135,7 +127,7 @@ BOOL_t StateTransitionFromStopped2Running (FCState curState) {
         doTransition = FALSE;
     }
 
-    if (IMUStart (&gIMU, gIMUDataMode) != eSTATUS_SUCCESS) {
+    if (IMUStart (&gIMU) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start IMU");
         doTransition = FALSE;
     }
@@ -282,8 +274,8 @@ void TaskMotionControlUpdate (void* pvParameters) {
 
             portEXIT_CRITICAL ();
         }
-        if (HZ_SENSOR_UPDATE_RATE > 1000U) {
-            LOG_ERROR ("Sensor update rate exceeds 1000Hz");
+        if (HZ_SENSOR_UPDATE_RATE > 1000U || HZ_SENSOR_UPDATE_RATE < 0U) {
+            LOG_ERROR ("Sensor update rate invalid");
         }
         // Limit loop to sensor update rate
         vTaskDelay (pdMS_TO_TICKS (1000U / HZ_SENSOR_UPDATE_RATE));
@@ -344,23 +336,6 @@ int main (void) {
      * Init IMU
      */
     {
-        IMUAccConf aconf  = { 0 };
-        aconf.odr         = eIMU_ACC_ODR_200;
-        aconf.range       = eIMU_ACC_RANGE_2G;
-        aconf.avg         = eIMU_ACC_AVG_16;
-        aconf.bw          = eIMU_ACC_BW_HALF;
-        aconf.mode        = eIMU_ACC_MODE_HIGH_PERF;
-        IMUGyroConf gconf = { 0 };
-        gconf.odr         = eIMU_GYRO_ODR_200;
-        gconf.range       = eIMU_GYRO_RANGE_250;
-        gconf.avg         = eIMU_GYRO_AVG_16;
-        gconf.bw          = eIMU_GYRO_BW_HALF;
-        gconf.mode        = eIMU_GYRO_MODE_HIGH_PERF;
-        if (gconf.odr != eIMU_GYRO_ODR_200) {
-            LOG_ERROR (
-            "IMU Gyro ODR is not set to 200Hz, current: %d", gconf.odr);
-            CriticalErrorHandler ();
-        }
         /*
          * NOTE: Target LOCAL coordinate system is FRD (Forward, Right, Down).
          * So +x is forward, +y is right, +z is down.
@@ -371,10 +346,10 @@ int main (void) {
          */
         IMUAxesRemapConf axesRemap = { 0 };
         axesRemap.remap            = eIMU_AXES_REMAP_YXZ;
-        axesRemap.xDir = eIMU_AXES_DIR_INVERTED; // eIMU_AXES_DIR_DEFAULT;
-        axesRemap.yDir = eIMU_AXES_DIR_INVERTED;
-        axesRemap.zDir = eIMU_AXES_DIR_INVERTED;
-        if (IMUInit (&gIMU, &hspi2, aconf, gconf, &axesRemap) != eSTATUS_SUCCESS) {
+        axesRemap.xDir             = eIMU_AXES_DIR_INVERTED;
+        axesRemap.yDir             = eIMU_AXES_DIR_INVERTED;
+        axesRemap.zDir             = eIMU_AXES_DIR_INVERTED;
+        if (IMUInit (&gIMU, &hspi2, &axesRemap) != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to init IMU");
         }
     }
