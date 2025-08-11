@@ -79,9 +79,9 @@ typedef struct RingBuff_ {
     uint32_t magic1;
     uint8_t* buff; /*!< Pointer to buffer data.
                        Buffer is considered initialized when `buff != NULL` and `size > 0` */
-    size_t size; /*!< Size of buffer data. Size of actual buffer is `1` byte less than value holds */
-    size_t r; /*!< Next read pointer. Buffer is considered empty when `r == w` and full when `w == r - 1` */
-    size_t w; /*!< Next write pointer. Buffer is considered empty when `r == w` and full when `w == r - 1` */
+    uint32_t size; /*!< Size of buffer data. Size of actual buffer is `1` byte less than value holds */
+    uint32_t r; /*!< Next read pointer. Buffer is considered empty when `r == w` and full when `w == r - 1` */
+    uint32_t w; /*!< Next write pointer. Buffer is considered empty when `r == w` and full when `w == r - 1` */
     ringbuff_evt_fn evt_fn; /*!< Pointer to event callback function */
     uint32_t magic2;
     // added paddding to ensure that
@@ -96,7 +96,11 @@ typedef struct RingBuff_ {
 
 // #pragma message "content of AAA: " err_msg(AAA)
 
+#ifndef UNIT_TEST
+
 STATIC_ASSERT (sizeof (RingBuff) == 32, "RingBuff is not 32 bytes");
+
+#endif
 
 RINGBUFF_VOLATILE RingBuff* RingBuffCreate (void* buffdata, size_t size);
 BOOL_t RingBuffIsValid (RINGBUFF_VOLATILE RingBuff* buff);

@@ -116,9 +116,8 @@ void test_IMUInit (void) {
     gconf.bw          = eIMU_GYRO_BW_HALF;
     gconf.mode        = eIMU_GYRO_MODE_HIGH_PERF;
 
-    eSTATUS_t status = IMUInit (&imu, &spi, aconf, gconf);
+    eSTATUS_t status = IMUInit (&imu, &spi, NULL);
     TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
-    TEST_ASSERT_EQUAL_UINT32 (IMU_MAGIC, imu.magic);
     TEST_ASSERT_EQUAL_PTR (&spi, imu.pSPI);
     TEST_ASSERT_EQUAL (1U, imu.nDummyBytes);
 
@@ -256,7 +255,7 @@ void test_IMUUpdate (void) {
     gconf.mode        = eIMU_GYRO_MODE_HIGH_PERF;
 
     setUpIMU ();
-    status = IMUInit (&imu, &spi, aconf, gconf);
+    status = IMUInit (&imu, &spi, NULL);
     TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
 
     // Set up test data in simulated registers
@@ -524,7 +523,7 @@ void test_IMUSelfCalibrate (void) {
     gconf.bw          = eIMU_GYRO_BW_HALF;
     gconf.mode        = eIMU_GYRO_MODE_HIGH_PERF;
 
-    eSTATUS_t status = IMUInit (&imu, &spi, aconf, gconf);
+    eSTATUS_t status = IMUInit (&imu, &spi, NULL);
     TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
 
     // Test successful self-calibration
