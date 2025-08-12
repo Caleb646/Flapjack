@@ -13,7 +13,7 @@
 #define UART_RECV_BUFFER_SIZE  (COMMAND_TOTAL_SIZE) // + 2U)
 
 /* Consumer global variables */
-QUEUE_DEFINE_STATIC (RawCommand, EmptyCommand, COMMAND_QUEUE_CAPACITY, TRUE);
+QUEUE_DEFINE_STATIC (RawCommand, DefaultCommand, COMMAND_QUEUE_CAPACITY, TRUE);
 // A local only buffer to store raw commands during the interrupt handler
 static uint8_t ga_UartInterruptBuffer[UART_RECV_BUFFER_SIZE] = { 0 };
 
@@ -25,7 +25,7 @@ static CmdHandler_t ga_CmdHandlers[eNUMBER_OF_CMD_TYPES] = { 0 };
 /* Shared global variables */
 QUEUE_DEFINE_STATIC_SHARED_MEMORY (
 SharedCommand,
-EmptyCommand,
+DefaultCommand,
 (Queue*)MEM_SHARED_COMMAND_QUEUE_START,
 MEM_SHARED_COMMAND_QUEUE_TOTAL_LEN,
 COMMAND_QUEUE_CAPACITY
@@ -38,12 +38,12 @@ static eSTATUS_t ControlInit_Producer (void);
 static eSTATUS_t ControlInit_SharedCmdQueue (void);
 static eSTATUS_t ControlInit_Consumer (void);
 static eSTATUS_t ControlInit_FCState (FCState* pState);
-static eSTATUS_t ControlProcessEmptyCmd (EmptyCommand cmd);
-static eSTATUS_t ControlProcessOpStateChange (EmptyCommand cmd);
-static eSTATUS_t ControlProcessFlightModeChange (EmptyCommand cmd);
-static eSTATUS_t ControlProcessVelocityChange (EmptyCommand cmd);
-static eSTATUS_t ControlProcessPIDChange (EmptyCommand cmd);
-static BOOL_t ControlGetNewCmd (EmptyCommand* pOutCmd);
+static eSTATUS_t ControlProcessEmptyCmd (DefaultCommand cmd);
+static eSTATUS_t ControlProcessOpStateChange (DefaultCommand cmd);
+static eSTATUS_t ControlProcessFlightModeChange (DefaultCommand cmd);
+static eSTATUS_t ControlProcessVelocityChange (DefaultCommand cmd);
+static eSTATUS_t ControlProcessPIDChange (DefaultCommand cmd);
+static BOOL_t ControlGetNewCmd (DefaultCommand* pOutCmd);
 static BOOL_t IsCmdTypeValid (eCMD_t cmdType);
 
 #endif /* UNIT_TEST */
@@ -59,8 +59,8 @@ void HAL_UART_RxCpltCallback (UART_HandleTypeDef* huart) {
         return;
     }
     // LOG_INFO ("%u", ga_UartInterruptBuffer[0]);
-    RawCommandQueue_Push ((EmptyCommand*)ga_UartInterruptBuffer);
-    HAL_UART_Receive_IT (huart, ga_UartInterruptBuffer, sizeof (EmptyCommand));
+    RawCommandQueue_Push ((DefaultCommand*)ga_UartInterruptBuffer);
+    HAL_UART_Receive_IT (huart, ga_UartInterruptBuffer, sizeof (DefaultCommand));
 }
 
 STATIC_TESTABLE_DECL eSTATUS_t ControlInit_Producer (void) {
@@ -129,12 +129,12 @@ STATIC_TESTABLE_DECL eSTATUS_t ControlInit_FCState (FCState* pState) {
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t ControlProcessEmptyCmd (EmptyCommand cmd) {
+STATIC_TESTABLE_DECL eSTATUS_t ControlProcessEmptyCmd (DefaultCommand cmd) {
     LOG_INFO ("Received empty command");
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t ControlProcessOpStateChange (EmptyCommand cmd) {
+STATIC_TESTABLE_DECL eSTATUS_t ControlProcessOpStateChange (DefaultCommand cmd) {
 
     FCState curState = ControlGetCopyFCState ();
     eCMD_OP_STATE_t requestedState = ((ChangeOpStateCmd*)&cmd)->requestedState;
@@ -176,25 +176,25 @@ STATIC_TESTABLE_DECL eSTATUS_t ControlProcessOpStateChange (EmptyCommand cmd) {
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t ControlProcessFlightModeChange (EmptyCommand cmd) {
+STATIC_TESTABLE_DECL eSTATUS_t ControlProcessFlightModeChange (DefaultCommand cmd) {
 
     LOG_INFO ("Received flight mode change command");
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t ControlProcessVelocityChange (EmptyCommand cmd) {
+STATIC_TESTABLE_DECL eSTATUS_t ControlProcessVelocityChange (DefaultCommand cmd) {
 
     LOG_INFO ("Received velocity change command");
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t ControlProcessPIDChange (EmptyCommand cmd) {
+STATIC_TESTABLE_DECL eSTATUS_t ControlProcessPIDChange (DefaultCommand cmd) {
 
     LOG_INFO ("Received PID change command");
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL BOOL_t ControlGetNewCmd (EmptyCommand* pOutCmd) {
+STATIC_TESTABLE_DECL BOOL_t ControlGetNewCmd (DefaultCommand* pOutCmd) {
 
     if (IS_PRODUCER_ME () == TRUE) {
         LOG_ERROR ("Should only be called for the core that is consuming");
@@ -259,7 +259,7 @@ eSTATUS_t ControlStart (UART_HandleTypeDef* huart) {
             LOG_ERROR ("UART handle is NULL");
             return eSTATUS_FAILURE;
         }
-        if (HAL_UART_Receive_IT (huart, ga_UartInterruptBuffer, sizeof (EmptyCommand)) !=
+        if (HAL_UART_Receive_IT (huart, ga_UartInterruptBuffer, sizeof (DefaultCommand)) !=
             HAL_OK) {
             LOG_ERROR ("Failed to start UART reception");
             return eSTATUS_FAILURE;
@@ -285,7 +285,7 @@ eSTATUS_t ControlProcess_RawCmds (void) {
             LOG_ERROR ("Shared command queue is full, cannot process new raw commands");
             return eSTATUS_FAILURE;
         }
-        EmptyCommand cmd = { 0 };
+        DefaultCommand cmd = { 0 };
         // Get the command from the raw command queue
         RawCommandQueue_Pop (&cmd);
         // LOG_INFO ("Processing command of type: %d", cmd.header.commandType);
@@ -305,7 +305,7 @@ eSTATUS_t ControlProcess_Cmds (void) {
         LOG_ERROR ("Should only be called by the core that is consuming");
         return eSTATUS_FAILURE;
     }
-    EmptyCommand cmd = { 0 };
+    DefaultCommand cmd = { 0 };
     if (ControlGetNewCmd (&cmd) == FALSE) {
         return eSTATUS_SUCCESS; // No new command to process
     }

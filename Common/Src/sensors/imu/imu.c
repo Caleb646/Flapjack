@@ -144,7 +144,8 @@ STATIC_TESTABLE_DECL void IMULogDeviceErr (IMU* pIMU, IMUErr const* pErr) {
     if (err.fatalErr != 0) {
         LOG_ERROR (
         "IMU fatal error, chip is not in operation state (Boot or "
-        "Power-System). Power on reset or soft reset required");
+        "Power-System). Power on reset or soft reset required"
+        );
     }
     if (err.featEngOvrld != 0) {
         LOG_ERROR ("IMU overload of the feature engine detected");
@@ -186,7 +187,8 @@ STATIC_TESTABLE_DECL eSTATUS_t IMUReadReg (IMU const* pIMU, uint8_t reg, uint8_t
         return (eSTATUS_t)eIMU_RW_BUFFER_OVERFLOW;
     }
 
-    if (HAL_SPI_TransmitReceive (pIMU->pSPI, pTx, pRx, len + pIMU->nDummyBytes + 1, SPI_DEFAULT_TIMEOUT_MS) != HAL_OK) {
+    if (HAL_SPI_TransmitReceive (pIMU->pSPI, pTx, pRx, len + pIMU->nDummyBytes + 1, SPI_DEFAULT_TIMEOUT_MS) !=
+        HAL_OK) {
         return (eSTATUS_t)eIMU_COM_FAILURE;
     }
 
@@ -297,7 +299,8 @@ STATIC_TESTABLE_DECL eSTATUS_t IMUSetAxesRemap (IMU* pIMU, IMUAxesRemapConf rema
             LOG_ERROR ("Failed to get IMU feature status");
             return status;
         }
-        if ((featStatus.errStatus & BMI3_NO_ERROR_MASK) && featStatus.axisRemapComplete > 0) {
+        if ((featStatus.errStatus & BMI3_NO_ERROR_MASK) &&
+            featStatus.axisRemapComplete > 0) {
             LOG_INFO ("IMU axis remap complete");
             status = eSTATUS_SUCCESS;
             break;
@@ -598,7 +601,8 @@ IMUCalibrate (IMU* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSel
             LOG_ERROR (
             "IMU has not started the self calibration. System state "
             "[0x%X]",
-            featureStatus.systemState);
+            featureStatus.systemState
+            );
             IMULogDeviceErr (pIMU, NULL);
             goto error;
         }
@@ -846,47 +850,55 @@ eSTATUS_t IMUInit (IMU* pIMU, SPI_HandleTypeDef* pSPI, IMUAxesRemapConf* pAxesRe
             LOG_ERROR ("Failed to self calibrate IMU");
             return status;
         }
-        if (
-        calibResult.result != TRUE ||
-        calibResult.error !=
-        ((calibResult.error & BMI3_SET_LOW_NIBBLE) == BMI3_NO_ERROR_MASK)) {
+        if (calibResult.result != TRUE ||
+            calibResult.error !=
+            ((calibResult.error & BMI3_SET_LOW_NIBBLE) == BMI3_NO_ERROR_MASK)) {
             LOG_ERROR (
             "Self calibration result: [%d], error: [0x%02X]",
-            calibResult.result, calibResult.error);
+            calibResult.result,
+            calibResult.error
+            );
             return eSTATUS_FAILURE;
         }
         LOG_INFO ("Self calibration result: [%d]", calibResult.result);
     }
 
-    /* NOTE: For some reason the ODR value used during calibration is always
-     * read back from the IMU. So a calibration odr of 100Hz and an user set odr of 200 Hz
-     * causes the conf comparison to fail even after the user conf is restored.
-     * But the 200 Hz odr rate is honored by the IMU. */
-    /* Double check that the given confs stuck */
     {
-        // HAL_Delay (100);
-        // IMUAccConf aconf2;
-        // IMUGyroConf gconf2;
-        // status = IMUGetConf (pIMU, &aconf2, &gconf2);
-        // if (status != eSTATUS_SUCCESS) {
-        //     LOG_ERROR ("Failed to read back IMU configuration");
-        //     IMULogDeviceErr (pIMU, NULL);
-        //     return status;
-        // }
+        IMUAccConf aconf2;
+        IMUGyroConf gconf2;
+        status = IMUGetConf (pIMU, &aconf2, &gconf2);
+        if (status != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to read back IMU configuration");
+            IMULogDeviceErr (pIMU, NULL);
+            return status;
+        }
 
-        // status = IMUCompareConfs (aconf, gconf, aconf2, gconf2);
-        // if (status != eSTATUS_SUCCESS) {
-        //     LOG_ERROR (
-        //     "IMU configuration mismatch after setting. "
-        //     "Expected: Accel [%d %d %d %d] Gyro [%d %d %d %d] "
-        //     "Got: Accel [%d %d %d %d] Gyro [%d %d %d %d]",
-        //     aconf.mode, aconf.odr, aconf.range, aconf.avg, gconf.mode,
-        //     gconf.odr, gconf.range, gconf.avg, aconf2.mode, aconf2.odr,
-        //     aconf2.range, aconf2.avg, gconf2.mode, gconf2.odr,
-        //     gconf2.range, gconf2.avg);
-        //     IMULogDeviceErr (pIMU, NULL);
-        //     return status;
-        // }
+        status = IMUCompareConfs (aconf, gconf, aconf2, gconf2);
+        if (status != eSTATUS_SUCCESS) {
+            LOG_ERROR (
+            "IMU configuration mismatch after setting. "
+            "Expected: Accel [%d %d %d %d] Gyro [%d %d %d %d] "
+            "Got: Accel [%d %d %d %d] Gyro [%d %d %d %d]",
+            aconf.mode,
+            aconf.odr,
+            aconf.range,
+            aconf.avg,
+            gconf.mode,
+            gconf.odr,
+            gconf.range,
+            gconf.avg,
+            aconf2.mode,
+            aconf2.odr,
+            aconf2.range,
+            aconf2.avg,
+            gconf2.mode,
+            gconf2.odr,
+            gconf2.range,
+            gconf2.avg
+            );
+            IMULogDeviceErr (pIMU, NULL);
+            return status;
+        }
     }
 
 #ifndef UNIT_TEST
@@ -938,8 +950,13 @@ eSTATUS_t IMUProcessUpdatefromINT (IMU* pIMU, Vec3f* pOutputAccel, Vec3f* pOutpu
     }
 
     eSTATUS_t status = IMUConvertRaw (
-    pIMU->aconf.range, pIMU->rawAccel, pIMU->gconf.range, pIMU->rawGyro,
-    pOutputAccel, pOutputGyro);
+    pIMU->aconf.range,
+    pIMU->rawAccel,
+    pIMU->gconf.range,
+    pIMU->rawGyro,
+    pOutputAccel,
+    pOutputGyro
+    );
 
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to convert IMU raw data");
@@ -993,8 +1010,13 @@ eSTATUS_t IMUProcessUpdatefromPolling (IMU* pIMU, Vec3f* pOutputAccel, Vec3f* pO
 
     if (timeout > 0) {
         status = IMUConvertRaw (
-        pIMU->aconf.range, pIMU->rawAccel, pIMU->gconf.range,
-        pIMU->rawGyro, pOutputAccel, pOutputGyro);
+        pIMU->aconf.range,
+        pIMU->rawAccel,
+        pIMU->gconf.range,
+        pIMU->rawGyro,
+        pOutputAccel,
+        pOutputGyro
+        );
 
         if (status != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to convert raw IMU data");
@@ -1099,16 +1121,14 @@ eSTATUS_t IMUSetAltConf (IMU* pIMU, IMUAccConf const* pAConf, IMUGyroConf const*
 }
 
 eSTATUS_t IMUCompareConfs (IMUAccConf aconf, IMUGyroConf gconf, IMUAccConf aconf2, IMUGyroConf gconf2) {
-    if (
-    aconf.mode != aconf2.mode || aconf.odr != aconf2.odr ||
-    aconf.range != aconf2.range || aconf.avg != aconf2.avg ||
-    aconf.bw != aconf2.bw) {
+    if (aconf.mode != aconf2.mode || aconf.odr != aconf2.odr ||
+        aconf.range != aconf2.range || aconf.avg != aconf2.avg ||
+        aconf.bw != aconf2.bw) {
         return eSTATUS_FAILURE;
     }
-    if (
-    gconf.mode != gconf2.mode || gconf.odr != gconf2.odr ||
-    gconf.range != gconf2.range || gconf.avg != gconf2.avg ||
-    gconf.bw != gconf2.bw) {
+    if (gconf.mode != gconf2.mode || gconf.odr != gconf2.odr ||
+        gconf.range != gconf2.range || gconf.avg != gconf2.avg ||
+        gconf.bw != gconf2.bw) {
         return eSTATUS_FAILURE;
     }
     return eSTATUS_SUCCESS;

@@ -57,7 +57,7 @@ typedef struct {
     uint8_t unused5;
     uint8_t unused6;
     uint8_t unused7;
-} EmptyCommand;
+} DefaultCommand;
 
 typedef struct {
     CommandHeader header;
@@ -112,15 +112,15 @@ typedef struct {
 } FCState;
 
 
-STATIC_ASSERT (sizeof (EmptyCommand) <= COMMAND_TOTAL_SIZE, "");
-STATIC_ASSERT (sizeof (ChangeOpStateCmd) <= sizeof (EmptyCommand), "");
-STATIC_ASSERT (sizeof (ChangeFlightModeCmd) <= sizeof (EmptyCommand), "");
-STATIC_ASSERT (sizeof (ChangeVelocityCmd) <= sizeof (EmptyCommand), "");
-STATIC_ASSERT (sizeof (ChangePIDCmd) <= sizeof (EmptyCommand), "");
+STATIC_ASSERT (sizeof (DefaultCommand) <= COMMAND_TOTAL_SIZE, "");
+STATIC_ASSERT (sizeof (ChangeOpStateCmd) <= sizeof (DefaultCommand), "");
+STATIC_ASSERT (sizeof (ChangeFlightModeCmd) <= sizeof (DefaultCommand), "");
+STATIC_ASSERT (sizeof (ChangeVelocityCmd) <= sizeof (DefaultCommand), "");
+STATIC_ASSERT (sizeof (ChangePIDCmd) <= sizeof (DefaultCommand), "");
 STATIC_ASSERT (sizeof (FCState) <= MEM_SHARED_FLIGHT_STATE_TOTAL_LEN, "");
 
 typedef BOOL_t (*OpStateTransitionHandler_t) (FCState curState);
-typedef eSTATUS_t (*CmdHandler_t) (EmptyCommand cmd);
+typedef eSTATUS_t (*CmdHandler_t) (DefaultCommand cmd);
 
 eSTATUS_t ControlInit (void);
 eSTATUS_t ControlStart (UART_HandleTypeDef* huart);
@@ -129,7 +129,8 @@ eSTATUS_t ControlProcess_Cmds (void);
 eSTATUS_t ControlRegister_OPStateTransitionHandler (
 eCMD_OP_STATE_t fromState,
 eCMD_OP_STATE_t toState,
-OpStateTransitionHandler_t handler);
+OpStateTransitionHandler_t handler
+);
 eSTATUS_t ControlRegister_CmdHandler (eCMD_t cmdType, CmdHandler_t handler);
 char const* ControlOpState2Char (eCMD_OP_STATE_t opState);
 char const* ControlCmdType2Char (eCMD_t commandType);

@@ -81,7 +81,7 @@ void HAL_GPIO_EXTI_Callback (uint16_t gpioPin) {
     }
 }
 
-eSTATUS_t ProcessPIDChange (EmptyCommand cmd) {
+eSTATUS_t ProcessPIDChange (DefaultCommand cmd) {
 
     ChangePIDCmd* pChangePIDCmd = (ChangePIDCmd*)&cmd;
     float p = mapf32 ((float)pChangePIDCmd->P.v, 0.0F, 65535.0F, PID_MIN_VALUE, PID_MAX_VALUE);
@@ -111,7 +111,7 @@ eSTATUS_t ProcessPIDChange (EmptyCommand cmd) {
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t ProcessVelocityChange (EmptyCommand cmd) {
+eSTATUS_t ProcessVelocityChange (DefaultCommand cmd) {
     // TODO: need work out how I will change forward/backward/right...
     // velocity values to a target attitude
     ChangeVelocityCmd* pChangeVelocityCmd = (ChangeVelocityCmd*)&cmd;
