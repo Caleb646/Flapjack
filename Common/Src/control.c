@@ -28,7 +28,8 @@ SharedCommand,
 EmptyCommand,
 (Queue*)MEM_SHARED_COMMAND_QUEUE_START,
 MEM_SHARED_COMMAND_QUEUE_TOTAL_LEN,
-COMMAND_QUEUE_CAPACITY);
+COMMAND_QUEUE_CAPACITY
+);
 static FCState* gp_FlightState = (FCState*)MEM_SHARED_FLIGHT_STATE_START;
 
 #ifndef UNIT_TEST
@@ -88,22 +89,26 @@ STATIC_TESTABLE_DECL eSTATUS_t ControlInit_Consumer (void) {
         return eSTATUS_FAILURE;
     }
 
-    if (ControlRegister_CmdHandler (eCMD_TYPE_CHANGE_OP_STATE, ControlProcessOpStateChange) != eSTATUS_SUCCESS) {
+    if (ControlRegister_CmdHandler (eCMD_TYPE_CHANGE_OP_STATE, ControlProcessOpStateChange) !=
+        eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to register change op state command handler");
         return eSTATUS_FAILURE;
     }
 
-    if (ControlRegister_CmdHandler (eCMD_TYPE_CHANGE_FLIGHT_MODE, ControlProcessFlightModeChange) != eSTATUS_SUCCESS) {
+    if (ControlRegister_CmdHandler (eCMD_TYPE_CHANGE_FLIGHT_MODE, ControlProcessFlightModeChange) !=
+        eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to register change flight mode command handler");
         return eSTATUS_FAILURE;
     }
 
-    if (ControlRegister_CmdHandler (eCMD_TYPE_CHANGE_VELOCITY, ControlProcessVelocityChange) != eSTATUS_SUCCESS) {
+    if (ControlRegister_CmdHandler (eCMD_TYPE_CHANGE_VELOCITY, ControlProcessVelocityChange) !=
+        eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to register change velocity command handler");
         return eSTATUS_FAILURE;
     }
 
-    if (ControlRegister_CmdHandler (eCMD_TYPE_CHANGE_PID, ControlProcessPIDChange) != eSTATUS_SUCCESS) {
+    if (ControlRegister_CmdHandler (eCMD_TYPE_CHANGE_PID, ControlProcessPIDChange) !=
+        eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to register change pid command handler");
         return eSTATUS_FAILURE;
     }
@@ -162,7 +167,9 @@ STATIC_TESTABLE_DECL eSTATUS_t ControlProcessOpStateChange (EmptyCommand cmd) {
             return eSTATUS_FAILURE;
         }
         LOG_INFO (
-        "Transitioned to state: %s", ControlOpState2Char (curState.opState));
+        "Transitioned to state: %s",
+        ControlOpState2Char (curState.opState)
+        );
     } else {
         LOG_INFO ("Transition to state: %s was not performed", ControlOpState2Char (requestedState));
     }
@@ -217,41 +224,7 @@ STATIC_TESTABLE_DECL BOOL_t IsCmdTypeValid (eCMD_t cmdType) {
     }
 }
 
-// STATIC_TESTABLE_DECL eSTATUS_t ControlParseRawCmd (uint8_t* pRawCmd, uint16_t cmdSize) {
-//     if (cmdSize != sizeof (EmptyCommand)) {
-//         LOG_ERROR ("Invalid command size");
-//         return eSTATUS_FAILURE;
-//     }
-//     EmptyCommand* pCmd = (EmptyCommand*)pRawCmd;
-//     uint8_t* cmdData   = pCmd->data;
-//     switch (pCmd->header.commandType) {
-//     case eCMD_TYPE_CHANGE_OP_STATE: {
-//         ChangeOpStateCmd* pChangeOpStateCmd = (ChangeOpStateCmd*)pRawCmd;
-//         break;
-//     }
-//     case eCMD_TYPE_CHANGE_FLIGHT_MODE: {
-//         ChangeFlightModeCmd* pChangeFlightModeCmd = (ChangeFlightModeCmd*)pRawCmd;
-//         break;
-//     }
-//     case eCMD_TYPE_CHANGE_VELOCITY: {
-//         ChangeVelocityCmd* pChangeVelocityCmd = (ChangeVelocityCmd*)pRawCmd;
-//         break;
-//     }
-//     case eCMD_TYPE_CHANGE_PID: {
-//         ChangePIDCmd* pChangePIDCmd = (ChangePIDCmd*)pRawCmd;
-//         break;
-//     }
-//     default:
-//         LOG_ERROR ("Unknown command type: %d", pCmd->header.commandType);
-//         return eSTATUS_FAILURE;
-//     }
-//     return eSTATUS_SUCCESS;
-// }
-
 eSTATUS_t ControlInit (void) {
-
-    // gp_SharedCommand_queue = (Queue*)MEM_SHARED_COMMAND_QUEUE_START;
-    // gp_FlightState = (FCState*)MEM_SHARED_FLIGHT_STATE_START;
 
     if (IS_PRODUCER_ME () == TRUE) {
 
@@ -286,7 +259,8 @@ eSTATUS_t ControlStart (UART_HandleTypeDef* huart) {
             LOG_ERROR ("UART handle is NULL");
             return eSTATUS_FAILURE;
         }
-        if (HAL_UART_Receive_IT (huart, ga_UartInterruptBuffer, sizeof (EmptyCommand)) != HAL_OK) {
+        if (HAL_UART_Receive_IT (huart, ga_UartInterruptBuffer, sizeof (EmptyCommand)) !=
+            HAL_OK) {
             LOG_ERROR ("Failed to start UART reception");
             return eSTATUS_FAILURE;
         }
@@ -345,13 +319,16 @@ eSTATUS_t ControlProcess_Cmds (void) {
     if (handler == NULL) {
         LOG_ERROR (
         "No handler registered for command type: %s",
-        ControlCmdType2Char (cmd.header.commandType));
+        ControlCmdType2Char (cmd.header.commandType)
+        );
         return eSTATUS_FAILURE;
     }
     // LOG_INFO ("4");
     if (handler (cmd) != eSTATUS_SUCCESS) {
         LOG_ERROR (
-        "Failed to process command: %s", ControlCmdType2Char (cmd.header.commandType));
+        "Failed to process command: %s",
+        ControlCmdType2Char (cmd.header.commandType)
+        );
         return eSTATUS_FAILURE;
     }
 
@@ -361,7 +338,8 @@ eSTATUS_t ControlProcess_Cmds (void) {
 eSTATUS_t ControlRegister_OPStateTransitionHandler (
 eCMD_OP_STATE_t fromState,
 eCMD_OP_STATE_t toState,
-OpStateTransitionHandler_t handler) {
+OpStateTransitionHandler_t handler
+) {
 
     if (fromState >= eNUMBER_OF_OP_STATES || toState >= eNUMBER_OF_OP_STATES) {
         LOG_ERROR ("Invalid state transition: %d -> %d", fromState, toState);

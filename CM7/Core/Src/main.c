@@ -159,10 +159,8 @@ void TaskMainLoop (void* pvParameters) {
 
     ControlRegister_CmdHandler (eCMD_TYPE_CHANGE_PID, ProcessPIDChange);
     ControlRegister_CmdHandler (eCMD_TYPE_CHANGE_VELOCITY, ProcessVelocityChange);
-    ControlRegister_OPStateTransitionHandler (
-    eCMD_OP_STATE_STOPPED, eCMD_OP_STATE_RUNNING, StateTransitionFromStopped2Running);
-    ControlRegister_OPStateTransitionHandler (
-    eCMD_OP_STATE_RUNNING, eCMD_OP_STATE_STOPPED, StateTransitionFromRunning2Stopped);
+    ControlRegister_OPStateTransitionHandler (eCMD_OP_STATE_STOPPED, eCMD_OP_STATE_RUNNING, StateTransitionFromStopped2Running);
+    ControlRegister_OPStateTransitionHandler (eCMD_OP_STATE_RUNNING, eCMD_OP_STATE_STOPPED, StateTransitionFromRunning2Stopped);
 
     if (ControlStart (NULL) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start control module");
@@ -240,8 +238,8 @@ void TaskMotionControlUpdate (void* pvParameters) {
         }
 
         Vec3f pidAttitude = { 0.0F };
-        status            = PIDUpdateAttitude (
-        &gPIDContext, gCurrentAttitude, gTargetAttitude, gMaxAttitude, dt, &pidAttitude);
+        status =
+        PIDUpdateAttitude (&gPIDContext, gCurrentAttitude, gTargetAttitude, gMaxAttitude, dt, &pidAttitude);
         if (status != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to update PID attitude");
             continue;
@@ -383,8 +381,13 @@ int main (void) {
     LOG_INFO ("Starting FreeRTOS");
     uint16_t taskPriority = 2;
     BaseType_t taskStatus = xTaskCreate (
-    TaskMotionControlUpdate, "Motion Control Update Task",
-    configMINIMAL_STACK_SIZE, NULL, taskPriority, &gpTaskMotionControlUpdate);
+    TaskMotionControlUpdate,
+    "Motion Control Update Task",
+    configMINIMAL_STACK_SIZE,
+    NULL,
+    taskPriority,
+    &gpTaskMotionControlUpdate
+    );
 
     if (taskStatus != pdPASS) {
         LOG_ERROR ("Failed to create motion control update task");
@@ -395,9 +398,8 @@ int main (void) {
      * control update task (higher number == more important).
      */
     taskPriority = 1;
-    taskStatus   = xTaskCreate (
-    TaskMainLoop, "Main Control Loop Task", configMINIMAL_STACK_SIZE, NULL,
-    taskPriority, NULL);
+    taskStatus =
+    xTaskCreate (TaskMainLoop, "Main Control Loop Task", configMINIMAL_STACK_SIZE, NULL, taskPriority, NULL);
 
     if (taskStatus != pdPASS) {
         LOG_ERROR ("Failed to to create main control loop task");

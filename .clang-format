@@ -75,7 +75,8 @@ AccessModifierOffset: 0
 #   BAS_AlwaysBreak (in configuration: AlwaysBreak) Always break after an open bracket, if the parameters don’t fit on a single line, e.g.:
 #   someLongFunction(
 #       argument1, argument2);
-AlignAfterOpenBracket: AlwaysBreak
+# AlignAfterOpenBracket: AlwaysBreak
+AlignAfterOpenBracket: BlockIndent
 
 # Force clang-format to respect doxygen block comments
 # https://stackoverflow.com/questions/48016641/force-clang-format-to-respect-doxygen-block-comments
@@ -148,7 +149,8 @@ AlwaysBreakTemplateDeclarations: false
 
 # BinPackArguments (bool)
 # If false, a function call’s arguments will either be all on the same line or will have one line each.
-#BinPackArguments: false
+BinPackArguments: false
+AllowAllArgumentsOnNextLine: false
 
 # BinPackParameters (bool)
 # If false, a function declaration’s or function definition’s parameters will either all be on the same line or will have one line each.
