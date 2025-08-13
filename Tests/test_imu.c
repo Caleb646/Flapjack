@@ -63,7 +63,8 @@ SPITransmitReceiveCB (SPI_HandleTypeDef* hspi, uint8_t* pTxData, uint8_t* pRxDat
         }
     }
 
-    if (reg == BMI3_REG_INT_STATUS_INT1 && gIMURegs[BMI3_REG_FEATURE_IO1] & (1U << 11U)) {
+    if (reg == BMI3_REG_INT_STATUS_INT1 &&
+        gIMURegs[BMI3_REG_FEATURE_IO1] & (1U << 11U)) {
         gIMURegs[BMI3_REG_INT_STATUS_INT1] &= ~(1U << 10U);
     }
 
@@ -89,16 +90,13 @@ SPITransmitReceiveCB (SPI_HandleTypeDef* hspi, uint8_t* pTxData, uint8_t* pRxDat
 
 void setUpIMU (void) {
     memset (gIMURegs, 0, sizeof (gIMURegs));
-    gIMURegs[BMI3_REG_CHIP_ID] = BMI323_CHIP_ID;
+    gIMURegs[BMI3_REG_CHIP_ID]  = BMI323_CHIP_ID;
+    gHAL_SPI_Transmit_CB        = SPITransmitCB;
+    gHAL_SPI_TransmitReceive_CB = SPITransmitReceiveCB;
 }
-
-// void tearDown (void) {
-// }
 
 void test_IMUInit (void) {
     setUpIMU ();
-    gHAL_SPI_Transmit_CB        = SPITransmitCB;
-    gHAL_SPI_TransmitReceive_CB = SPITransmitReceiveCB;
 
     IMU imu;
     SPI_HandleTypeDef spi;
@@ -149,15 +147,11 @@ void test_IMUInit (void) {
     status = IMUEnableInterrupts (&imu);
     TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
     // Check that imu interrupts are enabled
-    TEST_ASSERT_EQUAL_HEX16 (
-    ((1U << 2U | 1U << 0U) << 8U) | (1U << 2U | 1U << 0U),
-    gIMURegs[BMI3_REG_IO_INT_CTRL]);
+    TEST_ASSERT_EQUAL_HEX16 (((1U << 2U | 1U << 0U) << 8U) | (1U << 2U | 1U << 0U), gIMURegs[BMI3_REG_IO_INT_CTRL]);
 }
 
 void test_IMUConf (void) {
     setUpIMU ();
-    gHAL_SPI_Transmit_CB        = SPITransmitCB;
-    gHAL_SPI_TransmitReceive_CB = SPITransmitReceiveCB;
 
     eSTATUS_t status = eSTATUS_SUCCESS;
     IMU imu          = { .nDummyBytes = 1U };
@@ -230,30 +224,19 @@ void test_IMUConf (void) {
          * Make sure that the alt config doesn't get set on the imu
          */
         TEST_ASSERT_NOT_EQUAL_INT (
-        eSTATUS_SUCCESS, IMUCompareConfs (aconf, gconf, imu.aconf, imu.gconf));
+        eSTATUS_SUCCESS,
+        IMUCompareConfs (aconf, gconf, imu.aconf, imu.gconf)
+        );
     }
 }
 
 void test_IMUUpdate (void) {
+    setUpIMU ();
+
     eSTATUS_t status = eSTATUS_SUCCESS;
     IMU imu;
     SPI_HandleTypeDef spi;
 
-    // Initialize IMU with basic configuration
-    IMUAccConf aconf  = { 0 };
-    aconf.odr         = eIMU_ACC_ODR_100;
-    aconf.range       = eIMU_ACC_RANGE_4G;
-    aconf.avg         = eIMU_ACC_AVG_32;
-    aconf.bw          = eIMU_ACC_BW_HALF;
-    aconf.mode        = eIMU_ACC_MODE_HIGH_PERF;
-    IMUGyroConf gconf = { 0 };
-    gconf.odr         = eIMU_GYRO_ODR_100;
-    gconf.range       = eIMU_GYRO_RANGE_250;
-    gconf.avg         = eIMU_GYRO_AVG_16;
-    gconf.bw          = eIMU_GYRO_BW_HALF;
-    gconf.mode        = eIMU_GYRO_MODE_HIGH_PERF;
-
-    setUpIMU ();
     status = IMUInit (&imu, &spi, NULL);
     TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
 
@@ -302,7 +285,8 @@ void test_IMUUpdate (void) {
     // Verify the values changed (assuming the conversion produces different results)
     // This test ensures the update is actually reading new data
     TEST_ASSERT_TRUE (
-    imu.rawAccel.x != prevAX || imu.rawAccel.y != prevAY || imu.rawAccel.z != prevAZ);
+    imu.rawAccel.x != prevAX || imu.rawAccel.y != prevAY || imu.rawAccel.z != prevAZ
+    );
 
     // Test with different gyro data
     gIMURegs[BMI3_REG_GYR_DATA_X] = 0x5555;
@@ -318,7 +302,8 @@ void test_IMUUpdate (void) {
 
     // Verify the gyro values changed
     TEST_ASSERT_TRUE (
-    imu.rawGyro.x != prevGX || imu.rawGyro.y != prevGY || imu.rawGyro.z != prevGZ);
+    imu.rawGyro.x != prevGX || imu.rawGyro.y != prevGY || imu.rawGyro.z != prevGZ
+    );
 
     // Test IMUConvertRaw function
     // Set up known raw values for conversion testing
@@ -328,9 +313,8 @@ void test_IMUUpdate (void) {
     Vec3f convertedGyro  = { 0 };
 
     // Test conversion with 4G accel range and 250 dps gyro range
-    status = IMUConvertRaw (
-    eIMU_ACC_RANGE_4G, testRawAccel, eIMU_GYRO_RANGE_250, testRawGyro,
-    &convertedAccel, &convertedGyro);
+    status =
+    IMUConvertRaw (eIMU_ACC_RANGE_4G, testRawAccel, eIMU_GYRO_RANGE_250, testRawGyro, &convertedAccel, &convertedGyro);
     TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
 
     // Verify that conversion produces reasonable values
@@ -348,20 +332,19 @@ void test_IMUUpdate (void) {
     Vec3f convertedAccel2G = { 0 };
     Vec3f convertedGyro125 = { 0 };
 
-    status = IMUConvertRaw (
-    eIMU_ACC_RANGE_2G, testRawAccel, eIMU_GYRO_RANGE_125, testRawGyro,
-    &convertedAccel2G, &convertedGyro125);
+    status =
+    IMUConvertRaw (eIMU_ACC_RANGE_2G, testRawAccel, eIMU_GYRO_RANGE_125, testRawGyro, &convertedAccel2G, &convertedGyro125);
     TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
 
     // 2G range should give smaller acceleration values than 4G for same raw data
-    TEST_ASSERT_TRUE (fabs (convertedAccel2G.x) < fabs (convertedAccel.x));
-    TEST_ASSERT_TRUE (fabs (convertedAccel2G.y) < fabs (convertedAccel.y));
-    TEST_ASSERT_TRUE (fabs (convertedAccel2G.z) < fabs (convertedAccel.z));
+    TEST_ASSERT_TRUE (fabsf (convertedAccel2G.x) < fabsf (convertedAccel.x));
+    TEST_ASSERT_TRUE (fabsf (convertedAccel2G.y) < fabsf (convertedAccel.y));
+    TEST_ASSERT_TRUE (fabsf (convertedAccel2G.z) < fabsf (convertedAccel.z));
 
     // 125 dps range should give smaller angular velocity values than 250 dps
-    TEST_ASSERT_TRUE (fabs (convertedGyro125.x) < fabs (convertedGyro.x));
-    TEST_ASSERT_TRUE (fabs (convertedGyro125.y) < fabs (convertedGyro.y));
-    TEST_ASSERT_TRUE (fabs (convertedGyro125.z) < fabs (convertedGyro.z));
+    TEST_ASSERT_TRUE (fabsf (convertedGyro125.x) < fabsf (convertedGyro.x));
+    TEST_ASSERT_TRUE (fabsf (convertedGyro125.y) < fabsf (convertedGyro.y));
+    TEST_ASSERT_TRUE (fabsf (convertedGyro125.z) < fabsf (convertedGyro.z));
 
     // Test with zero raw values
     Vec3 zeroRaw    = { .x = 0, .y = 0, .z = 0 };
@@ -373,12 +356,12 @@ void test_IMUUpdate (void) {
     TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
 
     // Zero raw values should produce zero or near-zero converted values
-    TEST_ASSERT_TRUE (fabs (zeroAccel.x) < 0.1F);
-    TEST_ASSERT_TRUE (fabs (zeroAccel.y) < 0.1F);
-    TEST_ASSERT_TRUE (fabs (zeroAccel.z) < 0.1F);
-    TEST_ASSERT_TRUE (fabs (zeroGyro.x) < 0.1F);
-    TEST_ASSERT_TRUE (fabs (zeroGyro.y) < 0.1F);
-    TEST_ASSERT_TRUE (fabs (zeroGyro.z) < 0.1F);
+    TEST_ASSERT_TRUE (fabsf (zeroAccel.x) < 0.1F);
+    TEST_ASSERT_TRUE (fabsf (zeroAccel.y) < 0.1F);
+    TEST_ASSERT_TRUE (fabsf (zeroAccel.z) < 0.1F);
+    TEST_ASSERT_TRUE (fabsf (zeroGyro.x) < 0.1F);
+    TEST_ASSERT_TRUE (fabsf (zeroGyro.y) < 0.1F);
+    TEST_ASSERT_TRUE (fabsf (zeroGyro.z) < 0.1F);
 
     // Test with maximum positive and negative values
     Vec3 maxRaw    = { .x = 32767, .y = -32768, .z = 32767 };
@@ -391,12 +374,12 @@ void test_IMUUpdate (void) {
 
     // Maximum values should be within the expected range limits
     // 16G = ~157 m/s², 2000 dps should be close to limits
-    TEST_ASSERT_TRUE (fabs (maxAccel.x) < 200.0F); // Should be close to ~157 m/s²
-    TEST_ASSERT_TRUE (fabs (maxAccel.y) < 200.0F);
-    TEST_ASSERT_TRUE (fabs (maxAccel.z) < 200.0F);
-    TEST_ASSERT_TRUE (fabs (maxGyro.x) < 2100.0F); // Should be close to 2000 dps
-    TEST_ASSERT_TRUE (fabs (maxGyro.y) < 2100.0F);
-    TEST_ASSERT_TRUE (fabs (maxGyro.z) < 2100.0F);
+    TEST_ASSERT_TRUE (fabsf (maxAccel.x) < 200.0F); // Should be close to ~157 m/s²
+    TEST_ASSERT_TRUE (fabsf (maxAccel.y) < 200.0F);
+    TEST_ASSERT_TRUE (fabsf (maxAccel.z) < 200.0F);
+    TEST_ASSERT_TRUE (fabsf (maxGyro.x) < 2100.0F); // Should be close to 2000 dps
+    TEST_ASSERT_TRUE (fabsf (maxGyro.y) < 2100.0F);
+    TEST_ASSERT_TRUE (fabsf (maxGyro.z) < 2100.0F);
 
     // Test exact conversion values
     // Testing with known raw values to verify exact conversion math
@@ -446,9 +429,8 @@ void test_IMUUpdate (void) {
     Vec3f fullAccel   = { 0 };
     Vec3f fullGyro    = { 0 };
 
-    status = IMUConvertRaw (
-    eIMU_ACC_RANGE_8G, fullScaleRaw, eIMU_GYRO_RANGE_500, fullScaleRaw,
-    &fullAccel, &fullGyro);
+    status =
+    IMUConvertRaw (eIMU_ACC_RANGE_8G, fullScaleRaw, eIMU_GYRO_RANGE_500, fullScaleRaw, &fullAccel, &fullGyro);
     TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
 
     // For 8G range: 8G * 9.81 m/s² = 78.48 m/s² full scale
@@ -504,23 +486,9 @@ void test_IMUUpdate (void) {
 
 void test_IMUSelfCalibrate (void) {
     setUpIMU ();
-    gHAL_SPI_Transmit_CB        = SPITransmitCB;
-    gHAL_SPI_TransmitReceive_CB = SPITransmitReceiveCB;
 
     IMU imu;
     SPI_HandleTypeDef spi;
-    IMUAccConf aconf  = { 0 };
-    aconf.odr         = eIMU_ACC_ODR_100;
-    aconf.range       = eIMU_ACC_RANGE_4G;
-    aconf.avg         = eIMU_ACC_AVG_32;
-    aconf.bw          = eIMU_ACC_BW_HALF;
-    aconf.mode        = eIMU_ACC_MODE_HIGH_PERF;
-    IMUGyroConf gconf = { 0 };
-    gconf.odr         = eIMU_GYRO_ODR_100;
-    gconf.range       = eIMU_GYRO_RANGE_250;
-    gconf.avg         = eIMU_GYRO_AVG_16;
-    gconf.bw          = eIMU_GYRO_BW_HALF;
-    gconf.mode        = eIMU_GYRO_MODE_HIGH_PERF;
 
     eSTATUS_t status = IMUInit (&imu, &spi, NULL);
     TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
@@ -534,17 +502,4 @@ void test_IMUSelfCalibrate (void) {
     TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
     TEST_ASSERT_TRUE (calibResult.result);
     TEST_ASSERT_EQUAL_INT (0, calibResult.error);
-
-    // // Test failed self-calibration
-    // IMUSelfCalibResult calibResult2 = { 0 };
-
-    // // Set up the mock behavior for failed calibration
-    // setupFailedSelfCalibration ();
-
-    // status =
-    // IMUCalibrate (&imu, BMI3_SC_SENSITIVITY_EN | BMI3_SC_OFFSET_EN, BMI3_SC_APPLY_CORR_EN, &calibResult2);
-
-    // TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status); // Function returns success but result indicates failure
-    // TEST_ASSERT_FALSE (calibResult2.result);
-    // TEST_ASSERT_NOT_EQUAL_INT (0, calibResult2.error);
 }

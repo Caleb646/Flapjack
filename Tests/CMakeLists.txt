@@ -52,7 +52,7 @@ if(NOT SCRIPT_RESULT EQUAL 0)
     file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/registered_tests.c" 
         "// Auto-generated fallback file\n"
         "#include \"test_runner.h\"\n"
-        "void register_all_tests(void) {\n"
+        "void RegisterAllTests(void) {\n"
         "    // No tests registered - please run the Python script manually\n"
         "}\n"
     )

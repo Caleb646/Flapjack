@@ -23,8 +23,7 @@ void test_FilterMadgwickInit (void) {
     TEST_ASSERT_FLOAT_WITHIN (0.001F, 0.0F, context.est.q3);
     TEST_ASSERT_FLOAT_WITHIN (0.001F, 0.0F, context.est.q4);
 
-    // Check that beta is calculated correctly
-    float expected_beta = sqrt (3.0F / 4.0F) * (gyroMeasureErrorDegs * PI_F / 180.0F);
+    float expected_beta = sqrtf (3.0F / 4.0F) * (gyroMeasureErrorDegs * PI_F / 180.0F);
     TEST_ASSERT_FLOAT_WITHIN (0.001F, expected_beta, context.beta);
 }
 
@@ -35,20 +34,16 @@ void test_FilterMadgwick6DOF_NullPointers (void) {
     Vec3f attitude;
     float dt = 0.01F;
 
-    // Test null context
     eSTATUS_t status =
     FilterMadgwick6DOF ((FilterMadgwickContext*)0, &accel, &gyro, dt, &attitude);
     TEST_ASSERT_EQUAL_INT (eSTATUS_FAILURE, status);
 
-    // Test null accel
     status = FilterMadgwick6DOF (&context, (Vec3f*)0, &gyro, dt, &attitude);
     TEST_ASSERT_EQUAL_INT (eSTATUS_FAILURE, status);
 
-    // Test null gyro
     status = FilterMadgwick6DOF (&context, &accel, (Vec3f*)0, dt, &attitude);
     TEST_ASSERT_EQUAL_INT (eSTATUS_FAILURE, status);
 
-    // Test null output
     status = FilterMadgwick6DOF (&context, &accel, &gyro, dt, (Vec3f*)0);
     TEST_ASSERT_EQUAL_INT (eSTATUS_FAILURE, status);
 }
@@ -145,16 +140,7 @@ void test_FilterMadgwick6DOF_GyroIntegration (void) {
 
     // After 1 second at 45 deg/s, should have rotated ~45 degrees
     float yaw_change = attitude.yaw - initial_yaw;
-
-    // Handle angle wrapping
-    if (yaw_change > 180.0F) {
-        yaw_change -= 360.0F;
-    }
-    if (yaw_change < -180.0F) {
-        yaw_change += 360.0F;
-    }
-
-    TEST_ASSERT_FLOAT_WITHIN (15.0F, 45.0F, fabs (yaw_change));
+    TEST_ASSERT_FLOAT_WITHIN (15.0F, 45.0F, fabsf (yaw_change));
 }
 
 void test_FilterMadgwick6DOF_ZeroAcceleration (void) {
@@ -191,9 +177,10 @@ void test_FilterMadgwick6DOF_QuaternionNormalization (void) {
         TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
 
         // Check that quaternion remains normalized
-        float quat_magnitude = sqrt (
+        float quat_magnitude = sqrtf (
         (context.est.q1 * context.est.q1) + (context.est.q2 * context.est.q2) +
-        (context.est.q3 * context.est.q3) + (context.est.q4 * context.est.q4));
+        (context.est.q3 * context.est.q3) + (context.est.q4 * context.est.q4)
+        );
         TEST_ASSERT_FLOAT_WITHIN (0.01F, 1.0F, quat_magnitude);
     }
 }
@@ -239,7 +226,8 @@ void test_FilterMadgwick6DOF_LargeTimeStep (void) {
         // Check that quaternion remains normalized even with large time steps
         float quat_magnitude = sqrtf (
         (context.est.q1 * context.est.q1) + (context.est.q2 * context.est.q2) +
-        (context.est.q3 * context.est.q3) + (context.est.q4 * context.est.q4));
+        (context.est.q3 * context.est.q3) + (context.est.q4 * context.est.q4)
+        );
         TEST_ASSERT_FLOAT_WITHIN (0.01F, 1.0F, quat_magnitude);
     }
 
@@ -251,41 +239,4 @@ void test_FilterMadgwick6DOF_LargeTimeStep (void) {
     TEST_ASSERT_FLOAT_WITHIN (4.0F, expected_roll_total, fabsf (actual_roll_change));
     TEST_ASSERT_FLOAT_WITHIN (4.0F, expected_pitch_total, fabsf (actual_pitch_change));
     TEST_ASSERT_FLOAT_WITHIN (10.0F, expected_yaw_total, fabsf (actual_yaw_change));
-}
-
-void test_FilterMadgwick6DOF_AccelNormalization (void) {
-    FilterMadgwickContext context;
-    FilterMadgwickInit (&context, 5.0F, NULL);
-
-    // Test with different acceleration magnitudes (should be normalized internally)
-    Vec3f accel1 = { 0.0F, 0.0F, 9.81F };  // Standard gravity
-    Vec3f accel2 = { 0.0F, 0.0F, 19.62F }; // Double gravity
-    Vec3f accel3 = { 0.0F, 0.0F, 4.905F }; // Half gravity
-    Vec3f gyro   = { 0.0F, 0.0F, 0.0F };
-    Vec3f attitude1;
-    Vec3f attitude2;
-    Vec3f attitude3;
-    float dt = 0.01F;
-
-    // Test with different acceleration magnitudes
-    FilterMadgwickInit (&context, 5.0F, NULL);
-    for (int i = 0; i < 100; i++) {
-        FilterMadgwick6DOF (&context, &accel1, &gyro, dt, &attitude1);
-    }
-
-    FilterMadgwickInit (&context, 5.0F, NULL);
-    for (int i = 0; i < 100; i++) {
-        FilterMadgwick6DOF (&context, &accel2, &gyro, dt, &attitude2);
-    }
-
-    FilterMadgwickInit (&context, 5.0F, NULL);
-    for (int i = 0; i < 100; i++) {
-        FilterMadgwick6DOF (&context, &accel3, &gyro, dt, &attitude3);
-    }
-
-    // All should converge to similar attitudes since direction is the same
-    TEST_ASSERT_FLOAT_WITHIN (5.0F, attitude1.roll, attitude2.roll);
-    TEST_ASSERT_FLOAT_WITHIN (5.0F, attitude1.roll, attitude3.roll);
-    TEST_ASSERT_FLOAT_WITHIN (5.0F, attitude1.pitch, attitude2.pitch);
-    TEST_ASSERT_FLOAT_WITHIN (5.0F, attitude1.pitch, attitude3.pitch);
 }

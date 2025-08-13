@@ -5,7 +5,7 @@ Test Registration Generator Script
 This script scans test files for functions that start with 'test_' and generates
 the registration code for the test runner.
 
-Usage: python generate_test_registrations.py
+Usage: python register_tests.py
 """
 
 import os
@@ -13,7 +13,6 @@ import re
 from pathlib import Path
 
 def find_test_functions(file_path):
-    """Find all test functions in a C file."""
     test_functions = []
     
     try:
@@ -34,7 +33,6 @@ def find_test_functions(file_path):
     return test_functions
 
 def generate_registration_code(test_files):
-    """Generate the registration code for all test functions."""
     
     all_functions = []
     declarations = []
@@ -48,20 +46,16 @@ def generate_registration_code(test_files):
             declarations.append(f"    // {file_name} Tests")
             for func in functions:
                 declarations.append(f"    extern void {func}(void);")
-                registrations.append(f"    register_test(\"{func}\", {func});")
+                registrations.append(f"    RegisterTest(\"{func}\", {func});")
             declarations.append("")
             all_functions.extend(functions)
     
-    # Remove the last empty line
     if declarations and declarations[-1] == "":
         declarations.pop()
     
     return all_functions, declarations, registrations
 
 def main():
-    """Main function to generate test registrations."""
-    
-    # Find all test files
     test_dir = Path(".")
     test_files = list(test_dir.glob("test_*.c"))
     
@@ -83,12 +77,9 @@ def main():
     # Generate the registration function
     registration_function = f"""
 #include \"test_runner.h\"
-// Manual test registration (for compilers without constructor support)
-void register_all_tests(void) {{
-    // Forward declarations for all test functions
+void RegisterAllTests(void) {{
 {chr(10).join(declarations)}
     
-    // Register all tests
 {chr(10).join(registrations)}
 }}
 """
@@ -98,7 +89,6 @@ void register_all_tests(void) {{
     print("="*60)
     print(registration_function)
     
-    # Optionally write to a file
     output_file = "registered_tests.c"
     with open(output_file, 'w') as f:
         f.write(registration_function)

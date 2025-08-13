@@ -7,13 +7,10 @@
 #error "UNIT_TEST should be defined in this file"
 #endif
 
-// Global test registry
-test_registration_t g_test_registry[MAX_TESTS];
-size_t g_test_count = 0;
+test_registration_t g_TestRegistry[MAX_TESTS];
+size_t g_TestCount = 0;
 
-// Test registration function
-void register_test (const char* name, test_func_t func) {
-    // Validate inputs
+void RegisterTest (const char* name, test_func_t func) {
     if (name == NULL) {
         printf ("ERROR: Cannot register test with NULL name\n");
         return;
@@ -24,75 +21,71 @@ void register_test (const char* name, test_func_t func) {
         return;
     }
 
-    // Check if we have space for more tests
-    if (g_test_count >= MAX_TESTS) {
+    if (g_TestCount >= MAX_TESTS) {
         printf ("ERROR: Test registry is full (max %d tests). Cannot register '%s'\n", MAX_TESTS, name);
         return;
     }
 
-    // Check for duplicate test names
-    for (size_t i = 0; i < g_test_count; i++) {
-        if (g_test_registry[i].name != NULL && strcmp (g_test_registry[i].name, name) == 0) {
+    for (size_t i = 0; i < g_TestCount; ++i) {
+        if (g_TestRegistry[i].name != NULL &&
+            strcmp (g_TestRegistry[i].name, name) == 0) {
             printf ("WARNING: Test '%s' already registered, overwriting\n", name);
-            // Overwrite the existing registration
-            g_test_registry[i].func = func;
+            g_TestRegistry[i].func = func;
             return;
         }
     }
 
     // Register the test
-    g_test_registry[g_test_count].name = name;
-    g_test_registry[g_test_count].func = func;
-    g_test_count++;
+    g_TestRegistry[g_TestCount].name = name;
+    g_TestRegistry[g_TestCount].func = func;
+    g_TestCount++;
 }
 
-// Run all registered tests
-int run_all_tests (void) {
-    printf ("Running %zu registered tests...\n", g_test_count);
-    for (size_t i = 0; i < g_test_count; i++) {
+int RunAllTests (void) {
+    printf ("Running %zu registered tests...\n", g_TestCount);
+    for (size_t i = 0; i < g_TestCount; i++) {
         printf (
-        "Running test %zu/%zu: %s\n", i + 1, g_test_count,
-        g_test_registry[i].name);
-        RUN_TEST (g_test_registry[i].func);
+        "Running test %zu/%zu: %s\n",
+        i + 1,
+        g_TestCount,
+        g_TestRegistry[i].name
+        );
+        RUN_TEST (g_TestRegistry[i].func);
     }
 
     return 0;
 }
 
 void setUp (void) {
-    // Setup function called before each test
 }
 
 void tearDown (void) {
-    // Teardown function called after each test
 }
 
-// Helper function to list all registered tests
-void list_registered_tests (void) {
-    printf ("=== Registered Tests (%zu total) ===\n", g_test_count);
-    for (size_t i = 0; i < g_test_count; i++) {
-        printf ("%zu. %s\n", i + 1, g_test_registry[i].name);
+void ListRegisteredTests (void) {
+    printf ("=== Registered Tests (%zu total) ===\n", g_TestCount);
+    for (size_t i = 0; i < g_TestCount; i++) {
+        printf ("%zu. %s\n", i + 1, g_TestRegistry[i].name);
     }
     printf ("=====================================\n");
 }
 
-// Helper function to find a test by name
-test_func_t find_test_by_name (const char* name) {
+test_func_t FindTestbyName (const char* name) {
     if (name == NULL) {
         return NULL;
     }
 
-    for (size_t i = 0; i < g_test_count; i++) {
-        if (g_test_registry[i].name != NULL && strcmp (g_test_registry[i].name, name) == 0) {
-            return g_test_registry[i].func;
+    for (size_t i = 0; i < g_TestCount; i++) {
+        if (g_TestRegistry[i].name != NULL &&
+            strcmp (g_TestRegistry[i].name, name) == 0) {
+            return g_TestRegistry[i].func;
         }
     }
     return NULL;
 }
 
-// Helper function to run a specific test by name
-int run_test_by_name (const char* name) {
-    test_func_t func = find_test_by_name (name);
+int RunTestbyName (const char* name) {
+    test_func_t func = FindTestbyName (name);
     if (func == NULL) {
         printf ("ERROR: Test '%s' not found\n", name);
         return -1;
@@ -104,13 +97,8 @@ int run_test_by_name (const char* name) {
 }
 
 int main (void) {
-    // Register all tests
-    register_all_tests ();
-
+    RegisterAllTests ();
     UNITY_BEGIN ();
-
-    // Run all registered tests
-    run_all_tests ();
-
+    RunAllTests ();
     return UNITY_END ();
 }

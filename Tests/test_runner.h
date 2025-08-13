@@ -8,28 +8,23 @@
 extern "C" {
 #endif
 
-// Maximum number of tests that can be registered
-#define MAX_TESTS 300
+#define MAX_TESTS 500U
 
-// Test function pointer type
 typedef void (*test_func_t) (void);
-
-// Test registration structure
 typedef struct {
     const char* name;
     test_func_t func;
 } test_registration_t;
 
-// Global test registry
-extern test_registration_t g_test_registry[MAX_TESTS];
-extern size_t g_test_count;
+extern test_registration_t g_TestRegistry[MAX_TESTS];
+extern size_t g_TestCount;
 
-void register_test (const char* name, test_func_t func);
-void list_registered_tests (void);
-test_func_t find_test_by_name (const char* name);
-int run_test_by_name (const char* name);
-int run_all_tests (void);
-void register_all_tests (void);
+void RegisterTest (const char* name, test_func_t func);
+void ListRegisteredTests (void);
+test_func_t FindTestbyName (const char* name);
+int RunTestbyName (const char* name);
+int RunAllTests (void);
+void RegisterAllTests (void);
 
 #ifdef __cplusplus
 }
