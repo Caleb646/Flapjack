@@ -2,7 +2,7 @@ import sys
 import json
 import numpy as np
 from collections import deque
-from PyQt5 import QtCore, QtWidgets, QtSerialPort
+from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtWidgets import QApplication, QTabWidget, QVBoxLayout, QHBoxLayout, QPushButton, QCheckBox
 from PyQt5.QtSerialPort import QSerialPort
 from pyqtgraph.opengl import GLViewWidget, GLGridItem, GLLinePlotItem, GLMeshItem, MeshData
@@ -108,7 +108,7 @@ class FlightViewer(QtWidgets.QWidget):
             # baudRate=QtSerialPort.QSerialPort.Baud115200,
             readyRead=self.receive
         )
-        if not self.serial.setBaudRate(230400, QtSerialPort.QSerialPort.AllDirections):
+        if not self.serial.setBaudRate(230400, QSerialPort.AllDirections):
             raise RuntimeError("Could not set baud rate for serial port")
         self.buffer = b""
 
@@ -179,7 +179,6 @@ class FlightViewer(QtWidgets.QWidget):
         self.output_te.clear()
 
     def log_level_value(self, level):
-        # Map log level string to numeric value for comparison
         levels = {"[DEBUG]": 10, "[INFO]": 20, "[WARNING]": 30, "[ERROR]": 40}
         return levels.get(level.upper(), 20)
 
@@ -322,7 +321,6 @@ class FlightViewer(QtWidgets.QWidget):
         
         COMMAND_TYPE_PID_UPDATE = CONF.eCMD_TYPE_CHANGE_PID
         
-        # Map axis to axis code
         axis_map = {
             "roll": CONF.eCMD_PID_ROLL,
             "pitch": CONF.eCMD_PID_PITCH,
@@ -361,7 +359,6 @@ class FlightViewer(QtWidgets.QWidget):
                     self.button.setChecked(False)
                     self.close_session_files()
                 else:
-                    # Enable command buttons when connected
                     self.control_tab.set_buttons_enabled(True)
                     self.config_tab.set_buttons_enabled(True)
                     self.append_debug_console("Connected to flight controller", "[INFO]")
@@ -373,7 +370,6 @@ class FlightViewer(QtWidgets.QWidget):
 
             self.close_session_files()
             self.serial.close()
-            # Disable command buttons when disconnected
             self.control_tab.set_buttons_enabled(False)
             self.config_tab.set_buttons_enabled(False)
             self.append_debug_console("Disconnected from flight controller", "[INFO]")
@@ -384,37 +380,30 @@ class FlightViewer(QtWidgets.QWidget):
         yaw_deg = orientation.get("yaw", 0)
  
         self.airplane.resetTransform()
-        self.airplane.scale(self.airplane_scale, self.airplane_scale, self.airplane_scale)  # Reset scale
-        # print(f"Updating orientation: Roll={roll_deg}, Pitch={pitch_deg}, Yaw={yaw_deg}")
+        self.airplane.scale(self.airplane_scale, self.airplane_scale, self.airplane_scale)
         self.airplane.rotate(yaw_deg, 0, 0, 1)    # Yaw (Z axis)
         # self.airplane.rotate(pitch_deg, 0, 1, 0)  # Pitch (Y axis)
         # self.airplane.rotate(roll_deg, 1, 0, 0)   # Roll (X axis)
-
         self.airplane.rotate(pitch_deg, 1, 0, 0)  # Pitch (Y axis)
         self.airplane.rotate(roll_deg, 0, 1, 0)   # Roll (X axis)
 
     def closeEvent(self, event):
-        # Ensure session files are properly closed on exit
         self.close_session_files()
         super().closeEvent(event)
 
     def create_session_folder(self):
         """Create a timestamped folder for the current session and open log files"""
-        # Create timestamp in format: Month_Day_Hour_Minutes_Seconds
+        # Create timestamp in format --> Month_Day_Hour_Minutes_Seconds
         timestamp = datetime.now().strftime("%m_%d_%H_%M_%S")
         self.current_session_folder = f"./GUI/Logs/Session_{timestamp}"
-        
-        # Create the session directory
+
         os.makedirs(self.current_session_folder, exist_ok=True)
-        
-        # Open new log files in the session folder
         debug_path = os.path.join(self.current_session_folder, "debug.log")
         flight_data_path = os.path.join(self.current_session_folder, "flight_data.log")
         
         self.debug_log = open(debug_path, "w", encoding="utf-8")
         self.flight_data_log = open(flight_data_path, "w", encoding="utf-8")
         
-        # Log session start
         session_start_msg = f"Session started at {datetime.now().isoformat()}"
         self.debug_log.write(f"{{\"type\":\"debug\",\"lvl\":\"[INFO]\",\"msg\":\"{session_start_msg}\"}}\n")
         self.debug_log.flush()
@@ -425,7 +414,6 @@ class FlightViewer(QtWidgets.QWidget):
         """Close log files and flush any remaining data"""
         if self.debug_log:
             try:
-                # Log session end
                 session_end_msg = f"Session ended at {datetime.now().isoformat()}"
                 self.debug_log.write(f"{{\"type\":\"debug\",\"lvl\":\"[INFO]\",\"msg\":\"{session_end_msg}\"}}\n")
                 self.debug_log.flush()
@@ -467,66 +455,56 @@ class FlightControlTab(QtWidgets.QWidget):
         
         self.start_btn = QtWidgets.QPushButton("Start", clicked=self.send_start_command)
         self.start_btn.setStyleSheet("QPushButton { background-color: #4CAF50; color: white; font-weight: bold; padding: 10px; }")
-        self.start_btn.setEnabled(False)  # Disabled until connected
+        self.start_btn.setEnabled(False)
         
         self.stop_btn = QtWidgets.QPushButton("Stop", clicked=self.send_stop_command)
         self.stop_btn.setStyleSheet("QPushButton { background-color: #f44336; color: white; font-weight: bold; padding: 10px; }")
-        self.stop_btn.setEnabled(False)  # Disabled until connected
+        self.stop_btn.setEnabled(False)
         
         flight_control_layout.addWidget(self.start_btn)
         flight_control_layout.addWidget(self.stop_btn)
         
         layout.addWidget(flight_control_group)
         
-        # Velocity Control Section
         velocity_control_group = QtWidgets.QGroupBox("Velocity Control")
         velocity_layout = QHBoxLayout(velocity_control_group)
         
-        # Horizontal movement controls (Forward/Backward/Left/Right)
         horizontal_group = QtWidgets.QGroupBox("Horizontal Movement")
         horizontal_layout = QtWidgets.QGridLayout(horizontal_group)
         
-        # Forward arrow button
         self.forward_btn = QtWidgets.QPushButton("↑\nForward")
         self.forward_btn.setStyleSheet("QPushButton { font-size: 14px; padding: 15px; }")
         self.forward_btn.clicked.connect(lambda: self.send_velocity_command("forward"))
         self.forward_btn.setEnabled(False)
         
-        # Left arrow button
         self.left_btn = QtWidgets.QPushButton("←\nLeft")
         self.left_btn.setStyleSheet("QPushButton { font-size: 14px; padding: 15px; }")
         self.left_btn.clicked.connect(lambda: self.send_velocity_command("left"))
         self.left_btn.setEnabled(False)
         
-        # Right arrow button
         self.right_btn = QtWidgets.QPushButton("→\nRight")
         self.right_btn.setStyleSheet("QPushButton { font-size: 14px; padding: 15px; }")
         self.right_btn.clicked.connect(lambda: self.send_velocity_command("right"))
         self.right_btn.setEnabled(False)
         
-        # Backward arrow button
         self.backward_btn = QtWidgets.QPushButton("↓\nBackward")
         self.backward_btn.setStyleSheet("QPushButton { font-size: 14px; padding: 15px; }")
         self.backward_btn.clicked.connect(lambda: self.send_velocity_command("backward"))
         self.backward_btn.setEnabled(False)
-        
-        # Arrange in arrow keypad pattern
+
         horizontal_layout.addWidget(self.forward_btn, 0, 1)
         horizontal_layout.addWidget(self.left_btn, 1, 0)
         horizontal_layout.addWidget(self.right_btn, 1, 2)
         horizontal_layout.addWidget(self.backward_btn, 2, 1)
 
-        # Throttle controls (Up/Down)
         throttle_group = QtWidgets.QGroupBox("Throttle")
         throttle_layout = QtWidgets.QVBoxLayout(throttle_group)
 
-        # Up arrow button
         self.up_btn = QtWidgets.QPushButton("↑\nUp")
         self.up_btn.setStyleSheet("QPushButton { font-size: 14px; padding: 15px; }")
         self.up_btn.clicked.connect(lambda: self.send_velocity_command("up"))
         self.up_btn.setEnabled(False)
-        
-        # Down arrow button
+
         self.down_btn = QtWidgets.QPushButton("↓\nDown")
         self.down_btn.setStyleSheet("QPushButton { font-size: 14px; padding: 15px; }")
         self.down_btn.clicked.connect(lambda: self.send_velocity_command("down"))
@@ -540,22 +518,18 @@ class FlightControlTab(QtWidgets.QWidget):
 
         layout.addWidget(velocity_control_group)
         
-        # Current Velocity Display
         velocity_display_group = QtWidgets.QGroupBox("Current Velocity Values")
         velocity_display_layout = QtWidgets.QGridLayout(velocity_display_group)
         
-        # Create labels for each direction
         self.forward_velocity_label = QtWidgets.QLabel(f"B/F (-100 to 100): {self.v_forward}")
         self.right_velocity_label = QtWidgets.QLabel(f"L/R (-100 to 100): {self.v_right}")
         self.up_velocity_label = QtWidgets.QLabel(f"Throttle (0 to 100): {self.v_throttle}")
 
-        # Style the velocity labels
         label_style = "QLabel { font-size: 12px; padding: 5px; border: 1px solid gray; background-color: #f0f0f0; }"
         self.forward_velocity_label.setStyleSheet(label_style)
         self.right_velocity_label.setStyleSheet(label_style)
         self.up_velocity_label.setStyleSheet(label_style)
-        
-        # Arrange velocity labels in a grid
+
         velocity_display_layout.addWidget(self.forward_velocity_label, 0, 0)
         velocity_display_layout.addWidget(self.right_velocity_label, 0, 1)
         velocity_display_layout.addWidget(self.up_velocity_label, 0, 2)
@@ -576,7 +550,6 @@ class FlightControlTab(QtWidgets.QWidget):
         
         layout.addWidget(status_group)
         
-        # Add spacer to push everything to the top
         layout.addStretch()
         
     def set_buttons_enabled(self, enabled):
@@ -648,18 +621,15 @@ class ConfigurationTab(QtWidgets.QWidget):
     def setup_ui(self):
         layout = QVBoxLayout(self)
         
-        # PID Configuration Section
         pid_group = QtWidgets.QGroupBox("PID Configuration")
         pid_layout = QtWidgets.QGridLayout(pid_group)
         
-        # Create headers
         pid_layout.addWidget(QtWidgets.QLabel(""), 0, 0)  # Empty corner
         pid_layout.addWidget(QtWidgets.QLabel("P"), 0, 1)
         pid_layout.addWidget(QtWidgets.QLabel("I"), 0, 2)
         pid_layout.addWidget(QtWidgets.QLabel("D"), 0, 3)
         pid_layout.addWidget(QtWidgets.QLabel("Update"), 0, 4)
         
-        # Roll PID
         pid_layout.addWidget(QtWidgets.QLabel("Roll:"), 1, 0)
         self.roll_p_field = QtWidgets.QDoubleSpinBox()
         self.roll_p_field.setRange(CONF.PID_MIN_VALUE, CONF.PID_MAX_VALUE)
@@ -688,7 +658,6 @@ class ConfigurationTab(QtWidgets.QWidget):
         self.update_roll_btn.setEnabled(False)
         pid_layout.addWidget(self.update_roll_btn, 1, 4)
         
-        # Pitch PID
         pid_layout.addWidget(QtWidgets.QLabel("Pitch:"), 2, 0)
         self.pitch_p_field = QtWidgets.QDoubleSpinBox()
         self.pitch_p_field.setRange(CONF.PID_MIN_VALUE, CONF.PID_MAX_VALUE)
@@ -717,7 +686,6 @@ class ConfigurationTab(QtWidgets.QWidget):
         self.update_pitch_btn.setEnabled(False)
         pid_layout.addWidget(self.update_pitch_btn, 2, 4)
         
-        # Yaw PID
         pid_layout.addWidget(QtWidgets.QLabel("Yaw:"), 3, 0)
         self.yaw_p_field = QtWidgets.QDoubleSpinBox()
         self.yaw_p_field.setRange(CONF.PID_MIN_VALUE, CONF.PID_MAX_VALUE)
@@ -748,7 +716,6 @@ class ConfigurationTab(QtWidgets.QWidget):
         
         layout.addWidget(pid_group)
         
-        # Control buttons
         # button_group = QtWidgets.QGroupBox("Global PID Controls")
         # button_layout = QHBoxLayout(button_group)
         
@@ -761,7 +728,6 @@ class ConfigurationTab(QtWidgets.QWidget):
         
         # layout.addWidget(button_group)
         
-        # Status display
         status_group = QtWidgets.QGroupBox("Status")
         status_layout = QVBoxLayout(status_group)
         
@@ -775,8 +741,6 @@ class ConfigurationTab(QtWidgets.QWidget):
         status_layout.addWidget(self.last_update_label)
         
         layout.addWidget(status_group)
-        
-        # Add spacer to push everything to the top
         layout.addStretch()
     
     def set_buttons_enabled(self, enabled):
@@ -833,10 +797,8 @@ class ActuatorPlotter(QtWidgets.QWidget):
     def setup_ui(self):
         layout = QVBoxLayout(self)
         
-        # Control panel
         controls = QHBoxLayout()
-        
-        # Checkboxes to toggle data series for motors
+
         motor_group = QtWidgets.QGroupBox("Motor Data")
         motor_layout = QHBoxLayout(motor_group)
         
@@ -851,7 +813,6 @@ class ActuatorPlotter(QtWidgets.QWidget):
         motor_layout.addWidget(self.motor_throttle_checkbox)
         motor_layout.addWidget(self.motor_target_throttle_checkbox)
         
-        # Checkboxes to toggle data series for servos
         servo_group = QtWidgets.QGroupBox("Servo Data")
         servo_layout = QHBoxLayout(servo_group)
         
@@ -866,7 +827,6 @@ class ActuatorPlotter(QtWidgets.QWidget):
         servo_layout.addWidget(self.servo_angle_checkbox)
         servo_layout.addWidget(self.servo_target_angle_checkbox)
         
-        # Control buttons
         buttons_group = QtWidgets.QGroupBox("Controls")
         buttons_layout = QHBoxLayout(buttons_group)
         
@@ -886,8 +846,6 @@ class ActuatorPlotter(QtWidgets.QWidget):
         
         layout.addLayout(controls)
         
-        # Create the plot widgets
-        # Motor throttle plot
         self.motor_widget = pg.PlotWidget()
         self.motor_widget.setLabel('left', 'Throttle (%)')
         self.motor_widget.setLabel('bottom', 'Time (seconds)')
@@ -895,7 +853,6 @@ class ActuatorPlotter(QtWidgets.QWidget):
         self.motor_widget.addLegend()
         self.motor_widget.showGrid(x=True, y=True)
         
-        # Servo angle plot
         self.servo_widget = pg.PlotWidget()
         self.servo_widget.setLabel('left', 'Angle (degrees)')
         self.servo_widget.setLabel('bottom', 'Time (seconds)')
@@ -907,11 +864,9 @@ class ActuatorPlotter(QtWidgets.QWidget):
         layout.addWidget(self.servo_widget)
         
     def setup_data(self):
-        # Data storage - using deque for efficient append/pop operations
-        self.max_points = 1000  # Maximum number of points to display
+        self.max_points = 5000  # Maximum number of points to display
         self.start_time = None
-        
-        # Time data (shared across all plots)
+
         self.time_data = deque(maxlen=self.max_points)
         
         # Motor data - store data for each motor by name
@@ -931,13 +886,9 @@ class ActuatorPlotter(QtWidgets.QWidget):
         if self.start_time is None:
             self.start_time = current_time
             
-        # Calculate time relative to start
         time_seconds = (current_time - self.start_time).total_seconds()
-        
-        # Add time point
         self.time_data.append(time_seconds)
-        
-        # Process motor data
+
         for actuator_name, actuator_info in actuator_data.items():
             if actuator_info.get("type") == "motor":
                 # Initialize motor data if first time seeing this motor
@@ -946,7 +897,6 @@ class ActuatorPlotter(QtWidgets.QWidget):
                         'throttle': deque(maxlen=self.max_points),
                         'target_throttle': deque(maxlen=self.max_points)
                     }
-                    # Create plot curves for this motor
                     self.motor_curves[actuator_name] = {
                         'throttle': self.motor_widget.plot(
                             pen=pg.mkPen(color='r', width=2), 
@@ -958,7 +908,6 @@ class ActuatorPlotter(QtWidgets.QWidget):
                         )
                     }
                 
-                # Add data points
                 throttle = actuator_info.get("throttle", 0)
                 target_throttle = actuator_info.get("target_throttle", 0)
                 
@@ -984,21 +933,18 @@ class ActuatorPlotter(QtWidgets.QWidget):
                         )
                     }
                 
-                # Add data points
                 angle = actuator_info.get("angle", 0)
                 target_angle = actuator_info.get("target_angle", 0)
                 
                 self.servo_data[actuator_name]['angle'].append(angle)
                 self.servo_data[actuator_name]['target_angle'].append(target_angle)
-        
-        # Update plots
+
         self.update_plots()
         
     def update_plots(self):
         """Update the plot curves with current data"""
         time_array = np.array(self.time_data)
         
-        # Update motor plots
         for motor_name, motor_curves in self.motor_curves.items():
             if motor_name in self.motor_data:
                 if self.motor_throttle_checkbox.isChecked():
@@ -1016,8 +962,7 @@ class ActuatorPlotter(QtWidgets.QWidget):
                     )
                 else:
                     motor_curves['target_throttle'].setData([], [])
-        
-        # Update servo plots
+
         for servo_name, servo_curves in self.servo_curves.items():
             if servo_name in self.servo_data:
                 if self.servo_angle_checkbox.isChecked():
@@ -1037,36 +982,28 @@ class ActuatorPlotter(QtWidgets.QWidget):
                     servo_curves['target_angle'].setData([], [])
     
     def toggle_motor_throttle(self):
-        """Toggle motor throttle visibility"""
         self.update_plots()
         
     def toggle_motor_target_throttle(self):
-        """Toggle motor target throttle visibility"""
         self.update_plots()
         
     def toggle_servo_angle(self):
-        """Toggle servo angle visibility"""
         self.update_plots()
         
     def toggle_servo_target_angle(self):
-        """Toggle servo target angle visibility"""
         self.update_plots()
     
     def clear_data(self):
-        """Clear all data and reset plots"""
         self.time_data.clear()
         
-        # Clear motor data
         for motor_name in self.motor_data:
             self.motor_data[motor_name]['throttle'].clear()
             self.motor_data[motor_name]['target_throttle'].clear()
             
-        # Clear servo data
         for servo_name in self.servo_data:
             self.servo_data[servo_name]['angle'].clear()
             self.servo_data[servo_name]['target_angle'].clear()
             
-        # Clear plots
         for motor_curves in self.motor_curves.values():
             motor_curves['throttle'].setData([], [])
             motor_curves['target_throttle'].setData([], [])
@@ -1078,7 +1015,6 @@ class ActuatorPlotter(QtWidgets.QWidget):
         self.start_time = None
         
     def load_from_file(self):
-        """Load actuator data from a log file"""
         file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
             self, "Load Actuator Data", "", "Log Files (*.log);;All Files (*)"
         )
@@ -1114,10 +1050,8 @@ class AttitudePlotter(QtWidgets.QWidget):
     def setup_ui(self):
         layout = QVBoxLayout(self)
         
-        # Control panel
         controls = QHBoxLayout()
         
-        # Checkboxes to toggle data series for attitude
         attitude_group = QtWidgets.QGroupBox("Attitude Data")
         attitude_layout = QHBoxLayout(attitude_group)
         
@@ -1137,7 +1071,6 @@ class AttitudePlotter(QtWidgets.QWidget):
         attitude_layout.addWidget(self.pitch_checkbox)
         attitude_layout.addWidget(self.yaw_checkbox)
         
-        # Checkboxes to toggle data series for PID attitude
         pid_attitude_group = QtWidgets.QGroupBox("PID Attitude Data")
         pid_attitude_layout = QHBoxLayout(pid_attitude_group)
         
@@ -1157,7 +1090,6 @@ class AttitudePlotter(QtWidgets.QWidget):
         pid_attitude_layout.addWidget(self.pid_pitch_checkbox)
         pid_attitude_layout.addWidget(self.pid_yaw_checkbox)
         
-        # Checkboxes to toggle data series for IMU
         imu_group = QtWidgets.QGroupBox("IMU Data")
         imu_layout = QHBoxLayout(imu_group)
         
@@ -1191,8 +1123,7 @@ class AttitudePlotter(QtWidgets.QWidget):
         imu_layout.addWidget(self.gx_checkbox)
         imu_layout.addWidget(self.gy_checkbox)
         imu_layout.addWidget(self.gz_checkbox)
-        
-        # Control buttons
+
         buttons_group = QtWidgets.QGroupBox("Controls")
         buttons_layout = QHBoxLayout(buttons_group)
         
@@ -1213,8 +1144,6 @@ class AttitudePlotter(QtWidgets.QWidget):
         
         layout.addLayout(controls)
         
-        # Create the plot widgets
-        # Attitude plot
         self.attitude_widget = pg.PlotWidget()
         self.attitude_widget.setLabel('left', 'Angle (degrees)')
         self.attitude_widget.setLabel('bottom', 'Time (seconds)')
@@ -1222,7 +1151,6 @@ class AttitudePlotter(QtWidgets.QWidget):
         self.attitude_widget.addLegend()
         self.attitude_widget.showGrid(x=True, y=True)
         
-        # IMU Accelerometer plot
         self.accel_widget = pg.PlotWidget()
         self.accel_widget.setLabel('left', 'Acceleration (m/s²)')
         self.accel_widget.setLabel('bottom', 'Time (seconds)')
@@ -1230,7 +1158,6 @@ class AttitudePlotter(QtWidgets.QWidget):
         self.accel_widget.addLegend()
         self.accel_widget.showGrid(x=True, y=True)
         
-        # IMU Gyroscope plot
         self.gyro_widget = pg.PlotWidget()
         self.gyro_widget.setLabel('left', 'Angular Velocity (°/s)')
         self.gyro_widget.setLabel('bottom', 'Time (seconds)')
@@ -1243,34 +1170,27 @@ class AttitudePlotter(QtWidgets.QWidget):
         layout.addWidget(self.gyro_widget)
         
     def setup_data(self):
-        # Data storage - using deque for efficient append/pop operations
-        self.max_points = 10_000  # Maximum number of points to display
+        self.max_points = 5_000  # Maximum number of points to display
         self.start_time = None
         
-        # Time data (shared across all plots)
         self.time_data = deque(maxlen=self.max_points)
         
-        # Attitude data
         self.roll_data = deque(maxlen=self.max_points)
         self.pitch_data = deque(maxlen=self.max_points)
         self.yaw_data = deque(maxlen=self.max_points)
         
-        # PID Attitude data
         self.pid_roll_data = deque(maxlen=self.max_points)
         self.pid_pitch_data = deque(maxlen=self.max_points)
         self.pid_yaw_data = deque(maxlen=self.max_points)
         
-        # IMU accelerometer data (in m/s²)
         self.ax_data = deque(maxlen=self.max_points)
         self.ay_data = deque(maxlen=self.max_points)
         self.az_data = deque(maxlen=self.max_points)
         
-        # IMU gyroscope data (in °/s)
         self.gx_data = deque(maxlen=self.max_points)
         self.gy_data = deque(maxlen=self.max_points)
         self.gz_data = deque(maxlen=self.max_points)
-        
-        # Attitude plot curves
+
         self.roll_curve = self.attitude_widget.plot(
             pen=pg.mkPen(color='r', width=2), 
             name='Roll (X)'
@@ -1284,7 +1204,6 @@ class AttitudePlotter(QtWidgets.QWidget):
             name='Yaw (Z)'
         )
         
-        # PID Attitude plot curves (dashed lines)
         self.pid_roll_curve = self.attitude_widget.plot(
             pen=pg.mkPen(color='r', width=2, style=QtCore.Qt.DashLine), 
             name='PID Roll (X)'
@@ -1298,7 +1217,6 @@ class AttitudePlotter(QtWidgets.QWidget):
             name='PID Yaw (Z)'
         )
         
-        # Accelerometer plot curves
         self.ax_curve = self.accel_widget.plot(
             pen=pg.mkPen(color='r', width=2), 
             name='Accel X'
@@ -1312,7 +1230,6 @@ class AttitudePlotter(QtWidgets.QWidget):
             name='Accel Z'
         )
         
-        # Gyroscope plot curves
         self.gx_curve = self.gyro_widget.plot(
             pen=pg.mkPen(color='r', width=2), 
             name='Gyro X'
@@ -1327,27 +1244,22 @@ class AttitudePlotter(QtWidgets.QWidget):
         )
         
     def add_attitude_data(self, attitude_data):
-        """Add new attitude data point"""
         current_time = datetime.now()
         
         if self.start_time is None:
             self.start_time = current_time
-            
-        # Calculate time relative to start
+
         time_seconds = (current_time - self.start_time).total_seconds()
         
-        # Extract attitude values
         roll = attitude_data.get("roll", 0)
         pitch = attitude_data.get("pitch", 0)
         yaw = attitude_data.get("yaw", 0)
         
-        # Add data points
         self.time_data.append(time_seconds)
         self.roll_data.append(roll)
         self.pitch_data.append(pitch)
         self.yaw_data.append(yaw)
-        
-        # Add current PID attitude data if available, otherwise use last values or zeros
+
         if len(self.pid_roll_data) > 0:
             self.pid_roll_data.append(self.pid_roll_data[-1])
             self.pid_pitch_data.append(self.pid_pitch_data[-1])
@@ -1356,8 +1268,7 @@ class AttitudePlotter(QtWidgets.QWidget):
             self.pid_roll_data.append(0)
             self.pid_pitch_data.append(0)
             self.pid_yaw_data.append(0)
-        
-        # Add current IMU data if available, otherwise use last values or zeros
+
         if len(self.ax_data) > 0:
             self.ax_data.append(self.ax_data[-1])
             self.ay_data.append(self.ay_data[-1])
@@ -1373,20 +1284,16 @@ class AttitudePlotter(QtWidgets.QWidget):
             self.gy_data.append(0)
             self.gz_data.append(0)
         
-        # Update plots
         self.update_plots()
         
     def add_imu_data(self, imu_data):
-        """Add new IMU data point"""
         current_time = datetime.now()
         
         if self.start_time is None:
             self.start_time = current_time
             
-        # Calculate time relative to start
         time_seconds = (current_time - self.start_time).total_seconds()
-        
-        # Extract IMU values (convert from int16 back to actual values)
+
         ax = imu_data.get("ax", 0)
         ay = imu_data.get("ay", 0)
         az = imu_data.get("az", 0)
@@ -1394,7 +1301,6 @@ class AttitudePlotter(QtWidgets.QWidget):
         gy = imu_data.get("gy", 0)
         gz = imu_data.get("gz", 0)
         
-        # Add data points
         self.time_data.append(time_seconds)
         self.ax_data.append(ax / 1000.0)
         self.ay_data.append(ay / 1000.0)
@@ -1402,8 +1308,7 @@ class AttitudePlotter(QtWidgets.QWidget):
         self.gx_data.append(gx / 1000.0)  # Convert back to °/s
         self.gy_data.append(gy / 1000.0)
         self.gz_data.append(gz / 1000.0)
-        
-        # Add current attitude data if available, otherwise use last values or zeros
+
         if len(self.roll_data) > 0:
             self.roll_data.append(self.roll_data[-1])
             self.pitch_data.append(self.pitch_data[-1])
@@ -1412,8 +1317,7 @@ class AttitudePlotter(QtWidgets.QWidget):
             self.roll_data.append(0)
             self.pitch_data.append(0)
             self.yaw_data.append(0)
-        
-        # Add current PID attitude data if available, otherwise use last values or zeros
+
         if len(self.pid_roll_data) > 0:
             self.pid_roll_data.append(self.pid_roll_data[-1])
             self.pid_pitch_data.append(self.pid_pitch_data[-1])
@@ -1422,32 +1326,26 @@ class AttitudePlotter(QtWidgets.QWidget):
             self.pid_roll_data.append(0)
             self.pid_pitch_data.append(0)
             self.pid_yaw_data.append(0)
-        
-        # Update plots
+
         self.update_plots()
         
     def add_pid_attitude_data(self, pid_attitude_data):
-        """Add new PID attitude data point"""
         current_time = datetime.now()
         
         if self.start_time is None:
             self.start_time = current_time
             
-        # Calculate time relative to start
         time_seconds = (current_time - self.start_time).total_seconds()
         
-        # Extract PID attitude values
         pid_roll = pid_attitude_data.get("roll", 0)
         pid_pitch = pid_attitude_data.get("pitch", 0)
         pid_yaw = pid_attitude_data.get("yaw", 0)
         
-        # Add data points
         self.time_data.append(time_seconds)
         self.pid_roll_data.append(pid_roll)
         self.pid_pitch_data.append(pid_pitch)
         self.pid_yaw_data.append(pid_yaw)
         
-        # Add current attitude data if available, otherwise use last values or zeros
         if len(self.roll_data) > 0:
             self.roll_data.append(self.roll_data[-1])
             self.pitch_data.append(self.pitch_data[-1])
@@ -1457,7 +1355,6 @@ class AttitudePlotter(QtWidgets.QWidget):
             self.pitch_data.append(0)
             self.yaw_data.append(0)
         
-        # Add current IMU data if available, otherwise use last values or zeros
         if len(self.ax_data) > 0:
             self.ax_data.append(self.ax_data[-1])
             self.ay_data.append(self.ay_data[-1])
@@ -1473,14 +1370,11 @@ class AttitudePlotter(QtWidgets.QWidget):
             self.gy_data.append(0)
             self.gz_data.append(0)
         
-        # Update plots
         self.update_plots()
         
     def update_plots(self):
-        """Update the plot curves with current data"""
         time_array = np.array(self.time_data)
         
-        # Update attitude plots
         if self.roll_checkbox.isChecked():
             self.roll_curve.setData(time_array, np.array(self.roll_data))
         
@@ -1490,7 +1384,6 @@ class AttitudePlotter(QtWidgets.QWidget):
         if self.yaw_checkbox.isChecked():
             self.yaw_curve.setData(time_array, np.array(self.yaw_data))
             
-        # Update PID attitude plots
         if self.pid_roll_checkbox.isChecked():
             self.pid_roll_curve.setData(time_array, np.array(self.pid_roll_data))
         
@@ -1499,8 +1392,7 @@ class AttitudePlotter(QtWidgets.QWidget):
             
         if self.pid_yaw_checkbox.isChecked():
             self.pid_yaw_curve.setData(time_array, np.array(self.pid_yaw_data))
-            
-        # Update accelerometer plots
+
         if self.ax_checkbox.isChecked():
             self.ax_curve.setData(time_array, np.array(self.ax_data))
             
@@ -1510,7 +1402,6 @@ class AttitudePlotter(QtWidgets.QWidget):
         if self.az_checkbox.isChecked():
             self.az_curve.setData(time_array, np.array(self.az_data))
             
-        # Update gyroscope plots
         if self.gx_checkbox.isChecked():
             self.gx_curve.setData(time_array, np.array(self.gx_data))
             
@@ -1521,91 +1412,78 @@ class AttitudePlotter(QtWidgets.QWidget):
             self.gz_curve.setData(time_array, np.array(self.gz_data))
             
     def toggle_roll(self, state):
-        """Toggle roll data visibility"""
         if state:
             self.roll_curve.setData(np.array(self.time_data), np.array(self.roll_data))
         else:
             self.roll_curve.setData([], [])
             
     def toggle_pitch(self, state):
-        """Toggle pitch data visibility"""
         if state:
             self.pitch_curve.setData(np.array(self.time_data), np.array(self.pitch_data))
         else:
             self.pitch_curve.setData([], [])
             
     def toggle_yaw(self, state):
-        """Toggle yaw data visibility"""
         if state:
             self.yaw_curve.setData(np.array(self.time_data), np.array(self.yaw_data))
         else:
             self.yaw_curve.setData([], [])
             
     def toggle_pid_roll(self, state):
-        """Toggle PID roll data visibility"""
         if state:
             self.pid_roll_curve.setData(np.array(self.time_data), np.array(self.pid_roll_data))
         else:
             self.pid_roll_curve.setData([], [])
             
     def toggle_pid_pitch(self, state):
-        """Toggle PID pitch data visibility"""
         if state:
             self.pid_pitch_curve.setData(np.array(self.time_data), np.array(self.pid_pitch_data))
         else:
             self.pid_pitch_curve.setData([], [])
             
     def toggle_pid_yaw(self, state):
-        """Toggle PID yaw data visibility"""
         if state:
             self.pid_yaw_curve.setData(np.array(self.time_data), np.array(self.pid_yaw_data))
         else:
             self.pid_yaw_curve.setData([], [])
             
     def toggle_ax(self, state):
-        """Toggle accelerometer X data visibility"""
         if state:
             self.ax_curve.setData(np.array(self.time_data), np.array(self.ax_data))
         else:
             self.ax_curve.setData([], [])
             
     def toggle_ay(self, state):
-        """Toggle accelerometer Y data visibility"""
         if state:
             self.ay_curve.setData(np.array(self.time_data), np.array(self.ay_data))
         else:
             self.ay_curve.setData([], [])
             
     def toggle_az(self, state):
-        """Toggle accelerometer Z data visibility"""
         if state:
             self.az_curve.setData(np.array(self.time_data), np.array(self.az_data))
         else:
             self.az_curve.setData([], [])
             
     def toggle_gx(self, state):
-        """Toggle gyroscope X data visibility"""
         if state:
             self.gx_curve.setData(np.array(self.time_data), np.array(self.gx_data))
         else:
             self.gx_curve.setData([], [])
             
     def toggle_gy(self, state):
-        """Toggle gyroscope Y data visibility"""
         if state:
             self.gy_curve.setData(np.array(self.time_data), np.array(self.gy_data))
         else:
             self.gy_curve.setData([], [])
             
     def toggle_gz(self, state):
-        """Toggle gyroscope Z data visibility"""
         if state:
             self.gz_curve.setData(np.array(self.time_data), np.array(self.gz_data))
         else:
             self.gz_curve.setData([], [])
             
     def clear_data(self):
-        """Clear all attitude and IMU data"""
         self.time_data.clear()
         self.roll_data.clear()
         self.pitch_data.clear()
@@ -1621,7 +1499,6 @@ class AttitudePlotter(QtWidgets.QWidget):
         self.gz_data.clear()
         self.start_time = None
         
-        # Clear plots
         self.roll_curve.setData([], [])
         self.pitch_curve.setData([], [])
         self.yaw_curve.setData([], [])
@@ -1636,9 +1513,7 @@ class AttitudePlotter(QtWidgets.QWidget):
         self.gz_curve.setData([], [])
         
     def load_from_file(self):
-        """Load attitude and IMU data from a selected flight_data.log file"""
         try:
-            # Open file dialog to select flight_data.log file
             logs_dir = "./GUI/Logs"
             file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
                 self, 
@@ -1648,7 +1523,7 @@ class AttitudePlotter(QtWidgets.QWidget):
             )
             
             if not file_path:
-                return  # User cancelled
+                return
                 
             if not os.path.exists(file_path):
                 QtWidgets.QMessageBox.warning(self, "Warning", "Selected file does not exist!")
@@ -1663,7 +1538,6 @@ class AttitudePlotter(QtWidgets.QWidget):
                 QtWidgets.QMessageBox.information(self, "Info", "No data found in log file!")
                 return
                 
-            # Process each line
             attitude_count = 0
             imu_count = 0
             
@@ -1675,8 +1549,8 @@ class AttitudePlotter(QtWidgets.QWidget):
                         attitude_data = data.get("data", {})
                         
                         # Use line number as time for file data (since we don't have timestamps)
-                        time_seconds = i * 0.1  # Assume 10Hz data rate
-                        
+                        time_seconds = i / 200  # Assume 200Hz data rate
+
                         roll = attitude_data.get("roll", 0)
                         pitch = attitude_data.get("pitch", 0)
                         yaw = attitude_data.get("yaw", 0)
@@ -1685,13 +1559,11 @@ class AttitudePlotter(QtWidgets.QWidget):
                         self.roll_data.append(roll)
                         self.pitch_data.append(pitch)
                         self.yaw_data.append(yaw)
-                        
-                        # Add placeholder PID attitude data if not present
+
                         self.pid_roll_data.append(0)
                         self.pid_pitch_data.append(0)
                         self.pid_yaw_data.append(0)
-                        
-                        # Add placeholder IMU data if not present
+
                         self.ax_data.append(0)
                         self.ay_data.append(0)
                         self.az_data.append(0)
@@ -1705,9 +1577,8 @@ class AttitudePlotter(QtWidgets.QWidget):
                         imu_data = data.get("data", {})
                         
                         # Use line number as time for file data
-                        time_seconds = i / 100  # Assume 100Hz data rate
+                        time_seconds = i / 200  # Assume 200Hz data rate
                         
-                        # Extract IMU values
                         ax = imu_data.get("ax", 0)
                         ay = imu_data.get("ay", 0)
                         az = imu_data.get("az", 0)
@@ -1723,12 +1594,10 @@ class AttitudePlotter(QtWidgets.QWidget):
                         self.gy_data.append(gy / 1000.0)
                         self.gz_data.append(gz / 1000.0)
                         
-                        # Add placeholder attitude data if not present
                         self.roll_data.append(0)
                         self.pitch_data.append(0)
                         self.yaw_data.append(0)
-                        
-                        # Add placeholder PID attitude data if not present
+
                         self.pid_roll_data.append(0)
                         self.pid_pitch_data.append(0)
                         self.pid_yaw_data.append(0)
@@ -1739,7 +1608,7 @@ class AttitudePlotter(QtWidgets.QWidget):
                         pid_attitude_data = data.get("data", {})
                         
                         # Use line number as time for file data
-                        time_seconds = i * 0.1  # Assume 10Hz data rate
+                        time_seconds = i / 200  # Assume 200Hz data rate
                         
                         pid_roll = pid_attitude_data.get("roll", 0)
                         pid_pitch = pid_attitude_data.get("pitch", 0)
@@ -1750,12 +1619,10 @@ class AttitudePlotter(QtWidgets.QWidget):
                         self.pid_pitch_data.append(pid_pitch)
                         self.pid_yaw_data.append(pid_yaw)
                         
-                        # Add placeholder attitude data if not present
                         self.roll_data.append(0)
                         self.pitch_data.append(0)
                         self.yaw_data.append(0)
-                        
-                        # Add placeholder IMU data if not present
+
                         self.ax_data.append(0)
                         self.ay_data.append(0)
                         self.az_data.append(0)
@@ -1766,7 +1633,7 @@ class AttitudePlotter(QtWidgets.QWidget):
                         attitude_count += 1
                         
                 except json.JSONDecodeError:
-                    continue  # Skip invalid JSON lines
+                    continue 
                     
             self.update_plots()
             QtWidgets.QMessageBox.information(self, "Success", 
@@ -1779,7 +1646,6 @@ def main():
     app = QApplication(sys.argv)
     viewer = FlightViewer()
     viewer.show()
-    # Ensure log files are closed on app exit
     app.aboutToQuit.connect(viewer.close)
     sys.exit(app.exec())
 

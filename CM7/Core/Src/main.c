@@ -164,8 +164,8 @@ void TaskMainLoop (void* pvParameters) {
 
     if (ControlStart (NULL) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start control module");
-        configASSERT (0);
-        // CriticalErrorHandler ();
+        // configASSERT (0);
+        CriticalErrorHandler ();
     }
 
     while (1) {
