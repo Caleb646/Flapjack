@@ -1,0 +1,5 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "XT60PW-M")(type "KiCad")(uri "${KIPRJMOD}/Lib/XT60PW-M.kicad_sym")(options "")(descr ""))
+  (lib (name "STM32H747BIT6-LQFP208")(type "KiCad")(uri "${KIPRJMOD}/Lib/STM32H747BIT6-LQFP208.kicad_sym")(options "")(descr ""))
+)
