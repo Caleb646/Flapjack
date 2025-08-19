@@ -2,4 +2,7 @@
   (version 7)
   (lib (name "XT60PW-M")(type "KiCad")(uri "${KIPRJMOD}/Lib/XT60PW-M.kicad_sym")(options "")(descr ""))
   (lib (name "STM32H747BIT6-LQFP208")(type "KiCad")(uri "${KIPRJMOD}/Lib/STM32H747BIT6-LQFP208.kicad_sym")(options "")(descr ""))
+  (lib (name "INA219AIDCNT")(type "KiCad")(uri "${KIPRJMOD}/Lib/INA219AIDCNT.kicad_sym")(options "")(descr ""))
+  (lib (name "MIC26903YJL-TR")(type "KiCad")(uri "${KIPRJMOD}/Lib/MIC26903YJL-TR.kicad_sym")(options "")(descr ""))
+  (lib (name "LD39200PU33R")(type "KiCad")(uri "${KIPRJMOD}/Lib/LD39200PU33R.kicad_sym")(options "")(descr ""))
 )
