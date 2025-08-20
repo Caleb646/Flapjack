@@ -4395,9 +4395,9 @@
 			(embedded_fonts no)
 		)
 	)
-	(text "STLINK-V3SET debugger/programmer pinout using the STD14 ribbon cable."
+	(text "STLINK-V3SET debugger/programmer pinout using the STD14 ribbon cable.\n\nRibbon cable uses a 1.27mm pitch."
 		(exclude_from_sim no)
-		(at 249.428 23.622 0)
+		(at 249.682 21.844 0)
 		(effects
 			(font
 				(size 1.27 1.27)
