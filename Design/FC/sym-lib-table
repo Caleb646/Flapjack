@@ -5,4 +5,6 @@
   (lib (name "INA219AIDCNT")(type "KiCad")(uri "${KIPRJMOD}/Lib/INA219AIDCNT.kicad_sym")(options "")(descr ""))
   (lib (name "MIC26903YJL-TR")(type "KiCad")(uri "${KIPRJMOD}/Lib/MIC26903YJL-TR.kicad_sym")(options "")(descr ""))
   (lib (name "LD39200PU33R")(type "KiCad")(uri "${KIPRJMOD}/Lib/LD39200PU33R.kicad_sym")(options "")(descr ""))
+  (lib (name "BMI323")(type "KiCad")(uri "${KIPRJMOD}/Lib/BMI323.kicad_sym")(options "")(descr ""))
+  (lib (name "MMC5983MA")(type "KiCad")(uri "${KIPRJMOD}/Lib/MMC5983MA.kicad_sym")(options "")(descr ""))
 )
