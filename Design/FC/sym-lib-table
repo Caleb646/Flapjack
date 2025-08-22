@@ -7,4 +7,5 @@
   (lib (name "LD39200PU33R")(type "KiCad")(uri "${KIPRJMOD}/Lib/LD39200PU33R.kicad_sym")(options "")(descr ""))
   (lib (name "BMI323")(type "KiCad")(uri "${KIPRJMOD}/Lib/BMI323.kicad_sym")(options "")(descr ""))
   (lib (name "MMC5983MA")(type "KiCad")(uri "${KIPRJMOD}/Lib/MMC5983MA.kicad_sym")(options "")(descr ""))
+  (lib (name "BMP390")(type "KiCad")(uri "${KIPRJMOD}/Lib/BMP390.kicad_sym")(options "")(descr ""))
 )
