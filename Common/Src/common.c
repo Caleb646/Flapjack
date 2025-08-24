@@ -2,6 +2,7 @@
 #include "hal.h"
 #include <stdint.h>
 
+
 // Global variable to store assertion information when printf is not
 // available AssertionInfo_t AssertionInfo = { 0 };
 
@@ -47,20 +48,24 @@ void __assert_func (const char* file, int line, const char* func, const char* fa
     };
 }
 
-// Microsecond delay function
-// This is a simple loop-based implementation
-// For more precise timing, DWT (Data Watchpoint and Trace) unit could be used
+uint32_t GetMilliseconds (void) {
+    return pdMS_TO_TICKS (xTaskGetTickCount ());
+}
+
+uint32_t GetMicroseconds (void) {
+    uint32_t msTime = GetMilliseconds ();
+    if (SysTick->LOAD == SysTick->VAL) {
+        return msTime * 1000U;
+    }
+    uint32_t usTime = (SysTick->LOAD - SysTick->VAL) / (SysTick->LOAD / 1000U);
+    return msTime * 1000U + usTime;
+}
+
 void DelayMicroseconds (uint32_t us) {
-    // Approximate loop count for microsecond delay
-    // This assumes system clock around 480 MHz
-    // Each loop iteration takes approximately 4-5 cycles
-    // So for 1 microsecond: 480 MHz / 1 MHz = 480 cycles
-    // 480 cycles / 4 cycles per loop = ~120 loops per microsecond
-
-    volatile int32_t loops  = us * 120;
-    volatile uint32_t dummy = 0;
-
-    while (loops-- > 0) {
-        dummy++; // Prevent compiler optimization
+    // uint32_t msTime = pdMS_TO_TICKS (xTaskGetTickCount ());
+    uint32_t usStart   = GetMicroseconds ();
+    uint32_t usCurrent = usStart;
+    while ((usCurrent - usStart) < us) {
+        usCurrent = GetMicroseconds ();
     }
 }
