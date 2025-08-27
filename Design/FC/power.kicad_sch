@@ -7334,6 +7334,16 @@
 		)
 		(uuid "ca87e1fc-bd02-4bfd-9fd8-383bdd602784")
 	)
+	(text "ESR < 100 milli Ohm"
+		(exclude_from_sim no)
+		(at 60.96 239.776 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "e2eb2554-1f93-4a40-b53c-29a9865cb86f")
+	)
 	(text "Current Sense Resistor"
 		(exclude_from_sim no)
 		(at 81.534 24.892 0)
@@ -9051,6 +9061,16 @@
 	)
 	(wire
 		(pts
+			(xy 172.72 36.83) (xy 175.26 36.83)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5ecb276e-febe-40b8-8ebb-aa0922abef59")
+	)
+	(wire
+		(pts
 			(xy 140.97 172.72) (xy 140.97 175.26)
 		)
 		(stroke
@@ -10221,6 +10241,16 @@
 	)
 	(wire
 		(pts
+			(xy 172.72 46.99) (xy 175.26 46.99)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e738c0d9-90d5-4ca5-9764-f9f6c57b5279")
+	)
+	(wire
+		(pts
 			(xy 218.44 26.67) (xy 226.06 26.67)
 		)
 		(stroke
@@ -10432,6 +10462,28 @@
 		(uuid "01f4a3f1-ddb0-4005-b9e5-2f3f61ed3510")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 165.1385 41.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+				(hide yes)
+			)
+		)
+	)
+	(global_label "CURRENT_SENSE_SCL"
+		(shape input)
+		(at 172.72 36.83 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "0d56b96a-c8b9-4aff-8f34-ba9afd004570")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 149.6569 36.83 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10965,6 +11017,28 @@
 					(size 1.27 1.27)
 				)
 				(justify left)
+				(hide yes)
+			)
+		)
+	)
+	(global_label "CURRENT_SENSE_SDA"
+		(shape input)
+		(at 172.72 46.99 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "f7c7cb78-54b3-4a9c-820a-4531771e07f0")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 149.5964 46.99 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
 				(hide yes)
 			)
 		)
@@ -13253,7 +13327,7 @@
 				)
 			)
 		)
-		(property "Value" "R"
+		(property "Value" "0.01"
 			(at 81.28 30.48 90)
 			(effects
 				(font
@@ -13261,7 +13335,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Lib:RES_PE2512_YAG"
 			(at 81.28 36.068 90)
 			(effects
 				(font
@@ -18171,7 +18245,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Lib:MPZ1005S121HT000"
 			(at 215.9 189.738 90)
 			(effects
 				(font
@@ -18768,7 +18842,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "C"
+		(property "Value" "100nF"
 			(at 222.25 41.9099 0)
 			(effects
 				(font
