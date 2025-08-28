@@ -25,7 +25,7 @@
 				)
 			)
 		)
-		(property "Footprint" "MLF28_5X6_MCH"
+		(property "Footprint" "Lib:MIC26903YJL-TR-MLF28_5X6_MCH"
 			(at 0 0 0)
 			(effects
 				(font

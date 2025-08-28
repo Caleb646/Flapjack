@@ -7,7 +7,7 @@
     (property "Value" "LD39200PU33R" (id 1) (at -12.7 -12.7 0)
       (effects (font (size 1.27 1.27)) (justify bottom left))
     )
-    (property "Footprint" "LD39200PU33R:SON95P300X300X100-7N" (id 2) (at 0 0 0)
+    (property "Footprint" "Lib:LD39200PU33R-SON95P300X300X100-7N" (id 2) (at 0 0 0)
       (effects (font (size 1.27 1.27)) (justify bottom) hide)
     )
     (property "L1_NOM" "" (id 4) (at 0 0 0)

@@ -6,7 +6,7 @@
     (property "Value" "MMC5983MA" (id 1) (at 35.56 7.62 0)
       (effects (font (size 1.524 1.524)))
     )
-    (property "Footprint" "MMC5983MA_MEM" (id 2) (at 0 0 0)
+    (property "Footprint" "Lib:MMC5983MA_MEM" (id 2) (at 0 0 0)
       (effects (font (size 1.27 1.27) italic) hide)
     )
     (property "Datasheet" "MMC5983MA" (id 3) (at 0 0 0)

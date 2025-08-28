@@ -27,7 +27,7 @@
 				(justify left bottom)
 			)
 		)
-		(property "Footprint" "XT60PW-M:AMASS_XT60PW-M"
+		(property "Footprint" "Lib:XT60PW-M"
 			(at 0 0 0)
 			(effects
 				(font

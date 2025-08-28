@@ -7,7 +7,7 @@
     (property "Value" "INA219AIDCNT" (id 1) (at -12.7 -19.24 0.0)
       (effects (font (size 1.27 1.27)) (justify bottom left))
     )
-    (property "Footprint" "INA219AIDCNT:SOT65P280X145-8N" (id 2) (at 0 0 0)
+    (property "Footprint" "Lib:INA219AIDCNT-SOT65P280X145-8N" (id 2) (at 0 0 0)
       (effects (font (size 1.27 1.27)) (justify bottom) hide)
     )
     (symbol "INA219AIDCNT_0_0"

@@ -6,7 +6,7 @@
     (property "Value" "W25N01GWZEIG" (at 41.91 5.08 0)
       (effects (font (size 1.27 1.27)) (justify left top))
     )
-    (property "Footprint" "W25N01GWZEIG" (at 41.91 -94.92 0)
+    (property "Footprint" "Lib:W25N01GWZEIG" (at 41.91 -94.92 0)
       (effects (font (size 1.27 1.27)) (justify left top) hide)
     )
     (property "Datasheet" "https://www.winbond.com/hq/search-resource-file.jsp?partNo=W25N01GWZEIG&type=datasheet" (at 41.91 -194.92 0)

@@ -6,7 +6,7 @@
     (property "Value" "BMP390" (id 1) (at 20.32 7.62 0)
       (effects (font (size 1.524 1.524)))
     )
-    (property "Footprint" "BMP390-10LGA_2X2X0p75_BOS" (id 2) (at 0 0 0)
+    (property "Footprint" "Lib:BMP390-10LGA_2X2X0p75_BOS" (id 2) (at 0 0 0)
       (effects (font (size 1.27 1.27) italic) hide)
     )
     (property "Datasheet" "BMP390" (id 3) (at 0 0 0)

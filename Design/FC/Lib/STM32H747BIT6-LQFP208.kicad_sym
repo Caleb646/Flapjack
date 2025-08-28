@@ -6,7 +6,7 @@
     (property "Value" "STM32H747BIT6" (id 1) (at 30.48 7.62 0)
       (effects (font (size 1.524 1.524)))
     )
-    (property "Footprint" "LQFP-208" (id 2) (at 0 0 0)
+    (property "Footprint" "Lib:STM32H747BIT6-LQFP-208" (id 2) (at 0 0 0)
       (effects (font (size 1.27 1.27) italic) hide)
     )
     (property "Datasheet" "https://www.st.com/resource/en/datasheet/stm32h747ag.pdf" (id 3) (at 0 0 0)
