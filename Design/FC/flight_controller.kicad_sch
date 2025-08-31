@@ -2164,6 +2164,132 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "Device:NetTie_2"
+			(pin_numbers
+				(hide yes)
+			)
+			(pin_names
+				(offset 0)
+				(hide yes)
+			)
+			(exclude_from_sim no)
+			(in_bom no)
+			(on_board yes)
+			(property "Reference" "NT"
+				(at 0 1.27 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "NetTie_2"
+				(at 0 -1.27 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "~"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" "Net tie, 2 pins"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "net tie short"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_fp_filters" "Net*Tie*"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "NetTie_2_0_1"
+				(polyline
+					(pts
+						(xy -1.27 0) (xy 1.27 0)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "NetTie_2_1_1"
+				(pin passive line
+					(at -2.54 0 0)
+					(length 2.54)
+					(name "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 2.54 0 180)
+					(length 2.54)
+					(name "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "Device:R"
 			(pin_numbers
 				(hide yes)
@@ -2270,144 +2396,6 @@
 				(pin passive line
 					(at 0 -3.81 90)
 					(length 1.27)
-					(name "~"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
-			(embedded_fonts no)
-		)
-		(symbol "Device:R_Small_US"
-			(pin_numbers
-				(hide yes)
-			)
-			(pin_names
-				(offset 0.254)
-				(hide yes)
-			)
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(property "Reference" "R"
-				(at 0.762 0.508 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(justify left)
-				)
-			)
-			(property "Value" "R_Small_US"
-				(at 0.762 -1.016 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(justify left)
-				)
-			)
-			(property "Footprint" ""
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Datasheet" "~"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Description" "Resistor, small US symbol"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_keywords" "r resistor"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_fp_filters" "R_*"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(symbol "R_Small_US_1_1"
-				(polyline
-					(pts
-						(xy 0 1.524) (xy 1.016 1.143) (xy 0 0.762) (xy -1.016 0.381) (xy 0 0)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 0 0) (xy 1.016 -0.381) (xy 0 -0.762) (xy -1.016 -1.143) (xy 0 -1.524)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(pin passive line
-					(at 0 2.54 270)
-					(length 1.016)
-					(name "~"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 0 -2.54 90)
-					(length 1.016)
 					(name "~"
 						(effects
 							(font
@@ -8648,6 +8636,10 @@
 		(uuid "cfef99ee-a074-4eb0-af07-aaabf82de3f3")
 	)
 	(no_connect
+		(at 57.15 392.43)
+		(uuid "d1e6b651-b7ca-47ed-9c75-3ad8fe4e138a")
+	)
+	(no_connect
 		(at 55.88 248.92)
 		(uuid "d39ed7c7-4f8e-495f-85ac-e0591d060bcf")
 	)
@@ -10231,16 +10223,6 @@
 	)
 	(wire
 		(pts
-			(xy 52.07 392.43) (xy 57.15 392.43)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d4e03223-2e1f-4025-b623-ecb51bd7096b")
-	)
-	(wire
-		(pts
 			(xy 91.44 82.55) (xy 100.33 82.55)
 		)
 		(stroke
@@ -10421,7 +10403,7 @@
 	)
 	(wire
 		(pts
-			(xy 102.87 382.27) (xy 110.49 382.27)
+			(xy 102.87 382.27) (xy 114.3 382.27)
 		)
 		(stroke
 			(width 0)
@@ -11149,6 +11131,16 @@
 			"EEII4dD+H+Lz2JkMSim0AAAAAElFTkSuQmCC"
 		)
 	)
+	(label "BOOT0"
+		(at 104.14 382.27 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "02a52d79-7f56-41f3-8736-898bba875312")
+	)
 	(global_label "LED_FC_4"
 		(shape input)
 		(at 55.88 259.08 180)
@@ -11259,9 +11251,9 @@
 			)
 		)
 	)
-	(global_label "EXT_3_DEV_INT_BARO"
+	(global_label "EXT_10_DEV_INT"
 		(shape input)
-		(at 55.88 297.18 180)
+		(at 55.88 314.96 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -11271,7 +11263,7 @@
 		)
 		(uuid "0c287e42-d30f-4aa1-940a-c920fe03dd7b")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 33.1192 297.18 0)
+			(at 37.8364 314.96 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11567,7 +11559,7 @@
 			)
 		)
 	)
-	(global_label "SPI_5_NSS_MAG"
+	(global_label "SPI_5_NSS_1"
 		(shape input)
 		(at 91.44 60.96 180)
 		(fields_autoplaced yes)
@@ -11579,7 +11571,7 @@
 		)
 		(uuid "25b76571-cf85-4523-943f-41f8e34b974d")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 73.6987 60.96 0)
+			(at 76.2992 60.96 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11809,7 +11801,7 @@
 			)
 		)
 	)
-	(global_label "EXT_6_DEV_INT_MAG"
+	(global_label "EXT_3_DEV_INT"
 		(shape input)
 		(at 91.44 63.5 180)
 		(fields_autoplaced yes)
@@ -11821,7 +11813,7 @@
 		)
 		(uuid "36e474b4-7fa3-4054-b3ad-02713a0d5251")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 69.8283 63.5 0)
+			(at 74.6059 63.5 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12799,9 +12791,9 @@
 			)
 		)
 	)
-	(global_label "EXT_6_DEV_INT_MAG"
+	(global_label "EXT_3_DEV_INT"
 		(shape input)
-		(at 55.88 304.8 180)
+		(at 55.88 297.18 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -12811,7 +12803,7 @@
 		)
 		(uuid "7a275673-efc9-4c91-974c-61eba8fd2ecb")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 34.2683 304.8 0)
+			(at 39.0459 297.18 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -13063,9 +13055,9 @@
 			)
 		)
 	)
-	(global_label "EXT_3_DEV_INT_BARO"
+	(global_label "EXT_10_DEV_INT"
 		(shape input)
-		(at 91.44 80.01 180)
+		(at 91.44 82.55 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -13075,7 +13067,7 @@
 		)
 		(uuid "94484e18-25b7-4bff-a673-6941f3e80a6b")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 68.6792 80.01 0)
+			(at 73.3964 82.55 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -13481,9 +13473,9 @@
 			)
 		)
 	)
-	(global_label "SPI_5_NSS_MAG"
+	(global_label "SPI_5_NSS_1"
 		(shape input)
-		(at 55.88 314.96 180)
+		(at 55.88 299.72 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -13493,7 +13485,7 @@
 		)
 		(uuid "ae63a193-152e-40ed-9f85-1b4470fda4cd")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 38.1387 314.96 0)
+			(at 40.7392 299.72 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -13604,28 +13596,6 @@
 		(uuid "b5a06ede-e669-4dba-8aab-254f0a3eca11")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 289.56 210.6604 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-				(hide yes)
-			)
-		)
-	)
-	(global_label "TIM_8_CH_2"
-		(shape input)
-		(at 52.07 392.43 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "b73d4c3d-6e86-4a72-85f8-c25f3865c69c")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 38.1387 392.43 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -14229,9 +14199,9 @@
 			)
 		)
 	)
-	(global_label "SPI_5_NSS_BARO"
+	(global_label "SPI_5_NSS_2"
 		(shape input)
-		(at 91.44 82.55 180)
+		(at 91.44 80.01 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -14241,7 +14211,7 @@
 		)
 		(uuid "d7ce4f0a-b40c-4f3b-ba7d-52ec9e2fd60d")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 72.5496 82.55 0)
+			(at 76.2992 80.01 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -14559,9 +14529,9 @@
 			)
 		)
 	)
-	(global_label "SPI_5_NSS_BARO"
+	(global_label "SPI_5_NSS_2"
 		(shape input)
-		(at 55.88 299.72 180)
+		(at 55.88 304.8 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -14571,7 +14541,7 @@
 		)
 		(uuid "eab8d260-87c1-4e87-9002-83ea5446e83e")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 36.9896 299.72 0)
+			(at 40.7392 304.8 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15482,6 +15452,73 @@
 			(project "fc"
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
 					(reference "LED_3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:NetTie_2")
+		(at 116.84 382.27 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp no)
+		(uuid "093978d2-cb93-4320-82dc-044a15dbabe6")
+		(property "Reference" "NT8"
+			(at 116.84 381 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "NT"
+			(at 117.094 383.54 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Lib:NetTie-2_SMD_Track0.35mm"
+			(at 116.84 382.27 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 116.84 382.27 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Net tie, 2 pins"
+			(at 116.84 382.27 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "b9b419fb-f439-4983-82fc-db970518f2b2")
+		)
+		(pin "2"
+			(uuid "0c9948c2-0cda-4374-8f10-f928bc4004c3")
+		)
+		(instances
+			(project "fc"
+				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
+					(reference "NT8")
 					(unit 1)
 				)
 			)
@@ -17826,7 +17863,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 110.49 382.27 0)
+		(at 119.38 382.27 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -17834,7 +17871,7 @@
 		(dnp no)
 		(uuid "3104c0ab-372f-488c-bb6d-18ef0f1081ad")
 		(property "Reference" "#PWR086"
-			(at 110.49 388.62 0)
+			(at 119.38 388.62 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17843,7 +17880,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 110.49 386.334 0)
+			(at 119.38 386.334 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17851,7 +17888,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 110.49 382.27 0)
+			(at 119.38 382.27 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17860,7 +17897,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 110.49 382.27 0)
+			(at 119.38 382.27 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17869,7 +17906,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 110.49 382.27 0)
+			(at 119.38 382.27 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19643,6 +19680,76 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:NetTie_2")
+		(at 180.34 52.07 270)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "5e4d536a-1aee-4d51-8b58-8994bbc5fa6f")
+		(property "Reference" "NT7"
+			(at 181.61 50.7999 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "NT"
+			(at 181.61 53.3399 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Lib:NetTie-2_SMD_Track0.35mm"
+			(at 180.34 52.07 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 180.34 52.07 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Net tie, 2 pins"
+			(at 180.34 52.07 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "47fcc677-af94-4b8c-b01a-becc36ac38c5")
+		)
+		(pin "2"
+			(uuid "faea7c20-d7ca-4035-a64c-50fed6a14cd7")
+		)
+		(instances
+			(project "fc"
+				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
+					(reference "NT7")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:+5V")
 		(at 193.04 223.52 0)
 		(unit 1)
@@ -20632,76 +20739,6 @@
 			(project ""
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
 					(reference "U4")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:R_Small_US")
-		(at 180.34 52.07 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board no)
-		(dnp no)
-		(uuid "8a5acb62-02a7-4f68-840a-be71e5adb4f1")
-		(property "Reference" "R64"
-			(at 179.324 53.34 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-		(property "Value" "0"
-			(at 179.324 51.816 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" ""
-			(at 180.34 52.07 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 180.34 52.07 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Resistor, small US symbol"
-			(at 180.34 52.07 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "77f2851b-7a03-46de-87a8-1634178321f9")
-		)
-		(pin "2"
-			(uuid "9501038d-1555-4106-b572-d94dac546913")
-		)
-		(instances
-			(project "fc"
-				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "R64")
 					(unit 1)
 				)
 			)

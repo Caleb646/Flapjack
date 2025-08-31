@@ -37,9 +37,9 @@
         "other_text_thickness": 0.15,
         "other_text_upright": false,
         "pads": {
-          "drill": 0.0,
-          "height": 1.400498,
-          "width": 2.949998
+          "drill": 0.7,
+          "height": 1.0,
+          "width": 1.0
         },
         "silk_line_width": 0.1,
         "silk_text_italic": false,
@@ -136,7 +136,7 @@
         "min_text_height": 0.8,
         "min_text_thickness": 0.08,
         "min_through_hole_diameter": 0.3,
-        "min_track_width": 0.2,
+        "min_track_width": 0.25,
         "min_via_annular_width": 0.15,
         "min_via_diameter": 0.6,
         "solder_mask_to_copper_clearance": 0.0,
@@ -187,7 +187,12 @@
         }
       ],
       "track_widths": [
-        0.0
+        0.0,
+        0.25,
+        0.35,
+        1.0,
+        2.0,
+        6.0
       ],
       "tuning_pattern_settings": {
         "diff_pair_defaults": {
