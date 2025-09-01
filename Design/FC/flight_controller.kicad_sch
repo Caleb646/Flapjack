@@ -8182,12 +8182,6 @@
 		(uuid "542021af-4c99-4bed-888f-ce4dfaa27702")
 	)
 	(junction
-		(at 287.02 38.1)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "6946ecd2-5529-45ee-a5e8-d3e068e97d7a")
-	)
-	(junction
 		(at 347.98 163.83)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -8228,12 +8222,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "af95bb72-9997-40f9-819c-9c83bd2a7272")
-	)
-	(junction
-		(at 297.18 38.1)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "b4ed3b8b-3e77-429b-871e-8f45f1f2405c")
 	)
 	(junction
 		(at 180.34 55.88)
@@ -8316,6 +8304,10 @@
 		(uuid "0c096f10-c0f4-4ab5-a386-97575b2c95dc")
 	)
 	(no_connect
+		(at 111.76 320.04)
+		(uuid "0c43eaa0-889a-40e0-937b-56b97839a027")
+	)
+	(no_connect
 		(at 111.76 309.88)
 		(uuid "0ca3e205-b28b-4f19-87e7-6b2914b776ca")
 	)
@@ -8342,6 +8334,10 @@
 	(no_connect
 		(at 111.76 246.38)
 		(uuid "1476dbfd-1c90-4be6-86fb-109acc4322b0")
+	)
+	(no_connect
+		(at 55.88 292.1)
+		(uuid "14e4ba27-b7d1-4131-bbf0-0e906f6035e0")
 	)
 	(no_connect
 		(at 111.76 292.1)
@@ -8392,6 +8388,10 @@
 		(uuid "2ec3b1c5-4f0d-43c4-9ec1-89f21d21df98")
 	)
 	(no_connect
+		(at 302.26 199.39)
+		(uuid "30b2fb2c-a56b-4446-9005-9530b4a17c48")
+	)
+	(no_connect
 		(at 55.88 266.7)
 		(uuid "311bc046-57a4-46b5-ae2a-63076f4d8ea8")
 	)
@@ -8428,6 +8428,10 @@
 		(uuid "45afe62e-cd1f-4814-a366-b63bc4029cc2")
 	)
 	(no_connect
+		(at 55.88 289.56)
+		(uuid "4e0829e2-a29f-4ff6-ba31-11c086f6b36a")
+	)
+	(no_connect
 		(at 233.68 66.04)
 		(uuid "53ae9530-b4d9-47d9-80c0-b15bb5cf2217")
 	)
@@ -8458,10 +8462,6 @@
 	(no_connect
 		(at 55.88 271.78)
 		(uuid "61b5708f-a7d4-4374-a908-bd45a5f4a261")
-	)
-	(no_connect
-		(at 111.76 312.42)
-		(uuid "62821b5c-9ba2-462c-acbd-f5280d99308b")
 	)
 	(no_connect
 		(at 57.15 389.89)
@@ -8600,6 +8600,14 @@
 		(uuid "b064cf43-6127-4d0b-8b02-a16e5fe31964")
 	)
 	(no_connect
+		(at 38.1 81.28)
+		(uuid "b112cc6a-139c-40e8-8337-e0c33edcdfd5")
+	)
+	(no_connect
+		(at 38.1 78.74)
+		(uuid "b492ff1e-0be6-47ba-a4a5-bfb548d3364f")
+	)
+	(no_connect
 		(at 102.87 407.67)
 		(uuid "b62a8e68-8843-4446-aad7-61086a4b4f70")
 	)
@@ -8670,6 +8678,10 @@
 	(no_connect
 		(at 116.84 173.99)
 		(uuid "f048ae1e-71fe-41d2-8878-286a46120c52")
+	)
+	(no_connect
+		(at 289.56 199.39)
+		(uuid "f39aae4a-54a1-49a5-8377-c6d378fa8f40")
 	)
 	(no_connect
 		(at 57.15 387.35)
@@ -8790,16 +8802,6 @@
 			(type default)
 		)
 		(uuid "0bb1ddc1-480f-40cf-8350-d960070b2390")
-	)
-	(wire
-		(pts
-			(xy 116.84 320.04) (xy 111.76 320.04)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "0bc959d6-0e4b-42d8-ad28-108d69fac114")
 	)
 	(wire
 		(pts
@@ -9020,16 +9022,6 @@
 			(type default)
 		)
 		(uuid "2f30eb52-353e-4d91-8da3-1affa35010f4")
-	)
-	(wire
-		(pts
-			(xy 307.34 45.72) (xy 307.34 48.26)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "2faedf01-ef8a-410e-b50e-ba8eb99bfe0f")
 	)
 	(wire
 		(pts
@@ -10023,16 +10015,6 @@
 	)
 	(wire
 		(pts
-			(xy 297.18 45.72) (xy 297.18 48.26)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c1f6282e-3697-4f16-b03f-0e7e63783b1d")
-	)
-	(wire
-		(pts
 			(xy 193.04 223.52) (xy 195.58 223.52)
 		)
 		(stroke
@@ -10353,16 +10335,6 @@
 	)
 	(wire
 		(pts
-			(xy 297.18 38.1) (xy 307.34 38.1)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "eaf1f56c-3071-48ef-b049-95b09b794ff5")
-	)
-	(wire
-		(pts
 			(xy 304.8 163.83) (xy 347.98 163.83)
 		)
 		(stroke
@@ -10420,16 +10392,6 @@
 			(type default)
 		)
 		(uuid "f768c097-587c-466a-8c88-16b1a3dc2fcf")
-	)
-	(wire
-		(pts
-			(xy 287.02 38.1) (xy 297.18 38.1)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "f81ad7d9-0bdd-487f-bd3f-ffb14b02d785")
 	)
 	(wire
 		(pts
@@ -11295,28 +11257,6 @@
 			)
 		)
 	)
-	(global_label "TIM_12_CH_2"
-		(shape input)
-		(at 116.84 320.04 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "0ec2a758-95ba-4647-86ea-cf810387a8a7")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 131.9808 320.04 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-	)
 	(global_label "R_SERVO_2_SIGNAL"
 		(shape input)
 		(at 41.91 43.18 0)
@@ -11418,28 +11358,6 @@
 		(uuid "16e4aa00-6341-4a20-89a5-19b217e46d4d")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 17.2744 83.82 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-				(hide yes)
-			)
-		)
-	)
-	(global_label "I2C_2_SDA"
-		(shape input)
-		(at 307.34 48.26 270)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "19aae291-5352-4c4f-83e3-5fef4105b852")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 307.34 61.0423 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12835,28 +12753,6 @@
 			)
 		)
 	)
-	(global_label "GPS_SCL"
-		(shape input)
-		(at 302.26 199.39 270)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "7ec7fb3f-e6af-44b6-a8c5-92a31d6fb2f2")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 302.26 210.5999 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-				(hide yes)
-			)
-		)
-	)
 	(global_label "TIM_5_CH_1"
 		(shape input)
 		(at 31.75 26.67 180)
@@ -13161,28 +13057,6 @@
 					(size 1.27 1.27)
 				)
 				(justify left)
-				(hide yes)
-			)
-		)
-	)
-	(global_label "I2C_2_SCL"
-		(shape input)
-		(at 297.18 48.26 270)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "999ab92a-67ee-441f-bafa-0c092fe7ea13")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 297.18 60.9818 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
 				(hide yes)
 			)
 		)
@@ -13583,28 +13457,6 @@
 			)
 		)
 	)
-	(global_label "GPS_SDA"
-		(shape input)
-		(at 289.56 199.39 270)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "b5a06ede-e669-4dba-8aab-254f0a3eca11")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 289.56 210.6604 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-				(hide yes)
-			)
-		)
-	)
 	(global_label "BARO_SPI_MISO"
 		(shape input)
 		(at 100.33 74.93 0)
@@ -14001,28 +13853,6 @@
 			)
 		)
 	)
-	(global_label "I2C_2_SDA"
-		(shape input)
-		(at 55.88 292.1 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "cd9ebaac-ce9a-4f18-8502-ccc1ac61f4b5")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 43.0977 292.1 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-				(hide yes)
-			)
-		)
-	)
 	(global_label "NRST"
 		(shape input)
 		(at 170.18 55.88 180)
@@ -14322,28 +14152,6 @@
 		(uuid "e1f972fa-dde2-4f5a-a148-e584b33b2544")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 116.3344 29.21 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-				(hide yes)
-			)
-		)
-	)
-	(global_label "I2C_2_SCL"
-		(shape input)
-		(at 55.88 289.56 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "e2399a56-7a16-40d5-9769-ef757f7599bb")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 43.1582 289.56 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -14837,6 +14645,28 @@
 			)
 		)
 	)
+	(global_label "TIM_12_CH_2"
+		(shape input)
+		(at 111.76 312.42 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "fa49f0ae-5b77-4725-9cb8-550976e1d25d")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 126.9008 312.42 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+	)
 	(global_label "LED_FC_3"
 		(shape input)
 		(at 266.7 294.64 90)
@@ -15223,7 +15053,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "0648777d-fb21-4af2-8d18-2f235fa583ea")
-		(property "Reference" "L_Servo_1"
+		(property "Reference" "LS1"
 			(at 176.53 182.8799 90)
 			(effects
 				(font
@@ -15280,7 +15110,7 @@
 		(instances
 			(project ""
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "L_Servo_1")
+					(reference "LS1")
 					(unit 1)
 				)
 			)
@@ -15296,7 +15126,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "06f97742-9df5-408c-96ab-5945b90d3d32")
-		(property "Reference" "Debug_Con1"
+		(property "Reference" "SWD1"
 			(at 227.33 52.07 0)
 			(effects
 				(font
@@ -15312,7 +15142,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_1.27mm:PinHeader_2x05_P1.27mm_Vertical"
+		(property "Footprint" "Connectors:CONN_GRPB052VWQS-RC_OddEven_2x5Pins_1.27mm"
 			(at 226.06 63.5 0)
 			(effects
 				(font
@@ -15372,7 +15202,7 @@
 		(instances
 			(project ""
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "Debug_Con1")
+					(reference "SWD1")
 					(unit 1)
 				)
 			)
@@ -15388,7 +15218,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "076d632e-8b23-42b4-ba91-486fe2138f0d")
-		(property "Reference" "LED_3"
+		(property "Reference" "LED3"
 			(at 257.81 298.7674 90)
 			(effects
 				(font
@@ -15415,7 +15245,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "XL-1608SURC-06"
+		(property "Datasheet" "LTST-C191KRKT"
 			(at 254 298.45 0)
 			(effects
 				(font
@@ -15424,7 +15254,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Light emitting diode"
+		(property "Description" "Red 631nm LED Indication - Discrete 2V 0603"
 			(at 254 298.45 0)
 			(effects
 				(font
@@ -15442,6 +15272,33 @@
 				(hide yes)
 			)
 		)
+		(property "Manufacturer_Name" "Lite-On Inc."
+			(at 254 298.45 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "LTST-C191KRKT"
+			(at 254 298.45 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 254 298.45 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "2"
 			(uuid "98d40b58-9ca0-4915-a8fc-26e31cef5da0")
 		)
@@ -15451,7 +15308,7 @@
 		(instances
 			(project "fc"
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "LED_3")
+					(reference "LED3")
 					(unit 1)
 				)
 			)
@@ -15534,7 +15391,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "093eb5ee-6dd0-4329-ab9e-7044b22286dd")
-		(property "Reference" "L_Servo_3"
+		(property "Reference" "LS3"
 			(at 200.66 182.8799 90)
 			(effects
 				(font
@@ -15591,7 +15448,7 @@
 		(instances
 			(project "fc"
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "L_Servo_3")
+					(reference "LS3")
 					(unit 1)
 				)
 			)
@@ -15674,7 +15531,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "0a32c0d8-7a79-432a-b943-095d2159302b")
-		(property "Reference" "R_Servo_3"
+		(property "Reference" "RS3"
 			(at 264.16 182.8799 90)
 			(effects
 				(font
@@ -15731,77 +15588,7 @@
 		(instances
 			(project "fc"
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "R_Servo_3")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:R")
-		(at 307.34 41.91 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "10a7929f-f33b-48e5-acf1-dceba613cf4f")
-		(property "Reference" "R12"
-			(at 309.88 40.6399 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "4.7K"
-			(at 309.88 43.1799 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Resistor_SMD:R_0603_1608Metric_Pad0.98x0.95mm_HandSolder"
-			(at 305.562 41.91 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "CRGP0603F4K7"
-			(at 307.34 41.91 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Resistor"
-			(at 307.34 41.91 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "dcc22da6-2caa-4292-9848-b0049e2b255e")
-		)
-		(pin "2"
-			(uuid "d46bbc96-b053-4572-8dcd-280c6c99d6cc")
-		)
-		(instances
-			(project "fc"
-				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "R12")
+					(reference "RS3")
 					(unit 1)
 				)
 			)
@@ -15882,7 +15669,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "12a42532-bc82-49af-b55b-1f81c7876315")
-		(property "Reference" "L_Motor1"
+		(property "Reference" "LM1"
 			(at 185.42 237.4899 90)
 			(effects
 				(font
@@ -15936,7 +15723,7 @@
 		(instances
 			(project ""
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "L_Motor1")
+					(reference "LM1")
 					(unit 1)
 				)
 			)
@@ -16840,7 +16627,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "245aab33-39c5-4a9a-a4dc-8015832aaa27")
-		(property "Reference" "L_Servo_4"
+		(property "Reference" "LS4"
 			(at 200.66 210.8199 90)
 			(effects
 				(font
@@ -16897,7 +16684,7 @@
 		(instances
 			(project "fc"
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "L_Servo_4")
+					(reference "LS4")
 					(unit 1)
 				)
 			)
@@ -19079,7 +18866,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "47cea999-5e19-4227-b874-21de5e5ebe5d")
-		(property "Reference" "FLASH_1"
+		(property "Reference" "FLASH1"
 			(at 325.12 234.95 0)
 			(effects
 				(font
@@ -19115,7 +18902,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "1Gb QspiNAND Flash 104MHz SON8"
+		(property "Description" "FLASH - NAND (SLC) Memory IC 1Gbit SPI - Quad I/O 104 MHz 8 ns 8-WSON (8x6)"
 			(at 302.26 242.57 0)
 			(effects
 				(font
@@ -19174,6 +18961,15 @@
 				(hide yes)
 			)
 		)
+		(property "PACKAGE_TYPE" "8WSON"
+			(at 302.26 242.57 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "47d222f8-7647-4bed-9c82-ea314ce77c3d")
 		)
@@ -19204,7 +19000,7 @@
 		(instances
 			(project ""
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "FLASH_1")
+					(reference "FLASH1")
 					(unit 1)
 				)
 			)
@@ -19247,7 +19043,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GRM155R61H104JE14D"
+		(property "Datasheet" "CC0603KRX7R7BB104"
 			(at 168.91 149.86 0)
 			(effects
 				(font
@@ -19256,7 +19052,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "CAP CER 0.1UF 16V X7R 0603"
+			(at 168.91 149.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 168.91 149.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CC0603KRX7R7BB104"
+			(at 168.91 149.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 168.91 149.86 0)
 			(effects
 				(font
@@ -19550,7 +19373,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "5499b58c-b686-4019-a2c6-6e6b7f69c54a")
-		(property "Reference" "RF_RECV_CONN1"
+		(property "Reference" "RF1"
 			(at 334.01 193.04 90)
 			(effects
 				(font
@@ -19566,7 +19389,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_1.27mm:PinHeader_1x04_P1.27mm_Horizontal"
+		(property "Footprint" "Molex:CONN_532610471_SMD_4Pin_1.25mm"
 			(at 332.74 199.39 0)
 			(effects
 				(font
@@ -19608,7 +19431,7 @@
 		(instances
 			(project ""
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "RF_RECV_CONN1")
+					(reference "RF1")
 					(unit 1)
 				)
 			)
@@ -19824,7 +19647,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "66d70d02-1d9d-4c06-850e-ed04ddca415f")
-		(property "Reference" "U3"
+		(property "Reference" "IMU1"
 			(at 208.28 116.84 0)
 			(effects
 				(font
@@ -19860,7 +19683,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Accelerometer, Gyroscope, 6 Axis Sensor I2C, I3C, SPI Output"
+			(at 187.96 127 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "Bosch Sensortec"
+			(at 187.96 127 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "BMI323"
+			(at 187.96 127 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "14LGA"
 			(at 187.96 127 0)
 			(effects
 				(font
@@ -19914,7 +19764,7 @@
 		(instances
 			(project ""
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "U3")
+					(reference "IMU1")
 					(unit 1)
 				)
 			)
@@ -20022,7 +19872,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GRM155R61H104JE14D"
+		(property "Datasheet" "CC0603KRX7R7BB104"
 			(at 369.57 259.08 0)
 			(effects
 				(font
@@ -20031,7 +19881,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "CAP CER 0.1UF 16V X7R 0603"
+			(at 369.57 259.08 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 369.57 259.08 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CC0603KRX7R7BB104"
+			(at 369.57 259.08 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 369.57 259.08 0)
 			(effects
 				(font
@@ -20065,7 +19942,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "6f02347e-9933-4148-8cc7-b7070735f654")
-		(property "Reference" "Debug_UART1"
+		(property "Reference" "Serial1"
 			(at 177.8 80.0099 90)
 			(effects
 				(font
@@ -20122,7 +19999,7 @@
 		(instances
 			(project ""
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "Debug_UART1")
+					(reference "Serial1")
 					(unit 1)
 				)
 			)
@@ -20156,7 +20033,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder"
+		(property "Footprint" "Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder"
 			(at 356.5652 153.67 0)
 			(effects
 				(font
@@ -20165,7 +20042,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GRM188R60J106ME47D"
+		(property "Datasheet" "C0805C106K8RACTU"
 			(at 355.6 149.86 0)
 			(effects
 				(font
@@ -20174,7 +20051,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor Low ESR"
+		(property "Description" "Low ESR 10 µF ±10% 10V Ceramic Capacitor X7R 0805 (2012 Metric)"
+			(at 355.6 149.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "KEMET"
+			(at 355.6 149.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "C0805C106K8RACTU"
+			(at 355.6 149.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0805"
 			(at 355.6 149.86 0)
 			(effects
 				(font
@@ -20300,7 +20204,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "TACL105K010RTA"
+		(property "Datasheet" "CL10B105KO8NNNC"
 			(at 304.8 160.02 0)
 			(effects
 				(font
@@ -20309,7 +20213,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "1 µF ±10% 16V Ceramic Capacitor X7R 0603"
+			(at 304.8 160.02 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "Samsung Electro-Mechanics"
+			(at 304.8 160.02 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CL10B105KO8NNNC"
+			(at 304.8 160.02 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 304.8 160.02 0)
 			(effects
 				(font
@@ -20408,7 +20339,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "8117ca98-1113-4392-a6a7-224253995ebc")
-		(property "Reference" "U5"
+		(property "Reference" "BARO1"
 			(at 322.58 73.66 0)
 			(effects
 				(font
@@ -20444,7 +20375,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Pressure Sensor 4.35PSI ~ 18.13PSI (30kPa ~ 125kPa) Absolute 10-WFLGA"
+			(at 302.26 83.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "Bosch Sensortec"
+			(at 302.26 83.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "BMP390"
+			(at 302.26 83.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 10LGA"
 			(at 302.26 83.82 0)
 			(effects
 				(font
@@ -20486,7 +20444,7 @@
 		(instances
 			(project ""
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "U5")
+					(reference "BARO1")
 					(unit 1)
 				)
 			)
@@ -20529,7 +20487,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GRM155R61H104JE14D"
+		(property "Datasheet" "CC0603KRX7R7BB104"
 			(at 367.03 85.09 0)
 			(effects
 				(font
@@ -20538,7 +20496,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "CAP CER 0.1UF 16V X7R 0603"
+			(at 367.03 85.09 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 367.03 85.09 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CC0603KRX7R7BB104"
+			(at 367.03 85.09 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 367.03 85.09 0)
 			(effects
 				(font
@@ -20642,7 +20627,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "88a06647-c6fa-49d7-be26-476c063a5a0b")
-		(property "Reference" "U4"
+		(property "Reference" "MAG1"
 			(at 312.42 120.65 0)
 			(effects
 				(font
@@ -20738,7 +20723,7 @@
 		(instances
 			(project ""
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "U4")
+					(reference "MAG1")
 					(unit 1)
 				)
 			)
@@ -21019,7 +21004,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "a1697062-ef35-4753-be73-9814d1c8c3a6")
-		(property "Reference" "R_Servo_1"
+		(property "Reference" "RS1"
 			(at 240.03 182.8799 90)
 			(effects
 				(font
@@ -21076,7 +21061,7 @@
 		(instances
 			(project "fc"
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "R_Servo_1")
+					(reference "RS1")
 					(unit 1)
 				)
 			)
@@ -21157,7 +21142,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "b232b073-986a-4305-b73c-f2102b39b037")
-		(property "Reference" "LED_6"
+		(property "Reference" "LED6"
 			(at 295.91 298.7674 90)
 			(effects
 				(font
@@ -21220,7 +21205,7 @@
 		(instances
 			(project "fc"
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "LED_6")
+					(reference "LED6")
 					(unit 1)
 				)
 			)
@@ -21263,7 +21248,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GRM155R61H104JE14D"
+		(property "Datasheet" "CC0603KRX7R7BB104"
 			(at 180.34 59.69 0)
 			(effects
 				(font
@@ -21272,7 +21257,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "CAP CER 0.1UF 16V X7R 0603"
+			(at 180.34 59.69 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 180.34 59.69 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CC0603KRX7R7BB104"
+			(at 180.34 59.69 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 180.34 59.69 0)
 			(effects
 				(font
@@ -21437,7 +21449,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "bb0dc174-bd55-4a14-80f4-98a71b2446e8")
-		(property "Reference" "R_Servo_2"
+		(property "Reference" "RS2"
 			(at 238.76 213.3599 90)
 			(effects
 				(font
@@ -21494,7 +21506,7 @@
 		(instances
 			(project "fc"
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "R_Servo_2")
+					(reference "RS2")
 					(unit 1)
 				)
 			)
@@ -21537,7 +21549,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GRM155R61H104JE14D"
+		(property "Datasheet" "CC0603KRX7R7BB104"
 			(at 276.86 87.63 0)
 			(effects
 				(font
@@ -21546,7 +21558,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "CAP CER 0.1UF 16V X7R 0603"
+			(at 276.86 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 276.86 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CC0603KRX7R7BB104"
+			(at 276.86 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 276.86 87.63 0)
 			(effects
 				(font
@@ -21775,7 +21814,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "d45ad44e-9732-4453-bb97-35421e405607")
-		(property "Reference" "BN880_Con1"
+		(property "Reference" "GPS1"
 			(at 295.91 187.96 90)
 			(effects
 				(font
@@ -21791,7 +21830,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_1.27mm:PinHeader_1x06_P1.27mm_Horizontal"
+		(property "Footprint" "Molex:CONN_532610001-SD_06Pin_1.25mm"
 			(at 294.64 194.31 0)
 			(effects
 				(font
@@ -21800,7 +21839,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "Molex 0530480610"
+		(property "Datasheet" "Molex 0532610671"
 			(at 294.64 194.31 0)
 			(effects
 				(font
@@ -21809,8 +21848,35 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "1x6 1.27mm Pitch"
+		(property "Description" "Connector Header Surface Mount, Right Angle 6 position (1.25mm)"
 			(at 294.64 194.31 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "Molex"
+			(at 294.64 194.31 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "0532610671"
+			(at 294.64 194.31 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD R/A 6POS"
+			(at 294.64 194.31 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -21839,7 +21905,7 @@
 		(instances
 			(project ""
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "BN880_Con1")
+					(reference "GPS1")
 					(unit 1)
 				)
 			)
@@ -21985,7 +22051,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "da6aadee-b124-40c3-9d3c-1679ab6d39b0")
-		(property "Reference" "LED_4"
+		(property "Reference" "LED4"
 			(at 270.51 298.7674 90)
 			(effects
 				(font
@@ -22012,7 +22078,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "XL-1608UYC-06"
+		(property "Datasheet" "LTST-C191KSKT"
 			(at 266.7 298.45 0)
 			(effects
 				(font
@@ -22021,7 +22087,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Light emitting diode"
+		(property "Description" "Yellow 591nm LED Indication - Discrete 2.1V 0603)"
 			(at 266.7 298.45 0)
 			(effects
 				(font
@@ -22039,6 +22105,33 @@
 				(hide yes)
 			)
 		)
+		(property "Manufacturer_Name" "Lite-On Inc."
+			(at 266.7 298.45 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "LTST-C191KSKT"
+			(at 266.7 298.45 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 266.7 298.45 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "2"
 			(uuid "0e92efd1-4857-4499-af49-748ff18e8d5a")
 		)
@@ -22048,7 +22141,7 @@
 		(instances
 			(project "fc"
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "LED_4")
+					(reference "LED4")
 					(unit 1)
 				)
 			)
@@ -22134,7 +22227,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "dd5552f7-ede1-4bbd-a3e1-7f33c1616502")
-		(property "Reference" "R_Servo_4"
+		(property "Reference" "RS4"
 			(at 262.89 213.3599 90)
 			(effects
 				(font
@@ -22191,7 +22284,7 @@
 		(instances
 			(project "fc"
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "R_Servo_4")
+					(reference "RS4")
 					(unit 1)
 				)
 			)
@@ -22338,7 +22431,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "e4065e71-6f05-4912-8442-ba13c9fac9fc")
-		(property "Reference" "LED_5"
+		(property "Reference" "LED5"
 			(at 283.21 298.7674 90)
 			(effects
 				(font
@@ -22401,7 +22494,7 @@
 		(instances
 			(project "fc"
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "LED_5")
+					(reference "LED5")
 					(unit 1)
 				)
 			)
@@ -22444,7 +22537,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GRM155R61H104JE14D"
+		(property "Datasheet" "CC0603KRX7R7BB104"
 			(at 208.28 156.21 0)
 			(effects
 				(font
@@ -22453,7 +22546,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "CAP CER 0.1UF 16V X7R 0603"
+			(at 208.28 156.21 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 208.28 156.21 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CC0603KRX7R7BB104"
+			(at 208.28 156.21 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 208.28 156.21 0)
 			(effects
 				(font
@@ -22551,7 +22671,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "e9274914-206b-4d56-979a-86441d7201ec")
-		(property "Reference" "JL_Servo_2"
+		(property "Reference" "LS2"
 			(at 176.53 210.8199 90)
 			(effects
 				(font
@@ -22608,7 +22728,7 @@
 		(instances
 			(project "fc"
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "JL_Servo_2")
+					(reference "LS2")
 					(unit 1)
 				)
 			)
@@ -22624,7 +22744,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "e9493600-92c8-4377-9416-354a9f9c11dd")
-		(property "Reference" "R_Motor1"
+		(property "Reference" "RM1"
 			(at 246.38 237.4899 90)
 			(effects
 				(font
@@ -22678,7 +22798,7 @@
 		(instances
 			(project "fc"
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "R_Motor1")
+					(reference "RM1")
 					(unit 1)
 				)
 			)
@@ -23075,76 +23195,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:R")
-		(at 297.18 41.91 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "f5f7b56f-4ec8-4e77-ad14-501095cf7090")
-		(property "Reference" "R11"
-			(at 299.72 40.6399 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "4.7K"
-			(at 299.72 43.1799 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Resistor_SMD:R_0603_1608Metric_Pad0.98x0.95mm_HandSolder"
-			(at 295.402 41.91 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "CRGP0603F4K7"
-			(at 297.18 41.91 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Resistor"
-			(at 297.18 41.91 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "5018119a-ca49-474e-8eed-654dbf9cdaed")
-		)
-		(pin "2"
-			(uuid "1b9ca54a-341d-4da9-8dc2-db9c32e4b02f")
-		)
-		(instances
-			(project "fc"
-				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "R11")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Device:LED")
 		(at 241.3 298.45 90)
 		(unit 1)
@@ -23154,7 +23204,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "f88c61cb-05f6-4fe6-a72c-eea8013b28d1")
-		(property "Reference" "LED_7"
+		(property "Reference" "LED7"
 			(at 245.11 298.7674 90)
 			(effects
 				(font
@@ -23181,7 +23231,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "XL-1608SURC-06"
+		(property "Datasheet" "LTST-C191KRKT"
 			(at 241.3 298.45 0)
 			(effects
 				(font
@@ -23190,7 +23240,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Light emitting diode"
+		(property "Description" "Red 631nm LED Indication - Discrete 2V 0603"
 			(at 241.3 298.45 0)
 			(effects
 				(font
@@ -23208,6 +23258,33 @@
 				(hide yes)
 			)
 		)
+		(property "Manufacturer_Name" "Lite-On Inc."
+			(at 241.3 298.45 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "LTST-C191KRKT"
+			(at 241.3 298.45 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 241.3 298.45 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "2"
 			(uuid "59038630-e523-454f-9347-67db02b7d54b")
 		)
@@ -23217,7 +23294,7 @@
 		(instances
 			(project "fc"
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "LED_7")
+					(reference "LED7")
 					(unit 1)
 				)
 			)

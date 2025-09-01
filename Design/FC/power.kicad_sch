@@ -2360,7 +2360,7 @@
 					)
 				)
 			)
-			(property "Footprint" "MLF28_5X6_MCH"
+			(property "Footprint" "Lib:MIC26903YJL-TR-MLF28_5X6_MCH"
 				(at 0 0 0)
 				(effects
 					(font
@@ -2979,6 +2979,62 @@
 						)
 					)
 					(number "15"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(symbol "MIC26903YJL-TR_1_1"
+				(pin power_in line
+					(at 0 -35.56 0)
+					(length 7.62)
+					(name "PVIN"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "31"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 40.64 2.54 180)
+					(length 7.62)
+					(name "SW"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "30"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 40.64 -38.1 180)
+					(length 7.62)
+					(name "GND"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "32"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -8922,6 +8978,16 @@
 	)
 	(wire
 		(pts
+			(xy 184.15 85.09) (xy 184.15 76.2)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "0cb3393f-1412-43b3-97f6-c6b2b590844f")
+	)
+	(wire
+		(pts
 			(xy 140.97 241.3) (xy 193.04 241.3)
 		)
 		(stroke
@@ -8969,16 +9035,6 @@
 			(type default)
 		)
 		(uuid "11ce6092-4749-4a58-b5c8-7e91ed12492b")
-	)
-	(wire
-		(pts
-			(xy 166.37 85.09) (xy 166.37 81.28)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "11e22dca-7ff8-47c3-a3c0-4220ec840d59")
 	)
 	(wire
 		(pts
@@ -9609,6 +9665,16 @@
 			(type default)
 		)
 		(uuid "594541c3-6534-4673-aa7f-2f8bea34b8b6")
+	)
+	(wire
+		(pts
+			(xy 125.73 118.11) (xy 125.73 120.65)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "599510e3-30a0-4cc0-a1e7-9e25161b91b3")
 	)
 	(wire
 		(pts
@@ -10312,6 +10378,16 @@
 	)
 	(wire
 		(pts
+			(xy 166.37 85.09) (xy 184.15 85.09)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9a49b9a2-75c3-4cdc-ac16-95b641991625")
+	)
+	(wire
+		(pts
 			(xy 166.37 105.41) (xy 187.96 105.41)
 		)
 		(stroke
@@ -10639,16 +10715,6 @@
 			(type default)
 		)
 		(uuid "c939c54a-9436-4f54-83aa-92bfaa3f7159")
-	)
-	(wire
-		(pts
-			(xy 166.37 81.28) (xy 170.18 81.28)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "cb228bd8-1af7-48f6-8d00-1b55f867d9d2")
 	)
 	(wire
 		(pts
@@ -11099,6 +11165,16 @@
 			(type default)
 		)
 		(uuid "f8be1832-ac29-4480-90b9-4e746d4f3fa9")
+	)
+	(wire
+		(pts
+			(xy 184.15 76.2) (xy 187.96 76.2)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f90cc7ec-24ff-4303-95f0-01ae03214470")
 	)
 	(wire
 		(pts
@@ -11629,6 +11705,28 @@
 		(uuid "99da418a-8145-4894-b06b-ba095dfbd301")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 84.6884 78.74 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+	)
+	(global_label "REG_1_SW"
+		(shape input)
+		(at 166.37 82.55 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "9a599dd2-a895-4d22-bd24-22da4bc74440")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 178.8498 82.55 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12236,7 +12334,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Male 30A Angled 90 Degrees THT"
 			(at 43.18 36.83 0)
 			(effects
 				(font
@@ -12365,6 +12463,33 @@
 				(hide yes)
 			)
 		)
+		(property "Manufacturer_Name" "AMASS"
+			(at 43.18 36.83 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "XT60PW-M"
+			(at 43.18 36.83 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "THT Right Angle"
+			(at 43.18 36.83 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "2"
 			(uuid "1fca8e87-77bd-42c5-b2cb-9299fe182dc2")
 		)
@@ -12426,7 +12551,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Polarized cap Tantalum"
+		(property "Description" "CAP TANT 1UF 10% 16V 0603"
+			(at 222.25 191.77 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "KYOCERA AVX"
+			(at 222.25 191.77 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "TACL105K016RTA"
+			(at 222.25 191.77 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 222.25 191.77 0)
 			(effects
 				(font
@@ -12460,7 +12612,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "0c50933d-0c00-4e9f-bc50-0188ff153544")
-		(property "Reference" "LED_1"
+		(property "Reference" "LED1"
 			(at 353.06 101.9174 90)
 			(effects
 				(font
@@ -12496,7 +12648,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Green LED"
+		(property "Description" "Green 525nm LED Indication - Discrete 3.1V 0603"
 			(at 349.25 101.6 0)
 			(effects
 				(font
@@ -12514,6 +12666,33 @@
 				(hide yes)
 			)
 		)
+		(property "Manufacturer_Name" "Dialight"
+			(at 349.25 101.6 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "5990081007F"
+			(at 349.25 101.6 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 349.25 101.6 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "2"
 			(uuid "890feef3-6c3c-4492-91d8-15e89c946439")
 		)
@@ -12523,7 +12702,7 @@
 		(instances
 			(project ""
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/6cb67ea1-97ef-457f-b0c4-e4559d0cc048"
-					(reference "LED_1")
+					(reference "LED1")
 					(unit 1)
 				)
 			)
@@ -12769,7 +12948,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GRM188R61E225KA12D"
+		(property "Datasheet" "TMK107ABJ225KA-T"
 			(at 67.31 257.81 0)
 			(effects
 				(font
@@ -12778,7 +12957,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Low ESR"
+		(property "Description" "Low ESR CAP CER 2.2UF 25V X5R 0603"
+			(at 67.31 257.81 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "Taiyo Yuden"
+			(at 67.31 257.81 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "TMK107ABJ225KA-T"
+			(at 67.31 257.81 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 67.31 257.81 0)
 			(effects
 				(font
@@ -12839,7 +13045,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GCJ188R71H104KA12D"
+		(property "Datasheet" "CC0603KRX7R7BB104"
 			(at 378.46 168.91 0)
 			(effects
 				(font
@@ -12848,7 +13054,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "CAP CER 0.1UF 16V X7R 0603"
+			(at 378.46 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 378.46 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CC0603KRX7R7BB104"
+			(at 378.46 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 378.46 168.91 0)
 			(effects
 				(font
@@ -12974,7 +13207,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GRM188R61E225KA12D"
+		(property "Datasheet" "TMK107ABJ225KA-T"
 			(at 48.26 245.11 0)
 			(effects
 				(font
@@ -12983,7 +13216,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Low ESR"
+		(property "Description" "Low ESR CAP CER 2.2UF 25V X5R 0603"
+			(at 48.26 245.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "Taiyo Yuden"
+			(at 48.26 245.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "TMK107ABJ225KA-T"
+			(at 48.26 245.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 48.26 245.11 0)
 			(effects
 				(font
@@ -13176,7 +13436,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GCJ188R71H104KA12D"
+		(property "Datasheet" "CC0603KRX7R7BB104"
 			(at 393.7 168.91 0)
 			(effects
 				(font
@@ -13185,7 +13445,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "CAP CER 0.1UF 16V X7R 0603"
+			(at 393.7 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 393.7 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CC0603KRX7R7BB104"
+			(at 393.7 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 393.7 168.91 0)
 			(effects
 				(font
@@ -13246,7 +13533,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GCJ188R71H104KA12D"
+		(property "Datasheet" "CC0603KRX7R7BB104"
 			(at 232.41 168.91 0)
 			(effects
 				(font
@@ -13255,7 +13542,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "CAP CER 0.1UF 16V X7R 0603"
+			(at 232.41 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 232.41 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CC0603KRX7R7BB104"
+			(at 232.41 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 232.41 168.91 0)
 			(effects
 				(font
@@ -13327,8 +13641,35 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "EEE-FPV101XAP polarized capacitor 35V 100uF. Low ESR."
+		(property "Description" "Lwo ESR CAP ALUM 100UF 20% 35V SMD"
 			(at 336.55 97.79 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "Panasonic Electronic Components"
+			(at 336.55 97.79 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "EEE-FPV101XAP"
+			(at 336.55 97.79 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "6.60mm x 6.60mm"
+			(at 336.55 97.79 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -13388,7 +13729,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GCJ188R71H104KA12D"
+		(property "Datasheet" "CC0603KRX7R7BB104"
 			(at 234.95 191.77 0)
 			(effects
 				(font
@@ -13397,7 +13738,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "CAP CER 0.1UF 16V X7R 0603"
+			(at 234.95 191.77 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 234.95 191.77 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CC0603KRX7R7BB104"
+			(at 234.95 191.77 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 234.95 191.77 0)
 			(effects
 				(font
@@ -13458,7 +13826,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GCJ188R71H104KA12D"
+		(property "Datasheet" "CC0603KRX7R7BB104"
 			(at 364.49 168.91 0)
 			(effects
 				(font
@@ -13467,7 +13835,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "CAP CER 0.1UF 16V X7R 0603"
+			(at 364.49 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 364.49 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CC0603KRX7R7BB104"
+			(at 364.49 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 364.49 168.91 0)
 			(effects
 				(font
@@ -13650,7 +14045,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Lib:CAP_C0805X104K5RAC3316_0805_100nF"
+		(property "Footprint" "Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder"
 			(at 233.3752 97.79 0)
 			(effects
 				(font
@@ -13659,7 +14054,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "C0805X104K5RAC3316"
+		(property "Datasheet" "KGM21NR71H104KT"
 			(at 232.41 93.98 0)
 			(effects
 				(font
@@ -13668,7 +14063,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "50V 0805 100nF Ceramic"
+		(property "Description" "0.1 µF ±10% 50V Ceramic Capacitor X7R 0805"
+			(at 232.41 93.98 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "KYOCERA AVX"
+			(at 232.41 93.98 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "KGM21NR71H104KT"
+			(at 232.41 93.98 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0805"
 			(at 232.41 93.98 0)
 			(effects
 				(font
@@ -13694,7 +14116,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 170.18 81.28 0)
+		(at 187.96 76.2 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -13702,7 +14124,7 @@
 		(dnp no)
 		(uuid "35f9da2a-206f-4705-80d2-2a31ba6fa85a")
 		(property "Reference" "#PWR023"
-			(at 170.18 87.63 0)
+			(at 187.96 82.55 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -13711,7 +14133,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 170.18 85.344 0)
+			(at 187.96 80.264 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -13719,7 +14141,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 170.18 81.28 0)
+			(at 187.96 76.2 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -13728,7 +14150,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 170.18 81.28 0)
+			(at 187.96 76.2 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -13737,7 +14159,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 170.18 81.28 0)
+			(at 187.96 76.2 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -13934,7 +14356,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GCJ188R71H104KA12D"
+		(property "Datasheet" "CC0603KRX7R7BB104"
 			(at 335.28 168.91 0)
 			(effects
 				(font
@@ -13943,7 +14365,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "CAP CER 0.1UF 16V X7R 0603"
+			(at 335.28 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 335.28 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CC0603KRX7R7BB104"
+			(at 335.28 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 335.28 168.91 0)
 			(effects
 				(font
@@ -13995,7 +14444,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Lib:CAP_C0805X104K5RAC3316_0805_100nF"
+		(property "Footprint" "Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder"
 			(at 267.6652 105.41 0)
 			(effects
 				(font
@@ -14004,7 +14453,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "C0805X104K5RAC3316"
+		(property "Datasheet" "KGM21NR71H104KT"
 			(at 266.7 101.6 0)
 			(effects
 				(font
@@ -14013,7 +14462,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "50V 0805 100nF Ceramic"
+		(property "Description" "0.1 µF ±10% 50V Ceramic Capacitor X7R 0805"
+			(at 266.7 101.6 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "KYOCERA AVX"
+			(at 266.7 101.6 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "KGM21NR71H104KT"
+			(at 266.7 101.6 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0805"
 			(at 266.7 101.6 0)
 			(effects
 				(font
@@ -14074,7 +14550,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GCJ188R71H104KA12D"
+		(property "Datasheet" "CC0603KRX7R7BB104"
 			(at 349.25 168.91 0)
 			(effects
 				(font
@@ -14083,7 +14559,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "CAP CER 0.1UF 16V X7R 0603"
+			(at 349.25 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 349.25 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CC0603KRX7R7BB104"
+			(at 349.25 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 349.25 168.91 0)
 			(effects
 				(font
@@ -14211,7 +14714,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GCJ188R71H104KA12D"
+		(property "Datasheet" "CC0603KRX7R7BB104"
 			(at 436.88 168.91 0)
 			(effects
 				(font
@@ -14220,7 +14723,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "CAP CER 0.1UF 16V X7R 0603"
+			(at 436.88 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 436.88 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CC0603KRX7R7BB104"
+			(at 436.88 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 436.88 168.91 0)
 			(effects
 				(font
@@ -14281,7 +14811,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GCJ188R71H104KA12D"
+		(property "Datasheet" "CC0603KRX7R7BB104"
 			(at 168.91 267.97 0)
 			(effects
 				(font
@@ -14290,7 +14820,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "CAP CER 0.1UF 16V X7R 0603"
+			(at 168.91 267.97 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 168.91 267.97 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CC0603KRX7R7BB104"
+			(at 168.91 267.97 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 168.91 267.97 0)
 			(effects
 				(font
@@ -15601,7 +16158,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor 10V"
+		(property "Description" "CAP CER 0805 4.7NF 25V C0G 5%"
+			(at 306.07 101.6 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "KEMET"
+			(at 306.07 101.6 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "C0805C472J3GEC7210"
+			(at 306.07 101.6 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0805"
 			(at 306.07 101.6 0)
 			(effects
 				(font
@@ -15662,7 +16246,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "TACL475M010XTA"
+		(property "Datasheet" "GRM188R61E475KE11D"
 			(at 203.2 168.91 0)
 			(effects
 				(font
@@ -15671,7 +16255,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Polarized cap Tantalum"
+		(property "Description" "Low ESR CAP CER 4.7UF 25V X5R 0603"
+			(at 203.2 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" " Murata Electronics"
+			(at 203.2 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "GRM188R61E475KE11D"
+			(at 203.2 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 203.2 168.91 0)
 			(effects
 				(font
@@ -15853,7 +16464,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Lib:LD39200PU33R-SON95P300X300X100-7N"
+		(property "Footprint" "Regulators:SON95P300X300X100-7N"
 			(at 434.34 102.87 0)
 			(effects
 				(font
@@ -16378,7 +16989,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GCJ188R71H104KA12D"
+		(property "Datasheet" "CC0603KRX7R7BB104"
 			(at 306.07 168.91 0)
 			(effects
 				(font
@@ -16387,7 +16998,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "CAP CER 0.1UF 16V X7R 0603"
+			(at 306.07 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 306.07 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CC0603KRX7R7BB104"
+			(at 306.07 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 306.07 168.91 0)
 			(effects
 				(font
@@ -16448,7 +17086,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "CC0603KRX5R9BB225"
+		(property "Datasheet" "CC0603KRX7R7BB104"
 			(at 208.28 245.11 0)
 			(effects
 				(font
@@ -16457,7 +17095,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Low ESR"
+		(property "Description" "Low ESR CAP CER 0.1UF 16V X7R 0603"
+			(at 208.28 245.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 208.28 245.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CC0603KRX7R7BB104"
+			(at 208.28 245.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 208.28 245.11 0)
 			(effects
 				(font
@@ -16509,7 +17174,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Lib:CAP_C225K4REC7210_0805"
+		(property "Footprint" "Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder"
 			(at 195.2752 97.79 0)
 			(effects
 				(font
@@ -16518,7 +17183,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "C225K4REC7210"
+		(property "Datasheet" "UMK212BB7225KG-T"
 			(at 194.31 93.98 0)
 			(effects
 				(font
@@ -16527,7 +17192,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "16V 2.2uF ceramic"
+		(property "Description" "2.2 µF ±10% 50V Ceramic Capacitor X7R 0805"
+			(at 194.31 93.98 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "Taiyo Yuden"
+			(at 194.31 93.98 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "UMK212BB7225KG-T"
+			(at 194.31 93.98 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0805"
 			(at 194.31 93.98 0)
 			(effects
 				(font
@@ -16661,7 +17353,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "CAP CER 10UF 25V X5R 0603"
+			(at 403.86 99.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "Murata Electronics"
+			(at 403.86 99.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "GRM188R61E106KA73D"
+			(at 403.86 99.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 403.86 99.06 0)
 			(effects
 				(font
@@ -16720,7 +17439,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "SRP1265A-6R8M_BRN"
+		(property "Datasheet" "SRP1265A-6R8M"
 			(at 283.21 97.79 0)
 			(effects
 				(font
@@ -16729,8 +17448,35 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Inductor 11.5A max"
+		(property "Description" "6.8 µH Shielded Drum Core, Wirewound Inductor 11.5 A 11.5mOhm Max Nonstandard"
 			(at 283.21 97.79 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "Bourns Inc."
+			(at 283.21 97.79 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "SRP1265A-6R8M"
+			(at 283.21 97.79 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD MOHM"
+			(at 283.21 97.79 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16799,7 +17545,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "CAP CER 1UF 10V X5R 0603"
+			(at 184.15 267.97 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "Murata Electronics"
+			(at 184.15 267.97 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "GRM188R61A105KA61D"
+			(at 184.15 267.97 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 184.15 267.97 0)
 			(effects
 				(font
@@ -17384,7 +18157,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Lib:CAP_GMK325BJ226MM-T-CAPC3225X280N"
+		(property "Footprint" "Capacitor_SMD:C_1210_3225Metric_Pad1.33x2.70mm_HandSolder"
 			(at 49.2252 93.98 0)
 			(effects
 				(font
@@ -17393,7 +18166,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GMK325BJ226MM-T"
+		(property "Datasheet" "MSASG32MSB5226MPNA01"
 			(at 48.26 90.17 0)
 			(effects
 				(font
@@ -17402,7 +18175,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "35V"
+		(property "Description" "22 µF ±20% 35V Ceramic Capacitor X5R 1210"
+			(at 48.26 90.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "Taiyo Yuden"
+			(at 48.26 90.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "MSASG32MSB5226MPNA01"
+			(at 48.26 90.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 1210"
 			(at 48.26 90.17 0)
 			(effects
 				(font
@@ -17452,7 +18252,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Lib:SD103AW-TP-SODFL1608X70N"
+		(property "Footprint" "Diode_SMD:Nexperia_CFP3_SOD-123W"
 			(at 220.98 87.63 0)
 			(effects
 				(font
@@ -17461,7 +18261,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "SD103AW-TP-SODFL1608X70N"
+		(property "Datasheet" "SD103AW-TP"
 			(at 220.98 87.63 0)
 			(effects
 				(font
@@ -17470,7 +18270,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Schottky diode"
+		(property "Description" "DIODE SCHOTTKY 40V 350MA SOD123"
+			(at 220.98 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "MCC (Micro Commercial Components)"
+			(at 220.98 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "SD103AW-TP"
+			(at 220.98 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SOD123"
 			(at 220.98 87.63 0)
 			(effects
 				(font
@@ -17598,7 +18425,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GCJ188R71H104KA12D"
+		(property "Datasheet" "CC0603KRX7R7BB104"
 			(at 290.83 168.91 0)
 			(effects
 				(font
@@ -17607,7 +18434,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "CAP CER 0.1UF 16V X7R 0603"
+			(at 290.83 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 290.83 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CC0603KRX7R7BB104"
+			(at 290.83 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 290.83 168.91 0)
 			(effects
 				(font
@@ -17976,7 +18830,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "8c47566b-3f95-4eb1-b5ee-f4431de177a0")
-		(property "Reference" "LED_8"
+		(property "Reference" "LED8"
 			(at 486.41 99.3774 90)
 			(effects
 				(font
@@ -18012,7 +18866,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Green LED"
+		(property "Description" "Green 525nm LED Indication - Discrete 3.1V 0603"
 			(at 482.6 99.06 0)
 			(effects
 				(font
@@ -18030,6 +18884,33 @@
 				(hide yes)
 			)
 		)
+		(property "Manufacturer_Name" "Dialight"
+			(at 482.6 99.06 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "5990081007F"
+			(at 482.6 99.06 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 482.6 99.06 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "2"
 			(uuid "dd2c8be5-99d8-4f37-93fe-a3c8d3f0f9d8")
 		)
@@ -18039,7 +18920,7 @@
 		(instances
 			(project "fc"
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/6cb67ea1-97ef-457f-b0c4-e4559d0cc048"
-					(reference "LED_8")
+					(reference "LED8")
 					(unit 1)
 				)
 			)
@@ -18147,7 +19028,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GCJ188R71H104KA12D"
+		(property "Datasheet" "CC0603KRX7R7BB104"
 			(at 247.65 168.91 0)
 			(effects
 				(font
@@ -18156,7 +19037,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "CAP CER 0.1UF 16V X7R 0603"
+			(at 247.65 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 247.65 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CC0603KRX7R7BB104"
+			(at 247.65 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 247.65 168.91 0)
 			(effects
 				(font
@@ -18364,8 +19272,35 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "EEE-FPV101XAP polarized capacitor 35V 100uF. Low ESR."
+		(property "Description" "Lwo ESR CAP ALUM 100UF 20% 35V SMD"
 			(at 321.31 97.79 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "Panasonic Electronic Components"
+			(at 321.31 97.79 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "EEE-FPV101XAP"
+			(at 321.31 97.79 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "6.60mm x 6.60mm"
+			(at 321.31 97.79 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18595,6 +19530,15 @@
 		(pin "16"
 			(uuid "945ab4b5-b757-45cb-8eae-5463c0d35385")
 		)
+		(pin "32"
+			(uuid "707a7e15-d03a-4009-a72d-57dfc05872ca")
+		)
+		(pin "31"
+			(uuid "2580e775-c9d0-4591-b842-df0aa5d4424d")
+		)
+		(pin "30"
+			(uuid "69b4ece2-88e5-4215-83e9-7a57f6c7634e")
+		)
 		(instances
 			(project ""
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/6cb67ea1-97ef-457f-b0c4-e4559d0cc048"
@@ -18711,7 +19655,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GCJ188R71H104KA12D"
+		(property "Datasheet" "CC0603KRX7R7BB104"
 			(at 276.86 168.91 0)
 			(effects
 				(font
@@ -18720,7 +19664,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "CAP CER 0.1UF 16V X7R 0603"
+			(at 276.86 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 276.86 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CC0603KRX7R7BB104"
+			(at 276.86 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 276.86 168.91 0)
 			(effects
 				(font
@@ -18856,8 +19827,35 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "EEE-FPV101XAP polarized capacitor 35V 100uF. Low ESR."
+		(property "Description" "Lwo ESR CAP ALUM 100UF 20% 35V SMD"
 			(at 35.56 86.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "Panasonic Electronic Components"
+			(at 35.56 86.36 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "EEE-FPV101XAP"
+			(at 35.56 86.36 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "6.60mm x 6.60mm"
+			(at 35.56 86.36 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18982,7 +19980,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "TACL475M010XTA"
+		(property "Datasheet" "GRM188R61E475KE11D"
 			(at 168.91 222.25 0)
 			(effects
 				(font
@@ -18991,7 +19989,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Polarized cap Tantalum"
+		(property "Description" "Low ESR CAP CER 4.7UF 25V X5R 0603"
+			(at 168.91 222.25 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" " Murata Electronics"
+			(at 168.91 222.25 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "GRM188R61E475KE11D"
+			(at 168.91 222.25 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 168.91 222.25 0)
 			(effects
 				(font
@@ -19061,7 +20086,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "CAP CER 10UF 25V X5R 0603"
+			(at 466.09 99.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "Murata Electronics"
+			(at 466.09 99.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "GRM188R61E106KA73D"
+			(at 466.09 99.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 466.09 99.06 0)
 			(effects
 				(font
@@ -19187,7 +20239,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GCJ188R71H104KA12D"
+		(property "Datasheet" "CC0603KRX7R7BB104"
 			(at 407.67 168.91 0)
 			(effects
 				(font
@@ -19196,7 +20248,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "CAP CER 0.1UF 16V X7R 0603"
+			(at 407.67 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 407.67 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CC0603KRX7R7BB104"
+			(at 407.67 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 407.67 168.91 0)
 			(effects
 				(font
@@ -19257,7 +20336,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GCJ188R71H104KA12D"
+		(property "Datasheet" "CC0603KRX7R7BB104"
 			(at 452.12 168.91 0)
 			(effects
 				(font
@@ -19266,7 +20345,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "CAP CER 0.1UF 16V X7R 0603"
+			(at 452.12 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 452.12 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CC0603KRX7R7BB104"
+			(at 452.12 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 452.12 168.91 0)
 			(effects
 				(font
@@ -19318,7 +20424,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Lib:CAP_C225K4REC7210_0805"
+		(property "Footprint" "Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder"
 			(at 92.4052 92.71 0)
 			(effects
 				(font
@@ -19327,7 +20433,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "C225K4REC7210"
+		(property "Datasheet" "UMK212BB7225KG-T"
 			(at 91.44 88.9 0)
 			(effects
 				(font
@@ -19336,7 +20442,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "16V 2.2uF ceramic"
+		(property "Description" "2.2 µF ±10% 50V Ceramic Capacitor X7R 0805"
+			(at 91.44 88.9 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "Taiyo Yuden"
+			(at 91.44 88.9 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "UMK212BB7225KG-T"
+			(at 91.44 88.9 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0805"
 			(at 91.44 88.9 0)
 			(effects
 				(font
@@ -19532,7 +20665,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GRM188R61E225KA12D"
+		(property "Datasheet" "TMK107ABJ225KA-T"
 			(at 80.01 257.81 0)
 			(effects
 				(font
@@ -19541,7 +20674,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Low ESR"
+		(property "Description" "Low ESR CAP CER 2.2UF 25V X5R 0603"
+			(at 80.01 257.81 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "Taiyo Yuden"
+			(at 80.01 257.81 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "TMK107ABJ225KA-T"
+			(at 80.01 257.81 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 80.01 257.81 0)
 			(effects
 				(font
@@ -19668,7 +20828,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "CC0603KRX5R9BB225"
+		(property "Datasheet" "CC0603KRX7R7BB104"
 			(at 193.04 245.11 0)
 			(effects
 				(font
@@ -19677,7 +20837,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Low ESR"
+		(property "Description" "Low ESR CAP CER 0.1UF 16V X7R 0603"
+			(at 193.04 245.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 193.04 245.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CC0603KRX7R7BB104"
+			(at 193.04 245.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 193.04 245.11 0)
 			(effects
 				(font
@@ -19738,7 +20925,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GCJ188R71H104KA12D"
+		(property "Datasheet" "CC0603KRX7R7BB104"
 			(at 261.62 168.91 0)
 			(effects
 				(font
@@ -19747,7 +20934,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "CAP CER 0.1UF 16V X7R 0603"
+			(at 261.62 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 261.62 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CC0603KRX7R7BB104"
+			(at 261.62 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 261.62 168.91 0)
 			(effects
 				(font
@@ -19874,7 +21088,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GCJ188R71H104KA12D"
+		(property "Datasheet" "CC0603KRX7R7BB104"
 			(at 422.91 168.91 0)
 			(effects
 				(font
@@ -19883,7 +21097,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "CAP CER 0.1UF 16V X7R 0603"
+			(at 422.91 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 422.91 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CC0603KRX7R7BB104"
+			(at 422.91 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 422.91 168.91 0)
 			(effects
 				(font
@@ -19902,6 +21143,71 @@
 			(project "fc"
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/6cb67ea1-97ef-457f-b0c4-e4559d0cc048"
 					(reference "C28")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 166.37 123.19 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "cb02e81b-e724-4a4d-8c43-a4c78f67a108")
+		(property "Reference" "#PWR088"
+			(at 166.37 129.54 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 166.37 127.254 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 166.37 123.19 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 166.37 123.19 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 166.37 123.19 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "3fd59964-b7b3-4e3f-aabd-6452974256bc")
+		)
+		(instances
+			(project "fc"
+				(path "/b150e79a-000e-446c-9119-0865a2de86ff/6cb67ea1-97ef-457f-b0c4-e4559d0cc048"
+					(reference "#PWR088")
 					(unit 1)
 				)
 			)
@@ -19944,7 +21250,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GCJ188R71H104KA12D"
+		(property "Datasheet" "CC0603KRX7R7BB104"
 			(at 320.04 168.91 0)
 			(effects
 				(font
@@ -19953,7 +21259,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "CAP CER 0.1UF 16V X7R 0603"
+			(at 320.04 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 320.04 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CC0603KRX7R7BB104"
+			(at 320.04 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 320.04 168.91 0)
 			(effects
 				(font
@@ -20086,8 +21419,35 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Ferrite bead, small symbol"
+		(property "Description" "120 Ohms @ 100 MHz 1 Power Line Ferrite Bead 0402 2A 55mOhm"
 			(at 215.9 187.96 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "TDK Corporation"
+			(at 215.9 187.96 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "MPZ1005S121HT000"
+			(at 215.9 187.96 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0402"
+			(at 215.9 187.96 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -20408,7 +21768,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GCJ188R71H104KA12D"
+		(property "Datasheet" "CC0603KRX7R7BB104"
 			(at 218.44 168.91 0)
 			(effects
 				(font
@@ -20417,7 +21777,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "CAP CER 0.1UF 16V X7R 0603"
+			(at 218.44 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 218.44 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CC0603KRX7R7BB104"
+			(at 218.44 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 218.44 168.91 0)
 			(effects
 				(font
@@ -20543,7 +21930,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "~"
+		(property "Datasheet" "CC0603KRX7R7BB104"
 			(at 218.44 40.64 0)
 			(effects
 				(font
@@ -20552,7 +21939,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "CAP CER 0.1UF 16V X7R 0603"
+			(at 218.44 40.64 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 218.44 40.64 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CC0603KRX7R7BB104"
+			(at 218.44 40.64 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 218.44 40.64 0)
 			(effects
 				(font
@@ -20612,7 +22026,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GCJ188R71H104KA12D"
+		(property "Datasheet" "CC0603KRX7R7BB104"
 			(at 151.13 271.78 0)
 			(effects
 				(font
@@ -20621,7 +22035,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Unpolarized capacitor"
+		(property "Description" "CAP CER 0.1UF 16V X7R 0603"
+			(at 151.13 271.78 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 151.13 271.78 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CC0603KRX7R7BB104"
+			(at 151.13 271.78 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 151.13 271.78 0)
 			(effects
 				(font
@@ -20934,7 +22375,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Lib:CAP_GMK325BJ226MM-T-CAPC3225X280N"
+		(property "Footprint" "Capacitor_SMD:C_1210_3225Metric_Pad1.33x2.70mm_HandSolder"
 			(at 61.9252 93.98 0)
 			(effects
 				(font
@@ -20943,7 +22384,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GMK325BJ226MM-T"
+		(property "Datasheet" "MSASG32MSB5226MPNA01"
 			(at 60.96 90.17 0)
 			(effects
 				(font
@@ -20952,7 +22393,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "35V"
+		(property "Description" "22 µF ±20% 35V Ceramic Capacitor X5R 1210"
+			(at 60.96 90.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "Taiyo Yuden"
+			(at 60.96 90.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "MSASG32MSB5226MPNA01"
+			(at 60.96 90.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 1210"
 			(at 60.96 90.17 0)
 			(effects
 				(font

@@ -1,4 +1,4 @@
-26673246119573890
+26687299785521603
 Audio_Module
 Reverb_BTDR-1H
 Digital Reverberation Unit, http://www.belton.co.kr/inc/downfile.php?seq=17&file=pdf (footprint from http://www.uk-electronic.de/PDF/BTDR-1.pdf)
@@ -56923,6 +56923,20 @@ connector Zhaoxing VH vertical
 0
 12
 11
+Connectors
+CONN_GRPB052VWQS-RC_2x5Pins_1.27mm
+
+GRPB052VWQS-RC 
+0
+10
+10
+Connectors
+CONN_GRPB052VWQS-RC_OddEven_2x5Pins_1.27mm
+
+GRPB052VWQS-RC 
+0
+10
+10
 Converter_ACDC
 Converter_ACDC_CUI_PBO-3-Sxx_THT_Vertical
 ACDC-Converter, 3W, CUI PBO-3, THT https://www.cui.com/product/resource/pbo-3.pdf
@@ -70553,6 +70567,20 @@ Yellow 5381 Series LED
 2
 2
 Lib
+Adjusted_PinHeader_1x04_P1.27mm_Horizontal
+Through hole angled pin header, 1x04, 1.27mm pitch, 4.0mm pin length, single row
+Through hole angled pin header THT 1x04 1.27mm single row
+0
+4
+4
+Lib
+Adjusted_PinHeader_1x06_P1.27mm_Horizontal
+Through hole angled pin header, 1x06, 1.27mm pitch, 4.0mm pin length, single row
+Through hole angled pin header THT 1x06 1.27mm single row
+0
+6
+6
+Lib
 Adjusted_PinHeader_2x05_P1.27mm_Vertical
 Through hole straight pin header, 2x05, 1.27mm pitch, double rows
 Through hole pin header THT 2x05 1.27mm double row
@@ -71035,6 +71063,27 @@ module pcb
 0
 7
 7
+Molex
+CONN_532610001-SD_06Pin_1.25mm
+
+532610671 
+0
+8
+8
+Molex
+CONN_532610471_SMD_4Pin_1.25mm
+
+
+0
+6
+6
+Molex
+CONN_SM04B-GHS-TB_JST_4Pin_1.25mm
+
+SM04B-GHS-TB 
+0
+6
+6
 Motors
 Vybronics_VZ30C1T8219732L
 Vibration motor, 2.3-3.2V, 14000rpm, 0.7G, https://www.vybronics.com/wp-content/uploads/datasheet-files/Vybronics-VZ30C1T8219732L-datasheet.pdf
@@ -94933,6 +94982,13 @@ WiFi IEEE802.11 b/g/n
 0
 44
 44
+Regulators
+SON95P300X300X100-7N
+
+
+0
+7
+7
 Relay_SMD
 Relay_2P2T_10x6mm_TE_IMxxG
 Signal Relay, 10x6mm, 2 Form C, Gull Wings, https://www.te.com/commerce/DocumentDelivery/DDEController?Action=showdoc&DocId=Data+Sheet%7F108-98001%7FZ.1%7Fpdf%7FEnglish%7FENG_DS_108-98001_Z.1.pdf
