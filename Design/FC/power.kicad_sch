@@ -5,306 +5,6 @@
 	(uuid "7b49ab0c-82b4-421b-a595-540761134983")
 	(paper "C")
 	(lib_symbols
-		(symbol "CAP_6.3 X 7.7_PAN:EEE-FPV101XAP"
-			(pin_names
-				(offset 0.254)
-			)
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(property "Reference" "C"
-				(at 3.81 3.81 0)
-				(effects
-					(font
-						(size 1.524 1.524)
-					)
-				)
-			)
-			(property "Value" "EEE-FPV101XAP"
-				(at 3.81 -3.81 0)
-				(effects
-					(font
-						(size 1.524 1.524)
-					)
-				)
-			)
-			(property "Footprint" "Lib:CAP_6.3 X 7.7_PAN"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-						(italic yes)
-					)
-					(hide yes)
-				)
-			)
-			(property "Datasheet" "EEE-FPV101XAP"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-						(italic yes)
-					)
-					(hide yes)
-				)
-			)
-			(property "Description" ""
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_locked" ""
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "ki_keywords" "EEE-FPV101XAP"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_fp_filters" "CAP_6.3 X 7.7_PAN CAP_6.3 X 7.7_PAN-M CAP_6.3 X 7.7_PAN-L"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(symbol "EEE-FPV101XAP_1_1"
-				(polyline
-					(pts
-						(xy 1.5748 1.27) (xy 2.8448 1.27)
-					)
-					(stroke
-						(width 0.2032)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 2.2098 0.635) (xy 2.2098 1.905)
-					)
-					(stroke
-						(width 0.2032)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 2.54 0) (xy 3.4798 0)
-					)
-					(stroke
-						(width 0.2032)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 3.4798 -1.905) (xy 3.4798 1.905)
-					)
-					(stroke
-						(width 0.2032)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 4.1148 0) (xy 5.08 0)
-					)
-					(stroke
-						(width 0.2032)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(arc
-					(start 4.7541 -1.9108)
-					(mid 4.1148 0)
-					(end 4.7541 1.9108)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(pin unspecified line
-					(at 0 0 0)
-					(length 2.54)
-					(name ""
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin unspecified line
-					(at 7.62 0 180)
-					(length 2.54)
-					(name ""
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
-			(symbol "EEE-FPV101XAP_1_2"
-				(polyline
-					(pts
-						(xy -1.905 -3.4798) (xy 1.905 -3.4798)
-					)
-					(stroke
-						(width 0.2032)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 0 -2.54) (xy 0 -3.4798)
-					)
-					(stroke
-						(width 0.2032)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 0 -4.1148) (xy 0 -5.08)
-					)
-					(stroke
-						(width 0.2032)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(arc
-					(start -1.9108 -4.7541)
-					(mid 0 -4.1148)
-					(end 1.9108 -4.7541)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 0.635 -2.2098) (xy 1.905 -2.2098)
-					)
-					(stroke
-						(width 0.2032)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 1.27 -1.5748) (xy 1.27 -2.8448)
-					)
-					(stroke
-						(width 0.2032)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(pin unspecified line
-					(at 0 0 270)
-					(length 2.54)
-					(name ""
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin unspecified line
-					(at 0 -7.62 90)
-					(length 2.54)
-					(name ""
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
-			(embedded_fonts no)
-		)
 		(symbol "Device:C"
 			(pin_numbers
 				(hide yes)
@@ -8669,6 +8369,12 @@
 		(uuid "c7fa79bb-36f0-45e6-9a84-a1e34c37fe2a")
 	)
 	(junction
+		(at 321.31 97.79)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "c85f4319-c163-41a8-933b-9f9e287132b3")
+	)
+	(junction
 		(at 85.09 251.46)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -8715,6 +8421,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "dfd84f2a-d1de-4571-921d-80affca0acb0")
+	)
+	(junction
+		(at 336.55 97.79)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "e083aa7b-2f1c-4ce5-bc8d-08dc2752b19f")
 	)
 	(junction
 		(at 184.15 271.78)
@@ -8771,12 +8483,6 @@
 		(uuid "ecae854c-49e1-450b-a7b5-2cac278569dd")
 	)
 	(junction
-		(at 336.55 97.79)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "ed301886-5322-4c75-9c46-b5e1617e34f5")
-	)
-	(junction
 		(at 335.28 165.1)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -8799,12 +8505,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "f3eefb37-54b1-48bd-9a09-23c5c6ab8936")
-	)
-	(junction
-		(at 321.31 97.79)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "f5e61b9f-7767-4702-b450-285cc210d60f")
 	)
 	(junction
 		(at 187.96 105.41)
@@ -9788,16 +9488,6 @@
 	)
 	(wire
 		(pts
-			(xy 321.31 97.79) (xy 336.55 97.79)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "60dccc59-ef10-4e2c-a57e-479199d021a1")
-	)
-	(wire
-		(pts
 			(xy 140.97 248.92) (xy 168.91 248.92)
 		)
 		(stroke
@@ -10768,6 +10458,16 @@
 	)
 	(wire
 		(pts
+			(xy 336.55 97.79) (xy 349.25 97.79)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d26d8576-cd29-4524-adf5-54b1c4be6699")
+	)
+	(wire
+		(pts
 			(xy 140.97 226.06) (xy 144.78 226.06)
 		)
 		(stroke
@@ -10818,6 +10518,16 @@
 	)
 	(wire
 		(pts
+			(xy 321.31 97.79) (xy 336.55 97.79)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d58a340a-06db-4851-a2a6-63e0a5cecec2")
+	)
+	(wire
+		(pts
 			(xy 407.67 172.72) (xy 422.91 172.72)
 		)
 		(stroke
@@ -10825,16 +10535,6 @@
 			(type default)
 		)
 		(uuid "d921e20f-ecbf-40f5-8280-b7b4a692268a")
-	)
-	(wire
-		(pts
-			(xy 336.55 97.79) (xy 349.25 97.79)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d94c0ebc-9066-4e25-9c34-5465d6999a7e")
 	)
 	(wire
 		(pts
@@ -12506,7 +12206,7 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:C_Polarized")
+		(lib_id "Device:C")
 		(at 222.25 191.77 0)
 		(unit 1)
 		(exclude_from_sim no)
@@ -12516,7 +12216,7 @@
 		(fields_autoplaced yes)
 		(uuid "0b4d3337-13db-4771-87f7-223e5722ac99")
 		(property "Reference" "C13"
-			(at 226.06 189.6109 0)
+			(at 226.06 190.4999 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12525,7 +12225,7 @@
 			)
 		)
 		(property "Value" "1uF"
-			(at 226.06 192.1509 0)
+			(at 226.06 193.0399 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12542,7 +12242,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "TACL105K016RTA"
+		(property "Datasheet" "GRM188R61A105KA61D"
 			(at 222.25 191.77 0)
 			(effects
 				(font
@@ -12551,7 +12251,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "CAP TANT 1UF 10% 16V 0603"
+		(property "Description" "CAP CER 1UF 10V X5R 0603"
 			(at 222.25 191.77 0)
 			(effects
 				(font
@@ -12560,7 +12260,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "KYOCERA AVX"
+		(property "Manufacturer_Name" "Murata Electronics"
 			(at 222.25 191.77 0)
 			(effects
 				(font
@@ -12569,7 +12269,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "TACL105K016RTA"
+		(property "Manufacturer_Part_Number" "GRM188R61A105KA61D"
 			(at 222.25 191.77 0)
 			(effects
 				(font
@@ -12639,7 +12339,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "599-0081-007F"
+		(property "Datasheet" "LTW-C190DA5"
 			(at 349.25 101.6 0)
 			(effects
 				(font
@@ -12648,7 +12348,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Green 525nm LED Indication - Discrete 3.1V 0603"
+		(property "Description" "White LED Indication - Discrete 2.85V 0603"
 			(at 349.25 101.6 0)
 			(effects
 				(font
@@ -12666,7 +12366,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "Dialight"
+		(property "Manufacturer_Name" "Lite-On Inc."
 			(at 349.25 101.6 90)
 			(effects
 				(font
@@ -12675,7 +12375,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "5990081007F"
+		(property "Manufacturer_Part_Number" "LTW-C190DA5"
 			(at 349.25 101.6 90)
 			(effects
 				(font
@@ -12887,7 +12587,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Resistor 1/4W"
+		(property "Description" "560 Ohms ±1% 0.25W, 1/4W Chip Resistor 0603 (1608 Metric) Automotive AEC-Q200, Pulse Withstanding Thick Film"
+			(at 349.25 109.22 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "TE Connectivity Passive Product"
+			(at 349.25 109.22 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CRGP0603F560R"
+			(at 349.25 109.22 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 349.25 109.22 0)
 			(effects
 				(font
@@ -13594,9 +13321,9 @@
 		)
 	)
 	(symbol
-		(lib_id "CAP_6.3 X 7.7_PAN:EEE-FPV101XAP")
-		(at 336.55 97.79 90)
-		(mirror x)
+		(lib_id "Device:C_Polarized")
+		(at 336.55 101.6 0)
+		(mirror y)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -13604,45 +13331,43 @@
 		(dnp no)
 		(uuid "28c96ada-f931-426a-9f30-4bbef7f41873")
 		(property "Reference" "C7"
-			(at 345.948 100.076 90)
+			(at 339.344 100.584 0)
 			(effects
 				(font
 					(size 1.524 1.524)
 				)
-				(justify left)
+				(justify right)
 			)
 		)
 		(property "Value" "100uF"
-			(at 345.948 102.616 90)
+			(at 339.344 103.124 0)
 			(effects
 				(font
 					(size 1.524 1.524)
 				)
-				(justify left)
+				(justify right)
 			)
 		)
 		(property "Footprint" "Lib:CAP_6.3 X 7.7_PAN"
-			(at 336.55 97.79 0)
+			(at 335.5848 105.41 0)
 			(effects
 				(font
 					(size 1.27 1.27)
-					(italic yes)
 				)
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "EEE-FPV101XAP"
-			(at 336.55 97.79 0)
+		(property "Datasheet" "~"
+			(at 336.55 101.6 0)
 			(effects
 				(font
 					(size 1.27 1.27)
-					(italic yes)
 				)
 				(hide yes)
 			)
 		)
-		(property "Description" "Lwo ESR CAP ALUM 100UF 20% 35V SMD"
-			(at 336.55 97.79 0)
+		(property "Description" "Polarized capacitor"
+			(at 336.55 101.6 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -13651,7 +13376,7 @@
 			)
 		)
 		(property "Manufacturer_Name" "Panasonic Electronic Components"
-			(at 336.55 97.79 90)
+			(at 336.55 101.6 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -13660,7 +13385,7 @@
 			)
 		)
 		(property "Manufacturer_Part_Number" "EEE-FPV101XAP"
-			(at 336.55 97.79 90)
+			(at 336.55 101.6 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -13669,7 +13394,7 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "6.60mm x 6.60mm"
-			(at 336.55 97.79 90)
+			(at 336.55 101.6 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -14216,7 +13941,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "RK73H2ATTD1301F"
+		(property "Datasheet" "RMCF0805FT1K30"
 			(at 292.1 123.19 0)
 			(effects
 				(font
@@ -14225,7 +13950,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Resistor 1/4W 0805"
+		(property "Description" "1.3 kOhms ±1% 0.125W, 1/8W Chip Resistor 0805 Automotive AEC-Q200 Thick Film"
+			(at 292.1 123.19 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "Stackpole Electronics Inc"
+			(at 292.1 123.19 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "RMCF0805FT1K30"
+			(at 292.1 123.19 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0805"
 			(at 292.1 123.19 0)
 			(effects
 				(font
@@ -14906,7 +14658,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "ERJ-T06J103V_0805"
+		(property "Datasheet" "ERJ-T06J103V"
 			(at 60.96 78.74 0)
 			(effects
 				(font
@@ -14915,8 +14667,35 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "0805 1/4W resistor"
+		(property "Description" "10 kOhms ±5% 0.25W, 1/4W Chip Resistor 0805 (2012 Metric) Automotive AEC-Q200, Pulse Withstanding Thick Film"
 			(at 60.96 78.74 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "Panasonic Electronic Components"
+			(at 60.96 78.74 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "ERJ-T06J103V"
+			(at 60.96 78.74 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0805"
+			(at 60.96 78.74 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -14983,8 +14762,35 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "PE2512FKE7W0R01Z Current sense resistor ."
+		(property "Description" "10 mOhms ±1% 2W Chip Resistor 2512 Current Sense Metal Foil"
 			(at 81.28 34.29 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 81.28 34.29 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "PE2512FKE7W0R01Z"
+			(at 81.28 34.29 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 2512"
+			(at 81.28 34.29 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15238,7 +15044,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "https://www.st.com/resource/en/datasheet/stm32h747ag.pdf"
+		(property "Datasheet" "STM32H747BIT6"
 			(at 85.09 167.64 0)
 			(effects
 				(font
@@ -15248,7 +15054,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "ARM® Cortex®-M4/M7 STM32H7 Microcontroller IC 32-Bit Dual-Core 240MHz, 480MHz 2MB (2M x 8) FLASH 208-LQFP (28x28)"
+			(at 85.09 167.64 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "STMicroelectronics"
+			(at 85.09 167.64 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "STM32H747BIT6"
+			(at 85.09 167.64 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "208LQFP"
 			(at 85.09 167.64 0)
 			(effects
 				(font
@@ -16005,7 +15838,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Current Monitor Regulator High-Side 10mA SOT-23-8"
+			(at 193.04 39.37 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "Texas Instruments"
+			(at 193.04 39.37 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "INA219AIDCNT"
+			(at 193.04 39.37 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SOT23-8"
 			(at 193.04 39.37 0)
 			(effects
 				(font
@@ -16210,7 +16070,7 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:C_Polarized")
+		(lib_id "Device:C")
 		(at 203.2 168.91 0)
 		(unit 1)
 		(exclude_from_sim no)
@@ -16220,7 +16080,7 @@
 		(fields_autoplaced yes)
 		(uuid "4c9b184f-8c9b-42ab-8873-f58c38981f7a")
 		(property "Reference" "C11"
-			(at 207.01 166.7509 0)
+			(at 207.01 167.6399 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16229,7 +16089,7 @@
 			)
 		)
 		(property "Value" "4.7uF"
-			(at 207.01 169.2909 0)
+			(at 207.01 170.1799 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16483,7 +16343,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Linear Voltage Regulator IC Positive Fixed 1 Output 2A 6-DFN (3x3)"
 			(at 434.34 102.87 0)
 			(effects
 				(font
@@ -16672,7 +16532,7 @@
 				(hide yes)
 			)
 		)
-		(property "PACKAGE_TYPE" ""
+		(property "PACKAGE_TYPE" "6-DFN"
 			(at 434.34 102.87 0)
 			(effects
 				(font
@@ -16919,6 +16779,24 @@
 					(size 1.27 1.27)
 				)
 				(justify bottom)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "STMicroelectronics"
+			(at 434.34 102.87 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "LD39200PU33R"
+			(at 434.34 102.87 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 				(hide yes)
 			)
 		)
@@ -17698,7 +17576,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "PB6B1962V_0805"
+		(property "Datasheet" "ERA-3AEB1962V"
 			(at 266.7 109.22 0)
 			(effects
 				(font
@@ -17707,7 +17585,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "1/4W 0805"
+		(property "Description" "19.6 kOhms ±0.1% 0.1W, 1/10W Chip Resistor 0603 (1608 Metric) Automotive AEC-Q200 Thin Film"
+			(at 266.7 109.22 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "Panasonic Electronic Components"
+			(at 266.7 109.22 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "ERA-3AEB1962V"
+			(at 266.7 109.22 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 266.7 109.22 0)
 			(effects
 				(font
@@ -18587,7 +18492,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "RK73H2ATTD6R80F"
+		(property "Datasheet" "ERA-6ARB682V"
 			(at 292.1 101.6 0)
 			(effects
 				(font
@@ -18596,7 +18501,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Resistor 1/4W 0805"
+		(property "Description" "6.8 kOhms ±0.1% 0.125W, 1/8W Chip Resistor 0805 Automotive AEC-Q200 Thin Film"
+			(at 292.1 101.6 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "Panasonic Electronic Components"
+			(at 292.1 101.6 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "ERA-6ARB682V"
+			(at 292.1 101.6 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0805"
 			(at 292.1 101.6 0)
 			(effects
 				(font
@@ -18857,7 +18789,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "599-0081-007F"
+		(property "Datasheet" "LTW-C190DA5"
 			(at 482.6 99.06 0)
 			(effects
 				(font
@@ -18866,7 +18798,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Green 525nm LED Indication - Discrete 3.1V 0603"
+		(property "Description" "White LED Indication - Discrete 2.85V 0603"
 			(at 482.6 99.06 0)
 			(effects
 				(font
@@ -18884,7 +18816,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "Dialight"
+		(property "Manufacturer_Name" "Lite-On Inc."
 			(at 482.6 99.06 90)
 			(effects
 				(font
@@ -18893,7 +18825,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "5990081007F"
+		(property "Manufacturer_Part_Number" "LTW-C190DA5"
 			(at 482.6 99.06 90)
 			(effects
 				(font
@@ -19125,7 +19057,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "ERJ-T06J103V_0805"
+		(property "Datasheet" "ERJ-T06J103V"
 			(at 208.28 93.98 0)
 			(effects
 				(font
@@ -19134,7 +19066,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "0805 1/4W resistor"
+		(property "Description" "10 kOhms ±5% 0.25W, 1/4W Chip Resistor 0805 (2012 Metric) Automotive AEC-Q200, Pulse Withstanding Thick Film"
+			(at 208.28 93.98 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "Panasonic Electronic Components"
+			(at 208.28 93.98 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "ERJ-T06J103V"
+			(at 208.28 93.98 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0805"
 			(at 208.28 93.98 0)
 			(effects
 				(font
@@ -19225,9 +19184,9 @@
 		)
 	)
 	(symbol
-		(lib_id "CAP_6.3 X 7.7_PAN:EEE-FPV101XAP")
-		(at 321.31 97.79 90)
-		(mirror x)
+		(lib_id "Device:C_Polarized")
+		(at 321.31 101.6 0)
+		(mirror y)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -19235,45 +19194,43 @@
 		(dnp no)
 		(uuid "91048a39-e4db-423e-a19c-e4f304b2540c")
 		(property "Reference" "C9"
-			(at 330.708 100.076 90)
+			(at 324.612 100.33 0)
 			(effects
 				(font
 					(size 1.524 1.524)
 				)
-				(justify left)
+				(justify right)
 			)
 		)
 		(property "Value" "100uF"
-			(at 330.708 102.616 90)
+			(at 324.612 102.87 0)
 			(effects
 				(font
 					(size 1.524 1.524)
 				)
-				(justify left)
+				(justify right)
 			)
 		)
 		(property "Footprint" "Lib:CAP_6.3 X 7.7_PAN"
-			(at 321.31 97.79 0)
+			(at 320.3448 105.41 0)
 			(effects
 				(font
 					(size 1.27 1.27)
-					(italic yes)
 				)
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "EEE-FPV101XAP"
-			(at 321.31 97.79 0)
+		(property "Datasheet" "~"
+			(at 321.31 101.6 0)
 			(effects
 				(font
 					(size 1.27 1.27)
-					(italic yes)
 				)
 				(hide yes)
 			)
 		)
-		(property "Description" "Lwo ESR CAP ALUM 100UF 20% 35V SMD"
-			(at 321.31 97.79 0)
+		(property "Description" "Polarized capacitor"
+			(at 321.31 101.6 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19282,7 +19239,7 @@
 			)
 		)
 		(property "Manufacturer_Name" "Panasonic Electronic Components"
-			(at 321.31 97.79 90)
+			(at 321.31 101.6 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19291,7 +19248,7 @@
 			)
 		)
 		(property "Manufacturer_Part_Number" "EEE-FPV101XAP"
-			(at 321.31 97.79 90)
+			(at 321.31 101.6 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19300,7 +19257,7 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "6.60mm x 6.60mm"
-			(at 321.31 97.79 90)
+			(at 321.31 101.6 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19434,7 +19391,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Buck Switching Regulator IC Positive Adjustable 0.8V 1 Output 9A 28-PowerVQFN"
+			(at 125.73 85.09 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "Microchip Technology"
+			(at 125.73 85.09 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "MIC26903YJL-TR"
+			(at 125.73 85.09 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "28QFN"
 			(at 125.73 85.09 0)
 			(effects
 				(font
@@ -19781,8 +19765,8 @@
 		)
 	)
 	(symbol
-		(lib_id "CAP_6.3 X 7.7_PAN:EEE-FPV101XAP")
-		(at 35.56 86.36 270)
+		(lib_id "Device:C_Polarized")
+		(at 35.56 90.17 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -19790,7 +19774,7 @@
 		(dnp no)
 		(uuid "9bc8a963-fd75-40c6-a7b3-326530af6e36")
 		(property "Reference" "C50"
-			(at 26.162 88.646 90)
+			(at 27.178 87.884 0)
 			(effects
 				(font
 					(size 1.524 1.524)
@@ -19799,7 +19783,7 @@
 			)
 		)
 		(property "Value" "100uF"
-			(at 26.162 91.186 90)
+			(at 25.146 90.424 0)
 			(effects
 				(font
 					(size 1.524 1.524)
@@ -19808,27 +19792,25 @@
 			)
 		)
 		(property "Footprint" "Lib:CAP_6.3 X 7.7_PAN"
-			(at 35.56 86.36 0)
+			(at 36.5252 93.98 0)
 			(effects
 				(font
 					(size 1.27 1.27)
-					(italic yes)
 				)
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "EEE-FPV101XAP"
-			(at 35.56 86.36 0)
+		(property "Datasheet" "~"
+			(at 35.56 90.17 0)
 			(effects
 				(font
 					(size 1.27 1.27)
-					(italic yes)
 				)
 				(hide yes)
 			)
 		)
-		(property "Description" "Lwo ESR CAP ALUM 100UF 20% 35V SMD"
-			(at 35.56 86.36 0)
+		(property "Description" "Polarized capacitor"
+			(at 35.56 90.17 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19837,7 +19819,7 @@
 			)
 		)
 		(property "Manufacturer_Name" "Panasonic Electronic Components"
-			(at 35.56 86.36 90)
+			(at 35.56 90.17 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19846,7 +19828,7 @@
 			)
 		)
 		(property "Manufacturer_Part_Number" "EEE-FPV101XAP"
-			(at 35.56 86.36 90)
+			(at 35.56 90.17 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19855,7 +19837,7 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "6.60mm x 6.60mm"
-			(at 35.56 86.36 90)
+			(at 35.56 90.17 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -20539,7 +20521,34 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Resistor 1/4W"
+		(property "Description" "560 Ohms ±1% 0.333W, 1/3W Chip Resistor 0603 (1608 Metric) Automotive AEC-Q200, Pulse Withstanding Thick Film"
+			(at 482.6 106.68 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "Panasonic Electronic Components"
+			(at 482.6 106.68 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "ERJ-PA3F5600V"
+			(at 482.6 106.68 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 482.6 106.68 0)
 			(effects
 				(font
