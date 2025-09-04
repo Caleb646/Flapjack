@@ -4,6 +4,24 @@ CM4/Release/**
 CM7/Release/**
 *.cyclo
 
+# Kicad Ignores
+*.gbr
+*.gbrjob
+*.000
+*.bak
+*.bck
+*.kicad_pcb-bak
+*.kicad_sch-bak
+*.kicad_prl
+*.sch-bak
+_autosave-*
+*.tmp
+*.net
+*.dsn
+*.ses
+*.cmp
+**/Design/FC/Build/**
+
 # !Debug/**/
 # !Debug/Makefile
 # !Debug/makefile
