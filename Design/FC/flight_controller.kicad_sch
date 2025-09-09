@@ -15143,7 +15143,7 @@
 				(hide yes)
 			)
 		)
-		(property "PACKAGE_TYPE" "TH 2.5mm"
+		(property "PACKAGE_TYPE" "TH 2.50mm"
 			(at 171.45 184.15 90)
 			(effects
 				(font
@@ -15535,7 +15535,7 @@
 				(hide yes)
 			)
 		)
-		(property "PACKAGE_TYPE" "TH 2.5mm"
+		(property "PACKAGE_TYPE" "TH 2.50mm"
 			(at 195.58 184.15 90)
 			(effects
 				(font
@@ -15729,7 +15729,7 @@
 				(hide yes)
 			)
 		)
-		(property "PACKAGE_TYPE" "TH 2.5mm"
+		(property "PACKAGE_TYPE" "TH 2.50mm"
 			(at 259.08 184.15 90)
 			(effects
 				(font
@@ -15894,7 +15894,7 @@
 				(hide yes)
 			)
 		)
-		(property "PACKAGE_TYPE" "TH 2.5mm"
+		(property "PACKAGE_TYPE" "TH 2.50mm"
 			(at 180.34 238.76 90)
 			(effects
 				(font
@@ -16933,7 +16933,7 @@
 				(hide yes)
 			)
 		)
-		(property "PACKAGE_TYPE" "TH 2.5mm"
+		(property "PACKAGE_TYPE" "TH 2.50mm"
 			(at 195.58 212.09 90)
 			(effects
 				(font
@@ -20383,7 +20383,7 @@
 				(hide yes)
 			)
 		)
-		(property "PACKAGE_TYPE" "TH 2.5mm"
+		(property "PACKAGE_TYPE" "TH 2.50mm"
 			(at 172.72 81.28 90)
 			(effects
 				(font
@@ -21553,7 +21553,7 @@
 				(hide yes)
 			)
 		)
-		(property "PACKAGE_TYPE" "TH 2.5mm"
+		(property "PACKAGE_TYPE" "TH 2.50mm"
 			(at 234.95 184.15 90)
 			(effects
 				(font
@@ -22079,7 +22079,7 @@
 				(hide yes)
 			)
 		)
-		(property "PACKAGE_TYPE" "TH 2.5mm"
+		(property "PACKAGE_TYPE" "TH 2.50mm"
 			(at 233.68 214.63 90)
 			(effects
 				(font
@@ -22911,7 +22911,7 @@
 				(hide yes)
 			)
 		)
-		(property "PACKAGE_TYPE" "TH 2.5mm"
+		(property "PACKAGE_TYPE" "TH 2.50mm"
 			(at 257.81 214.63 90)
 			(effects
 				(font
@@ -23409,7 +23409,7 @@
 				(hide yes)
 			)
 		)
-		(property "PACKAGE_TYPE" "TH 2.5mm"
+		(property "PACKAGE_TYPE" "TH 2.50mm"
 			(at 171.45 212.09 90)
 			(effects
 				(font
@@ -23509,7 +23509,7 @@
 				(hide yes)
 			)
 		)
-		(property "PACKAGE_TYPE" "TH 2.5mm"
+		(property "PACKAGE_TYPE" "TH 2.50mm"
 			(at 241.3 238.76 90)
 			(effects
 				(font
