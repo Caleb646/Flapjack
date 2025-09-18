@@ -128,10 +128,39 @@
 #define I2C1_GPIO_Port              GPIOB
 #define I2C1_GPIO_CLK_ENABLE()      __HAL_RCC_GPIOB_CLK_ENABLE ()
 
-eSTATUS_t GPIOInitUART (USART_TypeDef* pInstance);
-eSTATUS_t GPIOInitSPI (SPI_TypeDef* pInstance);
-eSTATUS_t GPIOInitEXTI (IRQn_Type irq, uint32_t pin);
-eSTATUS_t GPIOInitTimer (TIM_TypeDef* pInstance, uint32_t channelId);
-eSTATUS_t GPIOInitI2C (I2C_TypeDef* pInstance);
+typedef struct {
+    GPIO_TypeDef* pNSSPort;
+    uint16_t nssPin;
+} GPIOSPI_t;
+
+typedef struct {
+    GPIO_TypeDef* pSCLPort;
+    GPIO_TypeDef* pSDAPort;
+    uint16_t sclPin;
+    uint16_t sdaPin;
+} GPIOI2C_t;
+
+typedef struct {
+    GPIO_TypeDef* pTXPort;
+    GPIO_TypeDef* pRXPort;
+    uint16_t txPin;
+    uint16_t rxPin;
+} GPIOUART_t;
+
+typedef struct {
+    GPIO_TypeDef* pPort;
+    uint16_t pin;
+} GPIOEXTI_t;
+
+typedef struct {
+    GPIO_TypeDef* pPort;
+    uint16_t pin;
+} GPIOTimer_t;
+
+eSTATUS_t GPIOInitUART (USART_TypeDef* pInstance, GPIOUART_t* pOutGPIO);
+eSTATUS_t GPIOInitSPI (SPI_TypeDef* pInstance, GPIOSPI_t* pOutGPIO);
+eSTATUS_t GPIOInitEXTI (IRQn_Type irq, uint32_t pin, GPIOEXTI_t* pOutGPIO);
+eSTATUS_t GPIOInitTimer (TIM_TypeDef* pInstance, uint32_t channelId, GPIOTimer_t* pOutGPIO);
+eSTATUS_t GPIOInitI2C (I2C_TypeDef* pInstance, GPIOI2C_t* pOutGPIO);
 
 #endif // PERIPHS_GPIO_H

@@ -41,6 +41,18 @@ enum {
     eSTATUS_FAILURE = -126
 };
 
+typedef uint8_t eDEVICE_ID_t;
+enum {
+    eNULL_DEVICE_ID = 0,
+    eIMU_DEVICE_ID,
+    eGPS_DEVICE_ID,
+    eBARO_DEVICE_ID,
+    eMAG_DEVICE_ID,
+    eRF_RECEIVER_DEVICE_ID,
+    eFLASH_DEVICE_ID,
+    eDEVICE_ID_MAX
+};
+
 typedef struct {
     int32_t x, y, z;
 } Vec3;

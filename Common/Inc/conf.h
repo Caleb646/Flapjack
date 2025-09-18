@@ -2,28 +2,6 @@
 #define CONF_H
 #include "hal.h"
 
-// typedef uint16_t ePeriphId_t;
-// enum {
-//     eTIM5_PERIPH_ID = 0,
-//     eTIM8_PERIPH_ID,
-//     eTIM12_PERIPH_ID,
-//     eTIM13_PERIPH_ID,
-//     eSPI1_PERIPH_ID,
-//     eSPI2_PERIPH_ID,
-//     eSPI3_PERIPH_ID,
-//     eSPI4_PERIPH_ID,
-//     eSPI5_PERIPH_ID,
-//     eUART1_PERIPH_ID,
-//     eUART2_PERIPH_ID,
-//     eUART3_PERIPH_ID,
-//     eUART4_PERIPH_ID,
-//     eUART5_PERIPH_ID,
-//     eUART6_PERIPH_ID,
-//     eI2C1_PERIPH_ID,
-//     eI2C2_PERIPH_ID,
-//     ePERIPH_ID_MAX
-// };
-
 // typedef uint16_t eTimerChannelId_t;
 // enum {
 //     eTIMER_CHANNEL_ID_1 = TIM_CHANNEL_1,
