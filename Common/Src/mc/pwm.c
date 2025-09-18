@@ -332,51 +332,15 @@ static eSTATUS_t PWMEnableTimClock (PWMHandle* pHandle) {
 //     return eSTATUS_SUCCESS;
 // }
 
-static eSTATUS_t PWMInitGPIO (PWMHandle* pHandle, uint32_t freq) {
+static eSTATUS_t PWMInitGPIO (PWMHandle* pHandle) {
+
     if (PWM_CHECK_OK (pHandle) == FALSE) {
         LOG_ERROR ("Received invalid PWM handle or timer registers pointer");
         return eSTATUS_FAILURE;
     }
-    TIM_TypeDef* pTimerRegisters     = pHandle->timer.Instance;
-    GPIO_InitTypeDef GPIO_InitStruct = { 0 };
-    if (pTimerRegisters == TIM8) {
-        /* Peripheral clock enable */
-        // __HAL_RCC_TIM8_CLK_ENABLE ();
-        TIM8_CH1_RCC_GPIO_CLK_ENABLE ();
-        TIM8_CH2N_RCC_GPIO_CLK_ENABLE ();
-        /* TIM8 GPIO Configuration
-         * PC6     ------> TIM8_CH1
-         * PJ7     ------> TIM8_CH2N
-         */
-        GPIO_InitStruct.Pin       = TIM8_CH1_GPIO_Pin;
-        GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
-        GPIO_InitStruct.Pull      = GPIO_NOPULL;
-        GPIO_InitStruct.Speed     = freq;
-        GPIO_InitStruct.Alternate = GPIO_AF3_TIM8;
-        HAL_GPIO_Init (TIM8_CH1_GPIO_Port, &GPIO_InitStruct);
 
-        GPIO_InitStruct.Pin       = TIM8_CH2N_GPIO_Pin;
-        GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
-        GPIO_InitStruct.Pull      = GPIO_NOPULL;
-        GPIO_InitStruct.Speed     = freq;
-        GPIO_InitStruct.Alternate = GPIO_AF3_TIM8;
-        HAL_GPIO_Init (TIM8_CH2N_GPIO_Port, &GPIO_InitStruct);
-
-    } else if (pTimerRegisters == TIM13) {
-        /* Peripheral clock enable */
-        // __HAL_RCC_TIM13_CLK_ENABLE ();
-        TIM13_CH1_RCC_GPIO_CLK_ENABLE ();
-        /* TIM13 GPIO Configuration
-         * PF8     ------> TIM13_CH1
-         */
-        GPIO_InitStruct.Pin       = TIM13_CH1_GPIO_Pin;
-        GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
-        GPIO_InitStruct.Pull      = GPIO_NOPULL;
-        GPIO_InitStruct.Speed     = freq;
-        GPIO_InitStruct.Alternate = GPIO_AF9_TIM13;
-        HAL_GPIO_Init (TIM13_CH1_GPIO_Port, &GPIO_InitStruct);
-    } else {
-        LOG_ERROR ("Unsupported timer for PWM initialization");
+    if (GPIOInitTimer (pHandle->timer.Instance, pHandle->channelID) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to initialize GPIO for timer");
         return eSTATUS_FAILURE;
     }
 
@@ -440,13 +404,7 @@ eSTATUS_t PWMInit (PWMConfig config, PWMHandle* pOutHandle) {
         return eSTATUS_FAILURE;
     }
 
-    /* NOTE: assume hzPeriod of 0 means GPIO frequency should be very high speed */
-    uint32_t gpioFreq = GPIO_SPEED_FREQ_MEDIUM;
-    if (config.base.hzPeriod == 0U || config.base.hzPeriod > 1000U) {
-        gpioFreq = GPIO_SPEED_FREQ_VERY_HIGH;
-    }
-    LOG_INFO ("Setting GPIO frequency to %u", (uint16_t)gpioFreq);
-    status = PWMInitGPIO (pOutHandle, gpioFreq);
+    status = PWMInitGPIO (pOutHandle);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize GPIO for timer");
         return status;
@@ -534,9 +492,12 @@ eSTATUS_t PWM_DMAInit (PWM_DMAConfig timConfig, DMAConfig dmaConfig, PWM_DMAHand
         return status;
     }
 
-    if (timConfig.dmaRegIDXCount > MAX_DMA_TIM_REGISTERS || timConfig.dmaRegIDXCount == 0) {
+    if (timConfig.dmaRegIDXCount > MAX_DMA_TIM_REGISTERS ||
+        timConfig.dmaRegIDXCount == 0) {
         LOG_ERROR (
-        "Invalid DMA register index count: %u", (uint16_t)timConfig.dmaRegIDXCount);
+        "Invalid DMA register index count: %u",
+        (uint16_t)timConfig.dmaRegIDXCount
+        );
         return eSTATUS_FAILURE;
     }
 
@@ -558,7 +519,8 @@ eSTATUS_t PWM_DMAInit (PWM_DMAConfig timConfig, DMAConfig dmaConfig, PWM_DMAHand
 
 eSTATUS_t PWM_DMAStart (PWM_DMAHandle* pHandle, uint32_t const* pData, uint16_t Length) {
 
-    if (HAL_TIM_PWM_Start_DMA (&pHandle->pwm.timer, pHandle->pwm.channelID, (uint32_t*)pData, Length) != HAL_OK) {
+    if (HAL_TIM_PWM_Start_DMA (&pHandle->pwm.timer, pHandle->pwm.channelID, (uint32_t*)pData, Length) !=
+        HAL_OK) {
         LOG_ERROR ("Failed to start PWM DMA");
         return eSTATUS_FAILURE;
     }

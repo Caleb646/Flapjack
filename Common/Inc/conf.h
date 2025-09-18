@@ -2,36 +2,36 @@
 #define CONF_H
 #include "hal.h"
 
-typedef uint16_t ePeriphId_t;
-enum {
-    eTIM5_PERIPH_ID = 0,
-    eTIM8_PERIPH_ID,
-    eTIM12_PERIPH_ID,
-    eTIM13_PERIPH_ID,
-    eSPI1_PERIPH_ID,
-    eSPI2_PERIPH_ID,
-    eSPI3_PERIPH_ID,
-    eSPI4_PERIPH_ID,
-    eSPI5_PERIPH_ID,
-    eUART1_PERIPH_ID,
-    eUART2_PERIPH_ID,
-    eUART3_PERIPH_ID,
-    eUART4_PERIPH_ID,
-    eUART5_PERIPH_ID,
-    eUART6_PERIPH_ID,
-    eI2C1_PERIPH_ID,
-    eI2C2_PERIPH_ID,
-    ePERIPH_ID_MAX
-};
+// typedef uint16_t ePeriphId_t;
+// enum {
+//     eTIM5_PERIPH_ID = 0,
+//     eTIM8_PERIPH_ID,
+//     eTIM12_PERIPH_ID,
+//     eTIM13_PERIPH_ID,
+//     eSPI1_PERIPH_ID,
+//     eSPI2_PERIPH_ID,
+//     eSPI3_PERIPH_ID,
+//     eSPI4_PERIPH_ID,
+//     eSPI5_PERIPH_ID,
+//     eUART1_PERIPH_ID,
+//     eUART2_PERIPH_ID,
+//     eUART3_PERIPH_ID,
+//     eUART4_PERIPH_ID,
+//     eUART5_PERIPH_ID,
+//     eUART6_PERIPH_ID,
+//     eI2C1_PERIPH_ID,
+//     eI2C2_PERIPH_ID,
+//     ePERIPH_ID_MAX
+// };
 
-typedef uint16_t eTimerChannelId_t;
-enum {
-    eTIMER_CHANNEL_ID_1 = TIM_CHANNEL_1,
-    eTIMER_CHANNEL_ID_2 = TIM_CHANNEL_2,
-    eTIMER_CHANNEL_ID_3 = TIM_CHANNEL_3,
-    eTIMER_CHANNEL_ID_4 = TIM_CHANNEL_4,
-    eTIMER_CHANNEL_ID_MAX
-};
+// typedef uint16_t eTimerChannelId_t;
+// enum {
+//     eTIMER_CHANNEL_ID_1 = TIM_CHANNEL_1,
+//     eTIMER_CHANNEL_ID_2 = TIM_CHANNEL_2,
+//     eTIMER_CHANNEL_ID_3 = TIM_CHANNEL_3,
+//     eTIMER_CHANNEL_ID_4 = TIM_CHANNEL_4,
+//     eTIMER_CHANNEL_ID_MAX
+// };
 
 // #define USE_SERVOS_ONLY
 
@@ -41,7 +41,7 @@ enum {
 #define SENSOR_UPDATE_MODE_IS_INTERRUPT  0U
 
 #define PRIMARY_LOGGER_ROLE              CM4_CPUID
-#define LOGGER_SHOULD_BLOCK_ON_OVERWRITE 1
+#define LOGGER_SHOULD_BLOCK_ON_OVERWRITE 1U
 
 #define PID_MIN_VALUE                    0.0F
 #define PID_MAX_VALUE                    5.0F
@@ -56,14 +56,16 @@ enum {
 #define PID_STARTING_YAW_D               0.00015F
 #define PID_STARTING_INTEGRAL_LIMIT      25.0F
 
-#define LEFT_MOTOR_PWM_TIMER             eTIM12_PERIPH_ID
-#define LEFT_MOTOR_PWM_CHANNEL           eTIMER_CHANNEL_ID_1
+
+#define LEFT_SERVO_PWM_TIMER             TIM5
+#define LEFT_SERVO_PWM_CHANNEL           TIM_CHANNEL_1
+#define LEFT_SERVO_PWM_FREQUENCY         50U // 50 Hz
+
+#define LEFT_MOTOR_PWM_TIMER             TIM12
+#define LEFT_MOTOR_PWM_CHANNEL           TIM_CHANNEL_1
 #define LEFT_MOTOR_DMA_STREAM            DMA1_Stream0
 #define LEFT_MOTOR_DMA_REQUEST           DMA_REQUEST_TIM12_CH1
 
-#define LEFT_SERVO_PWM_TIMER             eTIM5_PERIPH_ID
-#define LEFT_SERVO_PWM_CHANNEL           eTIMER_CHANNEL_ID_1
-#define LEFT_SERVO_PWM_FREQUENCY         50 // 50 Hz
 
 #define MOTOR_MAX_THROTTLE               0.40F // 40% throttle
 #define MOTOR_STARTUP_THROTTLE           0.25F // 25% throttle

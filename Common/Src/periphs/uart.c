@@ -30,21 +30,12 @@ void HAL_UART_MspInit (UART_HandleTypeDef* huart) {
         if (HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct) != HAL_OK) {
             CriticalErrorHandler ();
         }
-
         /* Peripheral clock enable */
         __HAL_RCC_USART1_CLK_ENABLE ();
 
-        __HAL_RCC_GPIOA_CLK_ENABLE ();
-        /**USART1 GPIO Configuration
-        PA10     ------> USART1_RX
-        PA9     ------> USART1_TX
-        */
-        GPIO_InitStruct.Pin   = STLINK_TX_GPIO_Pin | STLINK_RX_GPIO_Pin;
-        GPIO_InitStruct.Mode  = GPIO_MODE_AF_PP;
-        GPIO_InitStruct.Pull  = GPIO_NOPULL;
-        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-        GPIO_InitStruct.Alternate = GPIO_AF7_USART1;
-        HAL_GPIO_Init (GPIOA, &GPIO_InitStruct);
+        if (GPIOInitUart (huart->Instance) != eSTATUS_SUCCESS) {
+            CriticalErrorHandler ();
+        }
     }
 }
 
@@ -57,7 +48,7 @@ void HAL_UART_MspDeInit (UART_HandleTypeDef* huart) {
         PA10     ------> USART1_RX
         PA9     ------> USART1_TX
         */
-        HAL_GPIO_DeInit (GPIOA, STLINK_TX_GPIO_Pin | STLINK_RX_GPIO_Pin);
+        // HAL_GPIO_DeInit (GPIOA, STLINK_TX_GPIO_Pin | STLINK_RX_GPIO_Pin);
     }
 }
 
