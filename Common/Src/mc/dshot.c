@@ -145,7 +145,8 @@ static void dshot_prepare_dmabuffer (DShotHandle* pDShotHandle, uint16_t value) 
 
 static void dshot_dma_start (DShotHandle* pDShotHandle) {
 
-    if (PWM_DMAStart (&pDShotHandle->pwmdma, pDShotHandle->pMotorDmaBuffer, DSHOT_DMA_BUFFER_SIZE) != eSTATUS_SUCCESS) {
+    if (PWM_DMAStart (&pDShotHandle->pwmdma, pDShotHandle->pMotorDmaBuffer, DSHOT_DMA_BUFFER_SIZE) !=
+        eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start DShot DMA");
         return;
     }
@@ -266,7 +267,9 @@ eSTATUS_t DShotWrite (DShotHandle* pDShotHandle, uint16_t motorVal) {
     }
 
     HAL_TIM_ChannelStateTypeDef channelState = TIM_CHANNEL_STATE_GET (
-    &pDShotHandle->pwmdma.pwm.timer, pDShotHandle->pwmdma.pwm.channelID);
+    &pDShotHandle->pwmdma.pwm.timer,
+    pDShotHandle->pwmdma.pwm.channelID
+    );
     if (channelState == HAL_TIM_CHANNEL_STATE_BUSY) {
         return eSTATUS_BUSY;
     }

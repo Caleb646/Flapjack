@@ -4,7 +4,7 @@
 
 // #define USE_SERVOS_ONLY
 
-typedef uint8_t eDEVICE_ID_t;
+typedef uint16_t eDEVICE_ID_t;
 enum {
     eNULL_DEVICE_ID = 0,
     eIMU_DEVICE_ID,
@@ -13,12 +13,9 @@ enum {
     eMAG_DEVICE_ID,
     eRF_RECEIVER_DEVICE_ID,
     eFLASH_DEVICE_ID,
-    eDEVICE_ID_MAX
-};
 
-typedef uint8_t eSERVO_ID_t;
-enum {
-    eLEFT_SERVO_1_ID = 0,
+    eSERVO_ID_BEGIN__,
+    eLEFT_SERVO_1_ID = eSERVO_ID_BEGIN__,
     eLEFT_SERVO_2_ID,
     eLEFT_SERVO_3_ID,
     eLEFT_SERVO_4_ID,
@@ -26,20 +23,44 @@ enum {
     eRIGHT_SERVO_2_ID,
     eRIGHT_SERVO_3_ID,
     eRIGHT_SERVO_4_ID,
-    eSERVO_ID_MAX
+    eSERVO_ID_END__,
+
+    eMOTOR_ID_BEGIN__,
+    eLEFT_MOTOR_ID = eMOTOR_ID_BEGIN__,
+    eRIGHT_MOTOR_ID,
+    eMOTOR_ID_END__
 };
 
-typedef uint8_t eMOTOR_ID_t;
-enum { eLEFT_MOTOR_ID = 0, eRIGHT_MOTOR_ID, eMOTOR_ID_MAX };
+#define eSERVO_ID_MAX (eSERVO_ID_END__ - eSERVO_ID_BEGIN__)
+#define eMOTOR_ID_MAX (eMOTOR_ID_END__ - eMOTOR_ID_BEGIN__)
+#define DEVICE_ID_IS_SERVO(id) \
+    ((id) >= eSERVO_ID_BEGIN__ && (id) < eSERVO_ID_END__)
+#define DEVICE_ID_IS_MOTOR(id) \
+    ((id) >= eMOTOR_ID_BEGIN__ && (id) < eMOTOR_ID_END__)
 
-typedef uint8_t eTIMER_ID_t;
+typedef uint32_t eTIMER_ID_t;
 enum {
-    eTIMER_5_ID = 0,
-    eTIMER_8_ID,
-    eTIMER_12_ID,
-    eTIMER_16_ID,
-    eTIMER_ID_MAX
+    eTIMER_5_CH1_ID = 0 | 0,
+    eTIMER_5_CH2_ID = 1 | 1,
+    eTIMER_5_CH3_ID = 2 | 2,
+    eTIMER_5_CH4_ID = 3 | 3,
+
+    eTIMER_8_CH1_ID = 4 | 0,
+    eTIMER_8_CH2_ID = 5 | 1,
+    eTIMER_8_CH3_ID = 6 | 2,
+    eTIMER_8_CH4_ID = 7 | 3,
+
+    eTIMER_12_CH1_ID = 8 | 0,
+    eTIMER_12_CH2_ID = 9 | 1,
+
+    eTIMER_13_CH1_ID = 12 | 0,
+    eTIMER_13_CH2_ID = 13 | 1,
+
+    eTIMER_MAX_ID
 };
+
+#define TIMER_ID_CHANNEL_MASK 0b11U
+#define TIMER_ID2CHANNEL(id)  ((TIM_CHANNEL_1) + ((id) & 0b11U) * 4U)
 
 typedef uint8_t eUART_BUS_ID_t;
 enum {

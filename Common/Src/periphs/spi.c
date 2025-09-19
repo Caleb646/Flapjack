@@ -194,13 +194,13 @@ eSTATUS_t SPIInit (SPIInitConf_t const* pConf) {
     pBus->handle.Init.MasterKeepIOState = SPI_MASTER_KEEP_IO_STATE_DISABLE;
     pBus->handle.Init.IOSwap            = SPI_IO_SWAP_DISABLE;
 
-    if (HAL_SPI_Init (&pBus->handle) != HAL_OK) {
-        LOG_ERROR ("Failed to initialize HAL for SPI bus");
+    if (SPIClockInit (pBus->busId) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to initialize SPI clock");
         goto error;
     }
 
-    if (SPIClockInit (pBus->busId) != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to initialize SPI clock");
+    if (HAL_SPI_Init (&pBus->handle) != HAL_OK) {
+        LOG_ERROR ("Failed to initialize HAL for SPI bus");
         goto error;
     }
 

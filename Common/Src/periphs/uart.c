@@ -185,11 +185,11 @@ eSTATUS_t UARTInit (UARTInitConf_t const* pConf) {
     pBus->handle.Init.ClockPrescaler = UART_PRESCALER_DIV1;
     pBus->handle.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
 
-    if (HAL_UART_Init (&pBus->handle) != HAL_OK) {
+    if (UARTClockInit (pBus->busId) != eSTATUS_SUCCESS) {
         goto error;
     }
 
-    if (UARTClockInit (pConf->busId) != eSTATUS_SUCCESS) {
+    if (HAL_UART_Init (&pBus->handle) != HAL_OK) {
         goto error;
     }
 
