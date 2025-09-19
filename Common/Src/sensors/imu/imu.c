@@ -905,16 +905,11 @@ eSTATUS_t IMUInit (IMU* pIMU, SPI_HandleTypeDef* pSPI, IMUAxesRemapConf* pAxesRe
     /*
      * Setup GPIO for IMU data ready interrupt
      */
-    IMU_INT_RCC_GPIO_CLK_ENABLE ();
-    GPIO_InitTypeDef GPIO_InitStruct = { 0 };
-    GPIO_InitStruct.Pin              = IMU_INT_GPIO_Pin;
-    GPIO_InitStruct.Speed            = GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.Mode             = GPIO_MODE_IT_RISING;
-    GPIO_InitStruct.Pull             = GPIO_NOPULL;
-    GPIO_InitStruct.Alternate        = GPIO_AF0_MCO;
-    HAL_GPIO_Init (IMU_INT_GPIO_Port, &GPIO_InitStruct);
-
-    /* Enable EXTI interrupt [9:5] for IMU data ready interrupt */
+    if (GPIOInitEXTI (IMU_INT_EXTI_IRQn, IMU_INT_GPIO_Pin, NULL) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to initialize GPIO for IMU data ready interrupt");
+        return eSTATUS_FAILURE;
+    }
+    /* Enable EXTI interrupt for IMU data ready interrupt */
     HAL_NVIC_SetPriority (IMU_INT_EXTI_IRQn, 8, 8);
     HAL_NVIC_EnableIRQ (IMU_INT_EXTI_IRQn);
 #endif

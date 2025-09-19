@@ -4,8 +4,6 @@
 #include "common.h"
 #include "hal.h"
 
-#define IMU_INT_EXTI_IRQn           EXTI9_5_IRQn
-
 #define TIM5_CH1_GPIO_Pin           GPIO_PIN_0
 #define TIM5_CH1_GPIO_Port          GPIOA
 #define TIM5_CH2_GPIO_Pin           GPIO_PIN_1

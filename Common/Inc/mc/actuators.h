@@ -50,23 +50,8 @@ typedef struct {
     Vec3f prevIntegral;
 } PIDContext;
 
-typedef uint8_t eACTUATOR_ID_t;
-enum {
-    /* Servo IDS */
-    eACTUATOR_ID_LEFT_SERVO = 0,
-    eACTUATOR_ID_RIGHT_SERVO,
-
-    eACTUATOR_NUMBEROF_SERVOS,
-
-    /* Motor IDS */
-    eACTUATOR_ID_RIGHT_MOTOR,
-    eACTUATOR_ID_LEFT_MOTOR,
-
-    eACTUATOR_NUMBEROF_MOTORS,
-};
-
 typedef struct {
-    eACTUATOR_ID_t id;
+    eSERVO_ID_t id;
     uint32_t usLeftDutyCycle;
     uint32_t usMiddleDutyCycle;
     uint32_t usRightDutyCycle;
@@ -97,7 +82,7 @@ typedef struct {
 } MotorConfig;
 
 typedef struct {
-    eACTUATOR_ID_t id;
+    eSERVO_ID_t id;
     float pitchMix;
     float yawMix;
     float rollMix;

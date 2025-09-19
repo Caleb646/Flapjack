@@ -6,6 +6,21 @@
 
 
 #define IS_BUS_VALID(pBus) (pBus != NULL && pBus->isInitialized == TRUE)
+#define SPI_BEGIN(busId)                                      \
+    SPIBus_t* pBus = SPIGetBusById (busId);                   \
+    if (IS_BUS_VALID (pBus) == FALSE) {                       \
+        LOG_ERROR ("Failed to get SPI bus by ID");            \
+        return eSTATUS_FAILURE;                               \
+    }                                                         \
+    GPIOSPI_t* pGPIO = SPIGetGPIOByDeviceId (pBus, deviceId); \
+    if (pGPIO == NULL) {                                      \
+        LOG_ERROR ("Failed to get GPIO for SPI device ID");   \
+        return eSTATUS_FAILURE;                               \
+    }                                                         \
+    HAL_GPIO_WritePin (pGPIO->pNSSPort, pGPIO->nssPin, GPIO_PIN_RESET);
+
+#define SPI_END() \
+    HAL_GPIO_WritePin (pGPIO->pNSSPort, pGPIO->nssPin, GPIO_PIN_SET);
 
 static SPIBus_t gSPIBusses[eSPI_BUS_ID_MAX] = { 0 };
 
@@ -208,49 +223,31 @@ error:
 eSTATUS_t
 SPIRead_Blocking (eSPI_BUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t* pData, uint16_t size) {
 
-    SPIBus_t* pBus = SPIGetBusById (busId);
-    if (IS_BUS_VALID (pBus) == FALSE) {
-        LOG_ERROR ("Failed to get SPI bus by ID");
-        return eSTATUS_FAILURE;
-    }
+    eSTATUS_t status = eSTATUS_SUCCESS;
+    SPI_BEGIN (busId);
 
-    GPIOSPI_t* pGPIO = SPIGetGPIOByDeviceId (pBus, deviceId);
-    if (pGPIO == NULL) {
-        LOG_ERROR ("Failed to get GPIO for SPI device ID");
-        return eSTATUS_FAILURE;
-    }
-
-    HAL_GPIO_WritePin (pGPIO->pNSSPort, pGPIO->nssPin, GPIO_PIN_RESET);
     if (HAL_SPI_Receive (&pBus->handle, pData, size, HAL_MAX_DELAY) != HAL_OK) {
         LOG_ERROR ("Failed to read data from SPI bus");
-        return eSTATUS_FAILURE;
+        status = eSTATUS_FAILURE;
     }
-    HAL_GPIO_WritePin (pGPIO->pNSSPort, pGPIO->nssPin, GPIO_PIN_SET);
-    return eSTATUS_SUCCESS;
+
+    SPI_END ();
+    return status;
 }
 
 eSTATUS_t
 SPIWrite_Blocking (eSPI_BUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pData, uint16_t size) {
 
-    SPIBus_t* pBus = SPIGetBusById (busId);
-    if (IS_BUS_VALID (pBus) == FALSE) {
-        LOG_ERROR ("Failed to get SPI bus by ID");
-        return eSTATUS_FAILURE;
-    }
+    eSTATUS_t status = eSTATUS_SUCCESS;
+    SPI_BEGIN (busId);
 
-    GPIOSPI_t* pGPIO = SPIGetGPIOByDeviceId (pBus, deviceId);
-    if (pGPIO == NULL) {
-        LOG_ERROR ("Failed to get GPIO for SPI device ID");
-        return eSTATUS_FAILURE;
-    }
-
-    HAL_GPIO_WritePin (pGPIO->pNSSPort, pGPIO->nssPin, GPIO_PIN_RESET);
     if (HAL_SPI_Transmit (&pBus->handle, (uint8_t*)pData, size, HAL_MAX_DELAY) != HAL_OK) {
         LOG_ERROR ("Failed to write data to SPI bus");
-        return eSTATUS_FAILURE;
+        status = eSTATUS_FAILURE;
     }
-    HAL_GPIO_WritePin (pGPIO->pNSSPort, pGPIO->nssPin, GPIO_PIN_SET);
-    return eSTATUS_SUCCESS;
+
+    SPI_END ();
+    return status;
 }
 
 eSTATUS_t SPIWriteRead_Blocking (
@@ -261,24 +258,15 @@ uint8_t* pRxData,
 uint16_t size
 ) {
 
-    SPIBus_t* pBus = SPIGetBusById (busId);
-    if (IS_BUS_VALID (pBus) == FALSE) {
-        LOG_ERROR ("Failed to get SPI bus by ID");
-        return eSTATUS_FAILURE;
-    }
+    eSTATUS_t status = eSTATUS_SUCCESS;
+    SPI_BEGIN (busId);
 
-    GPIOSPI_t* pGPIO = SPIGetGPIOByDeviceId (pBus, deviceId);
-    if (pGPIO == NULL) {
-        LOG_ERROR ("Failed to get GPIO for SPI device ID");
-        return eSTATUS_FAILURE;
-    }
-
-    HAL_GPIO_WritePin (pGPIO->pNSSPort, pGPIO->nssPin, GPIO_PIN_RESET);
     if (HAL_SPI_TransmitReceive (&pBus->handle, (uint8_t*)pTxData, pRxData, size, HAL_MAX_DELAY) !=
         HAL_OK) {
         LOG_ERROR ("Failed to write/read data to/from SPI bus");
-        return eSTATUS_FAILURE;
+        status = eSTATUS_FAILURE;
     }
-    HAL_GPIO_WritePin (pGPIO->pNSSPort, pGPIO->nssPin, GPIO_PIN_SET);
-    return eSTATUS_SUCCESS;
+
+    SPI_END ();
+    return status;
 }

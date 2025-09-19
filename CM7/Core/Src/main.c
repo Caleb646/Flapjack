@@ -67,19 +67,19 @@ float gTargetThrottle = MOTOR_STARTUP_THROTTLE;
  * @brief This function handles EXTI line[9:5] interrupts. Call chain is:
  * EXTI9_5_IRQHandler -> HAL_GPIO_EXTI_IRQHandler -> HAL_GPIO_EXTI_Callback
  */
-void EXTI9_5_IRQHandler (void) {
-    HAL_GPIO_EXTI_IRQHandler (IMU_INT_GPIO_Pin);
-}
+// void EXTI9_5_IRQHandler (void) {
+//     HAL_GPIO_EXTI_IRQHandler (IMU_INT_GPIO_Pin);
+// }
 
-void HAL_GPIO_EXTI_Callback (uint16_t gpioPin) {
+// void HAL_GPIO_EXTI_Callback (uint16_t gpioPin) {
 
-    if (gpioPin == IMU_INT_GPIO_Pin) {
-        IMU2CPUInterruptHandler (&gIMU);
-        if (gpTaskMotionControlUpdate != NULL) {
-            xTaskNotifyFromISR (gpTaskMotionControlUpdate, 0, eSetBits, NULL);
-        }
-    }
-}
+//     if (gpioPin == IMU_INT_GPIO_Pin) {
+//         IMU2CPUInterruptHandler (&gIMU);
+//         if (gpTaskMotionControlUpdate != NULL) {
+//             xTaskNotifyFromISR (gpTaskMotionControlUpdate, 0, eSetBits, NULL);
+//         }
+//     }
+// }
 
 eSTATUS_t ProcessPIDChange (DefaultCommand cmd) {
 

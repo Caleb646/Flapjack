@@ -1,9 +1,12 @@
 #include "control.h"
 #include "common.h"
+#include "conf.h"
 #include "hal.h"
 #include "log/logger.h"
 #include "mem/mem.h"
 #include "mem/queue.h"
+#include "periphs/uart.h"
+
 
 #define PRODUCER_ID            CM4_CPUID
 #define CONSUMER_ID            CM7_CPUID
@@ -52,15 +55,13 @@ static BOOL_t IsCmdTypeValid (eCMD_t cmdType);
  * Global UART recv complete callback. The reason this can work is because
  * their is only 1 uart that is set to recv. If there are multiple receiving uarts, this will not work.
  */
-void HAL_UART_RxCpltCallback (UART_HandleTypeDef* huart) {
-    // LOG_INFO ("II");
+void ControlRecvCallBack (eUART_BUS_ID_t busId) {
     if (RawCommandQueue_IsFull () == TRUE) {
-        // LOG_ERROR ("Full");
         return;
     }
     // LOG_INFO ("%u", ga_UartInterruptBuffer[0]);
     RawCommandQueue_Push ((DefaultCommand*)ga_UartInterruptBuffer);
-    HAL_UART_Receive_IT (huart, ga_UartInterruptBuffer, sizeof (DefaultCommand));
+    UARTRead_IT (busId, ga_UartInterruptBuffer, sizeof (DefaultCommand));
 }
 
 STATIC_TESTABLE_DECL eSTATUS_t ControlInit_Producer (void) {
@@ -252,15 +253,20 @@ eSTATUS_t ControlInit (void) {
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t ControlStart (UART_HandleTypeDef* huart) {
+eSTATUS_t ControlStart (eUART_BUS_ID_t busId) {
 
     if (IS_PRODUCER_ME () == TRUE) {
-        if (huart == NULL) {
-            LOG_ERROR ("UART handle is NULL");
+        if (UARTRegisterCallback (busId, eUART_CALLBACK_ID_RX, ControlRecvCallBack) !=
+            eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to register UART receive callback");
             return eSTATUS_FAILURE;
         }
-        if (HAL_UART_Receive_IT (huart, ga_UartInterruptBuffer, sizeof (DefaultCommand)) !=
-            HAL_OK) {
+        if (UARTEnableInterrupt (busId, 8) != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to enable UART interrupts");
+            return eSTATUS_FAILURE;
+        }
+        if (UARTRead_IT (busId, ga_UartInterruptBuffer, sizeof (DefaultCommand)) !=
+            eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to start UART reception");
             return eSTATUS_FAILURE;
         }

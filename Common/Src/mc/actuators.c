@@ -7,32 +7,14 @@
 #include <string.h>
 
 
-#define CHECK_SERVO_DESCRIPTOR_OK(pServoDesc)                      \
-    (                                                              \
-    (pServoDesc) != NULL && (pServoDesc)->usLeftDutyCycle != 0U && \
-    (pServoDesc)->usMiddleDutyCycle != 0U && (pServoDesc)->usRightDutyCycle != 0U)
+#define CHECK_SERVO_DESCRIPTOR_OK(pServoDesc)                                     \
+    (                                                                             \
+    (pServoDesc) != NULL && (pServoDesc)->usLeftDutyCycle != 0U &&                \
+    (pServoDesc)->usMiddleDutyCycle != 0U && (pServoDesc)->usRightDutyCycle != 0U \
+    )
 
 #define CHECK_SERVO_OK(pServo) \
     ((pServo) != NULL && PWM_CHECK_OK (&((pServo)->pwm)))
-
-// eSTATUS_t RadioUpdateTargetAttitudeThrottle (
-// Vec3f maxAttitude,
-// RadioPWMChannels radio,
-// Vec3f* pOutputTargetAttitude,
-// float* pOutputThrottle) {
-
-//     *pOutputThrottle = clipf32 ((float)radio.channel1, 0.0F, 1.0F);
-//     pOutputTargetAttitude->roll =
-//     clipf32 ((float)radio.channel2, -1.0F, 1.0F) * maxAttitude.roll;
-
-//     pOutputTargetAttitude->pitch =
-//     clipf32 ((float)radio.channel3, -1.0F, 1.0F) * maxAttitude.pitch;
-
-//     pOutputTargetAttitude->yaw =
-//     clipf32 ((float)radio.channel4, -1.0F, 1.0F) * maxAttitude.yaw;
-
-//     return eSTATUS_SUCCESS;
-// }
 
 eSTATUS_t PIDUpdateAttitude (
 PIDContext* pidContext,
@@ -59,14 +41,18 @@ Vec3f* pOutputPIDAttitude // degrees
     float rollError    = targetAttitude.roll - currentAttitude.roll;
     float rollIntegral = clipf32 (
     pidContext->prevIntegral.roll + rollError * dt,
-    -pidContext->integralLimit, pidContext->integralLimit);
+    -pidContext->integralLimit,
+    pidContext->integralLimit
+    );
     float rollDerivative = (rollError - pidContext->prevError.roll) / dt;
     // pOutputPIDAttitude->roll = 0.01f * (P * rollError + I * rollIntegral - D * rollDerivative);
 
     // Scale PID output between -1 and 1
     pOutputPIDAttitude->roll = clipf32 (
                                (P * rollError + I * rollIntegral - D * rollDerivative),
-                               -maxAttitude.roll, maxAttitude.roll) /
+                               -maxAttitude.roll,
+                               maxAttitude.roll
+                               ) /
                                maxAttitude.roll;
 
     P                   = pidContext->pitchP;
@@ -75,7 +61,9 @@ Vec3f* pOutputPIDAttitude // degrees
     float pitchError    = targetAttitude.pitch - currentAttitude.pitch;
     float pitchIntegral = clipf32 (
     pidContext->prevIntegral.pitch + pitchError * dt,
-    -pidContext->integralLimit, pidContext->integralLimit);
+    -pidContext->integralLimit,
+    pidContext->integralLimit
+    );
     float pitchDerivative = (pitchError - pidContext->prevError.pitch) / dt;
     // pOutputPIDAttitude->pitch = 0.01f * (P * pitchError + I * pitchIntegral - D * pitchDerivative);
 
@@ -83,7 +71,9 @@ Vec3f* pOutputPIDAttitude // degrees
     pOutputPIDAttitude->pitch =
     clipf32 (
     (P * pitchError + I * pitchIntegral - D * pitchDerivative),
-    -maxAttitude.pitch, maxAttitude.pitch) /
+    -maxAttitude.pitch,
+    maxAttitude.pitch
+    ) /
     maxAttitude.pitch;
 
     P                 = pidContext->yawP;
@@ -92,14 +82,18 @@ Vec3f* pOutputPIDAttitude // degrees
     float yawError    = targetAttitude.yaw - currentAttitude.yaw;
     float yawIntegral = clipf32 (
     pidContext->prevIntegral.yaw + yawError * dt,
-    -pidContext->integralLimit, pidContext->integralLimit);
+    -pidContext->integralLimit,
+    pidContext->integralLimit
+    );
     float yawDerivative = (yawError - pidContext->prevError.yaw) / dt;
     // pOutputPIDAttitude->yaw = 0.01f * (P * yawError + I * yawIntegral - D * yawDerivative);
 
     // Scale PID output between -1 and 1
     pOutputPIDAttitude->yaw = clipf32 (
                               (P * yawError + I * yawIntegral - D * yawDerivative),
-                              -maxAttitude.yaw, maxAttitude.yaw) /
+                              -maxAttitude.yaw,
+                              maxAttitude.yaw
+                              ) /
                               maxAttitude.yaw;
 
     pidContext->prevIntegral.roll  = rollIntegral;
@@ -119,6 +113,9 @@ static float ServoAngle2PWM (Servo* pServo, float targetAngle);
 
 #endif // UNIT_TEST
 
+static Servo gServos[eSERVO_ID_MAX] = { 0 };
+static Motor gMotors[eMOTOR_ID_MAX] = { 0 };
+
 STATIC_TESTABLE_DECL float ServoAngle2PWM (Servo* pServo, float targetAngle) {
     if (CHECK_SERVO_OK (pServo) != TRUE) {
         LOG_ERROR ("ServoDescriptor is not valid");
@@ -135,20 +132,28 @@ STATIC_TESTABLE_DECL float ServoAngle2PWM (Servo* pServo, float targetAngle) {
     // [usLeftDutyCycle, usMiddleDutyCycle], positive to [usMiddleDutyCycle, usRightDutyCycle]
     if (targetAngle < 0) {
         return mapf32 (
-        targetAngle, -pDesc->maxAngle, 0.0F, (float)pDesc->usLeftDutyCycle,
-        (float)pDesc->usMiddleDutyCycle);
+        targetAngle,
+        -pDesc->maxAngle,
+        0.0F,
+        (float)pDesc->usLeftDutyCycle,
+        (float)pDesc->usMiddleDutyCycle
+        );
     }
 
     if (targetAngle > 0) {
         return mapf32 (
-        targetAngle, 0.0F, pDesc->maxAngle,
-        (float)pDesc->usMiddleDutyCycle, (float)pDesc->usRightDutyCycle);
+        targetAngle,
+        0.0F,
+        pDesc->maxAngle,
+        (float)pDesc->usMiddleDutyCycle,
+        (float)pDesc->usRightDutyCycle
+        );
     }
 
     return (float)pDesc->usMiddleDutyCycle;
 }
 
-eSTATUS_t ServoInit (eACTUATOR_ID_t id, PWMConfig config, Servo* pOutServo) {
+eSTATUS_t ServoInit (eSERVO_ID_t id, PWMConfig config, Servo* pOutServo) {
     if (pOutServo == NULL) {
         LOG_ERROR ("Received NULL pointer for Servo");
         return eSTATUS_FAILURE;
@@ -176,11 +181,12 @@ eSTATUS_t ServoInit (eACTUATOR_ID_t id, PWMConfig config, Servo* pOutServo) {
      * flips the sign of the pid pitch from negative to positive so the
      * left servo spins CW.
      */
-    if (id == eACTUATOR_ID_LEFT_SERVO) {
+    if (id == eLEFT_SERVO_1_ID) {
+        // TODO: add the rest of the servo
         pOutServo->desc.rollMix = LEFT_SERVO_PID_ROLL_MIX_DIR * SERVO_PID_ROLL_MIX;
         pOutServo->desc.yawMix = LEFT_SERVO_PID_YAW_MIX_DIR * SERVO_PID_YAW_MIX;
         pOutServo->desc.pitchMix = LEFT_SERVO_PID_PITCH_MIX_DIR * SERVO_PID_PITCH_MIX;
-    } else if (id == eACTUATOR_ID_RIGHT_SERVO) {
+    } else if (id == eRIGHT_SERVO_1_ID) {
         pOutServo->desc.rollMix = RIGHT_SERVO_PID_ROLL_MIX_DIR * SERVO_PID_ROLL_MIX;
         pOutServo->desc.yawMix = RIGHT_SERVO_PID_YAW_MIX_DIR * SERVO_PID_YAW_MIX;
         pOutServo->desc.pitchMix = RIGHT_SERVO_PID_PITCH_MIX_DIR * SERVO_PID_PITCH_MIX;
@@ -240,7 +246,7 @@ eSTATUS_t ServoWrite (Servo* pServo, float targetAngle) {
 
 #endif // UNIT_TEST
 
-eSTATUS_t MotorInit (eACTUATOR_ID_t id, MotorConfig config, Motor* pOutMotor) {
+eSTATUS_t MotorInit (eMOTOR_ID_t id, MotorConfig config, Motor* pOutMotor) {
 
 #ifndef USE_SERVOS_ONLY
 
@@ -259,12 +265,12 @@ eSTATUS_t MotorInit (eACTUATOR_ID_t id, MotorConfig config, Motor* pOutMotor) {
     }
 
     pOutMotor->desc.id = id;
-    if (id == eACTUATOR_ID_LEFT_MOTOR) {
+    if (id == eLEFT_MOTOR_ID) {
         pOutMotor->desc.pitchMix = MOTOR_PID_PITCH_MIX * LEFT_MOTOR_PID_PITCH_MIX_DIR;
         pOutMotor->desc.yawMix = MOTOR_PID_YAW_MIX * LEFT_MOTOR_PID_YAW_MIX_DIR;
         pOutMotor->desc.rollMix = MOTOR_PID_ROLL_MIX * LEFT_MOTOR_PID_ROLL_MIX_DIR;
 
-    } else if (id == eACTUATOR_ID_RIGHT_MOTOR) {
+    } else if (id == eRIGHT_MOTOR_ID) {
         pOutMotor->desc.pitchMix = MOTOR_PID_PITCH_MIX * RIGHT_MOTOR_PID_PITCH_MIX_DIR;
         pOutMotor->desc.yawMix = MOTOR_PID_YAW_MIX * RIGHT_MOTOR_PID_YAW_MIX_DIR;
         pOutMotor->desc.rollMix = MOTOR_PID_ROLL_MIX * RIGHT_MOTOR_PID_ROLL_MIX_DIR;
@@ -484,13 +490,13 @@ STATIC_TESTABLE_DECL eSTATUS_t ActuatorsArm (void) {
 
 eSTATUS_t ActuatorsInit (PWMConfig left_ServoPWM, MotorConfig left_Motor) {
 
-    eSTATUS_t status = ServoInit (eACTUATOR_ID_LEFT_SERVO, left_ServoPWM, &gLeftServo);
+    eSTATUS_t status = ServoInit (eLEFT_SERVO_1_ID, left_ServoPWM, &gLeftServo);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize left servo");
         return status;
     }
 
-    status = MotorInit (eACTUATOR_ID_LEFT_MOTOR, left_Motor, &gLeftMotor);
+    status = MotorInit (eLEFT_MOTOR_ID, left_Motor, &gLeftMotor);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize left motor");
         return status;

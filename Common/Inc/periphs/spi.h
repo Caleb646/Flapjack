@@ -2,21 +2,12 @@
 #define PERIPHS_SPI_H
 
 #include "common.h"
+#include "conf.h"
 #include "hal.h"
 #include "periphs/gpio.h"
 #include <stdint.h>
 
 #define SPI_MAX_DEVICES_PER_BUS 3U
-
-typedef uint8_t eSPI_BUS_ID_t;
-enum {
-    eSPI_1_BUS_ID = 0,
-    eSPI_2_BUS_ID,
-    eSPI_3_BUS_ID,
-    eSPI_4_BUS_ID,
-    eSPI_5_BUS_ID,
-    eSPI_BUS_ID_MAX
-};
 
 typedef uint32_t eSPI_SPEED_t;
 enum {
@@ -43,10 +34,17 @@ typedef struct {
 } SPIBus_t;
 
 eSTATUS_t SPIInit (SPIInitConf_t const* pConf);
-eSTATUS_t SPIRead_Blocking (eSPI_BUS_ID_t busId, uint8_t* pData, uint16_t size);
-eSTATUS_t SPIWrite_Blocking (eSPI_BUS_ID_t busId, uint8_t const* pData, uint16_t size);
 eSTATUS_t
-SPIWriteRead_Blocking (eSPI_BUS_ID_t busId, uint8_t const* pTxData, uint8_t* pRxData, uint16_t size);
+SPIRead_Blocking (eSPI_BUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t* pData, uint16_t size);
+eSTATUS_t
+SPIWrite_Blocking (eSPI_BUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pData, uint16_t size);
+eSTATUS_t SPIWriteRead_Blocking (
+eSPI_BUS_ID_t busId,
+eDEVICE_ID_t deviceId,
+uint8_t const* pTxData,
+uint8_t* pRxData,
+uint16_t size
+);
 
 
 #endif /* PERIPHS_SPI_H */

@@ -26,9 +26,7 @@
 
 #define PRIMARY_LOGGER_IS_ME() \
     (HAL_GetCurrentCPUID () == PRIMARY_LOGGER_ROLE)
-#define TEMP_BUFFER_SIZE     512U
-#define UART_LOGGER_HANDLE   egHandleUSART_1
-#define UART_LOGGER_INSTANCE USART1
+#define TEMP_BUFFER_SIZE 512U
 
 // NOLINTBEGIN
 static uint8_t ga_TempReadBuffer[TEMP_BUFFER_SIZE] = { 0 };
@@ -50,14 +48,16 @@ static eSTATUS_t LoggerSyncUARTTaskHandler (DefaultTask const* pTask) {
     if (PRIMARY_LOGGER_IS_ME () == TRUE) {
         SyncTaskUartOut const* pSyncTaskUartOut = (SyncTaskUartOut const*)pTask;
         return LoggerWriteToUART (
-        LoggerGetOtherRingBuf (), pSyncTaskUartOut->len);
+        LoggerGetOtherRingBuf (),
+        pSyncTaskUartOut->len
+        );
     }
     return eSTATUS_SUCCESS;
 }
 
 static eSTATUS_t LoggerWriteToUART (RingBuff volatile* pRingBuf, uint32_t totalLen) {
 
-    if (RingBuffIsValid (pRingBuf) != TRUE || UART_LOGGER_HANDLE.Instance == NULL) {
+    if (RingBuffIsValid (pRingBuf) != TRUE || UARTIsValid (DEBUG_UART_BUS_ID) != TRUE) {
         return eSTATUS_FAILURE;
     }
 
@@ -71,7 +71,8 @@ static eSTATUS_t LoggerWriteToUART (RingBuff volatile* pRingBuf, uint32_t totalL
         uint32_t toWrite = MIN_U32 (nTotalBytes, TEMP_BUFFER_SIZE);
         uint32_t bytesRead =
         RingBuffRead (pRingBuf, (void*)ga_TempReadBuffer, toWrite);
-        if (HAL_UART_Transmit (&UART_LOGGER_HANDLE, ga_TempReadBuffer, bytesRead, 1000) != HAL_OK) {
+        if (UARTWrite_Blocking (DEBUG_UART_BUS_ID, ga_TempReadBuffer, bytesRead) !=
+            eSTATUS_SUCCESS) {
             return eSTATUS_FAILURE;
         }
         nTotalBytes -= bytesRead;
@@ -132,47 +133,6 @@ static void LoggerWriteChar_NonBlocking (char ch) {
 }
 
 /*
- * The GPIO setup happens in uart.c
- */
-static eSTATUS_t LoggerUARTInit (void) {
-
-#ifndef UNIT_TEST
-    // puart->Init.BaudRate = 115200;
-    UART_LOGGER_HANDLE.Instance            = UART_LOGGER_INSTANCE;
-    UART_LOGGER_HANDLE.Init.BaudRate       = 230400; // 115200; //
-    UART_LOGGER_HANDLE.Init.WordLength     = UART_WORDLENGTH_8B;
-    UART_LOGGER_HANDLE.Init.StopBits       = UART_STOPBITS_1;
-    UART_LOGGER_HANDLE.Init.Parity         = UART_PARITY_NONE;
-    UART_LOGGER_HANDLE.Init.Mode           = UART_MODE_TX_RX;
-    UART_LOGGER_HANDLE.Init.HwFlowCtl      = UART_HWCONTROL_NONE;
-    UART_LOGGER_HANDLE.Init.OverSampling   = UART_OVERSAMPLING_16;
-    UART_LOGGER_HANDLE.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-    UART_LOGGER_HANDLE.Init.ClockPrescaler = UART_PRESCALER_DIV1;
-    UART_LOGGER_HANDLE.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-
-    /*
-     * HAL_UART_Init calls HAL_UART_MspInit in uart.c
-     */
-    if (HAL_UART_Init (&UART_LOGGER_HANDLE) != HAL_OK) {
-        return eSTATUS_FAILURE;
-    }
-
-    if (HAL_UARTEx_SetTxFifoThreshold (&UART_LOGGER_HANDLE, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK) {
-        return eSTATUS_FAILURE;
-    }
-
-    if (HAL_UARTEx_SetRxFifoThreshold (&UART_LOGGER_HANDLE, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK) {
-        return eSTATUS_FAILURE;
-    }
-
-    if (HAL_UARTEx_DisableFifoMode (&UART_LOGGER_HANDLE) != HAL_OK) {
-        return eSTATUS_FAILURE;
-    }
-#endif // UNIT_TEST
-    return eSTATUS_SUCCESS;
-}
-
-/*
  * Used by printf impl in format.c
  */
 static void LoggerPutChar (void* p, char ch) {
@@ -196,7 +156,8 @@ eSTATUS_t LoggerInit (void) {
 
     // Let both cores register this task handler only the primary logger
     // core will actually write to the UART
-    if (SyncRegisterHandler (eSYNC_TASKID_UART_OUT, LoggerSyncUARTTaskHandler) != eSTATUS_SUCCESS) {
+    if (SyncRegisterHandler (eSYNC_TASKID_UART_OUT, LoggerSyncUARTTaskHandler) !=
+        eSTATUS_SUCCESS) {
         return eSTATUS_FAILURE;
     }
 
@@ -212,11 +173,4 @@ eSTATUS_t LoggerInit (void) {
         return eSTATUS_FAILURE;
     }
     return eSTATUS_SUCCESS;
-}
-
-UART_HandleTypeDef* LoggerGetUARTHandle (void) {
-    if (PRIMARY_LOGGER_IS_ME () == TRUE) {
-        return &UART_LOGGER_HANDLE;
-    }
-    return NULL;
 }
