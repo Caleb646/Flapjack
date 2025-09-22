@@ -31,6 +31,7 @@
 
 #include "mc/dshot.h"
 #include "common.h"
+#include "conf.h"
 #include "dma.h"
 #include "hal.h"
 #include "log/logger.h"
@@ -78,15 +79,15 @@ static uint16_t DShotPreparePacket (uint16_t value) {
 }
 
 // Convert 16 bits packet to 16 pwm signal
-static void DShotPrepareDMABuffer (DShot_t* pDShotHandle, uint16_t value) {
+static void DShotPrepareDMABuffer (DShot_t* pDShot, uint16_t value) {
 
-    uint32_t* motor_dmabuffer = pDShotHandle->pMotorDmaBuffer;
-    uint16_t packet           = DShotPreparePacket (value);
-    uint16_t usValforBit_1    = pDShotHandle->usValforBit_1;
-    uint16_t usValforBit_0    = pDShotHandle->usValforBit_0;
+    uint32_t* motor_dmabuffer   = pDShot->pMotorDmaBuffer;
+    uint16_t packet             = DShotPreparePacket (value);
+    uint16_t timerTicksforBit_1 = pDShot->timerTicksforBit_1;
+    uint16_t timerTicksforBit_0 = pDShot->timerTicksforBit_0;
 
     for (uint16_t i = 0; i < 16U; ++i) {
-        motor_dmabuffer[i] = (packet & 0x8000U) ? usValforBit_1 : usValforBit_0;
+        motor_dmabuffer[i] = (packet & 0x8000U) ? timerTicksforBit_1 : timerTicksforBit_0;
         packet <<= 1U;
     }
 
@@ -157,9 +158,13 @@ static eSTATUS_t DShotInitBitbang (DShot_t* pDShot) {
      */
     switch (DSHOT_TYPE_CLEAR_TYPE (pConf->dshotType)) {
     case eDSHOT_TYPE_DMA_150:
-        pDShot->usPeriod      = 427 - 1;
-        pDShot->usValforBit_1 = 320; // 75% of 6.67 us / 427 ticks
-        pDShot->usValforBit_0 = 160; // 37.5% of 6.67 us / 427 ticks
+        pDShot->timerTicksPeriod   = 427 - 1;
+        pDShot->timerTicksforBit_1 = 320; // 75% of 6.67 us / 427 ticks
+        pDShot->timerTicksforBit_0 = 160; // 37.5% of 6.67 us / 427 ticks
+
+        pDShot->usPeriod      = 6.67F; // 6.67 us
+        pDShot->usValforBit_1 = 5.0F;  // 5 us
+        pDShot->usValforBit_0 = 2.5F;  // 2.5 us
         break;
     case eDSHOT_TYPE_DMA_300:
         // // Closet us value to 3.33 us is 3 us
@@ -229,9 +234,13 @@ static eSTATUS_t DShotInitDMA (DShot_t* pDShot) {
     switch (DSHOT_TYPE_CLEAR_TYPE (pConf->dshotType)) {
     case eDSHOT_TYPE_DMA_150:
         TIMER_SET_PERIOD (pConf->timerId, 427 - 1);
-        pDShot->usPeriod      = 427 - 1;
-        pDShot->usValforBit_1 = 320; // 75% of 6.67 us / 427 ticks
-        pDShot->usValforBit_0 = 160; // 37.5% of 6.67 us / 427 ticks
+        pDShot->timerTicksPeriod   = 427 - 1;
+        pDShot->timerTicksforBit_1 = 320; // 75% of 6.67 us / 427 ticks
+        pDShot->timerTicksforBit_0 = 160; // 37.5% of 6.67 us / 427 ticks
+
+        pDShot->usPeriod      = 6.67F; // 6.67 us
+        pDShot->usValforBit_1 = 5.0F;  // 5 us
+        pDShot->usValforBit_0 = 2.5F;  // 2.5 us
         break;
     case eDSHOT_TYPE_DMA_300:
         // // Closet us value to 3.33 us is 3 us
@@ -283,24 +292,44 @@ static eSTATUS_t DShotWriteBitbang (DShot_t* pDShot, uint16_t motorVal) {
         return eSTATUS_FAILURE;
     }
 
-    // TODO: add critical section
-    for (uint32_t i = 0; i < 16U; ++i) {
-        if (motorVal & 0x8000U) {
-            // bit is 1
-            HAL_GPIO_WritePin (pDShot->conf.gpio.pPort, pDShot->conf.gpio.pin, GPIO_PIN_SET);
-            DelayMicroseconds (pDShot->usValforBit_1);
-            HAL_GPIO_WritePin (pDShot->conf.gpio.pPort, pDShot->conf.gpio.pin, GPIO_PIN_RESET);
-            DelayMicroseconds (pDShot->usPeriod - pDShot->usValforBit_1);
-        } else {
-            // bit is 0
-            HAL_GPIO_WritePin (pDShot->conf.gpio.pPort, pDShot->conf.gpio.pin, GPIO_PIN_SET);
-            DelayMicroseconds (pDShot->usValforBit_0);
-            HAL_GPIO_WritePin (pDShot->conf.gpio.pPort, pDShot->conf.gpio.pin, GPIO_PIN_RESET);
-            DelayMicroseconds (pDShot->usPeriod - pDShot->usValforBit_0);
+    float usPeriod       = pDShot->usPeriod;
+    float usDelayForBit1 = pDShot->usValforBit_1;
+    float usDelayForBit0 = pDShot->usValforBit_0;
+    float usDelay        = 0.0F;
+
+    ATOMIC_BLOCK_LOCAL (eNVIC_PRIO_LVL_MAX) {
+        for (uint32_t i = 0; i < 16U; ++i) {
+
+            if (motorVal & 0x8000U) {
+                // bit is 1
+                usDelay = (uint32_t)usDelayForBit1;
+            } else {
+                // bit is 0
+                usDelay = (uint32_t)usDelayForBit0;
+            }
+            GPIO_WRITE_PIN (pDShot->conf.gpio.pPort, pDShot->conf.gpio.pin, GPIO_PIN_SET);
+            fDelayMicroseconds (usDelay);
+            GPIO_WRITE_PIN (pDShot->conf.gpio.pPort, pDShot->conf.gpio.pin, GPIO_PIN_RESET);
+            fDelayMicroseconds (usPeriod - usDelay);
+            motorVal <<= 1U;
         }
-        motorVal <<= 1U;
     }
 }
+
+// static eSTATUS_t
+// DShotWriteMultiBitBang (eDEVICE_ID_t (deviceIds)[eMOTOR_ID_MAX], uint16_t (motorVals)[eMOTOR_ID_MAX]) {
+
+//     ATOMIC_BLOCK_LOCAL (eNVIC_PRIO_LVL_MAX) {
+//         for (uint32_t i = 0; i < 16U; ++i) {
+//             for (uint32_t j = 0; j < eMOTOR_ID_MAX; ++j) {
+//                 uint32_t handleIdx = MOTOR_ID2IDX (deviceIds[j]);
+//                 uint32_t usDelay   = motorVals[j] & 0x8000U ?
+//                                      gDShotHandles[handleIdx].usValforBit_1 :
+//                                      gDShotHandles[handleIdx].usValforBit_0;
+//             }
+//         }
+//     }
+// }
 
 eSTATUS_t DShotInit (DShotInitConf_t conf) {
 
@@ -375,3 +404,7 @@ eSTATUS_t DShotWrite (eDEVICE_ID_t deviceId, uint16_t motorVal) {
     LOG_ERROR ("Invalid DShot type: %d", pDShot->conf.dshotType);
     return eSTATUS_FAILURE;
 }
+
+// eSTATUS_t
+// DShotWriteMulti (eDEVICE_ID_t (deviceIds)[eMOTOR_ID_MAX], uint16_t (motorVals)[eMOTOR_ID_MAX]) {
+// }

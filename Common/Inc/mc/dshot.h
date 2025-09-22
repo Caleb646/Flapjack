@@ -71,17 +71,22 @@ typedef struct {
 typedef struct {
     DShotInitConf_t conf;
     uint32_t pMotorDmaBuffer[DSHOT_DMA_BUFFER_SIZE]; /*!< DMA buffer for DShot */
-    uint16_t usPeriod;
-    uint16_t usValforBit_1; /*!< microsecond value to send a 1 */
-    uint16_t usValforBit_0; /*!< microsecond value to send a 0 */
+
+    uint16_t timerTicksPeriod;
+    uint16_t timerTicksforBit_1; /*!< microsecond value to send a 1 */
+    uint16_t timerTicksforBit_0; /*!< microsecond value to send a 0 */
+
+    float usPeriod;      /*!< microsecond value for one bit period */
+    float usValforBit_1; /*!< microsecond value to send a 1 */
+    float usValforBit_0; /*!< microsecond value to send a 0 */
 } DShot_t;
 
 
 /* Functions */
 eSTATUS_t DShotInit (DShotInitConf_t conf);
-eSTATUS_t DShotStart (DShot_t* pDShot);
-eSTATUS_t DShotStop (DShot_t* pDShot);
-eSTATUS_t DShotWrite (DShot_t* pDShot, uint16_t motor_value);
+eSTATUS_t DShotStart (eDEVICE_ID_t deviceId);
+eSTATUS_t DShotStop (eDEVICE_ID_t deviceId);
+eSTATUS_t DShotWrite (eDEVICE_ID_t deviceId, uint16_t motor_value);
 
 
 #endif /* __MOTION_CONTROL_DSHOT_H__ */

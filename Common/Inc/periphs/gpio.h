@@ -126,6 +126,13 @@
 #define I2C1_GPIO_Port              GPIOB
 #define I2C1_GPIO_CLK_ENABLE()      __HAL_RCC_GPIOB_CLK_ENABLE ()
 
+#define GPIO_NUMBER                 (16U)
+#define GPIO_WRITE_PIN(pPORT, PIN, STATE)                                 \
+    do {                                                                  \
+        (pPORT)->BSRR =                                                   \
+        ((uint32_t)(PIN) << (GPIO_NUMBER * ((STATE) == GPIO_PIN_RESET))); \
+    } while (0)
+
 typedef struct {
     GPIO_TypeDef* pNSSPort;
     uint16_t nssPin;

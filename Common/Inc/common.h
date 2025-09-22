@@ -14,6 +14,8 @@
 #define STATIC_TESTABLE_DECL static
 #endif
 
+#define MICRO_DELAY_USE_SYSTICK  0
+
 #define STATIC_ASSERT(expr, msg) static_assert ((expr), msg)
 #define ASSERT(expr)             assert ((expr))
 #define MASSERT(expr, __VARGS__) assert ((expr))
@@ -84,11 +86,50 @@ typedef struct {
 } Vec4f;
 
 void CriticalErrorHandler (void);
-int32_t clipi32 (int32_t v, int32_t lower, int32_t upper);
-float clipf32 (float v, float lower, float upper);
-float mapf32 (float v, float fromMin, float fromMax, float toMin, float toMax);
-uint32_t GetMilliseconds (void);
-uint32_t GetMicroseconds (void);
-void DelayMicroseconds (uint32_t us);
+inline int32_t clipi32 (int32_t v, int32_t lower, int32_t upper);
+inline float clipf32 (float v, float lower, float upper);
+inline float mapf32 (float v, float fromMin, float fromMax, float toMin, float toMax);
+inline uint32_t GetMilliseconds (void);
+inline uint32_t GetMicroseconds (void);
+inline void DelayMicroseconds (uint32_t us);
+inline void fDelayMicroseconds (float us);
+
+typedef uint8_t eNVIC_PRIO_LVL_t;
+enum {
+    eNVIC_PRIO_LVL_UNUSED = 0,
+    eNVIC_PRIO_LVL_MAX,
+    eNVIC_PRIO_LVL_2,
+    eNVIC_PRIO_LVL_3,
+    eNVIC_PRIO_LVL_4,
+    eNVIC_PRIO_LVL_5,
+    eNVIC_PRIO_LVL_6,
+    eNVIC_PRIO_LVL_7,
+    eNVIC_PRIO_LVL_8,
+    eNVIC_PRIO_LVL_9,
+    eNVIC_PRIO_LVL_10,
+    eNVIC_PRIO_LVL_11,
+    eNVIC_PRIO_LVL_12,
+    eNVIC_PRIO_LVL_13,
+    eNVIC_PRIO_LVL_14,
+    eNVIC_PRIO_LVL_15
+};
+
+/* Source --> Betaflight: https://github.com/betaflight/betaflight/blob/master/src/main/build/atomic.h */
+inline void __basepriRestoreMem (uint8_t* val) {
+    __set_BASEPRI (*val);
+}
+
+// set BASEPRI_MAX, with global memory barrier, returns true
+inline uint8_t __basepriSetMemRetVal (uint8_t prio) {
+    __set_BASEPRI_MAX (prio);
+    return 1;
+}
+
+// clang-format off
+#define ATOMIC_BLOCK_LOCAL(NVIC_PRIO)                                                                    \
+    for (uint8_t __basepri_save __attribute__ ((__cleanup__ (__basepriRestoreMem), __unused__)) =  __get_BASEPRI (), __ToDo = __basepriSetMemRetVal ((NVIC_PRIO)); \
+    __ToDo; __ToDo = 0); \
+    // clang-format on
+
 
 #endif // COMMON_H

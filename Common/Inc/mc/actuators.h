@@ -6,13 +6,13 @@
 #include "dma.h"
 #include "hal.h"
 #include "mc/dshot.h"
-#include "mc/pwm.h"
+#include "periphs/timer.h"
 #include <stdint.h>
 
 
-#define MOTOR_CREATE_CONF(PTR_TIMER, CHANNEL_ID, DMA_STREAM, DMA_REQUEST_ID) \
-    { .pwm = PWM_CREATE_CONF (PTR_TIMER, CHANNEL_ID, 0, FALSE),              \
-      .dma = DMA_CREATE_PWM_CONF (DMA_STREAM, eDMA_DIRECTION_MEMORY_TO_PERIPH, eDMA_PRIORITY_HIGH, DMA_REQUEST_ID) }
+// #define MOTOR_CREATE_CONF(PTR_TIMER, CHANNEL_ID, DMA_STREAM, DMA_REQUEST_ID) \
+//     { .pwm = PWM_CREATE_CONF (PTR_TIMER, CHANNEL_ID, 0, FALSE),              \
+//       .dma = DMA_CREATE_PWM_CONF (DMA_STREAM, eDMA_DIRECTION_MEMORY_TO_PERIPH, eDMA_PRIORITY_HIGH, DMA_REQUEST_ID) }
 
 #define PID_INIT(PID_CONTEXT)                                 \
     PID_CONTEXT.rollP          = PID_STARTING_ROLL_P;         \
@@ -51,7 +51,12 @@ typedef struct {
 } PIDContext;
 
 typedef struct {
-    eSERVO_ID_t id;
+    eDEVICE_ID_t id;
+    eTIMER_ID_t timerId;
+} ServoInitConf_t;
+
+typedef struct {
+    eDEVICE_ID_t id;
     uint32_t usLeftDutyCycle;
     uint32_t usMiddleDutyCycle;
     uint32_t usRightDutyCycle;
@@ -63,7 +68,7 @@ typedef struct {
 } ServoDescriptor;
 
 typedef struct {
-    PWMHandle pwm;
+    ServoInitConf_t conf;
     ServoDescriptor desc;
     // Between -usableMaxAngle angle and +usableMaxAngle angle
     float curAngle;
@@ -77,19 +82,20 @@ enum {
 };
 
 typedef struct {
-    PWMConfig pwm;
-    DMAConfig dma;
-} MotorConfig;
+    eDEVICE_ID_t id;
+    eTIMER_ID_t timerId;
+    eDSHOT_TYPE_t dshotType;
+} MotorInitConf_t;
 
 typedef struct {
-    eSERVO_ID_t id;
+    eDEVICE_ID_t id;
     float pitchMix;
     float yawMix;
     float rollMix;
 } MotorDescriptor;
 
 typedef struct {
-    DShotHandle dshot;
+    MotorInitConf_t conf;
     MotorDescriptor desc;
     float curThrottle; // Between 0.0 and 1.0
     float curTargetThrottle;
@@ -123,22 +129,23 @@ float ServoAngle2PWM (Servo* pServo, float targetAngle);
 
 #endif // UNIT_TEST
 
-eSTATUS_t ServoInit (eACTUATOR_ID_t id, PWMConfig config, Servo* pOutServo);
-eSTATUS_t ServoStart (Servo* pServo);
-eSTATUS_t ServoWrite (Servo* pServo, float targetAngle);
+eSTATUS_t ServoInit (ServoInitConf_t conf);
+eSTATUS_t ServoStart (eDEVICE_ID_t servoId);
+eSTATUS_t ServoWrite (eDEVICE_ID_t servoId, float targetAngle);
 
 #ifdef UNIT_TEST
 
 #endif // UNIT_TEST
 
-eSTATUS_t MotorInit (eACTUATOR_ID_t id, MotorConfig config, Motor* pOutMotor);
-eSTATUS_t MotorStart (Motor* pMotor);
-eSTATUS_t MotorWrite (Motor* pMotor, float motorValue);
-eSTATUS_t MotorWriteCmd (Motor* pMotor, eMOTOR_CMD_t command);
+eSTATUS_t MotorInit (MotorInitConf_t conf);
+eSTATUS_t MotorStart (eDEVICE_ID_t motorId);
+eSTATUS_t MotorWrite (eDEVICE_ID_t motorId, float motorValue);
+eSTATUS_t MotorWriteCmd (eDEVICE_ID_t motorId, eMOTOR_CMD_t command);
 
 #ifdef UNIT_TEST
 
-eSTATUS_t ActuatorsMixPair (Servo* pServo, Motor* pMotor, Vec3f pidAttitude, float tthrottle);
+eSTATUS_t
+ActuatorsMixPair (eDEVICE_ID_t servoId, eDEVICE_ID_t motorId, Vec3f pidAttitude, float tthrottle);
 eSTATUS_t ActuatorsArm (void);
 
 #endif // UNIT_TEST

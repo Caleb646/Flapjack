@@ -3,18 +3,19 @@
 #include "conf.h"
 #include "log/logger.h"
 #include "mc/dshot.h"
-#include "mc/pwm.h"
+#include "periphs/gpio.h"
+#include "periphs/timer.h"
 #include <string.h>
 
 
-#define CHECK_SERVO_DESCRIPTOR_OK(pServoDesc)                                     \
-    (                                                                             \
-    (pServoDesc) != NULL && (pServoDesc)->usLeftDutyCycle != 0U &&                \
-    (pServoDesc)->usMiddleDutyCycle != 0U && (pServoDesc)->usRightDutyCycle != 0U \
-    )
+// #define CHECK_SERVO_DESCRIPTOR_OK(pServoDesc)                                     \
+//     (                                                                             \
+//     (pServoDesc) != NULL && (pServoDesc)->usLeftDutyCycle != 0U &&                \
+//     (pServoDesc)->usMiddleDutyCycle != 0U && (pServoDesc)->usRightDutyCycle != 0U \
+//     )
 
-#define CHECK_SERVO_OK(pServo) \
-    ((pServo) != NULL && PWM_CHECK_OK (&((pServo)->pwm)))
+// #define CHECK_SERVO_OK(pServo) \
+//     ((pServo) != NULL && PWM_CHECK_OK (&((pServo)->pwm)))
 
 eSTATUS_t PIDUpdateAttitude (
 PIDContext* pidContext,
@@ -153,23 +154,38 @@ STATIC_TESTABLE_DECL float ServoAngle2PWM (Servo* pServo, float targetAngle) {
     return (float)pDesc->usMiddleDutyCycle;
 }
 
-eSTATUS_t ServoInit (eSERVO_ID_t id, PWMConfig config, Servo* pOutServo) {
-    if (pOutServo == NULL) {
-        LOG_ERROR ("Received NULL pointer for Servo");
-        return eSTATUS_FAILURE;
+static Servo* ServoGetById (eDEVICE_ID_t deviceId) {
+
+    if (DEVICE_ID_IS_SERVO (deviceId) == FALSE) {
+        LOG_ERROR ("deviceId is not servo");
+        return NULL;
     }
 
-    memset ((void*)pOutServo, 0, sizeof (Servo));
-    if (PWMInit (config, &pOutServo->pwm) != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to initialize PWM for Servo");
+    return &gServos[SERVO_ID2IDX (deviceId)];
+}
+
+eSTATUS_t ServoInit (ServoInitConf_t conf) {
+
+    Servo* pServo = ServoGetById (conf.id);
+    if (pServo == NULL) {
+        LOG_ERROR ("Failed to get Servo by ID");
         return eSTATUS_FAILURE;
     }
-    pOutServo->desc.id                = id;
-    pOutServo->desc.usLeftDutyCycle   = 500;  // 550;
-    pOutServo->desc.usMiddleDutyCycle = 1500; // 1600;
-    pOutServo->desc.usRightDutyCycle  = 2500; // 2650;
-    pOutServo->desc.maxAngle          = 90.0F;
-    pOutServo->desc.usableMaxAngle    = 25.0F;
+    memset (pServo, 0, sizeof (Servo));
+    pServo->conf                   = conf;
+    pServo->desc.usLeftDutyCycle   = 500;
+    pServo->desc.usMiddleDutyCycle = 1500;
+    pServo->desc.usRightDutyCycle  = 2500;
+    pServo->desc.maxAngle          = 90.0F;
+    pServo->desc.usableMaxAngle    = 25.0F;
+
+    TimerInitConf_t timerConf =
+    TIMER_CREATE_PWM_CONF (conf.id, conf.timerId, 50U, TRUE);
+    if (TimerInit (timerConf) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to initialize timer for Servo");
+        goto error;
+    }
+
     /*
      * NOTE: When given a duty cycle of 2500us the servo spins CW (POV is
      * servo shaft is pointed to the ceiling and its being viewed from
@@ -181,55 +197,65 @@ eSTATUS_t ServoInit (eSERVO_ID_t id, PWMConfig config, Servo* pOutServo) {
      * flips the sign of the pid pitch from negative to positive so the
      * left servo spins CW.
      */
-    if (id == eLEFT_SERVO_1_ID) {
-        // TODO: add the rest of the servo
-        pOutServo->desc.rollMix = LEFT_SERVO_PID_ROLL_MIX_DIR * SERVO_PID_ROLL_MIX;
-        pOutServo->desc.yawMix = LEFT_SERVO_PID_YAW_MIX_DIR * SERVO_PID_YAW_MIX;
-        pOutServo->desc.pitchMix = LEFT_SERVO_PID_PITCH_MIX_DIR * SERVO_PID_PITCH_MIX;
-    } else if (id == eRIGHT_SERVO_1_ID) {
-        pOutServo->desc.rollMix = RIGHT_SERVO_PID_ROLL_MIX_DIR * SERVO_PID_ROLL_MIX;
-        pOutServo->desc.yawMix = RIGHT_SERVO_PID_YAW_MIX_DIR * SERVO_PID_YAW_MIX;
-        pOutServo->desc.pitchMix = RIGHT_SERVO_PID_PITCH_MIX_DIR * SERVO_PID_PITCH_MIX;
+    eDEVICE_ID_t id = conf.id;
+    if (id == eLEFT_SERVO_MOTOR_ID) {
+        pServo->desc.rollMix = LEFT_SERVO_PID_ROLL_MIX_DIR * SERVO_PID_ROLL_MIX;
+        pServo->desc.yawMix = LEFT_SERVO_PID_YAW_MIX_DIR * SERVO_PID_YAW_MIX;
+        pServo->desc.pitchMix = LEFT_SERVO_PID_PITCH_MIX_DIR * SERVO_PID_PITCH_MIX;
+    } else if (id == eRIGHT_SERVO_MOTOR_ID) {
+        pServo->desc.rollMix = RIGHT_SERVO_PID_ROLL_MIX_DIR * SERVO_PID_ROLL_MIX;
+        pServo->desc.yawMix = RIGHT_SERVO_PID_YAW_MIX_DIR * SERVO_PID_YAW_MIX;
+        pServo->desc.pitchMix = RIGHT_SERVO_PID_PITCH_MIX_DIR * SERVO_PID_PITCH_MIX;
     } else {
         LOG_ERROR ("Invalid actuator ID for Servo: %u", id);
-        return eSTATUS_FAILURE;
+        goto error;
     }
 
     return eSTATUS_SUCCESS;
+
+error:
+    memset (pServo, 0, sizeof (Servo));
+    return eSTATUS_FAILURE;
 }
 
-eSTATUS_t ServoStart (Servo* pServo) {
-    if (CHECK_SERVO_OK (pServo) != TRUE) {
-        LOG_ERROR ("Received invalid Servo pointer");
+eSTATUS_t ServoStart (eDEVICE_ID_t servoId) {
+
+    Servo* pServo = ServoGetById (servoId);
+    if (pServo == NULL) {
+        LOG_ERROR ("Failed to get Servo by ID");
         return eSTATUS_FAILURE;
     }
 
-    if (PWMStart (&pServo->pwm) != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to start PWM for Servo");
+    if (TimerStart (pServo->conf.timerId, NULL, 0) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to start Timer for Servo");
         return eSTATUS_FAILURE;
     }
 
     // Set initial angle to middle position
-    return ServoWrite (pServo, 0.0F);
+    return ServoWrite (servoId, 0.0F);
 }
 
-eSTATUS_t ServoStop (Servo* pServo) {
-    if (CHECK_SERVO_OK (pServo) != TRUE) {
-        LOG_ERROR ("Received invalid Servo pointer");
+eSTATUS_t ServoStop (eDEVICE_ID_t servoId) {
+
+    Servo* pServo = ServoGetById (servoId);
+    if (pServo == NULL) {
+        LOG_ERROR ("Failed to get Servo by ID");
         return eSTATUS_FAILURE;
     }
 
-    if (PWMStop (&pServo->pwm) != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to stop PWM for Servo");
+    if (TimerStop (pServo->conf.timerId) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to stop Timer for Servo");
         return eSTATUS_FAILURE;
     }
 
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t ServoWrite (Servo* pServo, float targetAngle) {
-    if (CHECK_SERVO_OK (pServo) != TRUE) {
-        LOG_ERROR ("Received invalid Servo pointer");
+eSTATUS_t ServoWrite (eDEVICE_ID_t servoId, float targetAngle) {
+
+    Servo* pServo = ServoGetById (servoId);
+    if (pServo == NULL) {
+        LOG_ERROR ("Failed to get Servo by ID");
         return eSTATUS_FAILURE;
     }
 
@@ -238,7 +264,7 @@ eSTATUS_t ServoWrite (Servo* pServo, float targetAngle) {
     pServo->curAngle       = clippedAngle;
     pServo->curTargetAngle = targetAngle;
 
-    return PWMWrite (&pServo->pwm, (uint32_t)ServoAngle2PWM (pServo, clippedAngle));
+    return TimerWrite (pServo->conf.timerId, (uint32_t)ServoAngle2PWM (pServo, clippedAngle));
 }
 
 
@@ -246,84 +272,86 @@ eSTATUS_t ServoWrite (Servo* pServo, float targetAngle) {
 
 #endif // UNIT_TEST
 
-eSTATUS_t MotorInit (eMOTOR_ID_t id, MotorConfig config, Motor* pOutMotor) {
+static Motor* MotorGetById (eDEVICE_ID_t deviceId) {
 
-#ifndef USE_SERVOS_ONLY
-
-    if (pOutMotor == NULL) {
-        LOG_ERROR ("Received NULL pointer for Motor");
-        return eSTATUS_FAILURE;
+    if (DEVICE_ID_IS_MOTOR (deviceId) == FALSE) {
+        return NULL;
     }
 
-    memset ((void*)pOutMotor, 0, sizeof (Motor));
-    DShotConfig dshotConfig = { 0 };
-    dshotConfig.dshotType   = DSHOT150; // Set DShot frequency
-
-    if (DShotInit (dshotConfig, config.pwm, config.dma, &pOutMotor->dshot) != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to initialize DShot for Motor");
-        return eSTATUS_FAILURE;
-    }
-
-    pOutMotor->desc.id = id;
-    if (id == eLEFT_MOTOR_ID) {
-        pOutMotor->desc.pitchMix = MOTOR_PID_PITCH_MIX * LEFT_MOTOR_PID_PITCH_MIX_DIR;
-        pOutMotor->desc.yawMix = MOTOR_PID_YAW_MIX * LEFT_MOTOR_PID_YAW_MIX_DIR;
-        pOutMotor->desc.rollMix = MOTOR_PID_ROLL_MIX * LEFT_MOTOR_PID_ROLL_MIX_DIR;
-
-    } else if (id == eRIGHT_MOTOR_ID) {
-        pOutMotor->desc.pitchMix = MOTOR_PID_PITCH_MIX * RIGHT_MOTOR_PID_PITCH_MIX_DIR;
-        pOutMotor->desc.yawMix = MOTOR_PID_YAW_MIX * RIGHT_MOTOR_PID_YAW_MIX_DIR;
-        pOutMotor->desc.rollMix = MOTOR_PID_ROLL_MIX * RIGHT_MOTOR_PID_ROLL_MIX_DIR;
-    } else {
-        LOG_ERROR ("Invalid actuator ID for Motor: %u", id);
-        return eSTATUS_FAILURE;
-    }
-
-#endif
-
-    return eSTATUS_SUCCESS;
+    return &gMotors[MOTOR_ID2IDX (deviceId)];
 }
 
-eSTATUS_t MotorStart (Motor* pMotor) {
+eSTATUS_t MotorInit (MotorInitConf_t conf, GPIO_TypeDef* pPort, uint16_t pin) {
 
-#ifndef USE_SERVOS_ONLY
-
+    Motor* pMotor = MotorGetById (conf.id);
     if (pMotor == NULL) {
-        LOG_ERROR ("Received NULL pointer for Motor");
+        LOG_ERROR ("Failed to get Motor by ID");
         return eSTATUS_FAILURE;
     }
 
-    if (DShotStart (&pMotor->dshot) != eSTATUS_SUCCESS) {
+    memset (pMotor, 0, sizeof (Motor));
+    pMotor->conf = conf;
+
+    DShotInitConf_t dshotConfig = { 0 };
+    dshotConfig.deviceId        = conf.id;
+    dshotConfig.timerId         = conf.timerId;
+    dshotConfig.dshotType       = conf.dshotType;
+    dshotConfig.gpio.pPort      = pPort;
+    dshotConfig.gpio.pin        = pin;
+
+    if (DShotInit (dshotConfig) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to initialize DShot for Motor");
+        goto error;
+    }
+
+    eDEVICE_ID_t id = conf.id;
+    if (id == eLEFT_MOTOR_ID) {
+        pMotor->desc.pitchMix = MOTOR_PID_PITCH_MIX * LEFT_MOTOR_PID_PITCH_MIX_DIR;
+        pMotor->desc.yawMix = MOTOR_PID_YAW_MIX * LEFT_MOTOR_PID_YAW_MIX_DIR;
+        pMotor->desc.rollMix = MOTOR_PID_ROLL_MIX * LEFT_MOTOR_PID_ROLL_MIX_DIR;
+
+    } else if (id == eRIGHT_MOTOR_ID) {
+        pMotor->desc.pitchMix = MOTOR_PID_PITCH_MIX * RIGHT_MOTOR_PID_PITCH_MIX_DIR;
+        pMotor->desc.yawMix = MOTOR_PID_YAW_MIX * RIGHT_MOTOR_PID_YAW_MIX_DIR;
+        pMotor->desc.rollMix = MOTOR_PID_ROLL_MIX * RIGHT_MOTOR_PID_ROLL_MIX_DIR;
+    } else {
+        LOG_ERROR ("Invalid actuator ID for Motor: %u", id);
+        goto error;
+    }
+
+    return eSTATUS_SUCCESS;
+
+error:
+    memset (pMotor, 0, sizeof (Motor));
+    return eSTATUS_FAILURE;
+}
+
+eSTATUS_t MotorStart (eDEVICE_ID_t motorId) {
+
+    if (DEVICE_ID_IS_MOTOR (motorId) == FALSE) {
+        LOG_ERROR ("deviceId is not motor");
+        return eSTATUS_FAILURE;
+    }
+
+    if (DShotStart (motorId) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start DShot for Motor");
         return eSTATUS_FAILURE;
     }
-
-#endif
-
     // Set initial throttle to minimum
     // return DShotWrite (&pMotor->dshot, DSHOT_MIN_THROTTLE);
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t MotorStop (Motor* pMotor) {
-
-#ifndef USE_SERVOS_ONLY
-
-    if (pMotor == NULL) {
-        LOG_ERROR ("Received NULL pointer for Motor");
-        return eSTATUS_FAILURE;
-    }
+eSTATUS_t MotorStop (eDEVICE_ID_t motorId) {
 
     /*
      * NOTE: The motor's ESC will automatically stop the motor
      * when the PWM signal has stopped for more than 5-10ms.
      */
-    if (DShotStop (&pMotor->dshot) != eSTATUS_SUCCESS) {
+    if (DShotStop (motorId) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to stop dshot");
         return eSTATUS_FAILURE;
     }
-
-#endif
 
     return eSTATUS_SUCCESS;
 }
@@ -331,10 +359,9 @@ eSTATUS_t MotorStop (Motor* pMotor) {
 /*
  * throttle is between 0.0F and 1.0F
  */
-eSTATUS_t MotorWrite (Motor* pMotor, float targetThrottle) {
+eSTATUS_t MotorWrite (eDEVICE_ID_t motorId, float targetThrottle) {
 
-#ifndef USE_SERVOS_ONLY
-
+    Motor* pMotor = MotorGetById (motorId);
     if (pMotor == NULL) {
         LOG_ERROR ("Received NULL pointer for Motor");
         return eSTATUS_FAILURE;
@@ -351,13 +378,11 @@ eSTATUS_t MotorWrite (Motor* pMotor, float targetThrottle) {
     pMotor->curTargetThrottle = targetThrottle;
 
     eSTATUS_t status =
-    DShotWrite (&pMotor->dshot, DSHOT_MIN_THROTTLE + (uint16_t)(clippedThrottle * (float)DSHOT_RANGE));
+    DShotWrite (motorId, DSHOT_MIN_THROTTLE + (uint16_t)(clippedThrottle * (float)DSHOT_RANGE));
     if (status != eSTATUS_SUCCESS && status != eSTATUS_BUSY) {
         LOG_ERROR ("Failed to write to motor");
         return status;
     }
-
-#endif
     /*
      * NOTE: DShotWrite returns eSTATUS_BUSY when a write is in progress.
      * Don't consider this a failure.
@@ -365,12 +390,11 @@ eSTATUS_t MotorWrite (Motor* pMotor, float targetThrottle) {
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t MotorWriteCmd (Motor* pMotor, eMOTOR_CMD_t command) {
+eSTATUS_t MotorWriteCmd (eDEVICE_ID_t motorId, eMOTOR_CMD_t command) {
 
-#ifndef USE_SERVOS_ONLY
 
-    if (pMotor == NULL) {
-        LOG_ERROR ("Received NULL pointer for Motor");
+    if (DEVICE_ID_IS_MOTOR (motorId) == FALSE) {
+        LOG_ERROR ("deviceId is not motor");
         return eSTATUS_FAILURE;
     }
 
@@ -381,13 +405,11 @@ eSTATUS_t MotorWriteCmd (Motor* pMotor, eMOTOR_CMD_t command) {
     default: LOG_ERROR ("Unknown motor command"); return eSTATUS_FAILURE;
     }
 
-    eSTATUS_t status = DShotWrite (&pMotor->dshot, command);
+    eSTATUS_t status = DShotWrite (motorId, command);
     if (status != eSTATUS_SUCCESS && status != eSTATUS_BUSY) {
         LOG_ERROR ("Failed to write command to motor");
         return status;
     }
-
-#endif // USE_SERVOS_ONLY
 
     return eSTATUS_SUCCESS;
 }
@@ -397,13 +419,10 @@ static Motor gLeftMotor;
 static Servo gLeftServo;
 // NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
 
-// static Motor rightMotor;
-// static Servo rightServo;
-
 #ifndef UNIT_TEST
 
 static eSTATUS_t
-ActuatorsMixPair (Servo* pServo, Motor* pMotor, Vec3f pidAttitude, float targetThrottle);
+ActuatorsMixPair (eDEVICE_ID_t servoId, eDEVICE_ID_t motorId, Vec3f pidAttitude, float targetThrottle);
 static eSTATUS_t ActuatorsArm (void);
 
 #endif // UNIT_TEST
@@ -412,11 +431,12 @@ static eSTATUS_t ActuatorsArm (void);
  * \param pidAttitude roll, pitch, and yaw are between -1 and 1
  */
 STATIC_TESTABLE_DECL eSTATUS_t
-ActuatorsMixPair (Servo* pServo, Motor* pMotor, Vec3f pidAttitude, float targetThrottle) {
+ActuatorsMixPair (eDEVICE_ID_t servoId, eDEVICE_ID_t motorId, Vec3f pidAttitude, float targetThrottle) {
     /*
      *  Motor Mixing
      */
-    MotorDescriptor* pMotorDesc = &gLeftMotor.desc;
+    Motor* pMotor               = MotorGetById (motorId);
+    MotorDescriptor* pMotorDesc = &pMotor->desc;
     float mixedThrottle         = targetThrottle; // between 0 and 1
     /*
      * NOTE: A PID pitch value should always increase the throttle of both
@@ -430,7 +450,8 @@ ActuatorsMixPair (Servo* pServo, Motor* pMotor, Vec3f pidAttitude, float targetT
     /*
      *  Servo Mixing
      */
-    ServoDescriptor* pServoDesc = &gLeftServo.desc;
+    Servo* pServo               = ServoGetById (servoId);
+    ServoDescriptor* pServoDesc = &pServo->desc;
     float mixedAngle = pServoDesc->pitchMix * pidAttitude.pitch +
                        pServoDesc->rollMix * pidAttitude.roll +
                        pServoDesc->yawMix * pidAttitude.yaw;
@@ -440,8 +461,8 @@ ActuatorsMixPair (Servo* pServo, Motor* pMotor, Vec3f pidAttitude, float targetT
     mixedAngle = clipf32 (mixedAngle, -1.0F, 1.0F) * pServoDesc->maxAngle;
 
     /* Motor throttle should be between 0 and 1 */
-    MotorWrite (pMotor, mixedThrottle);
-    ServoWrite (pServo, mixedAngle);
+    MotorWrite (motorId, mixedThrottle);
+    ServoWrite (servoId, mixedAngle);
     return eSTATUS_SUCCESS;
 }
 
@@ -453,16 +474,19 @@ STATIC_TESTABLE_DECL eSTATUS_t ActuatorsArm (void) {
 
     // #ifndef USE_SERVOS_ONLY
 
-    uint16_t msDelay    = 2;
-    uint16_t msMaxTime  = 350;
-    uint16_t iterations = msMaxTime / msDelay;
+    uint32_t msDelay    = 2;
+    uint32_t msMaxTime  = 350;
+    uint32_t iterations = msMaxTime / msDelay;
     for (uint32_t i = 0; i < iterations; ++i) {
         /* NOTE: A DShot value of all 0s is a special command to
          * the esc to arm/disarm the motor depending on the esc's current state.
          * The reason MotorWrite isn't used is because it uses a valid throttle value between > 48 and < 2048 */
-        if (MotorWriteCmd (&gLeftMotor, eMOTOR_CMD_ARM) != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to arm left motor");
-            return eSTATUS_FAILURE;
+        for (uint32_t motorIdx = 0; motorIdx < eMOTOR_ID_MAX; ++motorIdx) {
+            Motor* pMotor = &gMotors[motorIdx];
+            if (MotorWriteCmd (pMotor->conf.id, eMOTOR_CMD_ARM) != eSTATUS_SUCCESS) {
+                LOG_ERROR ("Failed to arm motor ID %u", pMotor->conf.id);
+                return eSTATUS_FAILURE;
+            }
         }
         // NOTE: assumes DShot150 is used.
         vTaskDelay (pdMS_TO_TICKS (msDelay));
@@ -475,20 +499,21 @@ STATIC_TESTABLE_DECL eSTATUS_t ActuatorsArm (void) {
     float targetThrottle = MOTOR_STARTUP_THROTTLE;
     float increment      = targetThrottle / (float)(msMaxTime / msDelay);
     while (i < targetThrottle) {
-        if (MotorWrite (&gLeftMotor, i) != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed warm up left motor");
-            return eSTATUS_FAILURE;
+        for (uint32_t motorIdx = 0; motorIdx < eMOTOR_ID_MAX; ++motorIdx) {
+            Motor* pMotor = &gMotors[motorIdx];
+            if (MotorWrite (pMotor->conf.id, i) != eSTATUS_SUCCESS) {
+                LOG_ERROR ("Failed to arm motor ID %u", pMotor->conf.id);
+                return eSTATUS_FAILURE;
+            }
         }
         vTaskDelay (pdMS_TO_TICKS (msDelay));
         i += increment;
     }
 
-    // #endif
-
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t ActuatorsInit (PWMConfig left_ServoPWM, MotorConfig left_Motor) {
+eSTATUS_t ActuatorsInit () {
 
     eSTATUS_t status = ServoInit (eLEFT_SERVO_1_ID, left_ServoPWM, &gLeftServo);
     if (status != eSTATUS_SUCCESS) {
