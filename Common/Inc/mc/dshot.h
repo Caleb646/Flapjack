@@ -34,40 +34,54 @@
 #define __MOTION_CONTROL_DSHOT_H__
 
 #include "common.h"
+#include "conf.h"
 #include "dma.h"
 #include "hal.h"
-#include "mc/pwm.h"
+#include "periphs/timer.h"
 
-#define DSHOT_DMA_BUFFER_SIZE 18 /* resolution + frame reset (2us) */
-#define DSHOT_FRAME_SIZE      16
-#define DSHOT_MIN_THROTTLE    48
-#define DSHOT_MAX_THROTTLE    2047
+#define DSHOT_DMA_BUFFER_SIZE 18U /* resolution + frame reset (2us) */
+#define DSHOT_FRAME_SIZE      16U
+#define DSHOT_MIN_THROTTLE    48U
+#define DSHOT_MAX_THROTTLE    2047U
 #define DSHOT_RANGE           (DSHOT_MAX_THROTTLE - DSHOT_MIN_THROTTLE)
 
-/* Enumeration */
-typedef enum { DSHOT150, DSHOT300, DSHOT600 } DSHOTTYPE;
+typedef uint8_t eDSHOT_TYPE_t;
+enum {
+    eDSHOT_TYPE_DMA_150 = 0,
+    eDSHOT_TYPE_DMA_300 = 1,
+    eDSHOT_TYPE_DMA_600 = 2,
+
+    eDSHOT_TYPE_BITBANG_150 = 4,
+    eDSHOT_TYPE_BITBANG_300 = 5,
+    eDSHOT_TYPE_BITBANG_600 = 6,
+};
+
+#define DSHOT_TYPE_CLEAR_TYPE(type) ((type) & 0b11U)
+#define DSHOT_TYPE_IS_DMA(type)     (((type) & 0b11U) == eDSHOT_TYPE_DMA_150)
+#define DSHOT_TYPE_IS_BITBANG(type) \
+    (((type) & 0b11U) == eDSHOT_TYPE_BITBANG_150)
 
 typedef struct {
-    DSHOTTYPE dshotType; /*!< DShot type */
-    // TIM_TypeDef* pTimer;  /*!< Pointer to the timer instance */
-    // uint32_t timChannelID;
-} DShotConfig;
+    eDSHOT_TYPE_t dshotType;
+    eDEVICE_ID_t deviceId;
+    eTIMER_ID_t timerId;
+    GPIOOutput_t gpio;
+} DShotInitConf_t;
 
 typedef struct {
-    PWM_DMAHandle pwmdma;
-    // eTIM_DMA_REGIDX timDmaCCXRegIdx; /*!< DMA register index for the timer channel */
+    DShotInitConf_t conf;
     uint32_t pMotorDmaBuffer[DSHOT_DMA_BUFFER_SIZE]; /*!< DMA buffer for DShot */
+    uint16_t usPeriod;
     uint16_t usValforBit_1; /*!< microsecond value to send a 1 */
     uint16_t usValforBit_0; /*!< microsecond value to send a 0 */
-} DShotHandle;
+} DShot_t;
 
 
 /* Functions */
-eSTATUS_t
-DShotInit (DShotConfig dConfig, PWMConfig timConfig, DMAConfig dmaConfig, DShotHandle* pOutHandle);
-eSTATUS_t DShotStart (DShotHandle* pDShotHandle);
-eSTATUS_t DShotStop (DShotHandle* pDShotHandle);
-eSTATUS_t DShotWrite (DShotHandle* pDShotHandle, uint16_t motor_value);
+eSTATUS_t DShotInit (DShotInitConf_t conf);
+eSTATUS_t DShotStart (DShot_t* pDShot);
+eSTATUS_t DShotStop (DShot_t* pDShot);
+eSTATUS_t DShotWrite (DShot_t* pDShot, uint16_t motor_value);
 
 
 #endif /* __MOTION_CONTROL_DSHOT_H__ */

@@ -31,8 +31,12 @@ enum {
     eMOTOR_ID_END__
 };
 
-#define eSERVO_ID_MAX (eSERVO_ID_END__ - eSERVO_ID_BEGIN__)
-#define eMOTOR_ID_MAX (eMOTOR_ID_END__ - eMOTOR_ID_BEGIN__)
+#define eSERVO_ID_MAX    (eSERVO_ID_END__ - eSERVO_ID_BEGIN__)
+#define SERVO_ID2IDX(id) ((id) - eSERVO_ID_BEGIN__)
+
+#define eMOTOR_ID_MAX    (eMOTOR_ID_END__ - eMOTOR_ID_BEGIN__)
+#define MOTOR_ID2IDX(id) ((id) - eMOTOR_ID_BEGIN__)
+
 #define DEVICE_ID_IS_SERVO(id) \
     ((id) >= eSERVO_ID_BEGIN__ && (id) < eSERVO_ID_END__)
 #define DEVICE_ID_IS_MOTOR(id) \
@@ -59,8 +63,11 @@ enum {
     eTIMER_MAX_ID
 };
 
-#define TIMER_ID_CHANNEL_MASK 0b11U
-#define TIMER_ID2CHANNEL(id)  ((TIM_CHANNEL_1) + ((id) & 0b11U) * 4U)
+#define TIMER_ID_CHANNEL_MASK           0b11U
+#define TIMER_ID2CHANNEL(id)            ((TIM_CHANNEL_1) + ((id) & 0b11U) * 4U)
+#define TIMER_ID2CHANNEL_IDX(id)        ((id) & TIMER_ID_CHANNEL_MASK)
+#define TIMER_ID_CLEAR_CHANNEL_BITS(id) ((id) & ~TIMER_ID_CHANNEL_MASK)
+#define TIMER_ID2IDX(id)                (((id) & ~TIMER_ID_CHANNEL_MASK) >> 2U)
 
 typedef uint8_t eUART_BUS_ID_t;
 enum {

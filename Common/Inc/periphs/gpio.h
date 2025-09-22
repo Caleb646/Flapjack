@@ -155,10 +155,16 @@ typedef struct {
     uint16_t pin;
 } GPIOTimer_t;
 
+typedef struct {
+    GPIO_TypeDef* pPort;
+    uint16_t pin;
+} GPIOOutput_t;
+
 eSTATUS_t GPIOInitUART (USART_TypeDef* pInstance, GPIOUART_t* pOutGPIO);
 eSTATUS_t GPIOInitSPI (SPI_TypeDef* pInstance, GPIOSPI_t* pOutGPIO);
 eSTATUS_t GPIOInitEXTI (IRQn_Type irq, uint32_t pin, GPIOEXTI_t* pOutGPIO);
 eSTATUS_t GPIOInitTimer (TIM_TypeDef* pInstance, uint32_t channelId, GPIOTimer_t* pOutGPIO);
 eSTATUS_t GPIOInitI2C (I2C_TypeDef* pInstance, GPIOI2C_t* pOutGPIO);
+eSTATUS_t GPIOInitOutput (GPIO_TypeDef* pPort, uint16_t pin, GPIOOutput_t* pOutGPIO);
 
 #endif // PERIPHS_GPIO_H

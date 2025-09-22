@@ -34,76 +34,28 @@
 #include "dma.h"
 #include "hal.h"
 #include "log/logger.h"
-#include "mc/pwm.h"
+#include "periphs/gpio.h"
+#include "periphs/timer.h"
 #include <stdint.h>
+
 
 // 64 MHz
 #define TIMER_CLOCK SystemCoreClock
+#define DSHOT600_HZ PWM_MHZ2HZ (12U)
+#define DSHOT300_HZ PWM_MHZ2HZ (6U)
+#define DSHOT150_HZ PWM_MHZ2HZ (3U)
 
-#define DSHOT600_HZ PWM_MHZ2HZ (12)
-#define DSHOT300_HZ PWM_MHZ2HZ (6)
-#define DSHOT150_HZ PWM_MHZ2HZ (3)
+static DShot_t gDShotHandles[eMOTOR_ID_MAX] = { 0 };
 
-static void DShotDMACompleteCallback (TIM_HandleTypeDef* htim);
-static uint32_t dshot_tim_channel_to_dma_ccx_id (uint32_t channelID);
-static uint16_t dshot_prepare_packet (uint16_t value);
-static void dshot_prepare_dmabuffer (DShotHandle* pDShotHandle, uint16_t value);
-static void dshot_dma_start (DShotHandle* pDShotHandle);
+static void DShotDMACompleteCallback (eTIMER_ID_t timerId);
+static uint16_t DShotPreparePacket (uint16_t value);
+static void DShotPrepareDMABuffer (DShot_t* pDShotHandle, uint16_t value);
+static void DShotDMAStart (DShot_t* pDShotHandle);
 
-static void DShotDMACompleteCallback (TIM_HandleTypeDef* htim) {
-
-    // LOG_INFO ("DShot DMA transfer complete callback");
-    if (htim == NULL) {
-        return;
-    }
-
-    // uint32_t channel = 0;
-    // uint32_t dma_id  = 0;
-
-    // if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1) {
-    //     channel = TIM_CHANNEL_1;
-    //     dma_id  = TIM_DMA_ID_CC1;
-    // } else if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_2) {
-    //     channel = TIM_CHANNEL_2;
-    //     dma_id  = TIM_DMA_ID_CC2;
-    // } else if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_3) {
-    //     channel = TIM_CHANNEL_3;
-    //     dma_id  = TIM_DMA_ID_CC3;
-    // } else if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_4) {
-    //     channel = TIM_CHANNEL_4;
-    //     dma_id  = TIM_DMA_ID_CC4;
-    // } else {
-    //     return;
-    // }
-
-    // Disable DMA request for this channel but keep timer running
-    // __HAL_TIM_DISABLE_DMA (htim, dma_id);
-    // __HAL_DMA_DISABLE (htim->hdma[dma_id]);
-    // // Set channel state to ready for next transmission
-    // TIM_CHANNEL_STATE_SET (htim, channel, HAL_TIM_CHANNEL_STATE_READY);
-
-    // if (htim->hdma[dma_id]->State == HAL_DMA_STATE_BUSY) {
-    //     HAL_TIM_PWM_Stop_DMA (htim, channel);
-    // } else {
-    //     HAL_TIM_PWM_Stop (htim, channel);
-    // }
-
-    // HAL_TIM_PWM_Stop_DMA (htim, channel);
+static void DShotDMACompleteCallback (eTIMER_ID_t timerId) {
 }
 
-static uint32_t dshot_tim_channel_to_dma_ccx_id (uint32_t channelID) {
-    switch (channelID) {
-    case TIM_CHANNEL_1: return eTIM_DMA_ID_CC1;
-    case TIM_CHANNEL_2: return eTIM_DMA_ID_CC2;
-    case TIM_CHANNEL_3: return eTIM_DMA_ID_CC3;
-    case TIM_CHANNEL_4: return eTIM_DMA_ID_CC4;
-    default:
-        LOG_ERROR ("Invalid timer channel ID: 0x%X", (uint16_t)channelID);
-        return 0; // Invalid channel ID
-    }
-}
-
-static uint16_t dshot_prepare_packet (uint16_t value) {
+static uint16_t DShotPreparePacket (uint16_t value) {
 
     uint16_t packet;
     uint8_t dshot_telemetry = FALSE;
@@ -126,10 +78,10 @@ static uint16_t dshot_prepare_packet (uint16_t value) {
 }
 
 // Convert 16 bits packet to 16 pwm signal
-static void dshot_prepare_dmabuffer (DShotHandle* pDShotHandle, uint16_t value) {
+static void DShotPrepareDMABuffer (DShot_t* pDShotHandle, uint16_t value) {
 
     uint32_t* motor_dmabuffer = pDShotHandle->pMotorDmaBuffer;
-    uint16_t packet           = dshot_prepare_packet (value);
+    uint16_t packet           = DShotPreparePacket (value);
     uint16_t usValforBit_1    = pDShotHandle->usValforBit_1;
     uint16_t usValforBit_0    = pDShotHandle->usValforBit_0;
 
@@ -143,45 +95,49 @@ static void dshot_prepare_dmabuffer (DShotHandle* pDShotHandle, uint16_t value) 
 }
 
 
-static void dshot_dma_start (DShotHandle* pDShotHandle) {
+static void DShotDMAStart (DShot_t* pDShotHandle) {
 
-    if (PWM_DMAStart (&pDShotHandle->pwmdma, pDShotHandle->pMotorDmaBuffer, DSHOT_DMA_BUFFER_SIZE) !=
+    if (TimerStart (pDShotHandle->conf.timerId, pDShotHandle->pMotorDmaBuffer, DSHOT_DMA_BUFFER_SIZE) !=
         eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to start DShot DMA");
+        LOG_ERROR ("Failed to start DShot timer with DMA");
         return;
     }
 }
 
+static DShot_t* DShotGetById (eDEVICE_ID_t deviceId) {
 
-eSTATUS_t
-DShotInit (DShotConfig dConfig, PWMConfig timConfig, DMAConfig dmaConfig, DShotHandle* pOutHandle) {
+    if (DEVICE_ID_IS_MOTOR (deviceId) == FALSE) {
+        return NULL;
+    }
 
-    if (pOutHandle == NULL) {
-        LOG_ERROR ("Received invalid DShot configuration pointer or output handle pointer");
+    uint16_t idx = MOTOR_ID2IDX (deviceId);
+    if (idx >= eMOTOR_ID_MAX) {
+        return NULL;
+    }
+
+    return &gDShotHandles[idx];
+}
+
+static eSTATUS_t DShotInitBitbang (DShot_t* pDShot) {
+
+    if (pDShot == NULL) {
+        LOG_ERROR ("DShot is null");
         return eSTATUS_FAILURE;
     }
 
-    memset (pOutHandle, 0, sizeof (DShotHandle));
-    // DShotHandle dshot = { 0 };
-    uint32_t channelID    = timConfig.base.channelID;
-    uint32_t timDmaRegIdx = dshot_tim_channel_to_dma_ccx_id (channelID);
-    PWM_DMAConfig pwm_DmaConfig = { .base = timConfig.base };
-    /*
-     * Set the timer channel capture compare register to be mapped to the dma register index
-     */
-    pwm_DmaConfig.dmaRegIDXs[0]  = timDmaRegIdx;
-    pwm_DmaConfig.dmaRegIDXCount = 1;
-
-    eSTATUS_t status = PWM_DMAInit (pwm_DmaConfig, dmaConfig, &pOutHandle->pwmdma);
-    if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to initialize PWM DMA for DShot");
+    DShotInitConf_t* pConf = &pDShot->conf;
+    if (pConf->gpio.pPort == NULL) {
+        LOG_ERROR ("DShot config gpio is null");
         return eSTATUS_FAILURE;
     }
 
-    status =
-    PWM_DMARegisterCallback (&pOutHandle->pwmdma, channelID, DShotDMACompleteCallback, ePWM_DMA_CB_TRANSFER_COMPLETE);
-    if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to register PWM DMA callback for DShot");
+    if (DSHOT_TYPE_IS_BITBANG (pConf->dshotType) == FALSE) {
+        LOG_ERROR ("DShot type does NOT use bitbang");
+        return eSTATUS_FAILURE;
+    }
+
+    if (GPIOInitOutput (pConf->gpio.pPort, pConf->gpio.pin, &pConf->gpio) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to initialize GPIO for DShot");
         return eSTATUS_FAILURE;
     }
 
@@ -199,32 +155,91 @@ DShotInit (DShotConfig dConfig, PWMConfig timConfig, DMAConfig dmaConfig, DShotH
      * signal needs to be high in order to be counted as a 0. Bit is pwm
      * period in us
      */
-    // PWM_SET_PRESCALER (&dshot.pwmdma.pwm, (TIMER_CLOCK / 64) - 1U);
-    // PWM_SET_PERIOD (&dshot.pwmdma.pwm, 1000); // Set period to 1 us
-    // dshot.usValforBit_1 = 750;
-    // dshot.usValforBit_0 = 250;
-    // uint16_t prescaler = (TIMER_CLOCK / 1000000U) - 1U;
-    uint16_t prescaler = 0U;
-    PWMHandle* ppwm    = &pOutHandle->pwmdma.pwm;
-    PWM_SET_PRESCALER (ppwm, prescaler);
-
-    DSHOTTYPE dshotType = dConfig.dshotType;
-    if (dshotType == DSHOT150) {
-        // 64MHz × 6.67us = 426.7 timer ticks
-        PWM_SET_PERIOD (ppwm, 427 - 1);
-        pOutHandle->usValforBit_1 = 320; // 75% of 6.67 us / 427 ticks
-        pOutHandle->usValforBit_0 = 160; // 37.5% of 6.67 us / 427 ticks
+    switch (DSHOT_TYPE_CLEAR_TYPE (pConf->dshotType)) {
+    case eDSHOT_TYPE_DMA_150:
+        pDShot->usPeriod      = 427 - 1;
+        pDShot->usValforBit_1 = 320; // 75% of 6.67 us / 427 ticks
+        pDShot->usValforBit_0 = 160; // 37.5% of 6.67 us / 427 ticks
+        break;
+    case eDSHOT_TYPE_DMA_300:
+        // // Closet us value to 3.33 us is 3 us
+        // pOutHandle->usValforBit_1 = 2; // 2 us for bit 1
+        // pOutHandle->usValforBit_0 = 1; // 1 us for bit 0
+        return eSTATUS_FAILURE; // DShot300 is not supported
+    case eDSHOT_TYPE_DMA_600:
+        // // Closet us value to 1.67 us is 2 us
+        // // Closet us value to 1.25 us is 1 us
+        // pOutHandle->usValforBit_1 = 1; // 1 us for bit 1
+        // // Closet us value to 0.625 us is 1 us
+        // pOutHandle->usValforBit_0 = 1;
+        return eSTATUS_FAILURE; // DShot600 is not supported
+    default:
+        LOG_ERROR ("Invalid DShot type: %d", pConf->dshotType);
+        return eSTATUS_FAILURE;
     }
 
-    else if (dshotType == DSHOT300) {
+
+    return eSTATUS_SUCCESS;
+}
+
+static eSTATUS_t DShotInitDMA (DShot_t* pDShot) {
+
+    if (pDShot == NULL) {
+        LOG_ERROR ("DShot is null");
+        return eSTATUS_FAILURE;
+    }
+
+    DShotInitConf_t* pConf = &pDShot->conf;
+
+    if (DSHOT_TYPE_IS_DMA (pConf->dshotType) == FALSE) {
+        LOG_ERROR ("DShot type does NOT use dma");
+    }
+
+    TimerInitConf_t timerConf =
+    TIMER_CREATE_PWM_DMA_CONF (pConf->deviceId, pConf->timerId);
+
+    if (TimerInit (timerConf) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to initialize timer for DShot");
+        return eSTATUS_FAILURE;
+    }
+
+    if (TimerRegisterCallback (pConf->timerId, DShotDMACompleteCallback, eTIMER_CALLBACK_TRANSFER_COMPLETE) !=
+        eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to register timer callback for DShot");
+        return eSTATUS_FAILURE;
+    }
+
+    uint16_t prescaler = 0U;
+    TIMER_SET_PRESCALER (pConf->timerId, prescaler);
+
+    /*
+     * Scale clock frequency from 64 MHz to 1 MHz.
+     * Then set ARR to the us value in the Bit column.
+     * https://brushlesswhoop.com/dshot-and-bidirectional-dshot/
+     * DSHOT	    Bitrate	    T1H	    T0H	    Bit (µs)	Frame (µs)
+     *    150	150kbit/s	5.00	2.50	6.67	    106.72
+     *    300	300kbit/s	2.50	1.25	3.33	    53.28
+     *    600	600kbit/s	1.25	0.625	1.67	    26.72
+     *
+     * T1H is the duration in µs for which the signal needs to be high in
+     * order to be counted as a 1. T0H is the duration in µs for which the
+     * signal needs to be high in order to be counted as a 0. Bit is pwm
+     * period in us
+     */
+    switch (DSHOT_TYPE_CLEAR_TYPE (pConf->dshotType)) {
+    case eDSHOT_TYPE_DMA_150:
+        TIMER_SET_PERIOD (pConf->timerId, 427 - 1);
+        pDShot->usPeriod      = 427 - 1;
+        pDShot->usValforBit_1 = 320; // 75% of 6.67 us / 427 ticks
+        pDShot->usValforBit_0 = 160; // 37.5% of 6.67 us / 427 ticks
+        break;
+    case eDSHOT_TYPE_DMA_300:
         // // Closet us value to 3.33 us is 3 us
         // PWM_SET_PERIOD (ppwm, 3 - 1);
         // pOutHandle->usValforBit_1 = 2; // 2 us for bit 1
         // pOutHandle->usValforBit_0 = 1; // 1 us for bit 0
         return eSTATUS_FAILURE; // DShot300 is not supported
-    }
-
-    else if (dshotType == DSHOT600) {
+    case eDSHOT_TYPE_DMA_600:
         // // Closet us value to 1.67 us is 2 us
         // PWM_SET_PERIOD (ppwm, 2 - 1);
         // // Closet us value to 1.25 us is 1 us
@@ -232,18 +247,104 @@ DShotInit (DShotConfig dConfig, PWMConfig timConfig, DMAConfig dmaConfig, DShotH
         // // Closet us value to 0.625 us is 1 us
         // pOutHandle->usValforBit_0 = 1;
         return eSTATUS_FAILURE; // DShot600 is not supported
-    }
-
-    else {
-        LOG_ERROR ("Invalid DShot type: %d", dshotType);
+    default:
+        LOG_ERROR ("Invalid DShot type: %d", pConf->dshotType);
         return eSTATUS_FAILURE;
     }
 
-    // pOutHandle->timDmaCCXRegIdx = timDmaRegIdx;
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t DShotStart (DShotHandle* pDShotHandle) {
+static eSTATUS_t DShotWriteDMA (DShot_t* pDShot, uint16_t motorVal) {
+
+    if (pDShot == NULL) {
+        LOG_ERROR ("Received NULL pointer for DShot handle");
+        return eSTATUS_FAILURE;
+    }
+
+    if (TimerGetChannelState (pDShot->conf.timerId) == eTIMER_CHANNEL_STATE_BUSY) {
+        return eSTATUS_BUSY;
+    }
+
+    DShotPrepareDMABuffer (pDShot, motorVal);
+    DShotDMAStart (pDShot);
+    return eSTATUS_SUCCESS;
+}
+
+static eSTATUS_t DShotWriteBitbang (DShot_t* pDShot, uint16_t motorVal) {
+
+    if (pDShot == NULL) {
+        LOG_ERROR ("Received NULL pointer for DShot handle");
+        return eSTATUS_FAILURE;
+    }
+
+    if (pDShot->conf.gpio.pPort == NULL) {
+        LOG_ERROR ("DShot GPIO port is NULL");
+        return eSTATUS_FAILURE;
+    }
+
+    // TODO: add critical section
+    for (uint32_t i = 0; i < 16U; ++i) {
+        if (motorVal & 0x8000U) {
+            // bit is 1
+            HAL_GPIO_WritePin (pDShot->conf.gpio.pPort, pDShot->conf.gpio.pin, GPIO_PIN_SET);
+            DelayMicroseconds (pDShot->usValforBit_1);
+            HAL_GPIO_WritePin (pDShot->conf.gpio.pPort, pDShot->conf.gpio.pin, GPIO_PIN_RESET);
+            DelayMicroseconds (pDShot->usPeriod - pDShot->usValforBit_1);
+        } else {
+            // bit is 0
+            HAL_GPIO_WritePin (pDShot->conf.gpio.pPort, pDShot->conf.gpio.pin, GPIO_PIN_SET);
+            DelayMicroseconds (pDShot->usValforBit_0);
+            HAL_GPIO_WritePin (pDShot->conf.gpio.pPort, pDShot->conf.gpio.pin, GPIO_PIN_RESET);
+            DelayMicroseconds (pDShot->usPeriod - pDShot->usValforBit_0);
+        }
+        motorVal <<= 1U;
+    }
+}
+
+eSTATUS_t DShotInit (DShotInitConf_t conf) {
+
+    if (DEVICE_ID_IS_MOTOR (conf.deviceId) == FALSE) {
+        LOG_ERROR ("deviceId is not motor");
+        return eSTATUS_FAILURE;
+    }
+
+    DShot_t* pDShot = DShotGetById (conf.deviceId);
+    if (pDShot == NULL) {
+        LOG_ERROR ("Failed to get DShot handle by device ID");
+        return eSTATUS_FAILURE;
+    }
+
+    memset (pDShot, 0, sizeof (DShot_t));
+    pDShot->conf = conf;
+
+    if (DSHOT_TYPE_IS_DMA (conf.dshotType)) {
+
+        if (DShotInitDMA (pDShot) != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to initialize DShot DMA");
+            goto error;
+        }
+
+    } else if (DSHOT_TYPE_IS_BITBANG (conf.dshotType)) {
+
+        if (DShotInitBitbang (pDShot) != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to initialize DShot bitbang");
+            goto error;
+        }
+
+    } else {
+        LOG_ERROR ("Invalid DShot type: %d", conf.dshotType);
+        goto error;
+    }
+
+    return eSTATUS_SUCCESS;
+
+error:
+    memset (pDShot, 0, sizeof (DShot_t));
+    return eSTATUS_FAILURE;
+}
+
+eSTATUS_t DShotStart (eDEVICE_ID_t deviceId) {
     /* NOTE: Do NOT start PWM timer yet. Let it be started by DShotWrite */
     return eSTATUS_SUCCESS;
 }
@@ -252,28 +353,25 @@ eSTATUS_t DShotStart (DShotHandle* pDShotHandle) {
  * Because the last sent timer CCR value is always 0, no shutdown is needed.
  * The PWM line will never go high until DShotWrite is called again.
  */
-eSTATUS_t DShotStop (DShotHandle* pDShotHandle) {
-    if (pDShotHandle == NULL) {
-        LOG_ERROR ("Received NULL pointer for DShot handle");
-        return eSTATUS_FAILURE;
-    }
+eSTATUS_t DShotStop (eDEVICE_ID_t deviceId) {
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t DShotWrite (DShotHandle* pDShotHandle, uint16_t motorVal) {
-    if (pDShotHandle == NULL) {
+eSTATUS_t DShotWrite (eDEVICE_ID_t deviceId, uint16_t motorVal) {
+
+    DShot_t* pDShot = DShotGetById (deviceId);
+    if (pDShot == NULL) {
         LOG_ERROR ("Received NULL pointer for DShot handle");
         return eSTATUS_FAILURE;
     }
 
-    HAL_TIM_ChannelStateTypeDef channelState = TIM_CHANNEL_STATE_GET (
-    &pDShotHandle->pwmdma.pwm.timer,
-    pDShotHandle->pwmdma.pwm.channelID
-    );
-    if (channelState == HAL_TIM_CHANNEL_STATE_BUSY) {
-        return eSTATUS_BUSY;
+    if (DSHOT_TYPE_IS_DMA (pDShot->conf.dshotType)) {
+        return DShotWriteDMA (pDShot, motorVal);
     }
-    dshot_prepare_dmabuffer (pDShotHandle, motorVal);
-    dshot_dma_start (pDShotHandle);
-    return eSTATUS_SUCCESS;
+    if (DSHOT_TYPE_IS_BITBANG (pDShot->conf.dshotType)) {
+        return DShotWriteBitbang (pDShot, motorVal);
+    }
+
+    LOG_ERROR ("Invalid DShot type: %d", pDShot->conf.dshotType);
+    return eSTATUS_FAILURE;
 }

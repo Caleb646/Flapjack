@@ -292,3 +292,25 @@ eSTATUS_t GPIOInitI2C (I2C_TypeDef* pInstance, GPIOI2C_t* pOutI2C) {
     HAL_GPIO_Init (pSDAPort, &GPIO_InitStruct);
     return eSTATUS_SUCCESS;
 }
+
+eSTATUS_t GPIOInitOutput (GPIO_TypeDef* pPort, uint16_t pin, GPIOOutput_t* pOutGPIO) {
+
+    if (pPort == NULL) {
+        LOG_ERROR ("Invalid GPIO port");
+        return eSTATUS_FAILURE;
+    }
+
+    GPIO_InitTypeDef GPIO_InitStruct = { 0 };
+    GPIO_InitStruct.Mode             = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull             = GPIO_PULLDOWN;
+    GPIO_InitStruct.Speed            = GPIO_SPEED_FREQ_VERY_HIGH;
+    GPIO_InitStruct.Pin              = pin;
+
+    if (pOutGPIO != NULL) {
+        pOutGPIO->pPort = pPort;
+        pOutGPIO->pin   = pin;
+    }
+
+    HAL_GPIO_Init (pPort, &GPIO_InitStruct);
+    return eSTATUS_SUCCESS;
+}

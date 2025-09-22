@@ -4,77 +4,55 @@
 #include "log/logger.h"
 #include <stdint.h>
 
-#define CHECK_DMA1_STREAM_VALID(stream)                                              \
-    (                                                                                \
-    (stream) == DMA1_Stream0 || (stream) == DMA1_Stream1 ||                          \
-    (stream) == DMA1_Stream2 || (stream) == DMA1_Stream3 ||                          \
-    (stream) == DMA1_Stream4 || (stream) == DMA1_Stream5 || (stream) == DMA1_Stream6 \
-    )
-#define CHECK_DMA_CONFIG_OK(pDMAConfig) \
-    ((pDMAConfig) != NULL && (pDMAConfig)->pDMA != NULL && (pDMAConfig)->request != 0)
-
-// DMA_HandleTypeDef gDMAStream_0                  = { 0 };
-// DMA_HandleTypeDef gDMAStream_1                  = { 0 };
-// DMA_HandleTypeDef gDMAStream_2                  = { 0 };
-// DMA_HandleTypeDef gDMAStream_3                  = { 0 };
-// DMA_HandleTypeDef gDMAStream_4                  = { 0 };
-// DMA_HandleTypeDef gDMAStream_5                  = { 0 };
-// DMA_HandleTypeDef gDMAStream_6                  = { 0 };
-// uint8_t gDMAStreamsAlloced[7]                   = { 0 };
-// DMACallback gDMAStreamCallbacks[7][4]           = { 0 };
-// DMA_HandleTypeDef* gDMACallbackStreamHandles[7] = { 0 };
-
 static DMAStream_t gDMAStreams[eDMA_STREAM_MAX] = { 0 };
-
-static DMAStream_t* DMAGetStreamById (eDMA_STREAM_ID_t id);
 
 /**
  * @brief This function handles DMA1 stream0 global interrupt.
  */
 void DMA1_Stream0_IRQHandler (void) {
-    HAL_DMA_IRQHandler (DMAGetStreamById (eDMA_STREAM_0));
+    HAL_DMA_IRQHandler (&DMAGetStreamById (eDMA_STREAM_0)->handle);
 }
 
 /**
  * @brief This function handles DMA1 stream1 global interrupt.
  */
 void DMA1_Stream1_IRQHandler (void) {
-    HAL_DMA_IRQHandler (DMAGetStreamById (eDMA_STREAM_1));
+    HAL_DMA_IRQHandler (&DMAGetStreamById (eDMA_STREAM_1)->handle);
 }
 
 /**
  * @brief This function handles DMA1 stream2 global interrupt.
  */
 void DMA1_Stream2_IRQHandler (void) {
-    HAL_DMA_IRQHandler (DMAGetStreamById (eDMA_STREAM_2));
+    HAL_DMA_IRQHandler (&DMAGetStreamById (eDMA_STREAM_2)->handle);
 }
 
 /**
  * @brief This function handles DMA1 stream3 global interrupt.
  */
 void DMA1_Stream3_IRQHandler (void) {
-    HAL_DMA_IRQHandler (DMAGetStreamById (eDMA_STREAM_3));
+    HAL_DMA_IRQHandler (&DMAGetStreamById (eDMA_STREAM_3)->handle);
 }
 
 /**
  * @brief This function handles DMA1 stream4 global interrupt.
  */
 void DMA1_Stream4_IRQHandler (void) {
-    HAL_DMA_IRQHandler (DMAGetStreamById (eDMA_STREAM_4));
+    HAL_DMA_IRQHandler (&DMAGetStreamById (eDMA_STREAM_4)->handle);
 }
 
 /**
  * @brief This function handles DMA1 stream5 global interrupt.
  */
 void DMA1_Stream5_IRQHandler (void) {
-    HAL_DMA_IRQHandler (DMAGetStreamById (eDMA_STREAM_5));
+    HAL_DMA_IRQHandler (&DMAGetStreamById (eDMA_STREAM_5)->handle);
 }
 
 /**
  * @brief This function handles DMA1 stream6 global interrupt.
  */
 void DMA1_Stream6_IRQHandler (void) {
-    HAL_DMA_IRQHandler (DMAGetStreamById (eDMA_STREAM_6));
+    HAL_DMA_IRQHandler (&DMAGetStreamById (eDMA_STREAM_6)->handle);
 }
 
 static eDMA_STREAM_ID_t DMAGetFreeStreamId (void) {
@@ -101,61 +79,23 @@ static DMA_TypeDef* DMAGetInstanceById (eDMA_STREAM_ID_t id) {
     }
 }
 
-eSTATUS_t DMASystemInit (void) {
-    LOG_INFO ("Initializing DMA1 system");
-    // __HAL_RCC_DMA1_CLK_ENABLE ();
+static eSTATUS_t DMAClockInit (DMAInitConf_t conf, DMAStream_t* pOutStream) {
 
-    // gDMAStream_0.Instance = DMA1_Stream0;
-    // gDMAStream_1.Instance = DMA1_Stream1;
-    // gDMAStream_2.Instance = DMA1_Stream2;
-    // gDMAStream_3.Instance = DMA1_Stream3;
-    // gDMAStream_4.Instance = DMA1_Stream4;
-    // gDMAStream_5.Instance = DMA1_Stream5;
-    // gDMAStream_6.Instance = DMA1_Stream6;
-
-    // uint32_t p = 10;
-
-    // HAL_NVIC_SetPriority (DMA1_Stream0_IRQn, p, p);
-    // HAL_NVIC_EnableIRQ (DMA1_Stream0_IRQn);
-
-    // HAL_NVIC_SetPriority (DMA1_Stream1_IRQn, p, p);
-    // HAL_NVIC_EnableIRQ (DMA1_Stream1_IRQn);
-
-    // HAL_NVIC_SetPriority (DMA1_Stream2_IRQn, p, p);
-    // HAL_NVIC_EnableIRQ (DMA1_Stream2_IRQn);
-
-    // HAL_NVIC_SetPriority (DMA1_Stream3_IRQn, p, p);
-    // HAL_NVIC_EnableIRQ (DMA1_Stream3_IRQn);
-
-    // HAL_NVIC_SetPriority (DMA1_Stream4_IRQn, p, p);
-    // HAL_NVIC_EnableIRQ (DMA1_Stream4_IRQn);
-
-    // HAL_NVIC_SetPriority (DMA1_Stream5_IRQn, p, p);
-    // HAL_NVIC_EnableIRQ (DMA1_Stream5_IRQn);
-
-    // HAL_NVIC_SetPriority (DMA1_Stream6_IRQn, p, p);
-    // HAL_NVIC_EnableIRQ (DMA1_Stream6_IRQn);
-
-    return eSTATUS_SUCCESS;
-}
-
-eSTATUS_t DMAClockInit (DMAInitConf_t const* pConf, DMAStream_t* pOutStream) {
-
-    if (pConf == NULL || pOutStream == NULL) {
+    if (pOutStream == NULL) {
         LOG_ERROR ("dma config is NULL");
         return eSTATUS_FAILURE;
     }
     __HAL_RCC_DMA1_CLK_ENABLE ();
 }
 
-eSTATUS_t DMAInit (DMAInitConf_t const* pConf, eDMA_STREAM_ID_t* pOutStreamId) {
+eSTATUS_t DMAInit (DMAInitConf_t conf, eDMA_STREAM_ID_t* pOutStreamId) {
 
-    if (pConf == NULL || pOutStreamId == NULL) {
+    if (pOutStreamId == NULL) {
         LOG_ERROR ("dma config is NULL");
         return eSTATUS_FAILURE;
     }
 
-    if (pConf->direction == DMA_MEMORY_TO_PERIPH && pConf->fifoMode == DMA_FIFOMODE_ENABLE) {
+    if (conf.direction == DMA_MEMORY_TO_PERIPH && conf.fifoMode == DMA_FIFOMODE_ENABLE) {
         LOG_ERROR ("Direct mode (fifo disabled) has to be used for memory-to-peripheral transfers");
         return eSTATUS_FAILURE;
     }
@@ -174,29 +114,27 @@ eSTATUS_t DMAInit (DMAInitConf_t const* pConf, eDMA_STREAM_ID_t* pOutStreamId) {
 
     memset (pStream, 0, sizeof (DMAStream_t));
     pStream->streamId              = streamId;
-    pStream->isInUse               = TRUE;
-    pStream->isInitialized         = TRUE;
     pStream->handle.Instance       = DMAGetInstanceById (streamId);
-    pStream->handle.Init.Request   = pConf->request;
-    pStream->handle.Init.Priority  = pConf->priority;
-    pStream->handle.Init.Direction = pConf->direction;
+    pStream->handle.Init.Request   = conf.request;
+    pStream->handle.Init.Priority  = conf.priority;
+    pStream->handle.Init.Direction = conf.direction;
     pStream->handle.Init.PeriphInc = DMA_PINC_DISABLE;
     pStream->handle.Init.MemInc    = DMA_MINC_ENABLE;
     pStream->handle.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
     pStream->handle.Init.MemDataAlignment    = DMA_MDATAALIGN_WORD;
-    pStream->handle.Init.Mode                = pConf->transferMode;
+    pStream->handle.Init.Mode                = conf.transferMode;
     /*
      * When it is configured in direct mode ***(FIFO disabled)***, to
      * transfer data in memory-to-peripheral mode, the DMA preloads only
      * one data from the memory to the internal FIFO to ensure an immediate
      * data transfer as soon as a DMA request is triggered by a peripheral.
      */
-    pStream->handle.Init.FIFOMode      = pConf->fifoMode;
-    pStream->handle.Init.FIFOThreshold = pConf->fifoThreshold;
+    pStream->handle.Init.FIFOMode      = conf.fifoMode;
+    pStream->handle.Init.FIFOThreshold = conf.fifoThreshold;
     pStream->handle.Init.MemBurst      = DMA_MBURST_SINGLE;
     pStream->handle.Init.PeriphBurst   = DMA_PBURST_SINGLE;
 
-    if (DMAClockInit (pConf, pStream) != eSTATUS_SUCCESS) {
+    if (DMAClockInit (conf, pStream) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize DMA clock");
         goto error;
     }
@@ -205,6 +143,14 @@ eSTATUS_t DMAInit (DMAInitConf_t const* pConf, eDMA_STREAM_ID_t* pOutStreamId) {
         LOG_ERROR ("Failed to initialize DMA");
         goto error;
     }
+
+    if (DMAEnableInterrupts (streamId, 10) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to enable DMA interrupts for timer");
+        goto error;
+    }
+
+    pStream->isInUse       = TRUE;
+    pStream->isInitialized = TRUE;
     return eSTATUS_SUCCESS;
 
 error:
@@ -243,82 +189,4 @@ DMAStream_t* DMAGetStreamById (eDMA_STREAM_ID_t id) {
         return NULL;
     }
     return &gDMAStreams[id];
-}
-
-eSTATUS_t DMASetTimCallback (DMA_HandleTypeDef* hdma, DMACallback cb, eDMA_CB_TYPE cbType) {
-
-    if (hdma == NULL || cb == NULL) {
-        LOG_ERROR ("Invalid DMA handle or callback");
-        return eSTATUS_FAILURE;
-    }
-
-    int32_t idx = DMAStream2Idx (hdma->Instance);
-    if (idx < 0) {
-        LOG_ERROR ("Invalid DMA stream");
-        return eSTATUS_FAILURE;
-    }
-
-    gDMACallbackStreamHandles[idx] = hdma;
-    switch (cbType) {
-    case eDMA_CB_TRANSFER_COMPLETE:
-        gDMAStreamCallbacks[idx][eDMA_CB_TRANSFER_COMPLETE] = cb;
-        break;
-    case eDMA_CB_HALF_TRANSFER:
-        gDMAStreamCallbacks[idx][eDMA_CB_HALF_TRANSFER] = cb;
-        break;
-    case eDMA_CB_TRANSFER_ERROR:
-        gDMAStreamCallbacks[idx][eDMA_CB_TRANSFER_ERROR] = cb;
-        break;
-    case eDMA_CB_ABORT:
-        gDMAStreamCallbacks[idx][eDMA_CB_ABORT] = cb;
-        break;
-    default:
-        LOG_ERROR ("Invalid DMA callback type");
-        return eSTATUS_FAILURE;
-    }
-    return eSTATUS_SUCCESS;
-}
-
-/*
- * If the all the streams are used this doesn't mean that the DMA is not
- * possible. Each stream supports multiple channels, so it can be shared.
- */
-DMA_HandleTypeDef* DMAGetUnusedStreamHandle (void) {
-
-    if (gDMAStreamsAlloced[0] == 0) {
-        gDMAStreamsAlloced[0] = 1;
-        return &gDMAStream_0;
-    }
-
-    if (gDMAStreamsAlloced[1] == 0) {
-        gDMAStreamsAlloced[1] = 1;
-        return &gDMAStream_1;
-    }
-
-    if (gDMAStreamsAlloced[2] == 0) {
-        gDMAStreamsAlloced[2] = 1;
-        return &gDMAStream_2;
-    }
-
-    if (gDMAStreamsAlloced[3] == 0) {
-        gDMAStreamsAlloced[3] = 1;
-        return &gDMAStream_3;
-    }
-
-    if (gDMAStreamsAlloced[4] == 0) {
-        gDMAStreamsAlloced[4] = 1;
-        return &gDMAStream_4;
-    }
-
-    if (gDMAStreamsAlloced[5] == 0) {
-        gDMAStreamsAlloced[5] = 1;
-        return &gDMAStream_5;
-    }
-
-    if (gDMAStreamsAlloced[6] == 0) {
-        gDMAStreamsAlloced[6] = 1;
-        return &gDMAStream_6;
-    }
-    LOG_ERROR ("No unused DMA streams available");
-    return NULL;
 }

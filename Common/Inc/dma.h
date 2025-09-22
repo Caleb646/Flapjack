@@ -5,17 +5,18 @@
 #include "log/logger.h"
 #include <stdint.h>
 
-#define DMA_CHECK_CONF_OK(pDMAConf) \
-    ((pDMAConf) != NULL && (pDMAConf)->pDMA != NULL)
-
-#define DMA_CREATE_PWM_CONF(DMA_STREAM, DIRECTION, PRIORITY, DMA_REQUEST_ID) \
-    { .pDMA          = (DMA_STREAM),                                         \
-      .direction     = (DIRECTION),                                          \
-      .priority      = (PRIORITY),                                           \
-      .request       = (DMA_REQUEST_ID),                                     \
-      .transferMode  = DMA_NORMAL,                                           \
-      .fifoMode      = DMA_FIFOMODE_DISABLE, /* Direct Mode */               \
-      .fifoThreshold = DMA_FIFO_THRESHOLD_FULL }
+#define DMA_INIT_TIMER_PWM(dmaRequestId, pOutDMAStreamId)      \
+    (                                                          \
+    DMAInit (                                                  \
+    { .direction     = eDMA_DIRECTION_MEMORY_TO_PERIPH,        \
+      .priority      = eDMA_PRIORITY_HIGH,                     \
+      .request       = (dmaRequestId),                         \
+      .transferMode  = DMA_NORMAL,                             \
+      .fifoMode      = DMA_FIFOMODE_DISABLE, /* Direct Mode */ \
+      .fifoThreshold = DMA_FIFO_THRESHOLD_FULL },              \
+    (pOutDMAStreamId)                                          \
+    ) != eSTATUS_SUCCESS                                       \
+    )
 
 typedef uint8_t eDMA_STREAM_ID_t;
 enum {
@@ -72,12 +73,8 @@ typedef struct {
     BOOL_t isInitialized;
 } DMAStream_t;
 
-// Forward declaration of the PWM DMA handle structure
-// typedef struct __PWMDMAHandle PWM_DMAHandle;
-
-eSTATUS_t DMASystemInit (void);
-eSTATUS_t DMAInit (DMAConfig config, DMA_HandleTypeDef** ppOutHandle);
+eSTATUS_t DMAInit (DMAInitConf_t conf, eDMA_STREAM_ID_t* pOutStreamId);
+eSTATUS_t DMAEnableInterrupts (eDMA_STREAM_ID_t streamId, uint32_t priority);
 DMAStream_t* DMAGetStreamById (eDMA_STREAM_ID_t id);
-DMA_HandleTypeDef* DMAGetUnusedStreamHandle (void);
 
 #endif /* DMA_H */
