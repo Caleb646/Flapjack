@@ -31,7 +31,7 @@
 #include "timers.h"
 
 #include "common.h"
-#include "conf.h"
+#include "conf/conf.h"
 #include "control.h"
 #include "dma.h"
 #include "log/logger.h"

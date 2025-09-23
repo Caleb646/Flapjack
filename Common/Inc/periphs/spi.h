@@ -2,7 +2,7 @@
 #define PERIPHS_SPI_H
 
 #include "common.h"
-#include "conf.h"
+#include "conf/conf.h"
 #include "hal.h"
 #include "periphs/gpio.h"
 #include <stdint.h>

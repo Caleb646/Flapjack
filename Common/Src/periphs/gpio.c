@@ -1,8 +1,59 @@
 #include "periphs/gpio.h"
 #include "common.h"
+#include "conf/conf.h"
 #include "hal.h"
 #include "log/logger.h"
 
+static GPIO_TypeDef* gPorts[] = { GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF,
+                                  GPIOG, GPIOH, GPIOI, GPIOJ, GPIOK };
+static uint32_t gPins[]       = { GPIO_PIN_0,  GPIO_PIN_1,  GPIO_PIN_2,
+                                  GPIO_PIN_3,  GPIO_PIN_4,  GPIO_PIN_5,
+                                  GPIO_PIN_6,  GPIO_PIN_7,  GPIO_PIN_8,
+                                  GPIO_PIN_9,  GPIO_PIN_10, GPIO_PIN_11,
+                                  GPIO_PIN_12, GPIO_PIN_13, GPIO_PIN_14,
+                                  GPIO_PIN_15 };
+
+static GPIOSPI_t gSPI[eSPI_BUS_ID_MAX]    = { 0 };
+static GPIOUART_t gUART[eUART_BUS_ID_MAX] = { 0 };
+static GPIOI2C_t gI2C[eI2C_BUS_ID_MAX]    = { 0 };
+static GPIOTimer_t gTimers[eTIMER_MAX_ID] = { 0 };
+
+#define GET_PORT(GPIO_ID) gPorts[GPIO_ID2PORTIDX ((GPIO_ID))]
+#define GET_PIN(GPIO_ID)  gPins[GPIO_ID2PINIDX ((GPIO_ID))]
+#define REG_SPI(BUS_ID, SCK, MISO, MOSI, NSS, ALTERNATE)           \
+    do {                                                           \
+        gSPI[SPI_BUS_ID2IDX (BUS_ID)].pMISOPort = GET_PORT (MISO); \
+        gSPI[SPI_BUS_ID2IDX (BUS_ID)].pMOSIPort = GET_PORT (MOSI); \
+        gSPI[SPI_BUS_ID2IDX (BUS_ID)].pSCKPort  = GET_PORT (SCK);  \
+        gSPI[SPI_BUS_ID2IDX (BUS_ID)].pNSSPort  = GET_PORT (NSS);  \
+        gSPI[SPI_BUS_ID2IDX (BUS_ID)].nssPin    = GET_PIN (NSS);   \
+        gSPI[SPI_BUS_ID2IDX (BUS_ID)].misoPin   = GET_PIN (MISO);  \
+        gSPI[SPI_BUS_ID2IDX (BUS_ID)].mosiPin   = GET_PIN (MOSI);  \
+        gSPI[SPI_BUS_ID2IDX (BUS_ID)].sckPin    = GET_PIN (SCK);   \
+        gSPI[SPI_BUS_ID2IDX (BUS_ID)].alternate = (ALTERNATE);     \
+    } while (0)
+#define REG_UART(BUS_ID, RX, TX, ALTERNATE)                        \
+    do {                                                           \
+        gUART[UART_BUS_ID2IDX (BUS_ID)].pRXPort   = GET_PORT (RX); \
+        gUART[UART_BUS_ID2IDX (BUS_ID)].pTXPort   = GET_PORT (TX); \
+        gUART[UART_BUS_ID2IDX (BUS_ID)].rxPin     = GET_PIN (RX);  \
+        gUART[UART_BUS_ID2IDX (BUS_ID)].txPin     = GET_PIN (TX);  \
+        gUART[UART_BUS_ID2IDX (BUS_ID)].alternate = (ALTERNATE);   \
+    } while (0)
+#define REG_I2C(BUS_ID, SDA, SCL, ALTERNATE)                      \
+    do {                                                          \
+        gI2C[I2C_BUS_ID2IDX (BUS_ID)].pSDAPort  = GET_PORT (SDA); \
+        gI2C[I2C_BUS_ID2IDX (BUS_ID)].pSCLPort  = GET_PORT (SCL); \
+        gI2C[I2C_BUS_ID2IDX (BUS_ID)].sdaPin    = GET_PIN (SDA);  \
+        gI2C[I2C_BUS_ID2IDX (BUS_ID)].sclPin    = GET_PIN (SCL);  \
+        gI2C[I2C_BUS_ID2IDX (BUS_ID)].alternate = (ALTERNATE);    \
+    } while (0)
+#define REG_TIMER(TIMER_ID, TIMER_GPIO, ALTERNATE)                          \
+    do {                                                                    \
+        gTimers[TIMER_ID2IDX (TIMER_ID)].pPort     = GET_PORT (TIMER_GPIO); \
+        gTimers[TIMER_ID2IDX (TIMER_ID)].pin       = GET_PIN (TIMER_GPIO);  \
+        gTimers[TIMER_ID2IDX (TIMER_ID)].alternate = (ALTERNATE);           \
+    } while (0)
 
 eSTATUS_t GPIOInitUART (USART_TypeDef* pInstance, GPIOUART_t* pOutUART) {
 
@@ -62,54 +113,24 @@ eSTATUS_t GPIOInitUART (USART_TypeDef* pInstance, GPIOUART_t* pOutUART) {
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t GPIOInitSPI (SPI_TypeDef* pInstance, GPIOSPI_t* pOutSPI) {
+eSTATUS_t GPIOInitSPI (eBUS_ID_t busId, GPIOSPI_t* pOutSPI) {
 
-    if (pInstance == NULL) {
-        LOG_ERROR ("Invalid SPI instance");
+    static BOOL_t initialized = FALSE;
+    if (initialized == FALSE) {
+        REG_SPI (eSPI_1_BUS_ID, eGPIO_A_5_ID, eGPIO_A_6_ID, eGPIO_A_7_ID, eGPIO_C_4_ID, GPIO_AF5_SPI1);
+        REG_SPI (eSPI_3_BUS_ID, eGPIO_C_10_ID, eGPIO_C_11_ID, eGPIO_C_12_ID, eGPIO_A_15_ID, GPIO_AF6_SPI3);
+        REG_SPI (eSPI_5_BUS_ID, eGPIO_F_7_ID, eGPIO_F_8_ID, eGPIO_F_9_ID, eGPIO_F_10_ID, GPIO_AF5_SPI5);
+        initialized = TRUE;
+    }
+
+    if (BUS_ID_IS_SPI (busId) == FALSE) {
         return eSTATUS_FAILURE;
     }
 
-    GPIO_TypeDef* pDataPort = NULL;
-    GPIO_TypeDef* pNSSPort  = NULL;
-    uint16_t nssPin         = 0U;
-    uint16_t dataPins       = 0U;
-    uint32_t alternate      = 0U;
-
-    if (pInstance == SPI1) {
-        SPI1_DATA_GPIO_CLK_ENABLE ();
-        SPI1_NSS_GPIO_CLK_ENABLE ();
-        pDataPort = SPI1_DATA_GPIO_Port;
-        pNSSPort  = SPI1_NSS_GPIO_Port;
-        nssPin    = SPI1_NSS_GPIO_Pin;
-        dataPins  = SPI1_DATA_Pins;
-        alternate = GPIO_AF5_SPI1;
-
-    } else if (pInstance == SPI3) {
-        SPI3_DATA_GPIO_CLK_ENABLE ();
-        SPI3_NSS_GPIO_CLK_ENABLE ();
-        pDataPort = SPI3_DATA_GPIO_Port;
-        pNSSPort  = SPI3_NSS_GPIO_Port;
-        nssPin    = SPI3_NSS_GPIO_Pin;
-        dataPins  = SPI3_DATA_Pins;
-        alternate = GPIO_AF6_SPI3;
-
-    } else if (pInstance == SPI5) {
-        SPI5_DATA_GPIO_CLK_ENABLE ();
-        SPI5_NSS_GPIO_CLK_ENABLE ();
-        pDataPort = SPI5_DATA_GPIO_Port;
-        pNSSPort  = SPI5_NSS_GPIO_Port;
-        nssPin    = SPI5_NSS_GPIO_Pin;
-        dataPins  = SPI5_DATA_Pins;
-        alternate = GPIO_AF5_SPI5;
-
-    } else {
-        LOG_ERROR ("Unsupported SPI instance");
+    GPIOSPI_t* pSPI = &gSPI[SPI_BUS_ID2IDX (busId)];
+    if (pSPI->pSCKPort == NULL || pSPI->pMISOPort == NULL ||
+        pSPI->pMOSIPort == NULL || pSPI->pNSSPort == NULL) {
         return eSTATUS_FAILURE;
-    }
-
-    if (pOutSPI != NULL) {
-        pOutSPI->pNSSPort = pNSSPort;
-        pOutSPI->nssPin   = nssPin;
     }
 
     GPIO_InitTypeDef GPIO_InitStruct = { 0U };

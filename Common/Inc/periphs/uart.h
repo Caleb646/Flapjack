@@ -1,7 +1,7 @@
 #ifndef PERIPHS_UART_H
 #define PERIPHS_UART_H
 #include "common.h"
-#include "conf.h"
+#include "conf/conf.h"
 #include "hal.h"
 #include "periphs/gpio.h"
 

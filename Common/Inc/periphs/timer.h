@@ -2,7 +2,7 @@
 #define __PERIPHS_TIMER_H
 
 #include "common.h"
-#include "conf.h"
+#include "conf/conf.h"
 #include "dma.h"
 #include "hal.h"
 #include "log/logger.h"

@@ -31,7 +31,7 @@
 
 #include "mc/dshot.h"
 #include "common.h"
-#include "conf.h"
+#include "conf/conf.h"
 #include "dma.h"
 #include "hal.h"
 #include "log/logger.h"

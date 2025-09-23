@@ -35,7 +35,6 @@
  * SPI GPIO Configuration
  *
  */
-
 // SPI_1: SCK, MISO, MOSI
 #define SPI1_DATA_Pins              (GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7)
 #define SPI1_DATA_GPIO_Port         GPIOA
@@ -133,9 +132,19 @@
         ((uint32_t)(PIN) << (GPIO_NUMBER * ((STATE) == GPIO_PIN_RESET))); \
     } while (0)
 
+#define GPIO_MAX_PORTS GPIO_NUMBER
+#define GPIO_MAX_PINS  GPIO_NUMBER
+
 typedef struct {
+    GPIO_TypeDef* pSCKPort;
+    GPIO_TypeDef* pMISOPort;
+    GPIO_TypeDef* pMOSIPort;
     GPIO_TypeDef* pNSSPort;
+    uint16_t sckPin;
+    uint16_t misoPin;
+    uint16_t mosiPin;
     uint16_t nssPin;
+    uint16_t alternate;
 } GPIOSPI_t;
 
 typedef struct {
@@ -143,6 +152,7 @@ typedef struct {
     GPIO_TypeDef* pSDAPort;
     uint16_t sclPin;
     uint16_t sdaPin;
+    uint16_t alternate;
 } GPIOI2C_t;
 
 typedef struct {
@@ -150,28 +160,32 @@ typedef struct {
     GPIO_TypeDef* pRXPort;
     uint16_t txPin;
     uint16_t rxPin;
+    uint16_t alternate;
 } GPIOUART_t;
 
 typedef struct {
     GPIO_TypeDef* pPort;
     uint16_t pin;
+    uint16_t alternate;
 } GPIOEXTI_t;
 
 typedef struct {
     GPIO_TypeDef* pPort;
     uint16_t pin;
+    uint16_t alternate;
 } GPIOTimer_t;
 
 typedef struct {
     GPIO_TypeDef* pPort;
     uint16_t pin;
+    uint16_t alternate;
 } GPIOOutput_t;
 
-eSTATUS_t GPIOInitUART (USART_TypeDef* pInstance, GPIOUART_t* pOutGPIO);
-eSTATUS_t GPIOInitSPI (SPI_TypeDef* pInstance, GPIOSPI_t* pOutGPIO);
+eSTATUS_t GPIOInitUART (eBUS_ID_t busId, GPIOUART_t* pOutGPIO);
+eSTATUS_t GPIOInitSPI (eBUS_ID_t busId, GPIOSPI_t* pOutGPIO);
+eSTATUS_t GPIOInitI2C (eBUS_ID_t busId, GPIOI2C_t* pOutGPIO);
+eSTATUS_t GPIOInitTimer (eTIMER_ID_t timerId, GPIOTimer_t* pOutGPIO);
 eSTATUS_t GPIOInitEXTI (IRQn_Type irq, uint32_t pin, GPIOEXTI_t* pOutGPIO);
-eSTATUS_t GPIOInitTimer (TIM_TypeDef* pInstance, uint32_t channelId, GPIOTimer_t* pOutGPIO);
-eSTATUS_t GPIOInitI2C (I2C_TypeDef* pInstance, GPIOI2C_t* pOutGPIO);
 eSTATUS_t GPIOInitOutput (GPIO_TypeDef* pPort, uint16_t pin, GPIOOutput_t* pOutGPIO);
 
 #endif // PERIPHS_GPIO_H

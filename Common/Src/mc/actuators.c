@@ -1,6 +1,6 @@
 #include "mc/actuators.h"
 #include "common.h"
-#include "conf.h"
+#include "conf/conf.h"
 #include "log/logger.h"
 #include "mc/dshot.h"
 #include "periphs/gpio.h"

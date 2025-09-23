@@ -1,6 +1,6 @@
 #include "log/logger.h"
 #include "common.h"
-#include "conf.h"
+#include "conf/conf.h"
 #include "hal.h"
 #include "log/format.h"
 #include "mem/mem.h"

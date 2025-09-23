@@ -2,7 +2,7 @@
 #define MOTION_CONTROL_ACTUATORS_H
 
 #include "common.h"
-#include "conf.h"
+#include "conf/conf.h"
 #include "dma.h"
 #include "hal.h"
 #include "mc/dshot.h"

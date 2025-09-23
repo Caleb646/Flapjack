@@ -34,7 +34,7 @@
 #define __MOTION_CONTROL_DSHOT_H__
 
 #include "common.h"
-#include "conf.h"
+#include "conf/conf.h"
 #include "dma.h"
 #include "hal.h"
 #include "periphs/timer.h"
