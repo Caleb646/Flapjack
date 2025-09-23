@@ -125,67 +125,152 @@
 #define I2C1_GPIO_Port              GPIOB
 #define I2C1_GPIO_CLK_ENABLE()      __HAL_RCC_GPIOB_CLK_ENABLE ()
 
-#define GPIO_NUMBER                 (16U)
 #define GPIO_WRITE_PIN(pPORT, PIN, STATE)                                 \
     do {                                                                  \
         (pPORT)->BSRR =                                                   \
         ((uint32_t)(PIN) << (GPIO_NUMBER * ((STATE) == GPIO_PIN_RESET))); \
     } while (0)
 
-#define GPIO_MAX_PORTS GPIO_NUMBER
-#define GPIO_MAX_PINS  GPIO_NUMBER
+typedef struct {
+    eBUS_ID_t busId;
+    eGPIO_ID_t sckId;
+    eGPIO_ID_t misoId;
+    eGPIO_ID_t mosiId;
+    eGPIO_ID_t nssId;
+    uint16_t alternate;
+} GPIOSPIInitConf_t;
 
 typedef struct {
-    GPIO_TypeDef* pSCKPort;
-    GPIO_TypeDef* pMISOPort;
-    GPIO_TypeDef* pMOSIPort;
-    GPIO_TypeDef* pNSSPort;
-    uint16_t sckPin;
-    uint16_t misoPin;
-    uint16_t mosiPin;
-    uint16_t nssPin;
+    eBUS_ID_t busId;
+    eGPIO_ID_t sclId;
+    eGPIO_ID_t sdaId;
     uint16_t alternate;
-} GPIOSPI_t;
+} GPIOI2CInitConf_t;
 
 typedef struct {
-    GPIO_TypeDef* pSCLPort;
-    GPIO_TypeDef* pSDAPort;
-    uint16_t sclPin;
-    uint16_t sdaPin;
+    eBUS_ID_t busId;
+    eGPIO_ID_t txId;
+    eGPIO_ID_t rxId;
     uint16_t alternate;
-} GPIOI2C_t;
+} GPIOUARTInitConf_t;
 
 typedef struct {
-    GPIO_TypeDef* pTXPort;
-    GPIO_TypeDef* pRXPort;
-    uint16_t txPin;
-    uint16_t rxPin;
-    uint16_t alternate;
-} GPIOUART_t;
+    eTIMER_ID_t timerId;
+} GPIOTimerInitConf_t;
 
 typedef struct {
-    GPIO_TypeDef* pPort;
-    uint16_t pin;
-    uint16_t alternate;
-} GPIOEXTI_t;
-
-typedef struct {
-    GPIO_TypeDef* pPort;
-    uint16_t pin;
-    uint16_t alternate;
-} GPIOTimer_t;
+    eGPIO_ID_t gpioId;
+    uint32_t ownerId;
+    uint16_t mode;
+    uint16_t pull;
+    uint16_t speed;
+    uint32_t alternate;
+} GPIOIOInitConf_t;
 
 typedef struct {
     GPIO_TypeDef* pPort;
     uint16_t pin;
-    uint16_t alternate;
-} GPIOOutput_t;
+    eDEVICE_ID_t ownerId;
+} IO_t;
 
-eSTATUS_t GPIOInitUART (eBUS_ID_t busId, GPIOUART_t* pOutGPIO);
-eSTATUS_t GPIOInitSPI (eBUS_ID_t busId, GPIOSPI_t* pOutGPIO);
-eSTATUS_t GPIOInitI2C (eBUS_ID_t busId, GPIOI2C_t* pOutGPIO);
-eSTATUS_t GPIOInitTimer (eTIMER_ID_t timerId, GPIOTimer_t* pOutGPIO);
-eSTATUS_t GPIOInitEXTI (IRQn_Type irq, uint32_t pin, GPIOEXTI_t* pOutGPIO);
-eSTATUS_t GPIOInitOutput (GPIO_TypeDef* pPort, uint16_t pin, GPIOOutput_t* pOutGPIO);
+IO_t* GPIOGetIOfromId (eGPIO_ID_t gpioId);
+eSTATUS_t GPIOInitSPI (GPIOSPIInitConf_t conf);
+eSTATUS_t GPIOInitI2C (GPIOI2CInitConf_t conf);
+eSTATUS_t GPIOInitUART (GPIOUARTInitConf_t conf);
+eSTATUS_t GPIOInitIO (GPIOIOInitConf_t conf);
+
+#define GPIO_INIT_SPI(pSTATUS, BUS_ID, SCK_ID, MISO_ID, MOSI_ID, NSS_ID, ALTERNATE) \
+    do {                                                                            \
+        GPIOSPIInitConf_t spi = { 0 };                                              \
+        spi.busId             = (BUS_ID);                                           \
+        spi.sckId             = (SCK_ID);                                           \
+        spi.misoId            = (MISO_ID);                                          \
+        spi.mosiId            = (MOSI_ID);                                          \
+        spi.nssId             = (NSS_ID);                                           \
+        spi.alternate         = (ALTERNATE);                                        \
+        *pSTATUS              = GPIOInitSPI (spi);                                  \
+    } while (0)
+
+#define GPIO_INIT_SPI_DATA_ONLY(pSTATUS, BUS_ID, SCK_ID, MISO_ID, MOSI_ID, ALTERNATE) \
+    do {                                                                              \
+        GPIOSPIInitConf_t spi = { 0 };                                                \
+        spi.busId             = (BUS_ID);                                             \
+        spi.sckId             = (SCK_ID);                                             \
+        spi.misoId            = (MISO_ID);                                            \
+        spi.mosiId            = (MOSI_ID);                                            \
+        spi.nssId             = eGPIO_ID_NULL;                                        \
+        spi.alternate         = (ALTERNATE);                                          \
+        *pSTATUS              = GPIOInitSPI (spi);                                    \
+    } while (0)
+
+
+#define GPIO_INIT_I2C(pSTATUS, BUS_ID, SCL_ID, SDA_ID, ALTERNATE) \
+    do {                                                          \
+        GPIOI2CInitConf_t i2c = { 0 };                            \
+        i2c.busId             = (BUS_ID);                         \
+        i2c.sclId             = (SCL_ID);                         \
+        i2c.sdaId             = (SDA_ID);                         \
+        i2c.alternate         = (ALTERNATE);                      \
+        *pSTATUS              = GPIOInitI2C (i2c);                \
+    } while (0)
+
+#define GPIO_INIT_UART(pSTATUS, BUS_ID, TX_ID, RX_ID, ALTERNATE) \
+    do {                                                         \
+        GPIOUARTInitConf_t uart = { 0 };                         \
+        uart.busId              = (BUS_ID);                      \
+        uart.txId               = (TX_ID);                       \
+        uart.rxId               = (RX_ID);                       \
+        uart.alternate          = (ALTERNATE);                   \
+        *pSTATUS                = GPIOInitUART (uart);           \
+    } while (0)
+
+
+#define GPIO_INIT_SPI_NSS_ONLY(pSTATUS, OWNER_ID, NSS_ID, ALTERNATE) \
+    do {                                                             \
+        GPIOIOInitConf_t output = { 0 };                             \
+        output.ownerId          = (OWNER_ID);                        \
+        output.gpioId           = (NSS_ID);                          \
+        output.mode             = GPIO_MODE_OUTPUT_OD;               \
+        output.pull             = GPIO_PULLUP;                       \
+        output.speed            = GPIO_SPEED_FREQ_HIGH;              \
+        output.alternate        = (ALTERNATE);                       \
+        *pSTATUS                = GPIOInitIO (output);               \
+    } while (0)
+
+#define GPIO_INIT_TIMER(pSTATUS, TIMER_ID, TIMER_GPIO_ID, ALTERNATE) \
+    do {                                                             \
+        GPIOIOInitConf_t timer = { 0 };                              \
+        timer.ownerId          = (TIMER_ID);                         \
+        timer.gpioId           = (TIMER_GPIO_ID);                    \
+        timer.mode             = GPIO_MODE_AF_PP;                    \
+        timer.pull             = GPIO_NOPULL;                        \
+        timer.speed            = GPIO_SPEED_FREQ_HIGH;               \
+        timer.alternate        = (ALTERNATE);                        \
+        *pSTATUS               = GPIOInitIO (timer);                 \
+    } while (0)
+
+#define GPIO_INIT_EXTI(pSTATUS, EXTI_ID, EXTI_GPIO_ID, ALTERNATE) \
+    do {                                                          \
+        GPIOIOInitConf_t exti = { 0 };                            \
+        exti.ownerId          = (EXTI_ID);                        \
+        exti.gpioId           = (EXTI_GPIO_ID);                   \
+        exti.mode             = GPIO_MODE_IT_RISING;              \
+        exti.pull             = GPIO_NOPULL;                      \
+        exti.speed            = GPIO_SPEED_FREQ_HIGH;             \
+        exti.alternate        = (ALTERNATE);                      \
+        *pSTATUS              = GPIOInitIO (exti);                \
+    } while (0)
+
+#define GPIO_INIT_IO(pSTATUS, OWNER_ID, GPIO_ID, MODE, PULL, SPEED, ALTERNATE) \
+    do {                                                                       \
+        GPIOIOInitConf_t output = { 0 };                                       \
+        output.ownerId          = (OWNER_ID);                                  \
+        output.gpioId           = (GPIO_ID);                                   \
+        output.mode             = (MODE);                                      \
+        output.pull             = (PULL);                                      \
+        output.speed            = (SPEED);                                     \
+        output.alternate        = (ALTERNATE);                                 \
+        *pSTATUS                = GPIOInitIO (output);                         \
+    } while (0)
 
 #endif // PERIPHS_GPIO_H

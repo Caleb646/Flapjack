@@ -3,104 +3,59 @@
 
 #include <stdint.h>
 
-typedef uint32_t eGPIO_ID_t;
+typedef uint32_t eGPIO_PORTID_t;
 enum {
-    eNULL_GPIO_ID = 0,
-
-    eGPIO_A_0_ID  = (1U << 15U) | 0U,
-    eGPIO_A_1_ID  = (1U << 15U) | 1U,
-    eGPIO_A_2_ID  = (1U << 15U) | 2U,
-    eGPIO_A_3_ID  = (1U << 15U) | 3U,
-    eGPIO_A_4_ID  = (1U << 15U) | 4U,
-    eGPIO_A_5_ID  = (1U << 15U) | 5U,
-    eGPIO_A_6_ID  = (1U << 15U) | 6U,
-    eGPIO_A_7_ID  = (1U << 15U) | 7U,
-    eGPIO_A_8_ID  = (1U << 15U) | 8U,
-    eGPIO_A_9_ID  = (1U << 15U) | 9U,
-    eGPIO_A_10_ID = (1U << 15U) | 10U,
-    eGPIO_A_11_ID = (1U << 15U) | 11U,
-    eGPIO_A_12_ID = (1U << 15U) | 12U,
-    eGPIO_A_13_ID = (1U << 15U) | 13U,
-    eGPIO_A_14_ID = (1U << 15U) | 14U,
-    eGPIO_A_15_ID = (1U << 15U) | 15U,
-
-    eGPIO_B_0_ID  = (1U << 16U) | 0U,
-    eGPIO_B_1_ID  = (1U << 16U) | 1U,
-    eGPIO_B_2_ID  = (1U << 16U) | 2U,
-    eGPIO_B_3_ID  = (1U << 16U) | 3U,
-    eGPIO_B_4_ID  = (1U << 16U) | 4U,
-    eGPIO_B_5_ID  = (1U << 16U) | 5U,
-    eGPIO_B_6_ID  = (1U << 16U) | 6U,
-    eGPIO_B_7_ID  = (1U << 16U) | 7U,
-    eGPIO_B_8_ID  = (1U << 16U) | 8U,
-    eGPIO_B_9_ID  = (1U << 16U) | 9U,
-    eGPIO_B_10_ID = (1U << 16U) | 10U,
-    eGPIO_B_11_ID = (1U << 16U) | 11U,
-    eGPIO_B_12_ID = (1U << 16U) | 12U,
-    eGPIO_B_13_ID = (1U << 16U) | 13U,
-    eGPIO_B_14_ID = (1U << 16U) | 14U,
-    eGPIO_B_15_ID = (1U << 16U) | 15U,
-
-    eGPIO_C_0_ID  = (1U << 17U) | 0U,
-    eGPIO_C_1_ID  = (1U << 17U) | 1U,
-    eGPIO_C_2_ID  = (1U << 17U) | 2U,
-    eGPIO_C_3_ID  = (1U << 17U) | 3U,
-    eGPIO_C_4_ID  = (1U << 17U) | 4U,
-    eGPIO_C_5_ID  = (1U << 17U) | 5U,
-    eGPIO_C_6_ID  = (1U << 17U) | 6U,
-    eGPIO_C_7_ID  = (1U << 17U) | 7U,
-    eGPIO_C_8_ID  = (1U << 17U) | 8U,
-    eGPIO_C_9_ID  = (1U << 17U) | 9U,
-    eGPIO_C_10_ID = (1U << 17U) | 10U,
-    eGPIO_C_11_ID = (1U << 17U) | 11U,
-    eGPIO_C_12_ID = (1U << 17U) | 12U,
-
-    eGPIO_D_0_ID  = (1U << 18U) | 0U,
-    eGPIO_D_1_ID  = (1U << 18U) | 1U,
-    eGPIO_D_2_ID  = (1U << 18U) | 2U,
-    eGPIO_D_3_ID  = (1U << 18U) | 3U,
-    eGPIO_D_4_ID  = (1U << 18U) | 4U,
-    eGPIO_D_5_ID  = (1U << 18U) | 5U,
-    eGPIO_D_6_ID  = (1U << 18U) | 6U,
-    eGPIO_D_7_ID  = (1U << 18U) | 7U,
-    eGPIO_D_8_ID  = (1U << 18U) | 8U,
-    eGPIO_D_9_ID  = (1U << 18U) | 9U,
-    eGPIO_D_10_ID = (1U << 18U) | 10U,
-    eGPIO_D_11_ID = (1U << 18U) | 11U,
-    eGPIO_D_12_ID = (1U << 18U) | 12U,
-    eGPIO_D_13_ID = (1U << 18U) | 13U,
-    eGPIO_D_14_ID = (1U << 18U) | 14U,
-    eGPIO_D_15_ID = (1U << 18U) | 15U,
-
-    eGPIO_E_0_ID = (1U << 19U) | 0U,
-
-    eGPIO_F_0_ID  = (1U << 20U) | 0U,
-    eGPIO_F_1_ID  = (1U << 20U) | 1U,
-    eGPIO_F_2_ID  = (1U << 20U) | 2U,
-    eGPIO_F_3_ID  = (1U << 20U) | 3U,
-    eGPIO_F_4_ID  = (1U << 20U) | 4U,
-    eGPIO_F_5_ID  = (1U << 20U) | 5U,
-    eGPIO_F_6_ID  = (1U << 20U) | 6U,
-    eGPIO_F_7_ID  = (1U << 20U) | 7U,
-    eGPIO_F_8_ID  = (1U << 20U) | 8U,
-    eGPIO_F_9_ID  = (1U << 20U) | 9U,
-    eGPIO_F_10_ID = (1U << 20U) | 10U,
-    eGPIO_F_11_ID = (1U << 20U) | 11U,
-    eGPIO_F_12_ID = (1U << 20U) | 12U,
-    eGPIO_F_13_ID = (1U << 20U) | 13U,
-
-    eGPIO_G_0_ID = (1U << 21U) | 0U,
-    eGPIO_H_0_ID = (1U << 22U) | 0U,
-
-    eGPIO_ID_MAX
+    eGPIO_PORTID_A = 0U,
+    eGPIO_PORTID_B = 1U << 15U,
+    eGPIO_PORTID_C = 1U << 16U,
+    eGPIO_PORTID_D = 1U << 17U,
+    eGPIO_PORTID_E = 1U << 18U,
+    eGPIO_PORTID_F = 1U << 19U,
+    eGPIO_PORTID_G = 1U << 20U,
+    eGPIO_PORTID_H = 1U << 21U,
+    eGPIO_PORTID_I = 1U << 22U,
+    eGPIO_PORTID_J = 1U << 23U,
+    eGPIO_PORTID_K = 1U << 24U,
+    eGPIO_PORTID_END__
 };
 
+#define eGPIO_PORTID_MAX ((24U - 15U) + 2U)
+
+typedef uint8_t eGPIO_PINID_t;
+enum {
+    eGPIO_PINID_0  = 0U,
+    eGPIO_PINID_1  = 1U,
+    eGPIO_PINID_2  = 2U,
+    eGPIO_PINID_3  = 3U,
+    eGPIO_PINID_4  = 4U,
+    eGPIO_PINID_5  = 5U,
+    eGPIO_PINID_6  = 6U,
+    eGPIO_PINID_7  = 7U,
+    eGPIO_PINID_8  = 8U,
+    eGPIO_PINID_9  = 9U,
+    eGPIO_PINID_10 = 10U,
+    eGPIO_PINID_11 = 11U,
+    eGPIO_PINID_12 = 12U,
+    eGPIO_PINID_13 = 13U,
+    eGPIO_PINID_14 = 14U,
+    eGPIO_PINID_15 = 15U,
+    eGPIO_PINID_MAX
+};
+
+// id = port id | pin id
+typedef uint32_t eGPIO_ID_t;
+enum {
+    eGPIO_ID_NULL = INT32_MAX,
+};
+
+#define GPIO_ID_IS_GPIO(id) \
+    ((id) != eGPIO_ID_NULL && ((id) >> 15U) < eGPIO_PORTID_MAX)
 #define GPIO_ID2PORTIDX(id) ((id) >> 15U)
 #define GPIO_ID2PINIDX(id)  ((id) & 0xFFU)
 
-typedef uint16_t eDEVICE_ID_t;
+typedef uint8_t eDEVICE_ID_t;
 enum {
-    eNULL_DEVICE_ID = 0,
+    eDEVICE_ID_NULL = 0,
     eIMU_DEVICE_ID,
     eGPS_DEVICE_ID,
     eBARO_DEVICE_ID,
@@ -131,9 +86,10 @@ enum {
 };
 
 #define SERVO_ID2IDX(id) ((id) - eSERVO_ID_BEGIN__)
-#define MOTOR_ID2IDX(id) ((id) - eMOTOR_ID_BEGIN__)
 #define DEVICE_ID_IS_SERVO(id) \
     ((id) >= eSERVO_ID_BEGIN__ && (id) < eSERVO_ID_END__)
+
+#define MOTOR_ID2IDX(id) ((id) - eMOTOR_ID_BEGIN__)
 #define DEVICE_ID_IS_MOTOR(id) \
     ((id) >= eMOTOR_ID_BEGIN__ && (id) < eMOTOR_ID_END__)
 
@@ -177,31 +133,59 @@ enum {
 #define UART_BUS_ID2IDX(id) ((id) - eUART_BUS_ID_BEGIN__)
 #define I2C_BUS_ID2IDX(id)  ((id) - eI2C_BUS_ID_BEGIN__)
 
-typedef uint32_t eTIMER_ID_t;
+typedef uint32_t eTIMER_DEV_ID_t;
 enum {
-    eTIMER_5_CH1_ID = 0 | 0,
-    eTIMER_5_CH2_ID = 1 | 1,
-    eTIMER_5_CH3_ID = 2 | 2,
-    eTIMER_5_CH4_ID = 3 | 3,
-
-    eTIMER_8_CH1_ID = 4 | 0,
-    eTIMER_8_CH2_ID = 5 | 1,
-    eTIMER_8_CH3_ID = 6 | 2,
-    eTIMER_8_CH4_ID = 7 | 3,
-
-    eTIMER_12_CH1_ID = 8 | 0,
-    eTIMER_12_CH2_ID = 9 | 1,
-
-    eTIMER_13_CH1_ID = 12 | 0,
-    eTIMER_13_CH2_ID = 13 | 1,
-
-    eTIMER_MAX_ID
+    eTIMER_5_DEV_ID  = 0,
+    eTIMER_8_DEV_ID  = 4,
+    eTIMER_12_DEV_ID = 8,
+    eTIMER_13_DEV_ID = 12
 };
 
+typedef uint16_t eTIMER_CHANNEL_ID_t;
+enum {
+    eTIMER_CHANNEL_1_ID = 0,
+    eTIMER_CHANNEL_2_ID,
+    eTIMER_CHANNEL_3_ID,
+    eTIMER_CHANNEL_4_ID,
+    eTIMER_CHANNEL_ID_MAX
+};
+
+// id = timer id | channel id
+typedef uint32_t eTIMER_ID_t;
+enum {
+    eTIMER_ID_NULL = INT32_MAX,
+};
+
+#define eTIMER_ID_MAX                   4U
 #define TIMER_ID_CHANNEL_MASK           0b11U
-#define TIMER_ID2CHANNEL(id)            ((TIM_CHANNEL_1) + ((id) & 0b11U) * 4U)
+#define TIMER_ID_IS_TIMER(id)           ((id) < (eTIMER_ID_MAX << 2U))
+#define TIMER_ID2HALCHANNEL(id)         ((TIM_CHANNEL_1) + ((id) & 0b11U) * 4U)
 #define TIMER_ID2CHANNEL_IDX(id)        ((id) & TIMER_ID_CHANNEL_MASK)
 #define TIMER_ID_CLEAR_CHANNEL_BITS(id) ((id) & ~TIMER_ID_CHANNEL_MASK)
 #define TIMER_ID2IDX(id)                (((id) & ~TIMER_ID_CHANNEL_MASK) >> 2U)
+
+typedef uint16_t eEXTI_ID_t;
+enum {
+    eEXTI_0_ID = 0,
+    eEXTI_1_ID,
+    eEXTI_2_ID,
+    eEXTI_3_ID,
+    eEXTI_4_ID,
+    eEXTI_5_ID,
+    eEXTI_6_ID,
+    eEXTI_7_ID,
+    eEXTI_8_ID,
+    eEXTI_9_ID,
+    eEXTI_10_ID,
+    eEXTI_11_ID,
+    eEXTI_12_ID,
+    eEXTI_13_ID,
+    eEXTI_14_ID,
+    eEXTI_15_ID,
+    eEXTI_ID_MAX
+};
+
+#define EXTI_ID_IS_EXTI(id) ((id) < eEXTI_ID_MAX)
+#define EXTI_ID2IDX(id)     (id)
 
 #endif // CONF_IDS_H

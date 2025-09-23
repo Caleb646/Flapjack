@@ -177,7 +177,7 @@ static eSTATUS_t TimerPWMInit (TimerInitConf_t conf, Timer_t* pOutTimer) {
         return eSTATUS_FAILURE;
     }
 
-    uint32_t channel    = TIMER_ID2CHANNEL (conf.timerId);
+    uint32_t channel    = TIMER_ID2HALCHANNEL (conf.timerId);
     uint32_t autoReload = TIM_AUTORELOAD_PRELOAD_ENABLE;
     uint32_t prescaler  = (uint16_t)(SystemCoreClock / 1000000U) - 1U;
     uint32_t period = (uint16_t)(1000000U / MAX_U32 (conf.hzPeriod, 1U)) - 1U;
@@ -333,7 +333,7 @@ eSTATUS_t TimerStart (eTIMER_ID_t timerId, uint32_t const* pData, uint16_t Lengt
 
     TIM_HandleTypeDef* pHandle = &pTimer->handle;
     TimerInitConf_t* pConf     = &pChannel->conf;
-    uint32_t channel           = TIMER_ID2CHANNEL (timerId);
+    uint32_t channel           = TIMER_ID2HALCHANNEL (timerId);
 
     if (pConf->usingDMA == TRUE && pConf->mode == eTIMER_MODE_PWM) {
 
@@ -373,7 +373,7 @@ eSTATUS_t TimerStop (eTIMER_ID_t timerId) {
 
     TIM_HandleTypeDef* pHandle = &pTimer->handle;
     TimerInitConf_t* pConf     = &pChannel->conf;
-    uint32_t channel           = TIMER_ID2CHANNEL (timerId);
+    uint32_t channel           = TIMER_ID2HALCHANNEL (timerId);
 
     if (pConf->usingDMA == TRUE && pConf->mode == eTIMER_MODE_PWM) {
 
@@ -458,7 +458,7 @@ eSTATUS_t TimerSetRegister (eTIMER_ID_t timerId, eTIMER_SET_REG_t regType, uint3
         __HAL_TIM_SET_AUTORELOAD (&pTimer->handle, value);
         break;
     case eTIMER_SET_REG_COMPARE:
-        __HAL_TIM_SET_COMPARE (&pTimer->handle, TIMER_ID2CHANNEL (timerId), value);
+        __HAL_TIM_SET_COMPARE (&pTimer->handle, TIMER_ID2HALCHANNEL (timerId), value);
         break;
     default:
         LOG_ERROR ("Unsupported register type");
@@ -477,7 +477,7 @@ eTIMER_CHANNEL_STATE_t TimerGetChannelState (eTIMER_ID_t timerId) {
     }
 
     HAL_TIM_ChannelStateTypeDef channelState =
-    TIM_CHANNEL_STATE_GET (&pTimer->handle, TIMER_ID2CHANNEL (timerId));
+    TIM_CHANNEL_STATE_GET (&pTimer->handle, TIMER_ID2HALCHANNEL (timerId));
 
     switch (channelState) {
     case HAL_TIM_CHANNEL_STATE_RESET: return eTIMER_CHANNEL_STATE_RESET;

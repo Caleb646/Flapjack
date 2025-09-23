@@ -18,33 +18,29 @@ enum {
 };
 
 typedef struct {
-    eSPI_BUS_ID_t busId;
+    eBUS_ID_t busId;
     eSPI_SPEED_t speed;
     eDEVICE_ID_t deviceId;
+    eGPIO_ID_t nssId;
 } SPIInitConf_t;
 
 typedef struct {
+    SPIInitConf_t conf;
     SPI_HandleTypeDef handle;
-    eSPI_BUS_ID_t busId;
-    eSPI_SPEED_t speed;
-    BOOL_t isInitialized;
-    GPIOSPI_t gpio[SPI_MAX_DEVICES_PER_BUS];
+    uint32_t gpioAlternate;
+    eGPIO_ID_t nss[SPI_MAX_DEVICES_PER_BUS];
     eDEVICE_ID_t deviceIds[SPI_MAX_DEVICES_PER_BUS];
     uint32_t nDevices;
+    BOOL_t isInitialized;
 } SPIBus_t;
 
-eSTATUS_t SPIInit (SPIInitConf_t const* pConf);
+eSTATUS_t SPIInit (SPIInitConf_t conf);
 eSTATUS_t
-SPIRead_Blocking (eSPI_BUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t* pData, uint16_t size);
+SPIRead_Blocking (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t* pData, uint16_t size);
 eSTATUS_t
-SPIWrite_Blocking (eSPI_BUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pData, uint16_t size);
-eSTATUS_t SPIWriteRead_Blocking (
-eSPI_BUS_ID_t busId,
-eDEVICE_ID_t deviceId,
-uint8_t const* pTxData,
-uint8_t* pRxData,
-uint16_t size
-);
+SPIWrite_Blocking (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pData, uint16_t size);
+eSTATUS_t
+SPIWriteRead_Blocking (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pTxData, uint8_t* pRxData, uint16_t size);
 
 
 #endif /* PERIPHS_SPI_H */
