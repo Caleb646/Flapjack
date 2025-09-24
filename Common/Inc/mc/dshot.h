@@ -65,12 +65,13 @@ typedef struct {
     eDSHOT_TYPE_t dshotType;
     eDEVICE_ID_t deviceId;
     eTIMER_ID_t timerId;
-    GPIOOutput_t gpio;
+    eGPIO_ID_t gpioId;
 } DShotInitConf_t;
 
 typedef struct {
     DShotInitConf_t conf;
     uint32_t pMotorDmaBuffer[DSHOT_DMA_BUFFER_SIZE]; /*!< DMA buffer for DShot */
+    IO_t* pGPIO; /*!< GPIO handle for bitbang */
 
     uint16_t timerTicksPeriod;
     uint16_t timerTicksforBit_1; /*!< microsecond value to send a 1 */
@@ -86,7 +87,27 @@ typedef struct {
 eSTATUS_t DShotInit (DShotInitConf_t conf);
 eSTATUS_t DShotStart (eDEVICE_ID_t deviceId);
 eSTATUS_t DShotStop (eDEVICE_ID_t deviceId);
-eSTATUS_t DShotWrite (eDEVICE_ID_t deviceId, uint16_t motor_value);
+eSTATUS_t DShotWrite (eDEVICE_ID_t deviceId, uint16_t motorVal);
+
+#define DSHOT_INIT_BITBANG(pSTATUS, DEVICE_ID, TIMER_ID, GPIO_ID, DSHOT_TYPE) \
+    do {                                                                      \
+        DShotInitConf_t conf = { 0 };                                         \
+        conf.deviceId        = (DEVICE_ID);                                   \
+        conf.timerId         = (TIMER_ID);                                    \
+        conf.gpioId          = (GPIO_ID);                                     \
+        conf.dshotType       = (DSHOT_TYPE);                                  \
+        *(pSTATUS)           = DShotInit (conf);                              \
+    } while (0)
+
+#define DSHOT_INIT_DMA(pSTATUS, DEVICE_ID, TIMER_ID, GPIO_ID, DSHOT_TYPE) \
+    do {                                                                  \
+        DShotInitConf_t conf = { 0 };                                     \
+        conf.deviceId        = (DEVICE_ID);                               \
+        conf.timerId         = (TIMER_ID);                                \
+        conf.gpioId          = (GPIO_ID);                                 \
+        conf.dshotType       = (DSHOT_TYPE);                              \
+        *(pSTATUS)           = DShotInit (conf);                          \
+    } while (0)
 
 
 #endif /* __MOTION_CONTROL_DSHOT_H__ */

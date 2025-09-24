@@ -5,17 +5,17 @@
 
 typedef uint32_t eGPIO_PORTID_t;
 enum {
-    eGPIO_PORTID_A = 0U,
-    eGPIO_PORTID_B = 1U << 15U,
-    eGPIO_PORTID_C = 1U << 16U,
-    eGPIO_PORTID_D = 1U << 17U,
-    eGPIO_PORTID_E = 1U << 18U,
-    eGPIO_PORTID_F = 1U << 19U,
-    eGPIO_PORTID_G = 1U << 20U,
-    eGPIO_PORTID_H = 1U << 21U,
-    eGPIO_PORTID_I = 1U << 22U,
-    eGPIO_PORTID_J = 1U << 23U,
-    eGPIO_PORTID_K = 1U << 24U,
+    eGPIO_PORTID_A = 1U << 15U,
+    eGPIO_PORTID_B = 1U << 16U,
+    eGPIO_PORTID_C = 1U << 17U,
+    eGPIO_PORTID_D = 1U << 18U,
+    eGPIO_PORTID_E = 1U << 19U,
+    eGPIO_PORTID_F = 1U << 20U,
+    eGPIO_PORTID_G = 1U << 21U,
+    eGPIO_PORTID_H = 1U << 22U,
+    eGPIO_PORTID_I = 1U << 23U,
+    eGPIO_PORTID_J = 1U << 24U,
+    eGPIO_PORTID_K = 1U << 25U,
     eGPIO_PORTID_END__
 };
 
@@ -45,13 +45,15 @@ enum {
 // id = port id | pin id
 typedef uint32_t eGPIO_ID_t;
 enum {
-    eGPIO_ID_NULL = INT32_MAX,
+    eGPIO_ID_NULL = 0U,
 };
 
+#define GPIO_ID_MAKE(port, pin) ((port) | (pin))
 #define GPIO_ID_IS_GPIO(id) \
     ((id) != eGPIO_ID_NULL && ((id) >> 15U) < eGPIO_PORTID_MAX)
-#define GPIO_ID2PORTIDX(id) ((id) >> 15U)
-#define GPIO_ID2PINIDX(id)  ((id) & 0xFFU)
+#define GPIO_ID2PORTIDX(id) \
+    (((id) >> 15U) > 0U ? __builtin_ctz ((id) >> 15U) : 0U)
+#define GPIO_ID2PINIDX(id) ((id) & 0xFFU)
 
 typedef uint8_t eDEVICE_ID_t;
 enum {
@@ -156,13 +158,14 @@ enum {
     eTIMER_ID_NULL = INT32_MAX,
 };
 
-#define eTIMER_ID_MAX                   4U
-#define TIMER_ID_CHANNEL_MASK           0b11U
-#define TIMER_ID_IS_TIMER(id)           ((id) < (eTIMER_ID_MAX << 2U))
-#define TIMER_ID2HALCHANNEL(id)         ((TIM_CHANNEL_1) + ((id) & 0b11U) * 4U)
-#define TIMER_ID2CHANNEL_IDX(id)        ((id) & TIMER_ID_CHANNEL_MASK)
-#define TIMER_ID_CLEAR_CHANNEL_BITS(id) ((id) & ~TIMER_ID_CHANNEL_MASK)
-#define TIMER_ID2IDX(id)                (((id) & ~TIMER_ID_CHANNEL_MASK) >> 2U)
+#define eTIMER_ID_MAX                     4U
+#define TIMER_ID_CHANNEL_MASK             0b11U
+#define TIMER_ID_IS_TIMER(id)             ((id) < (eTIMER_ID_MAX << 2U))
+#define TIMER_ID2HALCHANNEL(id)           ((TIM_CHANNEL_1) + ((id) & 0b11U) * 4U)
+#define TIMER_ID2CHANNEL_IDX(id)          ((id) & TIMER_ID_CHANNEL_MASK)
+#define TIMER_ID_CLEAR_CHANNEL_BITS(id)   ((id) & ~TIMER_ID_CHANNEL_MASK)
+#define TIMER_ID2IDX(id)                  (((id) & ~TIMER_ID_CHANNEL_MASK) >> 2U)
+#define TIMER_ID_MAKE(timerId, channelId) ((timerId) | (channelId))
 
 typedef uint16_t eEXTI_ID_t;
 enum {

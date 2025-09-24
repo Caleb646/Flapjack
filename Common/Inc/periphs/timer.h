@@ -18,32 +18,8 @@
 #define PWM_US2DC(us, usPeriod) \
     (((float)(us) * (100.0F / (float)(usPeriod)))) // Convert microseconds to duty cycle percentage
 
-#define TIMER_SET_PRESCALER(TIMER_ID, PRESCALER) \
-    TimerSetRegister ((TIMER_ID), eTIMER_SET_REG_PRESCALER, (PRESCALER))
-#define TIMER_SET_PERIOD(TIMER_ID, PERIOD) \
-    TimerSetRegister ((TIMER_ID), eTIMER_SET_REG_PERIOD, (PERIOD))
-#define TIMER_SET_COMPARE(TIMER_ID, COMPARE) \
-    TimerSetRegister ((TIMER_ID), eTIMER_SET_REG_COMPARE, (COMPARE))
-
-#define TIMER_CREATE_PWM_CONF(DEVICE_ID, TIMER_ID, HZ, DO_AUTO_PRELOAD) \
-    { .deviceId      = (DEVICE_ID),                                     \
-      .mode          = eTIMER_MODE_PWM,                                 \
-      .timerId       = (TIMER_ID),                                      \
-      .hzPeriod      = (HZ),                                            \
-      .usingDMA      = FALSE,                                           \
-      .doAutoPreload = (DO_AUTO_PRELOAD) }
-
-
-#define TIMER_CREATE_PWM_DMA_CONF(DEVICE_ID, TIMER_ID) \
-    { .deviceId      = (DEVICE_ID),                    \
-      .mode          = eTIMER_MODE_PWM,                \
-      .timerId       = (TIMER_ID),                     \
-      .hzPeriod      = 0U,                             \
-      .usingDMA      = TRUE,                           \
-      .doAutoPreload = TRUE }
-
-#define TIMER_MAX_NUMBER_OF_TIMERS   (TIMER_ID2IDX (eTIMER_MAX_ID) + 1U)
-#define TIMER_MAX_NUMBER_OF_CHANNELS 4U
+#define TIMER_NTIMERS   eTIMER_ID_MAX
+#define TIMER_NCHANNELS 4U
 
 typedef uint8_t eTIMER_SET_REG_t;
 enum {
@@ -90,7 +66,7 @@ typedef struct {
 
 typedef struct {
     TIM_HandleTypeDef handle;
-    TimerChannel_t channels[TIMER_MAX_NUMBER_OF_CHANNELS];
+    TimerChannel_t channels[TIMER_NCHANNELS];
     BOOL_t isTimerInitialized;
 } Timer_t;
 
@@ -106,5 +82,39 @@ eSTATUS_t TimerStop (eTIMER_ID_t timerId);
 eSTATUS_t TimerWrite (eTIMER_ID_t timerId, uint32_t usUpTime);
 eSTATUS_t TimerRegisterCallback (eTIMER_ID_t timerId, TimerCallback_t callback, eTIMER_CALLBACK_ID_t cbType);
 eSTATUS_t TimerSetRegister (eTIMER_ID_t timerId, eTIMER_SET_REG_t regType, uint32_t value);
+
+#define TIMER_SET_PRESCALER(TIMER_ID, PRESCALER) \
+    TimerSetRegister ((TIMER_ID), eTIMER_SET_REG_PRESCALER, (PRESCALER))
+#define TIMER_SET_PERIOD(TIMER_ID, PERIOD) \
+    TimerSetRegister ((TIMER_ID), eTIMER_SET_REG_PERIOD, (PERIOD))
+#define TIMER_SET_COMPARE(TIMER_ID, COMPARE) \
+    TimerSetRegister ((TIMER_ID), eTIMER_SET_REG_COMPARE, (COMPARE))
+
+
+#define TIMER_INIT_PWM(pSTATUS, DEVICE_ID, TIMER_ID, HZ, DO_AUTO_PRELOAD) \
+    do {                                                                  \
+        TimerInitConf_t conf = { 0 };                                     \
+        conf.deviceId        = (DEVICE_ID);                               \
+        conf.mode            = eTIMER_MODE_PWM;                           \
+        conf.timerId         = (TIMER_ID);                                \
+        conf.hzPeriod        = (HZ);                                      \
+        conf.usingDMA        = FALSE;                                     \
+        conf.doAutoPreload   = (DO_AUTO_PRELOAD);                         \
+        *(pSTATUS)           = TimerInit (conf);                          \
+    } while (0)
+
+
+#define TIMER_INIT_PWM_DMA(pSTATUS, DEVICE_ID, TIMER_ID) \
+    do {                                                 \
+        TimerInitConf_t conf = { 0 };                    \
+        conf.deviceId        = (DEVICE_ID);              \
+        conf.mode            = eTIMER_MODE_PWM;          \
+        conf.timerId         = (TIMER_ID);               \
+        conf.hzPeriod        = 0U;                       \
+        conf.usingDMA        = TRUE;                     \
+        conf.doAutoPreload   = TRUE;                     \
+        *(pSTATUS)           = TimerInit (conf);         \
+    } while (0)
+
 
 #endif // __PERIPHS_TIMER_H

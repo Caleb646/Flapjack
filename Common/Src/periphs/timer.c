@@ -7,7 +7,7 @@
 #include "periphs/gpio.h"
 #include <stdint.h>
 
-static Timer_t gTimers[TIMER_MAX_NUMBER_OF_TIMERS] = { 0 };
+static Timer_t gTimers[TIMER_NTIMERS] = { 0 };
 
 static Timer_t* TimerGetByInstance (TIM_TypeDef* instance);
 static void TimerHandleCallback (TIM_HandleTypeDef* htim, eTIMER_CALLBACK_ID_t callbackType);
@@ -80,7 +80,7 @@ static Timer_t* TimerGetByInstance (TIM_TypeDef* instance) {
         return NULL;
     }
 
-    for (uint32_t i = 0; i < TIMER_MAX_NUMBER_OF_TIMERS; i++) {
+    for (uint32_t i = 0; i < TIMER_NTIMERS; ++i) {
         if (gTimers[i].handle.Instance == instance) {
             return &gTimers[i];
         }
@@ -92,10 +92,10 @@ static TIM_TypeDef* TimerGetInstanceById (eTIMER_ID_t timerId) {
 
     // Clear channel bits
     switch (TIMER_ID_CLEAR_CHANNEL_BITS (timerId)) {
-    case eTIMER_5_CH1_ID: return TIM5;
-    case eTIMER_8_CH1_ID: return TIM8;
-    case eTIMER_12_CH1_ID: return TIM12;
-    case eTIMER_13_CH1_ID: return TIM13;
+    case eTIMER_5_DEV_ID: return TIM5;
+    case eTIMER_8_DEV_ID: return TIM8;
+    case eTIMER_12_DEV_ID: return TIM12;
+    case eTIMER_13_DEV_ID: return TIM13;
     default:
         LOG_ERROR ("Invalid timer ID: %u", (uint16_t)timerId);
         return NULL;
@@ -105,7 +105,7 @@ static TIM_TypeDef* TimerGetInstanceById (eTIMER_ID_t timerId) {
 static Timer_t* TimerGetById (eTIMER_ID_t timerId) {
 
     uint32_t timerIdx = TIMER_ID2IDX (timerId);
-    if (timerIdx >= TIMER_MAX_NUMBER_OF_TIMERS) {
+    if (timerIdx >= TIMER_NTIMERS) {
         LOG_ERROR ("Invalid timer index: %u", (uint16_t)timerIdx);
         return NULL;
     }
@@ -121,7 +121,7 @@ static TimerChannel_t* TimerGetChannelById (eTIMER_ID_t timerId) {
     }
 
     uint32_t channelIdx = TIMER_ID2CHANNEL_IDX (timerId);
-    if (channelIdx >= TIMER_MAX_NUMBER_OF_CHANNELS) {
+    if (channelIdx >= TIMER_NCHANNELS) {
         LOG_ERROR ("Invalid timer channel index: %u", (uint16_t)channelIdx);
         return NULL;
     }
@@ -133,18 +133,10 @@ static TimerChannel_t* TimerGetChannelById (eTIMER_ID_t timerId) {
  */
 static uint32_t TimerID2DMARequestID (eTIMER_ID_t timerId) {
 
-    switch (timerId) {
-
-    case eTIMER_5_CH1_ID: return DMA_REQUEST_TIM5_CH1;
-    case eTIMER_5_CH2_ID: return DMA_REQUEST_TIM5_CH2;
-    case eTIMER_5_CH3_ID: return DMA_REQUEST_TIM5_CH3;
-    case eTIMER_5_CH4_ID: return DMA_REQUEST_TIM5_CH4;
-
-    case eTIMER_8_CH1_ID: return DMA_REQUEST_TIM8_CH1;
-    case eTIMER_8_CH2_ID: return DMA_REQUEST_TIM8_CH2;
-    case eTIMER_8_CH3_ID: return DMA_REQUEST_TIM8_CH3;
-    case eTIMER_8_CH4_ID: return DMA_REQUEST_TIM8_CH4;
-
+    uint32_t channelIdx = TIMER_ID2CHANNEL_IDX (timerId);
+    switch (TIMER_ID_CLEAR_CHANNEL_BITS (timerId)) {
+    case eTIMER_5_DEV_ID: return DMA_REQUEST_TIM5_CH1 + channelIdx;
+    case eTIMER_8_DEV_ID: return DMA_REQUEST_TIM8_CH1 + channelIdx;
     default:
         LOG_ERROR ("Invalid timer ID for DMA request: %u", (uint16_t)timerId);
         return 0;
@@ -159,10 +151,10 @@ static eSTATUS_t TimerClockInit (TimerInitConf_t conf, Timer_t* pOutTimer) {
     }
 
     switch (TIMER_ID_CLEAR_CHANNEL_BITS (conf.timerId)) {
-    case eTIMER_5_CH1_ID: __HAL_RCC_TIM5_CLK_ENABLE (); break;
-    case eTIMER_8_CH1_ID: __HAL_RCC_TIM8_CLK_ENABLE (); break;
-    case eTIMER_12_CH1_ID: __HAL_RCC_TIM12_CLK_ENABLE (); break;
-    case eTIMER_13_CH1_ID: __HAL_RCC_TIM13_CLK_ENABLE (); break;
+    case eTIMER_5_DEV_ID: __HAL_RCC_TIM5_CLK_ENABLE (); break;
+    case eTIMER_8_DEV_ID: __HAL_RCC_TIM8_CLK_ENABLE (); break;
+    case eTIMER_12_DEV_ID: __HAL_RCC_TIM12_CLK_ENABLE (); break;
+    case eTIMER_13_DEV_ID: __HAL_RCC_TIM13_CLK_ENABLE (); break;
     default:
         LOG_ERROR ("Invalid timer ID: %u", (uint16_t)conf.timerId);
         return eSTATUS_FAILURE;
@@ -217,9 +209,11 @@ static eSTATUS_t TimerPWMInit (TimerInitConf_t conf, Timer_t* pOutTimer) {
         return eSTATUS_FAILURE;
     }
 
-    if (GPIOInitTimer (pOutTimer->handle.Instance, channel, NULL) != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to initialize GPIO for timer");
-        return eSTATUS_FAILURE;
+    if (conf.usingDMA == TRUE) {
+        if (TimerDMAInit (conf, pOutTimer) != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to initialize Timer DMA");
+            return eSTATUS_FAILURE;
+        }
     }
 
     return eSTATUS_SUCCESS;
@@ -270,6 +264,61 @@ static eSTATUS_t TimerDMAInit (TimerInitConf_t conf, Timer_t* pOutTimer) {
     return eSTATUS_SUCCESS;
 }
 
+eSTATUS_t TimerInitGPIO (TimerChannel_t* pTimerChannel) {
+
+    if (pTimerChannel == NULL) {
+        LOG_ERROR ("Invalid timer pointer");
+        return eSTATUS_FAILURE;
+    }
+
+    eTIMER_ID_t timerId         = pTimerChannel->conf.timerId;
+    eTIMER_DEV_ID_t deviceId    = TIMER_ID_CLEAR_CHANNEL_BITS (timerId);
+    eTIMER_CHANNEL_ID_t channel = TIMER_ID2CHANNEL_IDX (timerId);
+    eGPIO_ID_t gpioId           = eGPIO_ID_NULL;
+    uint32_t alternate          = 0;
+
+    if (deviceId == eTIMER_5_DEV_ID) {
+        alternate = GPIO_AF2_TIM5;
+        if (channel == eTIMER_CHANNEL_1_ID) {
+            gpioId = GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_0); // TIM5_CH1
+        } else if (channel == eTIMER_CHANNEL_2_ID) {
+            gpioId = GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_1); // TIM5_CH2
+        } else if (channel == eTIMER_CHANNEL_3_ID) {
+            gpioId = GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_2); // TIM5_CH3
+        } else if (channel == eTIMER_CHANNEL_4_ID) {
+            gpioId = GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_3); // TIM5_CH4
+        }
+    } else if (deviceId == eTIMER_8_DEV_ID) {
+        alternate = GPIO_AF3_TIM8;
+        if (channel == eTIMER_CHANNEL_1_ID) {
+            gpioId = GPIO_ID_MAKE (eGPIO_PORTID_C, eGPIO_PINID_6); // TIM8_CH1
+        } else if (channel == eTIMER_CHANNEL_2_ID) {
+            gpioId = GPIO_ID_MAKE (eGPIO_PORTID_C, eGPIO_PINID_7); // TIM8_CH2
+        } else if (channel == eTIMER_CHANNEL_3_ID) {
+            gpioId = GPIO_ID_MAKE (eGPIO_PORTID_C, eGPIO_PINID_8); // TIM8_CH3
+        } else if (channel == eTIMER_CHANNEL_4_ID) {
+            gpioId = GPIO_ID_MAKE (eGPIO_PORTID_C, eGPIO_PINID_9); // TIM8_CH4
+        }
+    } else if (deviceId == eTIMER_12_DEV_ID) {
+        alternate = GPIO_AF2_TIM12;
+        if (channel == eTIMER_CHANNEL_1_ID) {
+            gpioId = GPIO_ID_MAKE (eGPIO_PORTID_H, eGPIO_PINID_6); // TIM12_CH1
+        } else if (channel == eTIMER_CHANNEL_2_ID) {
+            gpioId = GPIO_ID_MAKE (eGPIO_PORTID_H, eGPIO_PINID_9); // TIM12_CH2
+        }
+    } // else if (deviceId == eTIMER_13_DEV_ID) {
+      // if (channel == eTIMER_CHANNEL_1_ID) {
+      //  gpioId = GPIO_ID_MAKE (eGPIO_PORTID_F, eGPIO_PINID_8); // TIM13_CH1
+    //}
+    eSTATUS_t status = eSTATUS_SUCCESS;
+    GPIO_INIT_TIMER (&status, timerId, gpioId, alternate);
+    if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to initialize GPIO for timer");
+        return eSTATUS_FAILURE;
+    }
+    return eSTATUS_SUCCESS;
+}
+
 eSTATUS_t TimerInit (TimerInitConf_t conf) {
 
     Timer_t* pTimer = TimerGetById (conf.timerId);
@@ -310,6 +359,11 @@ eSTATUS_t TimerInit (TimerInitConf_t conf) {
 
     } else {
         LOG_ERROR ("Unsupported timer mode: %u", (uint16_t)conf.mode);
+        goto error;
+    }
+
+    if (TimerInitGPIO (pChannel) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to initialize timer GPIO");
         goto error;
     }
 

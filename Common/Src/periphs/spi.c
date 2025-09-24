@@ -1,9 +1,9 @@
 #include "periphs/spi.h"
 #include "common.h"
+#include "conf/conf.h"
 #include "hal.h"
 #include "log/logger.h"
 #include "periphs/gpio.h"
-
 
 #define IS_BUS_VALID(pBus) (pBus != NULL && pBus->isInitialized == TRUE)
 #define SPI_BEGIN(busId)                                    \
@@ -17,10 +17,10 @@
         LOG_ERROR ("Failed to get GPIO for SPI device ID"); \
         return eSTATUS_FAILURE;                             \
     }                                                       \
-    HAL_GPIO_WritePin (pGPIO->pPort, pGPIO->pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin (pGPIO->pPort, pGPIO->pin, GPIO_PIN_RESET)
 
 #define SPI_END() \
-    HAL_GPIO_WritePin (pGPIO->pPort, pGPIO->pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin (pGPIO->pPort, pGPIO->pin, GPIO_PIN_SET)
 
 static SPIBus_t gSPIBusses[eSPI_BUS_ID_MAX] = { 0 };
 
@@ -72,7 +72,7 @@ static BOOL_t SPIAddDevice2Bus (SPIBus_t* pBus, eGPIO_ID_t nssId, eDEVICE_ID_t d
     }
 
     eSTATUS_t status = eSTATUS_SUCCESS;
-    GPIO_INIT_SPI_NSS_ONLY (&status, deviceId, nssId, pBus->gpioAlternate);
+    GPIO_INIT_SPI_SOFTWARE_NSS_ONLY (&status, deviceId, nssId);
 
     pBus->nss[pBus->nDevices]       = nssId;
     pBus->deviceIds[pBus->nDevices] = deviceId;
@@ -135,65 +135,54 @@ static eSTATUS_t SPIClockInit (eBUS_ID_t busId) {
     return eSTATUS_SUCCESS;
 }
 
-static eSTATUS_t SPIInitAllGPIODataPins (void) {
+static eSTATUS_t SPIInitAllGPIODataPins (eBUS_ID_t busId) {
 
-    static BOOL_t isInitialized = FALSE;
-    if (isInitialized == TRUE) {
-        return eSTATUS_SUCCESS;
+    eSTATUS_t status = eSTATUS_SUCCESS;
+    if (busId == eSPI_1_BUS_ID) {
+        GPIO_INIT_SPI_DATA_ONLY (
+        &status,
+        eSPI_1_BUS_ID,
+        eGPIO_PORTID_A | eGPIO_PINID_5, // SCK
+        eGPIO_PORTID_A | eGPIO_PINID_6, // MISO
+        eGPIO_PORTID_A | eGPIO_PINID_7, // MOSI
+        GPIO_AF5_SPI1
+        );
+
+        if (status != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to initialize SPI1 GPIO");
+            return status;
+        }
+    } else if (busId == eSPI_3_BUS_ID) {
+        GPIO_INIT_SPI_DATA_ONLY (
+        &status,
+        eSPI_3_BUS_ID,
+        eGPIO_PORTID_C | eGPIO_PINID_10, // SCK
+        eGPIO_PORTID_C | eGPIO_PINID_11, // MISO
+        eGPIO_PORTID_C | eGPIO_PINID_12, // MOSI
+        GPIO_AF6_SPI3
+        );
+
+        if (status != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to initialize SPI3 GPIO");
+            return status;
+        }
+    } else if (busId == eSPI_5_BUS_ID) {
+        GPIO_INIT_SPI_DATA_ONLY (
+        &status,
+        eSPI_5_BUS_ID,
+        eGPIO_PORTID_F | eGPIO_PINID_7, // SCK
+        eGPIO_PORTID_F | eGPIO_PINID_8, // MISO
+        eGPIO_PORTID_F | eGPIO_PINID_9, // MOSI
+        GPIO_AF5_SPI5
+        );
     }
-
-    eSTATUS_t status    = eSTATUS_SUCCESS;
-    SPIBus_t* pBus      = SPIGetBusById (eSPI_1_BUS_ID);
-    pBus->gpioAlternate = GPIO_AF5_SPI1;
-    GPIO_INIT_SPI_DATA_ONLY (
-    &status,
-    eSPI_1_BUS_ID,
-    eGPIO_PORTID_A | eGPIO_PINID_5, // SCK
-    eGPIO_PORTID_A | eGPIO_PINID_6, // MISO
-    eGPIO_PORTID_A | eGPIO_PINID_7, // MOSI
-    GPIO_AF5_SPI1
-    );
-
-    if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to initialize SPI1 GPIO");
-        return status;
-    }
-
-    pBus                = SPIGetBusById (eSPI_3_BUS_ID);
-    pBus->gpioAlternate = GPIO_AF6_SPI3;
-    GPIO_INIT_SPI_DATA_ONLY (
-    &status,
-    eSPI_3_BUS_ID,
-    eGPIO_PORTID_C | eGPIO_PINID_10, // SCK
-    eGPIO_PORTID_C | eGPIO_PINID_11, // MISO
-    eGPIO_PORTID_C | eGPIO_PINID_12, // MOSI
-    GPIO_AF6_SPI3
-    );
-
-    if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to initialize SPI3 GPIO");
-        return status;
-    }
-
-    pBus                = SPIGetBusById (eSPI_5_BUS_ID);
-    pBus->gpioAlternate = GPIO_AF5_SPI5;
-    GPIO_INIT_SPI_DATA_ONLY (
-    &status,
-    eSPI_5_BUS_ID,
-    eGPIO_PORTID_F | eGPIO_PINID_7, // SCK
-    eGPIO_PORTID_F | eGPIO_PINID_8, // MISO
-    eGPIO_PORTID_F | eGPIO_PINID_9, // MOSI
-    GPIO_AF5_SPI5
-    );
-
-    isInitialized = TRUE;
     return eSTATUS_SUCCESS;
 }
 
 eSTATUS_t SPIInit (SPIInitConf_t conf) {
 
-    if (SPIInitAllGPIODataPins () != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to initialize SPI GPIO data pins");
+    if (BUS_ID_IS_SPI (conf.busId) == FALSE) {
+        LOG_ERROR ("Invalid SPI bus ID");
         return eSTATUS_FAILURE;
     }
 
@@ -248,6 +237,11 @@ eSTATUS_t SPIInit (SPIInitConf_t conf) {
 
     if (HAL_SPI_Init (&pBus->handle) != HAL_OK) {
         LOG_ERROR ("Failed to initialize HAL for SPI bus");
+        goto error;
+    }
+
+    if (SPIInitGPIO (conf.busId) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to initialize SPI GPIO data pins");
         goto error;
     }
 

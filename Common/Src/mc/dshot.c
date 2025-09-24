@@ -127,20 +127,19 @@ static eSTATUS_t DShotInitBitbang (DShot_t* pDShot) {
     }
 
     DShotInitConf_t* pConf = &pDShot->conf;
-    if (pConf->gpio.pPort == NULL) {
-        LOG_ERROR ("DShot config gpio is null");
-        return eSTATUS_FAILURE;
-    }
-
     if (DSHOT_TYPE_IS_BITBANG (pConf->dshotType) == FALSE) {
         LOG_ERROR ("DShot type does NOT use bitbang");
         return eSTATUS_FAILURE;
     }
 
-    if (GPIOInitOutput (pConf->gpio.pPort, pConf->gpio.pin, &pConf->gpio) != eSTATUS_SUCCESS) {
+    eSTATUS_t status = eSTATUS_SUCCESS;
+    GPIO_INIT_OUTPUT (&status, pConf->deviceId, pConf->gpioId);
+    if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize GPIO for DShot");
-        return eSTATUS_FAILURE;
+        return status;
     }
+
+    pDShot->pGPIO = GPIOGetIOfromId (pConf->gpioId);
 
     /*
      * Scale clock frequency from 64 MHz to 1 MHz.
@@ -195,15 +194,13 @@ static eSTATUS_t DShotInitDMA (DShot_t* pDShot) {
     }
 
     DShotInitConf_t* pConf = &pDShot->conf;
-
     if (DSHOT_TYPE_IS_DMA (pConf->dshotType) == FALSE) {
         LOG_ERROR ("DShot type does NOT use dma");
     }
 
-    TimerInitConf_t timerConf =
-    TIMER_CREATE_PWM_DMA_CONF (pConf->deviceId, pConf->timerId);
-
-    if (TimerInit (timerConf) != eSTATUS_SUCCESS) {
+    eSTATUS_t status = eSTATUS_SUCCESS;
+    TIMER_INIT_PWM_DMA (&status, pConf->deviceId, pConf->timerId);
+    if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize timer for DShot");
         return eSTATUS_FAILURE;
     }
@@ -282,13 +279,8 @@ static eSTATUS_t DShotWriteDMA (DShot_t* pDShot, uint16_t motorVal) {
 
 static eSTATUS_t DShotWriteBitbang (DShot_t* pDShot, uint16_t motorVal) {
 
-    if (pDShot == NULL) {
+    if (pDShot == NULL || pDShot->pGPIO == NULL) {
         LOG_ERROR ("Received NULL pointer for DShot handle");
-        return eSTATUS_FAILURE;
-    }
-
-    if (pDShot->conf.gpio.pPort == NULL) {
-        LOG_ERROR ("DShot GPIO port is NULL");
         return eSTATUS_FAILURE;
     }
 
@@ -307,9 +299,9 @@ static eSTATUS_t DShotWriteBitbang (DShot_t* pDShot, uint16_t motorVal) {
                 // bit is 0
                 usDelay = (uint32_t)usDelayForBit0;
             }
-            GPIO_WRITE_PIN (pDShot->conf.gpio.pPort, pDShot->conf.gpio.pin, GPIO_PIN_SET);
+            GPIO_WRITE_PIN (pDShot->pGPIO->pPort, pDShot->pGPIO->pin, GPIO_PIN_SET);
             fDelayMicroseconds (usDelay);
-            GPIO_WRITE_PIN (pDShot->conf.gpio.pPort, pDShot->conf.gpio.pin, GPIO_PIN_RESET);
+            GPIO_WRITE_PIN (pDShot->pGPIO->pPort, pDShot->pGPIO->pin, GPIO_PIN_RESET);
             fDelayMicroseconds (usPeriod - usDelay);
             motorVal <<= 1U;
         }

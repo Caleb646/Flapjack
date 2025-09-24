@@ -125,10 +125,9 @@
 #define I2C1_GPIO_Port              GPIOB
 #define I2C1_GPIO_CLK_ENABLE()      __HAL_RCC_GPIOB_CLK_ENABLE ()
 
-#define GPIO_WRITE_PIN(pPORT, PIN, STATE)                                 \
-    do {                                                                  \
-        (pPORT)->BSRR =                                                   \
-        ((uint32_t)(PIN) << (GPIO_NUMBER * ((STATE) == GPIO_PIN_RESET))); \
+#define GPIO_WRITE_PIN(pPORT, PIN, STATE)                                         \
+    do {                                                                          \
+        (pPORT)->BSRR = ((uint32_t)(PIN) << (16U * ((STATE) == GPIO_PIN_RESET))); \
     } while (0)
 
 typedef struct {
@@ -174,6 +173,8 @@ typedef struct {
 } IO_t;
 
 IO_t* GPIOGetIOfromId (eGPIO_ID_t gpioId);
+eSTATUS_t GPIOFreeById (eGPIO_ID_t gpioId);
+eSTATUS_t GPIOFreeByIO (IO_t* pIO);
 eSTATUS_t GPIOInitSPI (GPIOSPIInitConf_t conf);
 eSTATUS_t GPIOInitI2C (GPIOI2CInitConf_t conf);
 eSTATUS_t GPIOInitUART (GPIOUARTInitConf_t conf);
@@ -188,7 +189,7 @@ eSTATUS_t GPIOInitIO (GPIOIOInitConf_t conf);
         spi.mosiId            = (MOSI_ID);                                          \
         spi.nssId             = (NSS_ID);                                           \
         spi.alternate         = (ALTERNATE);                                        \
-        *pSTATUS              = GPIOInitSPI (spi);                                  \
+        *(pSTATUS)            = GPIOInitSPI (spi);                                  \
     } while (0)
 
 #define GPIO_INIT_SPI_DATA_ONLY(pSTATUS, BUS_ID, SCK_ID, MISO_ID, MOSI_ID, ALTERNATE) \
@@ -200,7 +201,7 @@ eSTATUS_t GPIOInitIO (GPIOIOInitConf_t conf);
         spi.mosiId            = (MOSI_ID);                                            \
         spi.nssId             = eGPIO_ID_NULL;                                        \
         spi.alternate         = (ALTERNATE);                                          \
-        *pSTATUS              = GPIOInitSPI (spi);                                    \
+        *(pSTATUS)            = GPIOInitSPI (spi);                                    \
     } while (0)
 
 
@@ -211,7 +212,7 @@ eSTATUS_t GPIOInitIO (GPIOIOInitConf_t conf);
         i2c.sclId             = (SCL_ID);                         \
         i2c.sdaId             = (SDA_ID);                         \
         i2c.alternate         = (ALTERNATE);                      \
-        *pSTATUS              = GPIOInitI2C (i2c);                \
+        *(pSTATUS)            = GPIOInitI2C (i2c);                \
     } while (0)
 
 #define GPIO_INIT_UART(pSTATUS, BUS_ID, TX_ID, RX_ID, ALTERNATE) \
@@ -221,20 +222,7 @@ eSTATUS_t GPIOInitIO (GPIOIOInitConf_t conf);
         uart.txId               = (TX_ID);                       \
         uart.rxId               = (RX_ID);                       \
         uart.alternate          = (ALTERNATE);                   \
-        *pSTATUS                = GPIOInitUART (uart);           \
-    } while (0)
-
-
-#define GPIO_INIT_SPI_NSS_ONLY(pSTATUS, OWNER_ID, NSS_ID, ALTERNATE) \
-    do {                                                             \
-        GPIOIOInitConf_t output = { 0 };                             \
-        output.ownerId          = (OWNER_ID);                        \
-        output.gpioId           = (NSS_ID);                          \
-        output.mode             = GPIO_MODE_OUTPUT_OD;               \
-        output.pull             = GPIO_PULLUP;                       \
-        output.speed            = GPIO_SPEED_FREQ_HIGH;              \
-        output.alternate        = (ALTERNATE);                       \
-        *pSTATUS                = GPIOInitIO (output);               \
+        *(pSTATUS)              = GPIOInitUART (uart);           \
     } while (0)
 
 #define GPIO_INIT_TIMER(pSTATUS, TIMER_ID, TIMER_GPIO_ID, ALTERNATE) \
@@ -246,7 +234,7 @@ eSTATUS_t GPIOInitIO (GPIOIOInitConf_t conf);
         timer.pull             = GPIO_NOPULL;                        \
         timer.speed            = GPIO_SPEED_FREQ_HIGH;               \
         timer.alternate        = (ALTERNATE);                        \
-        *pSTATUS               = GPIOInitIO (timer);                 \
+        *(pSTATUS)             = GPIOInitIO (timer);                 \
     } while (0)
 
 #define GPIO_INIT_EXTI(pSTATUS, EXTI_ID, EXTI_GPIO_ID, ALTERNATE) \
@@ -258,7 +246,19 @@ eSTATUS_t GPIOInitIO (GPIOIOInitConf_t conf);
         exti.pull             = GPIO_NOPULL;                      \
         exti.speed            = GPIO_SPEED_FREQ_HIGH;             \
         exti.alternate        = (ALTERNATE);                      \
-        *pSTATUS              = GPIOInitIO (exti);                \
+        *(pSTATUS)            = GPIOInitIO (exti);                \
+    } while (0)
+
+#define GPIO_INIT_OUTPUT(pSTATUS, OWNER_ID, GPIO_ID)    \
+    do {                                                \
+        GPIOIOInitConf_t output = { 0 };                \
+        output.ownerId          = (OWNER_ID);           \
+        output.gpioId           = (GPIO_ID);            \
+        output.mode             = GPIO_MODE_OUTPUT_PP;  \
+        output.pull             = GPIO_PULLUP;          \
+        output.speed            = GPIO_SPEED_FREQ_HIGH; \
+        output.alternate        = 0U;                   \
+        *(pSTATUS)              = GPIOInitIO (output);  \
     } while (0)
 
 #define GPIO_INIT_IO(pSTATUS, OWNER_ID, GPIO_ID, MODE, PULL, SPEED, ALTERNATE) \
@@ -270,7 +270,11 @@ eSTATUS_t GPIOInitIO (GPIOIOInitConf_t conf);
         output.pull             = (PULL);                                      \
         output.speed            = (SPEED);                                     \
         output.alternate        = (ALTERNATE);                                 \
-        *pSTATUS                = GPIOInitIO (output);                         \
+        *(pSTATUS)              = GPIOInitIO (output);                         \
     } while (0)
+
+
+#define GPIO_INIT_SPI_SOFTWARE_NSS_ONLY(pSTATUS, OWNER_ID, NSS_ID) \
+    GPIO_INIT_OUTPUT (pSTATUS, OWNER_ID, NSS_ID)
 
 #endif // PERIPHS_GPIO_H

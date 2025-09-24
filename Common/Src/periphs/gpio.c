@@ -74,6 +74,18 @@ IO_t* GPIOGetIOfromId (eGPIO_ID_t gpioId) {
     return &gIOs[(portIdx * GPIO_NPINS) + pinIdx];
 }
 
+eSTATUS_t GPIOFreeById (eGPIO_ID_t gpioId) {
+    return GPIOFreeByIO (GPIOGetIOfromId (gpioId));
+}
+
+eSTATUS_t GPIOFreeByIO (IO_t* pIO) {
+    if (pIO == NULL) {
+        return eSTATUS_FAILURE;
+    }
+    pIO->ownerId = eDEVICE_ID_NULL;
+    return eSTATUS_SUCCESS;
+}
+
 eSTATUS_t GPIOInitSPI (GPIOSPIInitConf_t conf) {
 
     GPIOBaseInit ();
