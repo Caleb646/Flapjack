@@ -45,6 +45,26 @@
 #define LOG_WARN(...)           LOG_ ("[WARN]", __VA_ARGS__)
 #define LOG_ERROR(...)          LOG_ ("[ERROR]", __VA_ARGS__)
 
+#define LOG_ERROR_IF(cond, ...) \
+    do {                                 \
+        if ((cond) == TRUE) {                     \
+            LOG_ERROR (__VA_ARGS__);    \
+        }                                \
+    } while (0)
+
+#define LOG_ERROR_IF_NOT(cond, ...) LOG_ERROR_IF (!(cond), __VA_ARGS__)
+#define LOG_ERROR_IF_NULL(ptr, ...) LOG_ERROR_IF ((ptr) == NULL, __VA_ARGS__)
+
+#define RETURN_IF(cond, retval, ...)                \
+    do {                                    \
+        if ((cond) == TRUE) {               \
+            LOG_ERROR (__VA_ARGS__);        \
+            return (retval);                \
+        }                                   \
+    } while (0)
+#define RETURN_IF_NOT(cond, retval, ...) RETURN_IF (!(cond), (retval), __VA_ARGS__)
+#define RETURN_IF_NULL(ptr, retval, ...) RETURN_IF ((ptr) == NULL, (retval), __VA_ARGS__)
+
 #define LOG_DATA_TYPE_ATTITUDE  "attitude"
 #define LOG_DATA_TYPE_PID_ATTITUDE  "pid_attitude"
 #define LOG_DATA_TYPE_IMU_CALIB "imu_calib"

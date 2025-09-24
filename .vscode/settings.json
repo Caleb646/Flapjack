@@ -27,7 +27,8 @@
         "vector": "c",
         "uart.h": "c",
         "mmc5983.h": "c",
-        "dev_board.h": "c"
+        "dev_board.h": "c",
+        "my_board.h": "c"
     },
     "C_Cpp.codeAnalysis.clangTidy.enabled": true,
     // "C_Cpp.codeAnalysis.clangTidy.path": "${Env:CLANG_TIDY_PATH}",

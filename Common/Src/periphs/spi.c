@@ -80,121 +80,84 @@ static BOOL_t SPIAddDevice2Bus (SPIBus_t* pBus, eGPIO_ID_t nssId, eDEVICE_ID_t d
     return TRUE;
 }
 
-static eSTATUS_t SPIClockInit (eBUS_ID_t busId) {
+#define SPI_INIT_CLOCK(pSTATUS, BUS_ID, RCC_PERIPH_CLK_SELECTION, RCC_SPI_CLK_SELECTION) \
+    do {                                                                                 \
+        RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = { 0 };                            \
+        PeriphClkInitStruct.PeriphClockSelection = (RCC_PERIPH_CLK_SELECTION);           \
+        PeriphClkInitStruct.Spi123ClockSelection = (RCC_SPI_CLK_SELECTION);              \
+        if ((BUS_ID) > eSPI_3_BUS_ID) {                                                  \
+            PeriphClkInitStruct.Spi123ClockSelection = 0;                                \
+            PeriphClkInitStruct.Spi45ClockSelection = (RCC_SPI_CLK_SELECTION);           \
+        }                                                                                \
+        if (HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct) != HAL_OK) {                \
+            LOG_ERROR ("Failed to configure SPI [%u] clock", (BUS_ID));                  \
+            *(pSTATUS) = eSTATUS_FAILURE;                                                \
+        }                                                                                \
+        *(pSTATUS) = eSTATUS_SUCCESS;                                                    \
+    } while (0)
 
-    RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = { 0 };
-    if (busId == eSPI_1_BUS_ID) {
+static eSTATUS_t
+SPIClockInit (SPIBus_t* pBus, SPIInitConf_t conf, SPIBoardConf_t busBoardConf) {
 
-        PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI1;
-        PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
-
-        if (HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct) != HAL_OK) {
-            LOG_ERROR ("Failed to configure SPI1 clock");
-            return eSTATUS_FAILURE;
-        }
-    } else if (busId == eSPI_2_BUS_ID) {
-
-        PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI2;
-        PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
-
-        if (HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct) != HAL_OK) {
-            LOG_ERROR ("Failed to configure SPI2 clock");
-            return eSTATUS_FAILURE;
-        }
-    } else if (busId == eSPI_3_BUS_ID) {
-
-        PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI3;
-        PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
-
-        if (HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct) != HAL_OK) {
-            LOG_ERROR ("Failed to configure SPI3 clock");
-            return eSTATUS_FAILURE;
-        }
-    } else if (busId == eSPI_4_BUS_ID) {
-
-        PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI4;
-        PeriphClkInitStruct.Spi45ClockSelection = RCC_SPI45CLKSOURCE_PCLK2;
-
-        if (HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct) != HAL_OK) {
-            LOG_ERROR ("Failed to configure SPI4 clock");
-            return eSTATUS_FAILURE;
-        }
-    } else if (busId == eSPI_5_BUS_ID) {
-
-        PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI5;
-        PeriphClkInitStruct.Spi45ClockSelection = RCC_SPI45CLKSOURCE_PCLK2;
-
-        if (HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct) != HAL_OK) {
-            LOG_ERROR ("Failed to configure SPI5 clock");
-            return eSTATUS_FAILURE;
-        }
-    } else {
-        LOG_ERROR ("Unsupported SPI bus ID");
-        return eSTATUS_FAILURE;
-    }
-    return eSTATUS_SUCCESS;
-}
-
-static eSTATUS_t SPIInitAllGPIODataPins (eBUS_ID_t busId) {
-
+    eBUS_ID_t busId  = pBus->busId;
     eSTATUS_t status = eSTATUS_SUCCESS;
     if (busId == eSPI_1_BUS_ID) {
-        GPIO_INIT_SPI_DATA_ONLY (
-        &status,
-        eSPI_1_BUS_ID,
-        eGPIO_PORTID_A | eGPIO_PINID_5, // SCK
-        eGPIO_PORTID_A | eGPIO_PINID_6, // MISO
-        eGPIO_PORTID_A | eGPIO_PINID_7, // MOSI
-        GPIO_AF5_SPI1
-        );
-
-        if (status != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to initialize SPI1 GPIO");
-            return status;
-        }
-    } else if (busId == eSPI_3_BUS_ID) {
-        GPIO_INIT_SPI_DATA_ONLY (
-        &status,
-        eSPI_3_BUS_ID,
-        eGPIO_PORTID_C | eGPIO_PINID_10, // SCK
-        eGPIO_PORTID_C | eGPIO_PINID_11, // MISO
-        eGPIO_PORTID_C | eGPIO_PINID_12, // MOSI
-        GPIO_AF6_SPI3
-        );
-
-        if (status != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to initialize SPI3 GPIO");
-            return status;
-        }
-    } else if (busId == eSPI_5_BUS_ID) {
-        GPIO_INIT_SPI_DATA_ONLY (
-        &status,
-        eSPI_5_BUS_ID,
-        eGPIO_PORTID_F | eGPIO_PINID_7, // SCK
-        eGPIO_PORTID_F | eGPIO_PINID_8, // MISO
-        eGPIO_PORTID_F | eGPIO_PINID_9, // MOSI
-        GPIO_AF5_SPI5
-        );
+        SPI_INIT_CLOCK (&status, eSPI_1_BUS_ID, RCC_PERIPHCLK_SPI1, RCC_SPI123CLKSOURCE_PLL);
+        return status;
     }
-    return eSTATUS_SUCCESS;
+    if (busId == eSPI_2_BUS_ID) {
+        SPI_INIT_CLOCK (&status, eSPI_2_BUS_ID, RCC_PERIPHCLK_SPI2, RCC_SPI123CLKSOURCE_PLL);
+        return status;
+    }
+    if (busId == eSPI_3_BUS_ID) {
+        SPI_INIT_CLOCK (&status, eSPI_3_BUS_ID, RCC_PERIPHCLK_SPI3, RCC_SPI123CLKSOURCE_PLL);
+        return status;
+    }
+    if (busId == eSPI_4_BUS_ID) {
+        SPI_INIT_CLOCK (&status, eSPI_4_BUS_ID, RCC_PERIPHCLK_SPI4, RCC_SPI45CLKSOURCE_PCLK2);
+        return status;
+    }
+    if (busId == eSPI_5_BUS_ID) {
+        SPI_INIT_CLOCK (&status, eSPI_5_BUS_ID, RCC_PERIPHCLK_SPI5, RCC_SPI45CLKSOURCE_PCLK2);
+        return status;
+    }
+    LOG_ERROR ("Unsupported SPI bus ID");
+    return eSTATUS_FAILURE;
 }
 
-eSTATUS_t SPIInit (SPIInitConf_t conf) {
+static eSTATUS_t
+SPIInitGPIO (SPIBus_t* pBus, SPIInitConf_t conf, SPIBoardConf_t busBoardConf) {
 
-    if (BUS_ID_IS_SPI (conf.busId) == FALSE) {
-        LOG_ERROR ("Invalid SPI bus ID");
-        return eSTATUS_FAILURE;
-    }
+    eSTATUS_t status = eSTATUS_SUCCESS;
+    eBUS_ID_t busId  = busBoardConf.header.busId;
+    GPIO_INIT_SPI_DATA_ONLY (
+    &status,
+    busId,
+    busBoardConf.sckId,
+    busBoardConf.misoId,
+    busBoardConf.mosiId,
+    busBoardConf.gpioAlternate
+    );
+    LOG_ERROR_IF (STATUS_FAIL (status), "Failed to initialize SPI GPIO");
+    return status;
+}
 
-    SPIBus_t* pBus = SPIGetBusById (conf.busId);
-    if (pBus == NULL) {
-        LOG_ERROR ("Failed to get SPI bus by ID");
-        return eSTATUS_FAILURE;
-    }
+eSTATUS_t SPIInit (SPIInitConf_t conf, SPIBoardConf_t boardConf) {
+
+    eDEVICE_ID_t deviceId = conf.deviceId;
+    eGPIO_ID_t nssId      = conf.nssId;
+    eBUS_ID_t busId       = boardConf.header.busId;
+    uint16_t speedKHz     = boardConf.speedKHz;
+    LOG_INFO ("Initializing SPI bus %u", busId);
+
+    RETURN_IF_NOT (BUS_ID_IS_SPI (busId), eSTATUS_FAILURE, "Invalid SPI bus ID");
+
+    SPIBus_t* pBus = SPIGetBusById (busId);
+    RETURN_IF_NULL (pBus, eSTATUS_FAILURE, "Failed to get SPI bus by ID");
 
     if (pBus->isInitialized == TRUE) {
 
-        if (SPIAddDevice2Bus (pBus, conf.nssId, conf.deviceId) != TRUE) {
+        if (SPIAddDevice2Bus (pBus, nssId, deviceId) != TRUE) {
             LOG_ERROR ("Failed to add additional device to SPI bus");
             return eSTATUS_FAILURE;
         }
@@ -203,8 +166,9 @@ eSTATUS_t SPIInit (SPIInitConf_t conf) {
     }
 
     memset (pBus, 0, sizeof (SPIBus_t));
-    pBus->conf                    = conf;
-    pBus->handle.Instance         = SPIGetInstanceById (conf.busId);
+    pBus->busId                   = busId;
+    pBus->deviceId                = deviceId;
+    pBus->handle.Instance         = SPIGetInstanceById (busId);
     pBus->handle.Init.Mode        = SPI_MODE_MASTER;
     pBus->handle.Init.Direction   = SPI_DIRECTION_2LINES;
     pBus->handle.Init.DataSize    = SPI_DATASIZE_8BIT;
@@ -230,7 +194,7 @@ eSTATUS_t SPIInit (SPIInitConf_t conf) {
     pBus->handle.Init.MasterKeepIOState = SPI_MASTER_KEEP_IO_STATE_DISABLE;
     pBus->handle.Init.IOSwap            = SPI_IO_SWAP_DISABLE;
 
-    if (SPIClockInit (conf.busId) != eSTATUS_SUCCESS) {
+    if (SPIClockInit (pBus, conf, boardConf) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize SPI clock");
         goto error;
     }
@@ -240,12 +204,12 @@ eSTATUS_t SPIInit (SPIInitConf_t conf) {
         goto error;
     }
 
-    if (SPIInitGPIO (conf.busId) != eSTATUS_SUCCESS) {
+    if (SPIInitGPIO (pBus, conf, boardConf) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize SPI GPIO data pins");
         goto error;
     }
 
-    if (SPIAddDevice2Bus (pBus, conf.nssId, conf.deviceId) != TRUE) {
+    if (SPIAddDevice2Bus (pBus, nssId, deviceId) != TRUE) {
         LOG_ERROR ("Failed to add device to SPI bus");
         goto error;
     }

@@ -31,6 +31,7 @@
 #include "timers.h"
 
 #include "common.h"
+#include "conf/board.h"
 #include "conf/conf.h"
 #include "control.h"
 #include "dma.h"
@@ -309,6 +310,15 @@ int main (void) {
 
     if (SyncInit () != eSTATUS_SUCCESS) {
         CriticalErrorHandler ();
+    }
+
+    if (BoardConfInit () != TRUE) {
+        CriticalErrorHandler ();
+    }
+
+    BoardConf_t const* boardConf = BoardConfGet ();
+    for (uint32_t i = 0; i < boardConf->numDevices; ++i) {
+        DeviceBoardConf_t deviceConf = boardConf->pDeviceBoardConfs[i];
     }
 
     if (LoggerInit () != eSTATUS_SUCCESS) {

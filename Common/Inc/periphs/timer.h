@@ -19,7 +19,7 @@
     (((float)(us) * (100.0F / (float)(usPeriod)))) // Convert microseconds to duty cycle percentage
 
 #define TIMER_NTIMERS   eTIMER_ID_MAX
-#define TIMER_NCHANNELS 4U
+#define TIMER_NCHANNELS eTIMER_CHANNEL_ID_MAX
 
 typedef uint8_t eTIMER_SET_REG_t;
 enum {

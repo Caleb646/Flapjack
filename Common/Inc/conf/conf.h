@@ -7,9 +7,9 @@
 #define CONF_USE_MY_BOARD
 
 #ifdef CONF_USE_MY_BOARD
-#include "conf/my_board.h"
+#include "conf/boards/my_board.h"
 #else
-#include "conf/dev_board.h"
+#include "conf/boards/dev_board.h"
 #endif
 
 

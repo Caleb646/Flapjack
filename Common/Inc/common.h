@@ -43,6 +43,9 @@ enum {
     eSTATUS_FAILURE = -126
 };
 
+#define STATUS_OK(STATUS)   ((STATUS) == eSTATUS_SUCCESS)
+#define STATUS_FAIL(STATUS) ((STATUS) != eSTATUS_SUCCESS)
+
 typedef struct {
     int32_t x, y, z;
 } Vec3;
