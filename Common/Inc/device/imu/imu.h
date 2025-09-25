@@ -2,24 +2,28 @@
 #define SENSORS_IMU_H
 
 #include "common.h"
+#include "conf/board.h"
+#include "conf/conf.h"
+#include "device/imu/bmixxx.h"
 #include "hal.h"
 #include "log/logger.h"
-#include "sensors/imu/bmixxx.h"
 #include <stdint.h>
-
+#include <string.h>
 
 #define IMU_MAGIC 0xFAFAAFAF
 #define IMU_LOG_CALIB_DATA(rslt, error) \
     LOG_DATA (LOG_DATA_TYPE_IMU_CALIB, "{\"rslt\":%u,\"error\":%u}", rslt, error)
 
+typedef uint8_t IMU_ACC_RANGE;
 typedef enum {
     eIMU_ACC_RANGE_2G  = 0x00,
     eIMU_ACC_RANGE_4G  = 0x01,
     eIMU_ACC_RANGE_8G  = 0x02,
     eIMU_ACC_RANGE_16G = 0x03
-} IMU_ACC_RANGE;
+};
 
 // Accelerometer output data rate in Hertz
+typedef uint8_t IMU_ACC_ODR;
 typedef enum {
     eIMU_ACC_ODR_50   = 0x07,
     eIMU_ACC_ODR_100  = 0x08,
@@ -27,13 +31,15 @@ typedef enum {
     eIMU_ACC_ODR_400  = 0x0A,
     eIMU_ACC_ODR_800  = 0x0B,
     eIMU_ACC_ODR_1600 = 0x0C
-} IMU_ACC_ODR;
+};
 
+typedef uint8_t IMU_ACC_BW;
 typedef enum {
     eIMU_ACC_BW_HALF    = BMI3_ACC_BW_ODR_HALF,
     eIMU_ACC_BW_QUARTER = BMI3_ACC_BW_ODR_QUARTER
-} IMU_ACC_BW;
+};
 
+typedef uint8_t IMU_ACC_AVG;
 typedef enum {
     eIMU_ACC_AVG_1  = BMI3_ACC_AVG1,
     eIMU_ACC_AVG_2  = BMI3_ACC_AVG2,
@@ -42,25 +48,28 @@ typedef enum {
     eIMU_ACC_AVG_16 = BMI3_ACC_AVG16,
     eIMU_ACC_AVG_32 = BMI3_ACC_AVG32,
     eIMU_ACC_AVG_64 = BMI3_ACC_AVG64
-} IMU_ACC_AVG;
+};
 
+typedef uint8_t IMU_ACC_MODE;
 typedef enum {
     eIMU_ACC_MODE_DISABLE   = BMI3_ACC_MODE_DISABLE,
     eIMU_ACC_MODE_LOW_PWR   = BMI3_ACC_MODE_LOW_PWR,
     eIMU_ACC_MODE_NORMAL    = BMI3_ACC_MODE_NORMAL,
     eIMU_ACC_MODE_HIGH_PERF = BMI3_ACC_MODE_HIGH_PERF
-} IMU_ACC_MODE;
+};
 
 // degrees per second
+typedef uint8_t IMU_GYRO_RANGE;
 typedef enum {
     eIMU_GYRO_RANGE_125  = 0x00,
     eIMU_GYRO_RANGE_250  = 0x01,
     eIMU_GYRO_RANGE_500  = 0x02,
     eIMU_GYRO_RANGE_1000 = 0x03,
     eIMU_GYRO_RANGE_2000 = 0x04
-} IMU_GYRO_RANGE;
+};
 
 // Gyro output data rate in Hertz
+typedef uint8_t IMU_GYRO_ODR;
 typedef enum {
     eIMU_GYRO_ODR_50   = 0x07,
     eIMU_GYRO_ODR_100  = 0x08,
@@ -68,13 +77,15 @@ typedef enum {
     eIMU_GYRO_ODR_400  = 0x0A,
     eIMU_GYRO_ODR_800  = 0x0B,
     eIMU_GYRO_ODR_1600 = 0x0C
-} IMU_GYRO_ODR;
+};
 
+typedef uint8_t IMU_GYRO_BW;
 typedef enum {
     eIMU_GYRO_BW_HALF    = BMI3_GYR_BW_ODR_HALF,
     eIMU_GYRO_BW_QUARTER = BMI3_GYR_BW_ODR_HALF
-} IMU_GYRO_BW;
+};
 
+typedef uint8_t IMU_GYRO_AVG;
 typedef enum {
     eIMU_GYRO_AVG_1  = BMI3_GYR_AVG1,
     eIMU_GYRO_AVG_2  = BMI3_GYR_AVG2,
@@ -83,15 +94,16 @@ typedef enum {
     eIMU_GYRO_AVG_16 = BMI3_GYR_AVG16,
     eIMU_GYRO_AVG_32 = BMI3_GYR_AVG32,
     eIMU_GYRO_AVG_64 = BMI3_GYR_AVG64
-} IMU_GYRO_AVG;
+};
 
+typedef uint8_t IMU_GYRO_MODE;
 typedef enum {
     eIMU_GYRO_MODE_DISABLE   = BMI3_GYR_MODE_DISABLE,
     eIMU_GYRO_MODE_SUSPEND   = BMI3_GYR_MODE_SUSPEND,
     eIMU_GYRO_MODE_LOW_PWR   = BMI3_GYR_MODE_LOW_PWR,
     eIMU_GYRO_MODE_NORM      = BMI3_GYR_MODE_NORMAL,
     eIMU_GYRO_MODE_HIGH_PERF = BMI3_GYR_MODE_HIGH_PERF
-} IMU_GYRO_MODE;
+};
 
 typedef eSTATUS_t eIMU_STATUS;
 enum {
@@ -173,17 +185,28 @@ typedef struct {
 } IMUAxesRemapConf;
 
 typedef struct {
-    SPI_HandleTypeDef* pSPI;
+    IMUAccConf aconf;
+    IMUGyroConf gconf;
+    IMUAxesRemapConf axesRemapConf;
+    DeviceBoardConf_t boardConf;
+} IMUInitConf_t;
+
+typedef struct {
+    eDEVICE_ID_t deviceId;
+    eBUS_ID_t busId;
     Vec3 volatile rawAccel;
     Vec3 volatile rawGyro;
     IMUAccConf aconf;
     IMUGyroConf gconf;
-    IMUAxesRemapConf axesRemapConf;
+    // IMUAxesRemapConf axesRemapConf;
     eSTATUS_t volatile status;
-    uint32_t volatile msLastAccUpdateTime;
-    uint32_t volatile msLastGyroUpdateTime;
-    uint32_t nDummyBytes;
-} IMU;
+    // uint32_t volatile msLastAccUpdateTime;
+    // uint32_t volatile msLastGyroUpdateTime;
+    uint8_t nDummyBytes;
+    BOOL_t isInitialized;
+} IMU_t;
+
+typedef IMU_t volatile vIMU_t;
 
 typedef struct {
     /*! Stores the self-calibration result */
@@ -194,43 +217,74 @@ typedef struct {
 
 #ifdef UNIT_TEST
 
-eSTATUS_t IMUSendCmd (IMU const* pIMU, uint16_t cmd);
-eSTATUS_t IMUGetFeatureStatus (IMU const* pIMU, uint16_t featureRegAddr, IMUFeatureStatus* pResultOut);
-eSTATUS_t IMUGetINTStatus (IMU const* pIMU, uint16_t* pOutStatus);
-eSTATUS_t IMUGetStatusReg (IMU const* pIMU, uint16_t* pOutStatus);
-eSTATUS_t IMUGetDeviceErr (IMU* pIMU, IMUErr* pOutErr);
-void IMULogDeviceErr (IMU* pIMU, IMUErr const* pErr);
-eSTATUS_t IMUReadReg (IMU const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
-eSTATUS_t IMUWriteReg (IMU const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
-eSTATUS_t IMUUpdateGyro (IMU* pIMU);
-eSTATUS_t IMUUpdateAccel (IMU* pIMU);
-eSTATUS_t IMUSetAxesRemap (IMU* pIMU, IMUAxesRemapConf remap);
-eSTATUS_t IMUSoftReset (IMU* pIMU);
-eSTATUS_t IMUGetConf_ (IMU* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf, uint8_t altConfFlag);
+eSTATUS_t IMUSendCmd (vIMU_t const* pIMU, uint16_t cmd);
+eSTATUS_t IMUGetFeatureStatus (vIMU_t const* pIMU, uint16_t featureRegAddr, IMUFeatureStatus* pResultOut);
+eSTATUS_t IMUGetINTStatus (vIMU_t const* pIMU, uint16_t* pOutStatus);
+eSTATUS_t IMUGetStatusReg (vIMU_t const* pIMU, uint16_t* pOutStatus);
+eSTATUS_t IMUGetDeviceErr (vIMU_t* pIMU, IMUErr* pOutErr);
+void IMULogDeviceErr (vIMU_t* pIMU, IMUErr const* pErr);
+eSTATUS_t IMUReadReg (vIMU_t const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
+eSTATUS_t IMUWriteReg (vIMU_t const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
+eSTATUS_t IMUUpdateGyro (vIMU_t* pIMU);
+eSTATUS_t IMUUpdateAccel (vIMU_t* pIMU);
+eSTATUS_t IMUSetAxesRemap (vIMU_t* pIMU, IMUAxesRemapConf remap);
+eSTATUS_t IMUSoftReset (vIMU_t* pIMU);
+eSTATUS_t IMUGetConf_ (vIMU_t* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf, uint8_t altConfFlag);
 eSTATUS_t
-IMUSetConf_ (IMU* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf, uint8_t altConfFlag);
+IMUSetConf_ (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf, uint8_t altConfFlag);
 eSTATUS_t
-IMUCalibrate (IMU* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSelfCalibResult* pResultOut);
-eSTATUS_t IMUSetupInterrupts (IMU const* pIMU);
-eSTATUS_t IMUEnableInterrupts (IMU const* pIMU);
-eSTATUS_t IMUDisableInterrupts (IMU const* pIMU);
+IMUCalibrate (vIMU_t* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSelfCalibResult* pResultOut);
+eSTATUS_t IMUSetupInterrupts (vIMU_t const* pIMU);
+eSTATUS_t IMUEnableInterrupts (vIMU_t const* pIMU);
+eSTATUS_t IMUDisableInterrupts (vIMU_t const* pIMU);
 eSTATUS_t
 IMUConvertRaw (IMU_ACC_RANGE aRange, Vec3 ra, IMU_GYRO_RANGE gRange, Vec3 rg, Vec3f* pAccelOut, Vec3f* pGyroOut);
 
 #endif
 
-eSTATUS_t IMUInit (IMU* pIMU, SPI_HandleTypeDef* pSPI, IMUAxesRemapConf* pAxesRemapConf);
-eSTATUS_t IMUStart (IMU* pIMU);
-eSTATUS_t IMUStop (IMU* pIMU);
-eSTATUS_t IMUHandleErr (IMU* pIMU);
-eSTATUS_t IMUProcessUpdatefromINT (IMU* pIMU, Vec3f* pOutputAccel, Vec3f* pOutputGyro);
-eSTATUS_t IMUProcessUpdatefromPolling (IMU* pIMU, Vec3f* pOutputAccel, Vec3f* pOutputGyro);
-eSTATUS_t IMUGetConf (IMU* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf);
-eSTATUS_t IMUGetAltConf (IMU* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf);
-eSTATUS_t IMUSetConf (IMU* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf);
-eSTATUS_t IMUSetAltConf (IMU* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf);
+eSTATUS_t IMUInit (IMUInitConf_t conf);
+eSTATUS_t IMUStart (vIMU_t* pIMU);
+eSTATUS_t IMUStop (vIMU_t* pIMU);
+eSTATUS_t IMUHandleErr (vIMU_t* pIMU);
+eSTATUS_t IMUProcessUpdatefromINT (vIMU_t* pIMU, Vec3f* pOutputAccel, Vec3f* pOutputGyro);
+eSTATUS_t IMUProcessUpdatefromPolling (vIMU_t* pIMU, Vec3f* pOutputAccel, Vec3f* pOutputGyro);
+eSTATUS_t IMUGetConf (vIMU_t* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf);
+eSTATUS_t IMUGetAltConf (vIMU_t* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf);
+eSTATUS_t IMUSetConf (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf);
+eSTATUS_t IMUSetAltConf (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf);
 eSTATUS_t IMUCompareConfs (IMUAccConf aconf, IMUGyroConf gconf, IMUAccConf aconf2, IMUGyroConf gconf2);
-void IMU2CPUInterruptHandler (IMU* pIMU);
+void IMU2CPUInterruptHandler (vIMU_t* pIMU);
+
+#define IMU_INIT_FROM_BOARD_CONF(pSTATUS, DEVICE_BOARD_CONF) \
+    do {                                                     \
+        IMUInitConf_t conf = { 0 };                          \
+                                                             \
+        IMUAccConf aconf = { 0 };                            \
+        aconf.odr        = eIMU_ACC_ODR_400;                 \
+        aconf.range      = eIMU_ACC_RANGE_2G;                \
+        aconf.avg        = eIMU_ACC_AVG_16;                  \
+        aconf.bw         = eIMU_ACC_BW_HALF;                 \
+        aconf.mode       = eIMU_ACC_MODE_HIGH_PERF;          \
+                                                             \
+        IMUGyroConf gconf = { 0 };                           \
+        gconf.odr         = eIMU_GYRO_ODR_400;               \
+        gconf.range       = eIMU_GYRO_RANGE_250;             \
+        gconf.avg         = eIMU_GYRO_AVG_16;                \
+        gconf.bw          = eIMU_GYRO_BW_HALF;               \
+        gconf.mode        = eIMU_GYRO_MODE_HIGH_PERF;        \
+                                                             \
+        IMUAxesRemapConf axesRemap = { 0 };                  \
+        axesRemap.remap            = eIMU_AXES_REMAP_YXZ;    \
+        axesRemap.xDir             = eIMU_AXES_DIR_INVERTED; \
+        axesRemap.yDir             = eIMU_AXES_DIR_INVERTED; \
+        axesRemap.zDir             = eIMU_AXES_DIR_INVERTED; \
+                                                             \
+        conf.aconf         = aconf;                          \
+        conf.gconf         = gconf;                          \
+        conf.axesRemapConf = axesRemap;                      \
+        conf.boardConf     = (DEVICE_BOARD_CONF);            \
+        *(pSTATUS)         = IMUInit (conf);                 \
+    } while (0)
 
 
 #endif // SENSORS_IMU_H

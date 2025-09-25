@@ -1,13 +1,17 @@
 #include "periphs/spi.h"
 #include "common.h"
+#include "conf/board.h"
 #include "conf/conf.h"
 #include "hal.h"
 #include "log/logger.h"
+#include "mem/mem.h"
 #include "periphs/gpio.h"
+#include <stdint.h>
+#include <string.h>
 
 #define IS_BUS_VALID(pBus) (pBus != NULL && pBus->isInitialized == TRUE)
 #define SPI_BEGIN(busId)                                    \
-    SPIBus_t* pBus = SPIGetBusById (busId);                 \
+    vSPIBus_t* pBus = SPIGetBusById (busId);                \
     if (IS_BUS_VALID (pBus) == FALSE) {                     \
         LOG_ERROR ("Failed to get SPI bus by ID");          \
         return eSTATUS_FAILURE;                             \
@@ -22,7 +26,7 @@
 #define SPI_END() \
     HAL_GPIO_WritePin (pGPIO->pPort, pGPIO->pin, GPIO_PIN_SET)
 
-static SPIBus_t gSPIBusses[eSPI_BUS_ID_MAX] = { 0 };
+static SHARED_MEM_SECTION SPIBus_t gSPIBusses[eSPI_BUS_ID_MAX] = { 0 };
 
 static SPI_TypeDef* SPIGetInstanceById (eBUS_ID_t busId) {
 
@@ -36,16 +40,17 @@ static SPI_TypeDef* SPIGetInstanceById (eBUS_ID_t busId) {
     }
 }
 
-static SPIBus_t* SPIGetBusById (eBUS_ID_t busId) {
+static vSPIBus_t* SPIGetBusById (eBUS_ID_t busId) {
 
-    if (BUS_ID_IS_SPI (busId) == FALSE) {
+    uint32_t busIndex = SPI_BUS_ID2IDX (busId);
+    if (BUS_ID_IS_SPI (busId) == FALSE || busIndex >= eSPI_BUS_ID_MAX) {
         LOG_ERROR ("Invalid SPI bus ID");
         return NULL;
     }
-    return &gSPIBusses[busId];
+    return &gSPIBusses[busIndex];
 }
 
-static IO_t* SPIGetGPIOByDeviceId (SPIBus_t* pBus, eDEVICE_ID_t deviceId) {
+static IO_t* SPIGetGPIOByDeviceId (vSPIBus_t* pBus, eDEVICE_ID_t deviceId) {
 
     if (pBus == NULL) {
         LOG_ERROR ("Failed to get SPI bus by ID");
@@ -59,7 +64,7 @@ static IO_t* SPIGetGPIOByDeviceId (SPIBus_t* pBus, eDEVICE_ID_t deviceId) {
     return NULL;
 }
 
-static BOOL_t SPIAddDevice2Bus (SPIBus_t* pBus, eGPIO_ID_t nssId, eDEVICE_ID_t deviceId) {
+static BOOL_t SPIAddDevice2Bus (vSPIBus_t* pBus, eGPIO_ID_t nssId, eDEVICE_ID_t deviceId) {
 
     if (pBus == NULL) {
         LOG_ERROR ("Failed to get SPI bus by ID");
@@ -97,27 +102,32 @@ static BOOL_t SPIAddDevice2Bus (SPIBus_t* pBus, eGPIO_ID_t nssId, eDEVICE_ID_t d
     } while (0)
 
 static eSTATUS_t
-SPIClockInit (SPIBus_t* pBus, SPIInitConf_t conf, SPIBoardConf_t busBoardConf) {
+SPIClockInit (vSPIBus_t* pBus, SPIInitConf_t conf, SPIBoardConf_t busBoardConf) {
 
     eBUS_ID_t busId  = pBus->busId;
     eSTATUS_t status = eSTATUS_SUCCESS;
     if (busId == eSPI_1_BUS_ID) {
+        __HAL_RCC_SPI1_CLK_ENABLE ();
         SPI_INIT_CLOCK (&status, eSPI_1_BUS_ID, RCC_PERIPHCLK_SPI1, RCC_SPI123CLKSOURCE_PLL);
         return status;
     }
     if (busId == eSPI_2_BUS_ID) {
+        __HAL_RCC_SPI2_CLK_ENABLE ();
         SPI_INIT_CLOCK (&status, eSPI_2_BUS_ID, RCC_PERIPHCLK_SPI2, RCC_SPI123CLKSOURCE_PLL);
         return status;
     }
     if (busId == eSPI_3_BUS_ID) {
+        __HAL_RCC_SPI3_CLK_ENABLE ();
         SPI_INIT_CLOCK (&status, eSPI_3_BUS_ID, RCC_PERIPHCLK_SPI3, RCC_SPI123CLKSOURCE_PLL);
         return status;
     }
     if (busId == eSPI_4_BUS_ID) {
+        __HAL_RCC_SPI4_CLK_ENABLE ();
         SPI_INIT_CLOCK (&status, eSPI_4_BUS_ID, RCC_PERIPHCLK_SPI4, RCC_SPI45CLKSOURCE_PCLK2);
         return status;
     }
     if (busId == eSPI_5_BUS_ID) {
+        __HAL_RCC_SPI5_CLK_ENABLE ();
         SPI_INIT_CLOCK (&status, eSPI_5_BUS_ID, RCC_PERIPHCLK_SPI5, RCC_SPI45CLKSOURCE_PCLK2);
         return status;
     }
@@ -126,7 +136,7 @@ SPIClockInit (SPIBus_t* pBus, SPIInitConf_t conf, SPIBoardConf_t busBoardConf) {
 }
 
 static eSTATUS_t
-SPIInitGPIO (SPIBus_t* pBus, SPIInitConf_t conf, SPIBoardConf_t busBoardConf) {
+SPIInitGPIO (vSPIBus_t* pBus, SPIInitConf_t conf, SPIBoardConf_t busBoardConf) {
 
     eSTATUS_t status = eSTATUS_SUCCESS;
     eBUS_ID_t busId  = busBoardConf.header.busId;
@@ -152,7 +162,7 @@ eSTATUS_t SPIInit (SPIInitConf_t conf, SPIBoardConf_t boardConf) {
 
     RETURN_IF_NOT (BUS_ID_IS_SPI (busId), eSTATUS_FAILURE, "Invalid SPI bus ID");
 
-    SPIBus_t* pBus = SPIGetBusById (busId);
+    vSPIBus_t* pBus = SPIGetBusById (busId);
     RETURN_IF_NULL (pBus, eSTATUS_FAILURE, "Failed to get SPI bus by ID");
 
     if (pBus->isInitialized == TRUE) {
@@ -161,11 +171,10 @@ eSTATUS_t SPIInit (SPIInitConf_t conf, SPIBoardConf_t boardConf) {
             LOG_ERROR ("Failed to add additional device to SPI bus");
             return eSTATUS_FAILURE;
         }
-
         return eSTATUS_SUCCESS;
     }
 
-    memset (pBus, 0, sizeof (SPIBus_t));
+    memset (pBus, 0, sizeof (vSPIBus_t));
     pBus->busId                   = busId;
     pBus->deviceId                = deviceId;
     pBus->handle.Instance         = SPIGetInstanceById (busId);
@@ -218,7 +227,7 @@ eSTATUS_t SPIInit (SPIInitConf_t conf, SPIBoardConf_t boardConf) {
     return eSTATUS_SUCCESS;
 
 error:
-    memset (pBus, 0, sizeof (SPIBus_t));
+    memset (pBus, 0, sizeof (vSPIBus_t));
     return eSTATUS_FAILURE;
 }
 

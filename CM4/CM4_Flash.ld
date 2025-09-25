@@ -43,8 +43,11 @@ _Min_Stack_Size = 0x400; /* required amount of stack */
 /* Specify the memory areas */
 MEMORY
 {
-FLASH (rx)     : ORIGIN = 0x08100000, LENGTH = 1024K
-RAM (xrw)      : ORIGIN = 0x10000000, LENGTH = 288K
+  FLASH (rx)     : ORIGIN = 0x08100000, LENGTH = 1024K
+  RAM (xrw)      : ORIGIN = 0x10000000, LENGTH = 288K
+  /* 0x30000000 (SRAM1) --> SRAM2 --> 0x30047FFF (SRAM 3) */
+  RAM_D2 (xrw)   : ORIGIN = 0x30000000, LENGTH = 288K
+  RAM_D3 (xrw)   : ORIGIN = 0x38000000, LENGTH = 64K
 }
 
 /* Define output sections */
@@ -161,7 +164,10 @@ SECTIONS
     . = ALIGN(8);
   } >RAM
 
-
+  .shared_mem (NOLOAD) :
+  {
+    KEEP(*(SORT_BY_NAME(.shared_mem*)))
+  } >RAM_D3
 
   /* Remove information from the standard libraries */
   /DISCARD/ :

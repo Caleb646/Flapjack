@@ -34,12 +34,12 @@
 #include "conf/board.h"
 #include "conf/conf.h"
 #include "control.h"
+#include "device/imu/imu.h"
 #include "dma.h"
 #include "log/logger.h"
 #include "mc/actuators.h"
 #include "mc/filter.h"
-#include "periphs/gpio.h"
-#include "sensors/imu/imu.h"
+#include "peripheral/gpio.h"
 #include "sync.h"
 
 
@@ -312,17 +312,54 @@ int main (void) {
         CriticalErrorHandler ();
     }
 
+    if (LoggerInit () != eSTATUS_SUCCESS) {
+        CriticalErrorHandler ();
+    }
+
     if (BoardConfInit () != TRUE) {
         CriticalErrorHandler ();
     }
 
-    BoardConf_t const* boardConf = BoardConfGet ();
-    for (uint32_t i = 0; i < boardConf->numDevices; ++i) {
-        DeviceBoardConf_t deviceConf = boardConf->pDeviceBoardConfs[i];
+    eSTATUS_t status        = eSTATUS_SUCCESS;
+    BoardConf_t* pBoardConf = BoardConfGet ();
+
+    /*
+     * Setup serial debug first so errors can be logged.
+     * TODO: flash maybe should be setup first as well. So if serial debug
+     * is not available logs can be written to flash.
+     */
+    DeviceBoardConf_t* pSerialDebugConf =
+    BoardConfGetDeviceById (eSERIAL_DEBUG_DEVICE_ID);
+    if (pSerialDebugConf != NULL) {
+        SERIAL_DEBUG_INIT_FROM_BOARD_CONF (&status, *pSerialDebugConf);
+        if (status != eSTATUS_SUCCESS) {
+            CriticalErrorHandler ();
+        }
     }
 
-    if (LoggerInit () != eSTATUS_SUCCESS) {
-        CriticalErrorHandler ();
+    for (uint32_t i = 0; i < pBoardConf->numDevices; ++i) {
+        DeviceBoardConf_t deviceConf = pBoardConf->pDeviceBoardConfs[i];
+
+        // Serial debug already initialized
+        if (deviceConf.deviceId == eSERIAL_DEBUG_DEVICE_ID) {
+            continue;
+        }
+
+        switch (deviceConf.deviceId) {
+        case eIMU_DEVICE_ID:
+            IMU_INIT_FROM_BOARD_CONF (&status, deviceConf);
+            LOG_ERROR_IF (status != eSTATUS_SUCCESS, "Failed to init IMU");
+            break;
+        case eMAG_DEVICE_ID: break;            // TODO
+        case eBARO_DEVICE_ID: break;           // TODO
+        case eGPS_DEVICE_ID: break;            // TODO
+        case eFLASH_DEVICE_ID: break;          // TODO
+        case eRF_RECEIVER_DEVICE_ID: break;    // TODO
+        case eCURRENT_SENSOR_DEVICE_ID: break; // TODO
+        default:
+            LOG_ERROR ("Unknown device ID: %d", deviceConf.deviceId);
+            continue;
+        }
     }
 
     if (ControlInit () != eSTATUS_SUCCESS) {
@@ -332,11 +369,6 @@ int main (void) {
     // Wait for CM4 to initialize UART
     HAL_Delay (1000);
 
-    if (DMASystemInit () != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to init DMA system");
-    }
-
-    eSTATUS_t status = eSTATUS_SUCCESS;
     /*
      * Init IMU
      */

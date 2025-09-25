@@ -40,10 +40,11 @@
 #define BUF_MEMSET memset
 #define BUF_MEMCPY memcpy
 
-#define BUF_IS_VALID(b)                         \
-    (                                           \
-    (b) != NULL && (b)->magic1 == 0xDEADBEEF && \
-    (b)->magic2 == ~0xDEADBEEF && (b)->buff != NULL && (b)->size > 0)
+#define BUF_IS_VALID(b)                                              \
+    (                                                                \
+    (b) != NULL && (b)->magic1 == 0xDEADBEEF &&                      \
+    (b)->magic2 == ~0xDEADBEEF && (b)->buff != NULL && (b)->size > 0 \
+    )
 #define BUF_MIN(x, y) ((x) < (y) ? (x) : (y))
 #define BUF_MAX(x, y) ((x) > (y) ? (x) : (y))
 #define BUF_SEND_EVT(b, type, bp)            \
@@ -61,6 +62,7 @@
  * \return          `1` on success, `0` otherwise
  */
 RINGBUFF_VOLATILE RingBuff* RingBuffCreate (void* pBuff, size_t size) {
+
     if (pBuff == NULL || size == 0 || size < (sizeof (RingBuff) + 1)) {
         return NULL;
     }
@@ -79,6 +81,21 @@ RINGBUFF_VOLATILE RingBuff* RingBuffCreate (void* pBuff, size_t size) {
     pRingBuf->magic2 = ~0xDEADBEEF;
 
     return pRingBuf;
+}
+
+uint8_t RingBuffInit (RINGBUFF_VOLATILE RingBuff* pBuff, void* pData, size_t size) {
+
+    if (!BUF_IS_VALID (pBuff) || pData == NULL || size == 0) {
+        return 0;
+    }
+
+    BUF_MEMSET ((void*)pBuff, 0, sizeof (RingBuff));
+    BUF_MEMSET ((void*)pData, 0, size);
+    pBuff->size   = size - sizeof (RingBuff);
+    pBuff->buff   = pData;
+    pBuff->magic1 = 0xDEADBEEF;
+    pBuff->magic2 = ~0xDEADBEEF;
+    return 1;
 }
 
 /**

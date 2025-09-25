@@ -1,11 +1,14 @@
-#include "sensors/imu/imu.h"
+#include "device/imu/imu.h"
 #include "common.h"
 #include "conf/conf.h"
+#include "device/imu/bmixxx.h"
 #include "log/logger.h"
-#include "periphs/gpio.h"
-#include "sensors/imu/bmixxx.h"
+#include "mem/mem.h"
+#include "peripheral/gpio.h"
+#include "peripheral/spi.h"
 #include <stdint.h>
 #include <string.h>
+
 
 #define BIT_ISSET(v, bit) (((v) & (bit)) > 0U)
 #define CHECK_INT_ERR_STATUS(u16IntStatus) \
@@ -23,55 +26,57 @@ enum {
     STATUS_TEMP_DATA_RDY_BIT  = (1U << 5U)
 };
 
-// IMU gIMU = { 0 };
+static SHARED_MEM_SECTION IMU_t gIMU = { 0 };
 
 #ifndef UNIT_TEST
 
-static eSTATUS_t IMUSendCmd (IMU const* pIMU, uint16_t cmd);
+static eSTATUS_t IMUSendCmd (vIMU_t const* pIMU, uint16_t cmd);
 static eSTATUS_t
-IMUGetFeatureStatus (IMU const* pIMU, uint16_t featureRegAddr, IMUFeatureStatus* pResultOut);
-static eSTATUS_t IMUGetINTStatus (IMU const* pIMU, uint16_t* pOutStatus);
-static eSTATUS_t IMUGetStatusReg (IMU const* pIMU, uint16_t* pOutStatus);
-static eSTATUS_t IMUGetDeviceErr (IMU* pIMU, IMUErr* pOutErr);
-static void IMULogDeviceErr (IMU* pIMU, IMUErr const* pErr);
-static eSTATUS_t IMUReadReg (IMU const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
-static eSTATUS_t IMUWriteReg (IMU const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
-static eSTATUS_t IMUUpdateGyro (IMU* pIMU);
-static eSTATUS_t IMUUpdateAccel (IMU* pIMU);
-static eSTATUS_t IMUSetAxesRemap (IMU* pIMU, IMUAxesRemapConf remap);
-static eSTATUS_t IMUSoftReset (IMU* pIMU);
+IMUGetFeatureStatus (vIMU_t const* pIMU, uint16_t featureRegAddr, IMUFeatureStatus* pResultOut);
+static eSTATUS_t IMUGetINTStatus (vIMU_t const* pIMU, uint16_t* pOutStatus);
+static eSTATUS_t IMUGetStatusReg (vIMU_t const* pIMU, uint16_t* pOutStatus);
+static eSTATUS_t IMUGetDeviceErr (vIMU_t* pIMU, IMUErr* pOutErr);
+static void IMULogDeviceErr (vIMU_t* pIMU, IMUErr const* pErr);
 static eSTATUS_t
-IMUGetConf_ (IMU* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf, uint8_t altConfFlag);
+IMUReadReg (vIMU_t const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
 static eSTATUS_t
-IMUSetConf_ (IMU* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf, uint8_t altConfFlag);
+IMUWriteReg (vIMU_t const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
+static eSTATUS_t IMUUpdateGyro (vIMU_t* pIMU);
+static eSTATUS_t IMUUpdateAccel (vIMU_t* pIMU);
+static eSTATUS_t IMUSetAxesRemap (vIMU_t* pIMU, IMUAxesRemapConf remap);
+static eSTATUS_t IMUSoftReset (vIMU_t* pIMU);
 static eSTATUS_t
-IMUCalibrate (IMU* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSelfCalibResult* pResultOut);
-static eSTATUS_t IMUSetupInterrupts (IMU const* pIMU);
-static eSTATUS_t IMUEnableInterrupts (IMU const* pIMU);
-static eSTATUS_t IMUDisableInterrupts (IMU const* pIMU);
+IMUGetConf_ (vIMU_t* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf, uint8_t altConfFlag);
+static eSTATUS_t
+IMUSetConf_ (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf, uint8_t altConfFlag);
+static eSTATUS_t
+IMUCalibrate (vIMU_t* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSelfCalibResult* pResultOut);
+static eSTATUS_t IMUSetupInterrupts (vIMU_t const* pIMU);
+static eSTATUS_t IMUEnableInterrupts (vIMU_t const* pIMU);
+static eSTATUS_t IMUDisableInterrupts (vIMU_t const* pIMU);
 static eSTATUS_t
 IMUConvertRaw (IMU_ACC_RANGE aRange, Vec3 ra, IMU_GYRO_RANGE gRange, Vec3 rg, Vec3f* pAccelOut, Vec3f* pGyroOut);
 
 #endif
 
-STATIC_TESTABLE_DECL eSTATUS_t IMUSendCmd (IMU const* pIMU, uint16_t cmd) {
+STATIC_TESTABLE_DECL eSTATUS_t IMUSendCmd (vIMU_t const* pIMU, uint16_t cmd) {
     uint8_t pRegData[2] = { 0 };
     pRegData[0]         = (uint8_t)(cmd & BMI3_SET_LOW_BYTE);
     pRegData[1]         = (uint8_t)((cmd & BMI3_SET_HIGH_BYTE) >> 8U);
     eSTATUS_t status    = IMUWriteReg (pIMU, BMI3_REG_CMD, pRegData, 2);
     if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to send IMU command 0x%04X", cmd);
+        LOG_ERROR ("Failed to send vIMU_t command 0x%04X", cmd);
         return status;
     }
     return eSTATUS_SUCCESS;
 }
 
 STATIC_TESTABLE_DECL eSTATUS_t
-IMUGetFeatureStatus (IMU const* pIMU, uint16_t featureRegAddr, IMUFeatureStatus* pResultOut) {
+IMUGetFeatureStatus (vIMU_t const* pIMU, uint16_t featureRegAddr, IMUFeatureStatus* pResultOut) {
     uint8_t pData[2] = { 0 };
     eSTATUS_t status = IMUReadReg (pIMU, featureRegAddr, pData, 2);
     if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to read IMU feature status register [0x%04X]", featureRegAddr);
+        LOG_ERROR ("Failed to read vIMU_t feature status register [0x%04X]", featureRegAddr);
         return status;
     }
 
@@ -89,29 +94,29 @@ IMUGetFeatureStatus (IMU const* pIMU, uint16_t featureRegAddr, IMUFeatureStatus*
     return eSTATUS_FAILURE;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t IMUGetINTStatus (IMU const* pIMU, uint16_t* pOutStatus) {
+STATIC_TESTABLE_DECL eSTATUS_t IMUGetINTStatus (vIMU_t const* pIMU, uint16_t* pOutStatus) {
     uint8_t pBuff[2] = { 0U };
     eSTATUS_t status = IMUReadReg (pIMU, BMI3_REG_INT_STATUS_INT1, pBuff, 2);
     if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to read IMU interrupt status register");
+        LOG_ERROR ("Failed to read vIMU_t interrupt status register");
         return status;
     }
     *pOutStatus = ((uint16_t)pBuff[1] << 8U) | (uint16_t)pBuff[0];
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t IMUGetStatusReg (IMU const* pIMU, uint16_t* pOutStatus) {
+STATIC_TESTABLE_DECL eSTATUS_t IMUGetStatusReg (vIMU_t const* pIMU, uint16_t* pOutStatus) {
     uint8_t pBuff[2] = { 0U };
     eSTATUS_t status = IMUReadReg (pIMU, BMI3_REG_STATUS, pBuff, 2);
     if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to read IMU status register");
+        LOG_ERROR ("Failed to read vIMU_t status register");
         return status;
     }
     *pOutStatus = ((uint16_t)pBuff[1] << 8U) | (uint16_t)pBuff[0];
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t IMUGetDeviceErr (IMU* pIMU, IMUErr* pOutErr) {
+STATIC_TESTABLE_DECL eSTATUS_t IMUGetDeviceErr (vIMU_t* pIMU, IMUErr* pOutErr) {
     uint8_t pBuff[2]  = { 0U };
     eSTATUS_t status  = IMUReadReg (pIMU, BMI3_REG_ERR_REG, pBuff, 2);
     uint16_t err      = ((uint16_t)pBuff[1] << 8U) | (uint16_t)pBuff[0];
@@ -124,17 +129,17 @@ STATIC_TESTABLE_DECL eSTATUS_t IMUGetDeviceErr (IMU* pIMU, IMUErr* pOutErr) {
     pOutErr->i3cErr0      = (err & (1U << 8U)) > 0;
     pOutErr->i3cErr1      = (err & (1U << 11U)) > 0;
     if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to read IMU error register");
+        LOG_ERROR ("Failed to read vIMU_t error register");
         return status;
     }
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL void IMULogDeviceErr (IMU* pIMU, IMUErr const* pErr) {
+STATIC_TESTABLE_DECL void IMULogDeviceErr (vIMU_t* pIMU, IMUErr const* pErr) {
     IMUErr err;
     if (pErr == NULL) {
         if (IMUGetDeviceErr (pIMU, &err) != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to read IMU error codes");
+            LOG_ERROR ("Failed to read vIMU_t error codes");
             return;
         }
     } else {
@@ -143,33 +148,34 @@ STATIC_TESTABLE_DECL void IMULogDeviceErr (IMU* pIMU, IMUErr const* pErr) {
 
     if (err.fatalErr != 0) {
         LOG_ERROR (
-        "IMU fatal error, chip is not in operation state (Boot or "
+        "vIMU_t fatal error, chip is not in operation state (Boot or "
         "Power-System). Power on reset or soft reset required"
         );
     }
     if (err.featEngOvrld != 0) {
-        LOG_ERROR ("IMU overload of the feature engine detected");
+        LOG_ERROR ("vIMU_t overload of the feature engine detected");
     }
     if (err.featEngWd != 0) {
-        LOG_ERROR ("IMU watchdog timer of the feature engine triggered");
+        LOG_ERROR ("vIMU_t watchdog timer of the feature engine triggered");
     }
     if (err.accConfErr != 0) {
-        LOG_ERROR ("IMU unsupported accelerometer configuration set by user");
+        LOG_ERROR ("vIMU_t unsupported accelerometer configuration set by user");
     }
     if (err.gyrConfErr != 0) {
-        LOG_ERROR ("IMU unsupported gyroscope configuration set by user");
+        LOG_ERROR ("vIMU_t unsupported gyroscope configuration set by user");
     }
     if (err.i3cErr0 != 0) {
-        LOG_ERROR ("IMU I3C SDR parity error occurred");
+        LOG_ERROR ("vIMU_t I3C SDR parity error occurred");
     }
     if (err.i3cErr1 != 0) {
-        LOG_ERROR ("IMU I3C S0/S1 error occurred");
+        LOG_ERROR ("vIMU_t I3C S0/S1 error occurred");
     } else {
-        LOG_ERROR ("Did NOT find any IMU device errors");
+        LOG_ERROR ("Did NOT find any vIMU_t device errors");
     }
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t IMUReadReg (IMU const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len) {
+STATIC_TESTABLE_DECL eSTATUS_t
+IMUReadReg (vIMU_t const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len) {
 
     uint8_t pTx[RW_BUFFER_SZ] = { 0 };
     // set read mask for register address
@@ -192,7 +198,7 @@ STATIC_TESTABLE_DECL eSTATUS_t IMUReadReg (IMU const* pIMU, uint8_t reg, uint8_t
         return (eSTATUS_t)eIMU_COM_FAILURE;
     }
 
-    // Add 2 microsecond delay after IMU read operation
+    // Add 2 microsecond delay after vIMU_t read operation
     DelayMicroseconds (2);
 
     // The first nDummyBytes + 1 (for the register address) are dummy bytes
@@ -200,7 +206,8 @@ STATIC_TESTABLE_DECL eSTATUS_t IMUReadReg (IMU const* pIMU, uint8_t reg, uint8_t
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t IMUWriteReg (IMU const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len) {
+STATIC_TESTABLE_DECL eSTATUS_t
+IMUWriteReg (vIMU_t const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len) {
 
     uint8_t pTx[RW_BUFFER_SZ] = { 0 };
     if (len + 1 > RW_BUFFER_SZ) {
@@ -214,13 +221,13 @@ STATIC_TESTABLE_DECL eSTATUS_t IMUWriteReg (IMU const* pIMU, uint8_t reg, uint8_
         return (eSTATUS_t)eIMU_COM_FAILURE;
     }
 
-    // Add 2 microsecond delay after IMU write operation
+    // Add 2 microsecond delay after vIMU_t write operation
     DelayMicroseconds (2);
 
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t IMUUpdateGyro (IMU* pIMU) {
+STATIC_TESTABLE_DECL eSTATUS_t IMUUpdateGyro (vIMU_t* pIMU) {
 
     uint8_t pBuffer[6] = { 0 };
     eSTATUS_t status = IMUReadReg (pIMU, BMI3_REG_GYR_DATA_X, pBuffer, 6);
@@ -238,7 +245,7 @@ STATIC_TESTABLE_DECL eSTATUS_t IMUUpdateGyro (IMU* pIMU) {
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t IMUUpdateAccel (IMU* pIMU) { // , Vec3 curVel, Vec3* pOutputAccel) {
+STATIC_TESTABLE_DECL eSTATUS_t IMUUpdateAccel (vIMU_t* pIMU) { // , Vec3 curVel, Vec3* pOutputAccel) {
     uint8_t pBuffer[6] = { 0 };
     eSTATUS_t status = IMUReadReg (pIMU, BMI3_REG_ACC_DATA_X, pBuffer, 6);
     if (status != eSTATUS_SUCCESS) {
@@ -255,7 +262,7 @@ STATIC_TESTABLE_DECL eSTATUS_t IMUUpdateAccel (IMU* pIMU) { // , Vec3 curVel, Ve
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t IMUSetAxesRemap (IMU* pIMU, IMUAxesRemapConf remap) {
+STATIC_TESTABLE_DECL eSTATUS_t IMUSetAxesRemap (vIMU_t* pIMU, IMUAxesRemapConf remap) {
 
     uint8_t addr[2] = { BMI3_BASE_ADDR_AXIS_REMAP, 0 };
     uint8_t data    = 0;
@@ -263,7 +270,7 @@ STATIC_TESTABLE_DECL eSTATUS_t IMUSetAxesRemap (IMU* pIMU, IMUAxesRemapConf rema
     /* Set the configuration to feature engine register */
     eSTATUS_t status = IMUWriteReg (pIMU, BMI3_REG_FEATURE_DATA_ADDR, addr, 2);
     if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to set IMU feature data address for axis remap");
+        LOG_ERROR ("Failed to set vIMU_t feature data address for axis remap");
         return status;
     }
 
@@ -275,18 +282,18 @@ STATIC_TESTABLE_DECL eSTATUS_t IMUSetAxesRemap (IMU* pIMU, IMUAxesRemapConf rema
 
     status = IMUWriteReg (pIMU, BMI3_REG_FEATURE_DATA_TX, aSend, 2);
     if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to set IMU feature data TX for axis remap");
+        LOG_ERROR ("Failed to set vIMU_t feature data TX for axis remap");
         return status;
     }
 
     /*
      * NOTE: The command to start the axis remap update can be sent without
      * checking the enabled/disabled status of the accel because this
-     * function is only called after an IMU soft reset.
+     * function is only called after an vIMU_t soft reset.
      */
     status = IMUSendCmd (pIMU, BMI3_CMD_AXIS_MAP_UPDATE);
     if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to send IMU command to update axis remap");
+        LOG_ERROR ("Failed to send vIMU_t command to update axis remap");
         return status;
     }
 
@@ -296,12 +303,12 @@ STATIC_TESTABLE_DECL eSTATUS_t IMUSetAxesRemap (IMU* pIMU, IMUAxesRemapConf rema
         IMUFeatureStatus featStatus = { 0 };
         status = IMUGetFeatureStatus (pIMU, BMI3_REG_FEATURE_IO1, &featStatus);
         if (status != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to get IMU feature status");
+            LOG_ERROR ("Failed to get vIMU_t feature status");
             return status;
         }
         if ((featStatus.errStatus & BMI3_NO_ERROR_MASK) &&
             featStatus.axisRemapComplete > 0) {
-            LOG_INFO ("IMU axis remap complete");
+            LOG_INFO ("vIMU_t axis remap complete");
             status = eSTATUS_SUCCESS;
             break;
         }
@@ -309,7 +316,7 @@ STATIC_TESTABLE_DECL eSTATUS_t IMUSetAxesRemap (IMU* pIMU, IMUAxesRemapConf rema
     }
 
     if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("IMU axis remap did not complete in time");
+        LOG_ERROR ("vIMU_t axis remap did not complete in time");
         IMULogDeviceErr (pIMU, NULL);
         return status;
     }
@@ -318,12 +325,12 @@ STATIC_TESTABLE_DECL eSTATUS_t IMUSetAxesRemap (IMU* pIMU, IMUAxesRemapConf rema
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t IMUSoftReset (IMU* pIMU) {
+STATIC_TESTABLE_DECL eSTATUS_t IMUSoftReset (vIMU_t* pIMU) {
     /* Send soft reset command to BMI323 */
     eSTATUS_t status = IMUSendCmd (pIMU, BMI3_CMD_SOFT_RESET);
 
     if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to send soft reset command to IMU");
+        LOG_ERROR ("Failed to send soft reset command to vIMU_t");
         return status;
     }
 
@@ -380,7 +387,7 @@ STATIC_TESTABLE_DECL eSTATUS_t IMUSoftReset (IMU* pIMU) {
 }
 
 STATIC_TESTABLE_DECL eSTATUS_t
-IMUGetConf_ (IMU* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf, uint8_t altConfFlag) {
+IMUGetConf_ (vIMU_t* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf, uint8_t altConfFlag) {
     eSTATUS_t status = eSTATUS_SUCCESS;
     /* Accelerometer Config */
     if (pAConf != NULL) {
@@ -451,7 +458,7 @@ IMUGetConf_ (IMU* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf, uint8_t altConf
 }
 
 STATIC_TESTABLE_DECL eSTATUS_t
-IMUSetConf_ (IMU* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf, uint8_t altConfFlag) {
+IMUSetConf_ (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf, uint8_t altConfFlag) {
     /* Configure Accelerometer */
     eSTATUS_t status = eSTATUS_SUCCESS;
     if (pAConf != NULL) {
@@ -482,7 +489,7 @@ IMUSetConf_ (IMU* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf, uin
         status      = IMUWriteReg (pIMU, regAddr, pRegData, 2);
         // NOLINTEND(*)
         if (status != eSTATUS_SUCCESS) {
-            // LOG_ERROR ("Failed to configure IMU accelerometer");
+            // LOG_ERROR ("Failed to configure vIMU_t accelerometer");
             return status;
         }
         if (status == eSTATUS_SUCCESS && altConfFlag == FALSE) {
@@ -519,7 +526,7 @@ IMUSetConf_ (IMU* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf, uin
         status      = IMUWriteReg (pIMU, regAddr, pRegData, 2);
         // NOLINTEND(*)
         if (status != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to configure IMU gyroscope");
+            LOG_ERROR ("Failed to configure vIMU_t gyroscope");
             return eSTATUS_FAILURE;
         }
         if (status == eSTATUS_SUCCESS && altConfFlag == FALSE) {
@@ -530,10 +537,10 @@ IMUSetConf_ (IMU* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf, uin
 }
 
 STATIC_TESTABLE_DECL eSTATUS_t
-IMUCalibrate (IMU* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSelfCalibResult* pResultOut) {
+IMUCalibrate (vIMU_t* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSelfCalibResult* pResultOut) {
 
     if (pIMU == NULL || pResultOut == NULL) {
-        LOG_ERROR ("IMU or result pointer is NULL");
+        LOG_ERROR ("vIMU_t or result pointer is NULL");
         return (eSTATUS_t)eIMU_NULL_PTR;
     }
 
@@ -544,7 +551,7 @@ IMUCalibrate (IMU* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSel
     IMUGyroConf gconf;
     eSTATUS_t status = IMUGetConf (pIMU, &aconf, &gconf);
     if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to get IMU configuration to save before calibration");
+        LOG_ERROR ("Failed to get vIMU_t configuration to save before calibration");
         return status;
     }
     HAL_Delay (100);
@@ -558,7 +565,7 @@ IMUCalibrate (IMU* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSel
     calibAConf.bw         = aconf.bw;
     status                = IMUSetConf (pIMU, &calibAConf, NULL);
     if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to set IMU accelerometer configuration for calibration");
+        LOG_ERROR ("Failed to set vIMU_t accelerometer configuration for calibration");
         goto error;
     }
     HAL_Delay (100);
@@ -568,7 +575,7 @@ IMUCalibrate (IMU* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSel
     IMUGyroConf altGConf;
     status = IMUGetAltConf (pIMU, &altAConf, &altGConf);
     if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to get IMU alternate configuration to save before calibration");
+        LOG_ERROR ("Failed to get vIMU_t alternate configuration to save before calibration");
         goto error;
     }
 
@@ -576,7 +583,7 @@ IMUCalibrate (IMU* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSel
     altGConf.mode = eIMU_GYRO_MODE_DISABLE;
     status        = IMUSetAltConf (pIMU, &altAConf, &altGConf);
     if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to disable IMU alternate configuration before calibration");
+        LOG_ERROR ("Failed to disable vIMU_t alternate configuration before calibration");
         goto error;
     }
     HAL_Delay (100);
@@ -584,7 +591,7 @@ IMUCalibrate (IMU* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSel
     /* Trigger the self calibration */
     status = IMUSendCmd (pIMU, BMI3_CMD_SELF_CALIB_TRIGGER);
     if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to trigger IMU self-calibration");
+        LOG_ERROR ("Failed to trigger vIMU_t self-calibration");
         goto error;
     }
     HAL_Delay (100);
@@ -594,12 +601,12 @@ IMUCalibrate (IMU* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSel
         IMUFeatureStatus featureStatus = { 0 };
         status = IMUGetFeatureStatus (pIMU, BMI3_REG_FEATURE_IO1, &featureStatus);
         if (status != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to get IMU feature status");
+            LOG_ERROR ("Failed to get vIMU_t feature status");
             goto error;
         }
         if (featureStatus.systemState != 0x1U) {
             LOG_ERROR (
-            "IMU has not started the self calibration. System state "
+            "vIMU_t has not started the self calibration. System state "
             "[0x%X]",
             featureStatus.systemState
             );
@@ -616,7 +623,7 @@ IMUCalibrate (IMU* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSel
             uint16_t intStatus = 0;
             status             = IMUGetINTStatus (pIMU, &intStatus);
             if (status != eSTATUS_SUCCESS) {
-                LOG_ERROR ("Failed to read IMU interrupt status");
+                LOG_ERROR ("Failed to read vIMU_t interrupt status");
                 goto error;
             }
             if (CHECK_INT_ERR_STATUS (intStatus)) {
@@ -627,7 +634,7 @@ IMUCalibrate (IMU* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSel
         IMUFeatureStatus featureStatus = { 0 };
         status = IMUGetFeatureStatus (pIMU, BMI3_REG_FEATURE_IO1, &featureStatus);
         if (status != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to get IMU feature status");
+            LOG_ERROR ("Failed to get vIMU_t feature status");
             goto error;
         }
         uint16_t scErrStatus = featureStatus.errStatus;
@@ -641,7 +648,7 @@ IMUCalibrate (IMU* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSel
         } else {
             pResultOut->result = FALSE;
             pResultOut->error  = (uint8_t)scErrStatus;
-            LOG_ERROR ("IMU self-calibration failed. SC Err Status [0x%X] System State [0x%X]", scErrStatus, systemState);
+            LOG_ERROR ("vIMU_t self-calibration failed. SC Err Status [0x%X] System State [0x%X]", scErrStatus, systemState);
             IMULogDeviceErr (pIMU, NULL);
         }
     }
@@ -653,7 +660,7 @@ error:
     return status;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t IMUSetupInterrupts (IMU const* pIMU) {
+STATIC_TESTABLE_DECL eSTATUS_t IMUSetupInterrupts (vIMU_t const* pIMU) {
     uint8_t pRegData[4] = { 0 };
     uint16_t temp       = 0;
     /* Map all enabled interrupts to pin INT1 */
@@ -697,7 +704,7 @@ STATIC_TESTABLE_DECL eSTATUS_t IMUSetupInterrupts (IMU const* pIMU) {
     return status;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t IMUEnableInterrupts (IMU const* pIMU) {
+STATIC_TESTABLE_DECL eSTATUS_t IMUEnableInterrupts (vIMU_t const* pIMU) {
     if (pIMU == NULL || pIMU->pSPI == NULL) {
         return (eSTATUS_t)eIMU_NULL_PTR;
     }
@@ -710,7 +717,7 @@ STATIC_TESTABLE_DECL eSTATUS_t IMUEnableInterrupts (IMU const* pIMU) {
     return status;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t IMUDisableInterrupts (IMU const* pIMU) {
+STATIC_TESTABLE_DECL eSTATUS_t IMUDisableInterrupts (vIMU_t const* pIMU) {
     if (pIMU == NULL || pIMU->pSPI == NULL) {
         return (eSTATUS_t)eIMU_NULL_PTR;
     }
@@ -760,85 +767,81 @@ IMUConvertRaw (IMU_ACC_RANGE aRange, Vec3 ra, IMU_GYRO_RANGE gRange, Vec3 rg, Ve
 }
 
 
-eSTATUS_t IMUInit (IMU* pIMU, SPI_HandleTypeDef* pSPI, IMUAxesRemapConf* pAxesRemapConf) {
+eSTATUS_t IMUInit (IMUInitConf_t conf) {
 
-    if (pIMU == NULL || pSPI == NULL) {
-        LOG_ERROR ("IMU or SPI pointer is NULL");
+    IMUAccConf accConf             = conf.aconf;
+    IMUGyroConf gyroConf           = conf.gconf;
+    IMUAxesRemapConf axesRemapConf = conf.axesRemapConf;
+    DeviceBoardConf_t boardConf    = conf.boardConf;
+    EXTIBoardConf_t extiConf       = boardConf.extiBoardConf;
+
+    if (boardConf.pBusBoardConf == NULL) {
+        LOG_ERROR ("boardConf.pBusBoardConf is NULL");
         return (eSTATUS_t)eIMU_NULL_PTR;
     }
 
-    memset (pIMU, 0, sizeof (IMU));
-    pIMU->pSPI                 = pSPI;
-    pIMU->msLastAccUpdateTime  = 0;
-    pIMU->msLastGyroUpdateTime = 0;
+    eSTATUS_t status      = eSTATUS_SUCCESS;
+    eBUS_ID_t busId       = boardConf.pBusBoardConf->busId;
+    eDEVICE_ID_t deviceId = boardConf.deviceId;
+
+    if (BUS_ID_IS_SPI (busId) == TRUE) {
+        SPI_INIT_FROM_BOARD_CONF (
+        &status,
+        boardConf,
+        *(SPIBoardConf_t*)boardConf.pBusBoardConf
+        );
+        RETURN_IF (STATUS_FAIL (status), eSTATUS_FAILURE, "Failed to init SPI bus for imu");
+    } else {
+        LOG_ERROR ("vIMU_t only supports SPI bus");
+        return eSTATUS_FAILURE;
+    }
+
+    vIMU_t* pIMU = &gIMU;
+    memset (pIMU, 0, sizeof (vIMU_t));
+    pIMU->busId    = busId;
+    pIMU->deviceId = deviceId;
+    pIMU->aconf    = accConf;
+    pIMU->gconf    = gyroConf;
     /* SPI reads have 1 dummy byte at the beginning */
     pIMU->nDummyBytes = 1;
 
-    IMUAccConf aconf  = { 0 };
-    aconf.odr         = eIMU_ACC_ODR_100;
-    aconf.range       = eIMU_ACC_RANGE_2G;
-    aconf.avg         = eIMU_ACC_AVG_16;
-    aconf.bw          = eIMU_ACC_BW_HALF;
-    aconf.mode        = eIMU_ACC_MODE_HIGH_PERF;
-    IMUGyroConf gconf = { 0 };
-    gconf.odr         = eIMU_GYRO_ODR_100;
-    gconf.range       = eIMU_GYRO_RANGE_250;
-    gconf.avg         = eIMU_GYRO_AVG_16;
-    gconf.bw          = eIMU_GYRO_BW_HALF;
-    gconf.mode        = eIMU_GYRO_MODE_HIGH_PERF;
-
-    if (HZ_SENSOR_UPDATE_RATE >= 200U && HZ_SENSOR_UPDATE_RATE < 400U) {
-        aconf.odr = eIMU_ACC_ODR_200;
-        gconf.odr = eIMU_GYRO_ODR_200;
-    } else if (HZ_SENSOR_UPDATE_RATE >= 400U && HZ_SENSOR_UPDATE_RATE < 800U) {
-        aconf.odr = eIMU_ACC_ODR_400;
-        gconf.odr = eIMU_GYRO_ODR_400;
-    } else if (HZ_SENSOR_UPDATE_RATE >= 800U && HZ_SENSOR_UPDATE_RATE <= 1000U) {
-        aconf.odr = eIMU_ACC_ODR_800;
-        gconf.odr = eIMU_GYRO_ODR_800;
-    } else {
-        LOG_ERROR ("IMU update rate [%d] is not supported", (uint16_t)HZ_SENSOR_UPDATE_RATE);
-    }
-
     /*
-     * Soft reset IMU and switch to SPI
+     * Soft reset vIMU_t and switch to SPI
      */
-    eSTATUS_t status = IMUSoftReset (pIMU);
+    status = IMUSoftReset (pIMU);
     if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to soft reset IMU");
-        return status;
+        LOG_ERROR ("Failed to soft reset vIMU_t");
+        goto error;
     }
 
-    if (pAxesRemapConf != NULL) {
-        status = IMUSetAxesRemap (pIMU, *pAxesRemapConf);
-        if (status != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to set IMU axes remap");
-            return status;
-        }
-        LOG_INFO ("Successfully remapped IMU axes");
+    status = IMUSetAxesRemap (pIMU, axesRemapConf);
+    if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to set vIMU_t axes remap");
+        goto error;
     }
+    LOG_INFO ("Successfully remapped vIMU_t axes");
 
     /*
      * Setup the accel and gyro using the provided configurations
      */
-    status = IMUSetConf (pIMU, &aconf, &gconf);
+    status = IMUSetConf (pIMU, &accConf, &gyroConf);
     if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("IMU failed to configure accel or gyro");
-        return status;
+        LOG_ERROR ("vIMU_t failed to configure accel or gyro");
+        goto error;
     }
 
     uint8_t pChipID[2] = { 0 };
     status             = IMUReadReg (pIMU, BMI3_REG_CHIP_ID, pChipID, 2);
     if (pChipID[0] != BMI323_CHIP_ID) {
         LOG_ERROR ("Chip ID [0x%X] [0x%X] is incorrect", pChipID[0], pChipID[1]);
-        return eSTATUS_FAILURE;
+        goto error;
     }
 
     /* Enable acc, gyro, and temperature - data ready interrupts for pin INT1 */
     status = IMUSetupInterrupts (pIMU);
     if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to setup IMU interrupts");
-        return eSTATUS_FAILURE;
+        LOG_ERROR ("Failed to setup vIMU_t interrupts");
+        goto error;
     }
 
     /* Self Calibrate */
@@ -847,8 +850,8 @@ eSTATUS_t IMUInit (IMU* pIMU, SPI_HandleTypeDef* pSPI, IMUAxesRemapConf* pAxesRe
         status =
         IMUCalibrate (pIMU, BMI3_SC_SENSITIVITY_EN | BMI3_SC_OFFSET_EN, BMI3_SC_APPLY_CORR_EN, &calibResult);
         if (status != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to self calibrate IMU");
-            return status;
+            LOG_ERROR ("Failed to self calibrate vIMU_t");
+            goto error;
         }
         if (calibResult.result != TRUE ||
             calibResult.error !=
@@ -858,7 +861,7 @@ eSTATUS_t IMUInit (IMU* pIMU, SPI_HandleTypeDef* pSPI, IMUAxesRemapConf* pAxesRe
             calibResult.result,
             calibResult.error
             );
-            return eSTATUS_FAILURE;
+            goto error;
         }
         LOG_INFO ("Self calibration result: [%d]", calibResult.result);
     }
@@ -868,25 +871,25 @@ eSTATUS_t IMUInit (IMU* pIMU, SPI_HandleTypeDef* pSPI, IMUAxesRemapConf* pAxesRe
         IMUGyroConf gconf2;
         status = IMUGetConf (pIMU, &aconf2, &gconf2);
         if (status != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to read back IMU configuration");
+            LOG_ERROR ("Failed to read back vIMU_t configuration");
             IMULogDeviceErr (pIMU, NULL);
             return status;
         }
 
-        status = IMUCompareConfs (aconf, gconf, aconf2, gconf2);
+        status = IMUCompareConfs (accConf, gyroConf, aconf2, gconf2);
         if (status != eSTATUS_SUCCESS) {
             LOG_ERROR (
-            "IMU configuration mismatch after setting. "
+            "vIMU_t configuration mismatch after setting. "
             "Expected: Accel [%d %d %d %d] Gyro [%d %d %d %d] "
             "Got: Accel [%d %d %d %d] Gyro [%d %d %d %d]",
-            aconf.mode,
-            aconf.odr,
-            aconf.range,
-            aconf.avg,
-            gconf.mode,
-            gconf.odr,
-            gconf.range,
-            gconf.avg,
+            accConf.mode,
+            accConf.odr,
+            accConf.range,
+            accConf.avg,
+            gyroConf.mode,
+            gyroConf.odr,
+            gyroConf.range,
+            gyroConf.avg,
             aconf2.mode,
             aconf2.odr,
             aconf2.range,
@@ -897,39 +900,39 @@ eSTATUS_t IMUInit (IMU* pIMU, SPI_HandleTypeDef* pSPI, IMUAxesRemapConf* pAxesRe
             gconf2.avg
             );
             IMULogDeviceErr (pIMU, NULL);
-            return status;
+            goto error;
         }
     }
 
-#ifndef UNIT_TEST
-    /*
-     * Setup GPIO for IMU data ready interrupt
-     */
-    if (GPIOInitEXTI (IMU_INT_EXTI_IRQn, IMU_INT_GPIO_Pin, NULL) != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to initialize GPIO for IMU data ready interrupt");
-        return eSTATUS_FAILURE;
-    }
-    /* Enable EXTI interrupt for IMU data ready interrupt */
+    // TODO: what alternate function do I need for EXTI.
+    // Also the NVIC exti interrupt needs to be enabled.
+    // EXTI interface also needs to be enabled.
+    GPIO_INIT_EXTI (&status, extiConf.extiId, extiConf.gpioId);
+    /* Enable EXTI interrupt for vIMU_t data ready interrupt */
     HAL_NVIC_SetPriority (IMU_INT_EXTI_IRQn, 8, 8);
     HAL_NVIC_EnableIRQ (IMU_INT_EXTI_IRQn);
-#endif
 
     return eSTATUS_SUCCESS;
+error:
+    memset (pIMU, 0, sizeof (vIMU_t));
+    return eSTATUS_FAILURE;
 }
 
-eSTATUS_t IMUStart (IMU* pIMU) {
+eSTATUS_t IMUStart (vIMU_t* pIMU) {
+
     if (SENSOR_UPDATE_MODE_IS_INTERRUPT == TRUE) {
         if (IMUEnableInterrupts (pIMU) != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to enable IMU interrupts");
+            LOG_ERROR ("Failed to enable vIMU_t interrupts");
             return eSTATUS_FAILURE;
         }
     }
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t IMUProcessUpdatefromINT (IMU* pIMU, Vec3f* pOutputAccel, Vec3f* pOutputGyro) {
+eSTATUS_t IMUProcessUpdatefromINT (vIMU_t* pIMU, Vec3f* pOutputAccel, Vec3f* pOutputGyro) {
+
     if (pIMU == NULL) {
-        LOG_ERROR ("IMU pointer is NULL");
+        LOG_ERROR ("vIMU_t pointer is NULL");
         return (eSTATUS_t)eIMU_NULL_PTR;
     }
     if (pOutputAccel == NULL || pOutputGyro == NULL) {
@@ -939,7 +942,7 @@ eSTATUS_t IMUProcessUpdatefromINT (IMU* pIMU, Vec3f* pOutputAccel, Vec3f* pOutpu
 
     if (pIMU->status != eSTATUS_SUCCESS) {
         if (IMUHandleErr (pIMU) != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to handle IMU error");
+            LOG_ERROR ("Failed to handle vIMU_t error");
             return eSTATUS_FAILURE;
         }
     }
@@ -954,17 +957,17 @@ eSTATUS_t IMUProcessUpdatefromINT (IMU* pIMU, Vec3f* pOutputAccel, Vec3f* pOutpu
     );
 
     if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to convert IMU raw data");
+        LOG_ERROR ("Failed to convert vIMU_t raw data");
         return eSTATUS_FAILURE;
     }
 
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t IMUProcessUpdatefromPolling (IMU* pIMU, Vec3f* pOutputAccel, Vec3f* pOutputGyro) {
+eSTATUS_t IMUProcessUpdatefromPolling (vIMU_t* pIMU, Vec3f* pOutputAccel, Vec3f* pOutputGyro) {
 
     if (pIMU == NULL || pOutputAccel == NULL || pOutputGyro == NULL) {
-        LOG_ERROR ("IMU or output pointers are NULL");
+        LOG_ERROR ("vIMU_t or output pointers are NULL");
         return (eSTATUS_t)eIMU_NULL_PTR;
     }
 
@@ -976,7 +979,7 @@ eSTATUS_t IMUProcessUpdatefromPolling (IMU* pIMU, Vec3f* pOutputAccel, Vec3f* pO
         uint16_t intStatus = 0; // BMI3_REG_STATUS
         status             = IMUGetStatusReg (pIMU, &intStatus);
         if (status != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to read IMU interrupt status");
+            LOG_ERROR ("Failed to read vIMU_t interrupt status");
             return status;
         }
 
@@ -1014,11 +1017,11 @@ eSTATUS_t IMUProcessUpdatefromPolling (IMU* pIMU, Vec3f* pOutputAccel, Vec3f* pO
         );
 
         if (status != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to convert raw IMU data");
+            LOG_ERROR ("Failed to convert raw vIMU_t data");
             return status;
         }
     } else {
-        LOG_ERROR ("IMU data not ready");
+        LOG_ERROR ("vIMU_t data not ready");
         return eSTATUS_FAILURE;
     }
 
@@ -1026,22 +1029,22 @@ eSTATUS_t IMUProcessUpdatefromPolling (IMU* pIMU, Vec3f* pOutputAccel, Vec3f* pO
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t IMUStop (IMU* pIMU) {
+eSTATUS_t IMUStop (vIMU_t* pIMU) {
     if (IMUDisableInterrupts (pIMU) != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to disable IMU interrupts");
+        LOG_ERROR ("Failed to disable vIMU_t interrupts");
         return eSTATUS_FAILURE;
     }
     return eSTATUS_SUCCESS;
 }
 
 /*
- * Attempts to handle IMU errors
+ * Attempts to handle vIMU_t errors
  */
-eSTATUS_t IMUHandleErr (IMU* pIMU) {
+eSTATUS_t IMUHandleErr (vIMU_t* pIMU) {
 
     IMUErr err = { 0 };
     if (IMUGetDeviceErr (pIMU, &err) != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to read IMU error codes");
+        LOG_ERROR ("Failed to read vIMU_t error codes");
         pIMU->status = eSTATUS_FAILURE;
         return eSTATUS_FAILURE;
     }
@@ -1050,7 +1053,7 @@ eSTATUS_t IMUHandleErr (IMU* pIMU) {
     return eSTATUS_FAILURE;
 }
 
-void IMU2CPUInterruptHandler (IMU* pIMU) {
+void IMU2CPUInterruptHandler (vIMU_t* pIMU) {
 
     eSTATUS_t status = eSTATUS_SUCCESS;
     if (pIMU == NULL || pIMU->pSPI == NULL) {
@@ -1099,19 +1102,19 @@ error:
     pIMU->status = status;
 }
 
-eSTATUS_t IMUGetConf (IMU* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf) {
+eSTATUS_t IMUGetConf (vIMU_t* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf) {
     return IMUGetConf_ (pIMU, pAConf, pGConf, 0);
 }
 
-eSTATUS_t IMUGetAltConf (IMU* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf) {
+eSTATUS_t IMUGetAltConf (vIMU_t* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf) {
     return IMUGetConf_ (pIMU, pAConf, pGConf, 1);
 }
 
-eSTATUS_t IMUSetConf (IMU* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf) {
+eSTATUS_t IMUSetConf (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf) {
     return IMUSetConf_ (pIMU, pAConf, pGConf, 0);
 }
 
-eSTATUS_t IMUSetAltConf (IMU* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf) {
+eSTATUS_t IMUSetAltConf (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf) {
     return IMUSetConf_ (pIMU, pAConf, pGConf, TRUE);
 }
 

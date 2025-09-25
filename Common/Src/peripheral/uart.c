@@ -1,21 +1,26 @@
-#include "periphs/uart.h"
+#include "peripheral/uart.h"
 #include "common.h"
 #include "hal.h"
-#include "periphs/gpio.h"
+#include "mem/mem.h"
+#include "peripheral/gpio.h"
+#include <stdint.h>
+#include <string.h>
 
-#define IS_BUS_VALID(pBus) (pBus != NULL && pBus->isInitialized == TRUE)
+#define IS_BUS_VALID(pBUS) \
+    ((pBUS) != NULL && (pBUS)->isInitialized == TRUE)
 
-static UARTBus_t gBuses[eUART_BUS_ID_MAX] = { 0 };
+static SHARED_MEM_SECTION UARTBus_t gBuses[eUART_BUS_ID_MAX] = { 0 };
 
-static UARTBus_t* UARTGetBusById (eUART_BUS_ID_t busId) {
+static vUARTBus_t* UARTGetBusById (eBUS_ID_t busId) {
 
-    if (busId >= eUART_BUS_ID_MAX) {
+    uint32_t busIndex = UART_BUS_ID2IDX (busId);
+    if (BUS_ID_IS_UART (busId) == FALSE || busIndex >= eUART_BUS_ID_MAX) {
         return NULL;
     }
-    return &gBuses[busId];
+    return &gBuses[busIndex];
 }
 
-static USART_TypeDef* UARTGetInstanceById (eUART_BUS_ID_t busId) {
+static USART_TypeDef* UARTGetInstanceById (eBUS_ID_t busId) {
 
     switch (busId) {
     case eUART_1_BUS_ID: return USART1;
@@ -25,7 +30,7 @@ static USART_TypeDef* UARTGetInstanceById (eUART_BUS_ID_t busId) {
     }
 }
 
-static UARTBus_t* UARTGetBusByInstance (USART_TypeDef* instance) {
+static vUARTBus_t* UARTGetBusByInstance (USART_TypeDef* instance) {
 
     for (uint32_t i = 0; i < eUART_BUS_ID_MAX; i++) {
         if (gBuses[i].handle.Instance == instance) {
@@ -53,7 +58,7 @@ void USART3_IRQHandler (void) {
 
 void HAL_UART_TxCpltCallback (UART_HandleTypeDef* huart) {
 
-    UARTBus_t* pBus = UARTGetBusByInstance (huart->Instance);
+    vUARTBus_t* pBus = UARTGetBusByInstance (huart->Instance);
     if (IS_BUS_VALID (pBus) == FALSE) {
         return;
     }
@@ -64,7 +69,7 @@ void HAL_UART_TxCpltCallback (UART_HandleTypeDef* huart) {
 
 void HAL_UART_RxCpltCallback (UART_HandleTypeDef* huart) {
 
-    UARTBus_t* pBus = UARTGetBusByInstance (huart->Instance);
+    vUARTBus_t* pBus = UARTGetBusByInstance (huart->Instance);
     if (IS_BUS_VALID (pBus) == FALSE) {
         return;
     }
@@ -75,7 +80,7 @@ void HAL_UART_RxCpltCallback (UART_HandleTypeDef* huart) {
 
 void HAL_UART_ErrorCallback (UART_HandleTypeDef* huart) {
 
-    UARTBus_t* pBus = UARTGetBusByInstance (huart->Instance);
+    vUARTBus_t* pBus = UARTGetBusByInstance (huart->Instance);
     if (IS_BUS_VALID (pBus) == FALSE) {
         return;
     }
@@ -117,72 +122,83 @@ void HAL_UART_ErrorCallback (UART_HandleTypeDef* huart) {
 //     }
 // }
 
-static eSTATUS_t UARTClockInit (eUART_BUS_ID_t busId) {
+#define UART_CLOCK_INIT(pSTATUS, BUS_ID, PERIPHCLK, CLKSELECTION)         \
+    do {                                                                  \
+        RCC_PeriphCLKInitTypeDef PeriphClkInitStruct  = { 0 };            \
+        PeriphClkInitStruct.PeriphClockSelection      = PERIPHCLK;        \
+        PeriphClkInitStruct.Usart234578ClockSelection = CLKSELECTION;     \
+        if (BUS_ID == eUART_1_BUS_ID || BUS_ID == eUART_6_BUS_ID) {       \
+            PeriphClkInitStruct.Usart234578ClockSelection = 0;            \
+            PeriphClkInitStruct.Usart16ClockSelection     = CLKSELECTION; \
+        }                                                                 \
+        if (HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct) != HAL_OK) { \
+            *(pSTATUS) = eSTATUS_FAILURE;                                 \
+            return;                                                       \
+        }                                                                 \
+        *(pSTATUS) = eSTATUS_SUCCESS;                                     \
+    } while (0)
 
-    RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = { 0 };
+static eSTATUS_t UARTClockInit (eBUS_ID_t busId) {
+
+    eSTATUS_t status = eSTATUS_SUCCESS;
     if (busId == eUART_1_BUS_ID) {
-
         __HAL_RCC_USART1_CLK_ENABLE ();
-        PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_USART1;
-        PeriphClkInitStruct.Usart16ClockSelection = RCC_USART16CLKSOURCE_D2PCLK2;
-
-        if (HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct) != HAL_OK) {
-            return eSTATUS_FAILURE;
-        }
-    } else if (busId == eUART_2_BUS_ID) {
-
-        __HAL_RCC_USART2_CLK_ENABLE ();
-        PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_USART2;
-        PeriphClkInitStruct.Usart234578ClockSelection = RCC_USART234578CLKSOURCE_D2PCLK1;
-
-        if (HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct) != HAL_OK) {
-            return eSTATUS_FAILURE;
-        }
-    } else if (busId == eUART_3_BUS_ID) {
-
-        __HAL_RCC_USART3_CLK_ENABLE ();
-        PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_USART3;
-        PeriphClkInitStruct.Usart234578ClockSelection = RCC_USART234578CLKSOURCE_D2PCLK1;
-
-        if (HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct) != HAL_OK) {
-            return eSTATUS_FAILURE;
-        }
-    } else {
-        return eSTATUS_FAILURE;
+        UART_CLOCK_INIT (&status, busId, RCC_PERIPHCLK_USART1, RCC_USART16CLKSOURCE_D2PCLK2);
+        return status;
     }
-    return eSTATUS_SUCCESS;
+    if (busId == eUART_2_BUS_ID) {
+        __HAL_RCC_USART2_CLK_ENABLE ();
+        UART_CLOCK_INIT (&status, busId, RCC_PERIPHCLK_USART2, RCC_USART234578CLKSOURCE_D2PCLK1);
+        return status;
+    }
+    if (busId == eUART_3_BUS_ID) {
+        __HAL_RCC_USART3_CLK_ENABLE ();
+        UART_CLOCK_INIT (&status, busId, RCC_PERIPHCLK_USART3, RCC_USART234578CLKSOURCE_D2PCLK1);
+        return status;
+    }
+    return eSTATUS_FAILURE;
 }
 
-eSTATUS_t UARTInit (UARTInitConf_t const* pConf) {
+static eSTATUS_t
+UARTInitGPIO (vUARTBus_t* pBus, UARTInitConf_t conf, UARTBoardConf_t boardConf) {
 
-    if (pConf == NULL) {
+    eSTATUS_t status       = eSTATUS_SUCCESS;
+    eBUS_ID_t busId        = pBus->busId;
+    eGPIO_ID_t txId        = boardConf.txId;
+    eGPIO_ID_t rxId        = boardConf.rxId;
+    uint16_t gpioAlternate = boardConf.gpioAlternate;
+    GPIO_INIT_UART (&status, busId, txId, rxId, gpioAlternate);
+    return status;
+}
+
+eSTATUS_t UARTInit (UARTInitConf_t conf, UARTBoardConf_t boardConf) {
+
+    eBUS_ID_t busId       = boardConf.header.busId;
+    eDEVICE_ID_t deviceId = conf.deviceId;
+    uint32_t baudRate     = boardConf.baudRate;
+
+    if (BUS_ID_IS_UART (busId) == FALSE || baudRate == 0) {
         return eSTATUS_FAILURE;
     }
 
-    UARTBus_t* pBus = UARTGetBusById (pConf->busId);
-    if (pBus == NULL) {
-        return eSTATUS_FAILURE;
-    }
-
+    vUARTBus_t* pBus = UARTGetBusById (busId);
     if (pBus->isInitialized == TRUE) {
         return eSTATUS_FAILURE;
     }
 
-    memset (pBus, 0, sizeof (UARTBus_t));
-    pBus->busId                      = pConf->busId;
-    pBus->baudRate                   = pConf->baudRate;
-    pBus->deviceId                   = pConf->deviceId;
-    pBus->isInitialized              = TRUE;
-    pBus->handle.Instance            = UARTGetInstanceById (pConf->busId);
-    pBus->handle.Init.BaudRate       = pConf->baudRate;
-    pBus->handle.Init.WordLength     = UART_WORDLENGTH_8B;
-    pBus->handle.Init.StopBits       = UART_STOPBITS_1;
-    pBus->handle.Init.Parity         = UART_PARITY_NONE;
-    pBus->handle.Init.Mode           = UART_MODE_TX_RX;
-    pBus->handle.Init.HwFlowCtl      = UART_HWCONTROL_NONE;
-    pBus->handle.Init.OverSampling   = UART_OVERSAMPLING_16;
-    pBus->handle.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-    pBus->handle.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+    memset (pBus, 0, sizeof (vUARTBus_t));
+    pBus->busId                              = busId;
+    pBus->deviceId                           = deviceId;
+    pBus->handle.Instance                    = UARTGetInstanceById (busId);
+    pBus->handle.Init.BaudRate               = baudRate;
+    pBus->handle.Init.WordLength             = UART_WORDLENGTH_8B;
+    pBus->handle.Init.StopBits               = UART_STOPBITS_1;
+    pBus->handle.Init.Parity                 = UART_PARITY_NONE;
+    pBus->handle.Init.Mode                   = UART_MODE_TX_RX;
+    pBus->handle.Init.HwFlowCtl              = UART_HWCONTROL_NONE;
+    pBus->handle.Init.OverSampling           = UART_OVERSAMPLING_16;
+    pBus->handle.Init.OneBitSampling         = UART_ONE_BIT_SAMPLE_DISABLE;
+    pBus->handle.Init.ClockPrescaler         = UART_PRESCALER_DIV1;
     pBus->handle.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
 
     if (UARTClockInit (pBus->busId) != eSTATUS_SUCCESS) {
@@ -193,7 +209,7 @@ eSTATUS_t UARTInit (UARTInitConf_t const* pConf) {
         goto error;
     }
 
-    if (GPIOInitUART (pBus->handle.Instance, &pBus->gpio) != eSTATUS_SUCCESS) {
+    if (UARTInitGPIO (pBus, conf, boardConf) != eSTATUS_SUCCESS) {
         goto error;
     }
 
@@ -209,20 +225,21 @@ eSTATUS_t UARTInit (UARTInitConf_t const* pConf) {
         goto error;
     }
 
+    pBus->isInitialized = TRUE;
     return eSTATUS_SUCCESS;
 error:
     memset (pBus, 0, sizeof (UARTBus_t));
     return eSTATUS_FAILURE;
 }
 
-eSTATUS_t UARTRead_Blocking (eUART_BUS_ID_t busId, uint8_t* pData, uint16_t size) {
+eSTATUS_t UARTRead_Blocking (eBUS_ID_t busId, uint8_t* pData, uint32_t size) {
 
     if (pData == NULL || size == 0) {
         return eSTATUS_FAILURE;
     }
 
-    UARTBus_t* pBus = UARTGetBusById (busId);
-    if (IS_BUS_VALID (pBus) == FALSE) {
+    vUARTBus_t* pBus = UARTGetBusById (busId);
+    if (pBus == NULL) {
         return eSTATUS_FAILURE;
     }
 
@@ -233,14 +250,14 @@ eSTATUS_t UARTRead_Blocking (eUART_BUS_ID_t busId, uint8_t* pData, uint16_t size
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t UARTWrite_Blocking (eUART_BUS_ID_t busId, uint8_t const* pData, uint16_t size) {
+eSTATUS_t UARTWrite_Blocking (eBUS_ID_t busId, uint8_t const* pData, uint32_t size) {
 
     if (pData == NULL || size == 0) {
         return eSTATUS_FAILURE;
     }
 
-    UARTBus_t* pBus = UARTGetBusById (busId);
-    if (IS_BUS_VALID (pBus) == FALSE) {
+    vUARTBus_t* pBus = UARTGetBusById (busId);
+    if (pBus == NULL) {
         return eSTATUS_FAILURE;
     }
 
@@ -251,14 +268,14 @@ eSTATUS_t UARTWrite_Blocking (eUART_BUS_ID_t busId, uint8_t const* pData, uint16
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t UARTRead_IT (eUART_BUS_ID_t busId, uint8_t* pData, uint16_t size) {
+eSTATUS_t UARTRead_IT (eBUS_ID_t busId, uint8_t* pData, uint32_t size) {
 
     if (pData == NULL || size == 0) {
         return eSTATUS_FAILURE;
     }
 
-    UARTBus_t* pBus = UARTGetBusById (busId);
-    if (IS_BUS_VALID (pBus) == FALSE) {
+    vUARTBus_t* pBus = UARTGetBusById (busId);
+    if (pBus == NULL) {
         return eSTATUS_FAILURE;
     }
 
@@ -269,14 +286,14 @@ eSTATUS_t UARTRead_IT (eUART_BUS_ID_t busId, uint8_t* pData, uint16_t size) {
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t UARTRegisterCallback (eUART_BUS_ID_t busId, eUART_CALLBACK_ID_t cbId, UART_Callback_t callback) {
+eSTATUS_t UARTRegisterCallback (eBUS_ID_t busId, eUART_CALLBACK_ID_t cbId, UART_Callback_t callback) {
 
     if (callback == NULL) {
         return eSTATUS_FAILURE;
     }
 
-    UARTBus_t* pBus = UARTGetBusById (busId);
-    if (IS_BUS_VALID (pBus) == FALSE) {
+    vUARTBus_t* pBus = UARTGetBusById (busId);
+    if (pBus == NULL) {
         return eSTATUS_FAILURE;
     }
 
@@ -293,26 +310,23 @@ eSTATUS_t UARTRegisterCallback (eUART_BUS_ID_t busId, eUART_CALLBACK_ID_t cbId, 
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t UARTEnableInterrupt (eUART_BUS_ID_t busId, uint32_t priority) {
+eSTATUS_t UARTEnableInterrupts (eBUS_ID_t busId, uint32_t priority) {
 
     if (busId == eUART_1_BUS_ID) {
         HAL_NVIC_SetPriority (USART1_IRQn, priority, priority);
         HAL_NVIC_EnableIRQ (USART1_IRQn);
-
     } else if (busId == eUART_2_BUS_ID) {
         HAL_NVIC_SetPriority (USART2_IRQn, priority, priority);
         HAL_NVIC_EnableIRQ (USART2_IRQn);
-
     } else if (busId == eUART_3_BUS_ID) {
         HAL_NVIC_SetPriority (USART3_IRQn, priority, priority);
         HAL_NVIC_EnableIRQ (USART3_IRQn);
-
     } else {
         return eSTATUS_FAILURE;
     }
     return eSTATUS_SUCCESS;
 }
 
-BOOL_t UARTIsValid (eUART_BUS_ID_t busId) {
+BOOL_t UARTIsValid (eBUS_ID_t busId) {
     return IS_BUS_VALID (UARTGetBusById (busId));
 }

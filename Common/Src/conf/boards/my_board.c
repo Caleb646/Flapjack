@@ -6,27 +6,37 @@
 static TimerBoardConf_t gTimerBoardConfs[] = {
 
     { TIMER_ID_MAKE (eTIMER_5_DEV_ID, eTIMER_CHANNEL_1_ID),
-      GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_0) },
+      GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_0),
+      GPIO_AF2_TIM5 },
     { TIMER_ID_MAKE (eTIMER_5_DEV_ID, eTIMER_CHANNEL_2_ID),
-      GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_1) },
+      GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_1),
+      GPIO_AF2_TIM5 },
     { TIMER_ID_MAKE (eTIMER_5_DEV_ID, eTIMER_CHANNEL_3_ID),
-      GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_2) },
+      GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_2),
+      GPIO_AF2_TIM5 },
     { TIMER_ID_MAKE (eTIMER_5_DEV_ID, eTIMER_CHANNEL_4_ID),
-      GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_3) },
+      GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_3),
+      GPIO_AF2_TIM5 },
 
     { TIMER_ID_MAKE (eTIMER_8_DEV_ID, eTIMER_CHANNEL_1_ID),
-      GPIO_ID_MAKE (eGPIO_PORTID_C, eGPIO_PINID_6) },
+      GPIO_ID_MAKE (eGPIO_PORTID_C, eGPIO_PINID_6),
+      GPIO_AF3_TIM8 },
     { TIMER_ID_MAKE (eTIMER_8_DEV_ID, eTIMER_CHANNEL_2_ID),
-      GPIO_ID_MAKE (eGPIO_PORTID_C, eGPIO_PINID_7) },
+      GPIO_ID_MAKE (eGPIO_PORTID_C, eGPIO_PINID_7),
+      GPIO_AF3_TIM8 },
     { TIMER_ID_MAKE (eTIMER_8_DEV_ID, eTIMER_CHANNEL_3_ID),
-      GPIO_ID_MAKE (eGPIO_PORTID_C, eGPIO_PINID_8) },
+      GPIO_ID_MAKE (eGPIO_PORTID_C, eGPIO_PINID_8),
+      GPIO_AF3_TIM8 },
     { TIMER_ID_MAKE (eTIMER_8_DEV_ID, eTIMER_CHANNEL_4_ID),
-      GPIO_ID_MAKE (eGPIO_PORTID_C, eGPIO_PINID_9) },
+      GPIO_ID_MAKE (eGPIO_PORTID_C, eGPIO_PINID_9),
+      GPIO_AF3_TIM8 },
 
     { TIMER_ID_MAKE (eTIMER_12_DEV_ID, eTIMER_CHANNEL_1_ID),
-      GPIO_ID_MAKE (eGPIO_PORTID_H, eGPIO_PINID_6) },
+      GPIO_ID_MAKE (eGPIO_PORTID_H, eGPIO_PINID_6),
+      GPIO_AF2_TIM12 },
     { TIMER_ID_MAKE (eTIMER_12_DEV_ID, eTIMER_CHANNEL_2_ID),
-      GPIO_ID_MAKE (eGPIO_PORTID_H, eGPIO_PINID_9) },
+      GPIO_ID_MAKE (eGPIO_PORTID_H, eGPIO_PINID_9),
+      GPIO_AF2_TIM12 },
 };
 
 #define TIM5_CH1_IDX  0
@@ -77,15 +87,21 @@ static UARTBoardConf_t gUARTBoardConfs[] = {
 
     { { eUART_1_BUS_ID },
       GPIO_ID_MAKE (eGPIO_PORTID_B, eGPIO_PINID_14),
-      GPIO_ID_MAKE (eGPIO_PORTID_B, eGPIO_PINID_15) },
+      GPIO_ID_MAKE (eGPIO_PORTID_B, eGPIO_PINID_15),
+      GPIO_AF7_USART1,
+      115200U },
 
     { { eUART_2_BUS_ID },
       GPIO_ID_MAKE (eGPIO_PORTID_D, eGPIO_PINID_5),
-      GPIO_ID_MAKE (eGPIO_PORTID_D, eGPIO_PINID_6) },
+      GPIO_ID_MAKE (eGPIO_PORTID_D, eGPIO_PINID_6),
+      GPIO_AF7_USART2,
+      115200U },
 
     { { eUART_3_BUS_ID },
       GPIO_ID_MAKE (eGPIO_PORTID_B, eGPIO_PINID_10),
-      GPIO_ID_MAKE (eGPIO_PORTID_B, eGPIO_PINID_11) }
+      GPIO_ID_MAKE (eGPIO_PORTID_B, eGPIO_PINID_11),
+      GPIO_AF7_USART3,
+      115200U }
 };
 
 #define UART1_IDX 0
@@ -96,7 +112,8 @@ static I2CBoardConf_t gI2CBoardConfs[] = {
 
     { { eI2C_1_BUS_ID },
       GPIO_ID_MAKE (eGPIO_PORTID_B, eGPIO_PINID_6),
-      GPIO_ID_MAKE (eGPIO_PORTID_B, eGPIO_PINID_7) }
+      GPIO_ID_MAKE (eGPIO_PORTID_B, eGPIO_PINID_7),
+      GPIO_AF4_I2C1 }
 };
 
 #define I2C1_IDX 0
@@ -161,12 +178,38 @@ static ServoBoardConf_t gServoBoardConfs[] = {
     { eSERVO_7_ID, &gTimerBoardConfs[TIM12_CH1_IDX], 0, 50, 1.0F, 1.0F, 1.0F, 1, 1, 1 }
 };
 
+#define LEFT_SERVO_MOTOR_IDX  0
+#define RIGHT_SERVO_MOTOR_IDX 4
+
 static MotorBoardConf_t gMotorBoardConfs[] = {
     // Left motor
-    { eMOTOR_1_ID, &gTimerBoardConfs[TIM12_CH1_IDX], &gServoBoardConfs[0], 1, 150, 1.0F, 1.0F, 1.0F, 1, 1, 1 },
+    { eMOTOR_1_ID,
+      &gTimerBoardConfs[TIM12_CH1_IDX],
+      &gServoBoardConfs[LEFT_SERVO_MOTOR_IDX],
+      1,
+      150,
+      1.0F,
+      1.0F,
+      1.0F,
+      1,
+      1,
+      1 },
     // Right motor
-    { eMOTOR_2_ID, &gTimerBoardConfs[TIM12_CH2_IDX], &gServoBoardConfs[4], 1, 150, 1.0F, 1.0F, 1.0F, 1, 1, 1 }
+    { eMOTOR_2_ID,
+      &gTimerBoardConfs[TIM12_CH2_IDX],
+      &gServoBoardConfs[RIGHT_SERVO_MOTOR_IDX],
+      1,
+      150,
+      1.0F,
+      1.0F,
+      1.0F,
+      1,
+      1,
+      1 }
 };
+
+#define LEFT_MOTOR_IDX  0
+#define RIGHT_MOTOR_IDX 1
 
 static BoardConf_t gBoardConf = { 0 };
 
@@ -184,6 +227,14 @@ uint8_t BoardConfInit (void) {
     gBoardConf.numMotors =
     sizeof (gMotorBoardConfs) / sizeof (gMotorBoardConfs[0]);
 
+    // Link left servo motor to left motor
+    gServoBoardConfs[LEFT_SERVO_MOTOR_IDX].pLinkedMotorBoardConf =
+    &gMotorBoardConfs[LEFT_MOTOR_IDX];
+
+    // Link right servo motor to right motor
+    gServoBoardConfs[RIGHT_SERVO_MOTOR_IDX].pLinkedMotorBoardConf =
+    &gMotorBoardConfs[RIGHT_MOTOR_IDX];
+
     return 1;
 }
 
@@ -192,6 +243,7 @@ BoardConf_t* BoardConfGet (void) {
 }
 
 DeviceBoardConf_t* BoardConfGetDeviceById (eDEVICE_ID_t deviceId) {
+
     for (uint32_t i = 0; i < gBoardConf.numDevices; ++i) {
         if (gBoardConf.pDeviceBoardConfs[i].deviceId == deviceId) {
             return &gBoardConf.pDeviceBoardConfs[i];
@@ -201,6 +253,7 @@ DeviceBoardConf_t* BoardConfGetDeviceById (eDEVICE_ID_t deviceId) {
 }
 
 ServoBoardConf_t* BoardConfGetServoById (eDEVICE_ID_t servoId) {
+
     for (uint32_t i = 0; i < gBoardConf.numServos; ++i) {
         if (gBoardConf.pServoBoardConfs[i].servoId == servoId) {
             return &gBoardConf.pServoBoardConfs[i];
@@ -210,6 +263,7 @@ ServoBoardConf_t* BoardConfGetServoById (eDEVICE_ID_t servoId) {
 }
 
 MotorBoardConf_t* BoardConfGetMotorById (eDEVICE_ID_t motorId) {
+
     for (uint32_t i = 0; i < gBoardConf.numMotors; ++i) {
         if (gBoardConf.pMotorBoardConfs[i].motorId == motorId) {
             return &gBoardConf.pMotorBoardConfs[i];

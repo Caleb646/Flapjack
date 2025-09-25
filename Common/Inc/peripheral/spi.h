@@ -24,6 +24,8 @@ typedef struct {
     BOOL_t isInitialized;
 } SPIBus_t;
 
+typedef SPIBus_t volatile vSPIBus_t;
+
 eSTATUS_t SPIInit (SPIInitConf_t conf, SPIBoardConf_t boardConf);
 eSTATUS_t
 SPIRead_Blocking (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t* pData, uint16_t size);
@@ -32,14 +34,12 @@ SPIWrite_Blocking (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pData,
 eSTATUS_t
 SPIWriteRead_Blocking (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pTxData, uint8_t* pRxData, uint16_t size);
 
-#define SPI_INIT(pSTATUS, BUS_ID, SPEED, DEVICE_ID, NSS_ID) \
-    do {                                                    \
-        SPIInitConf_t conf = { 0 };                         \
-        conf.busId         = (BUS_ID);                      \
-        conf.speed         = (SPEED);                       \
-        conf.deviceId      = (DEVICE_ID);                   \
-        conf.nssId         = (NSS_ID);                      \
-        *(pSTATUS)         = SPIInit (conf);                \
+#define SPI_INIT_FROM_BOARD_CONF(pSTATUS, DEVICE_BOARD_CONF, BOARD_CONF) \
+    do {                                                                 \
+        SPIInitConf_t conf = { 0 };                                      \
+        conf.deviceId      = (DEVICE_BOARD_CONF).deviceId;               \
+        conf.nssId         = (DEVICE_BOARD_CONF).nssId;                  \
+        *(pSTATUS)         = SPIInit (conf, (BOARD_CONF));               \
     } while (0)
 
 

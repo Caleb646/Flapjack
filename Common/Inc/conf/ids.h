@@ -128,6 +128,8 @@ enum {
     eUART_2_BUS_ID,
     eUART_3_BUS_ID,
     eUART_4_BUS_ID,
+    eUART_5_BUS_ID,
+    eUART_6_BUS_ID,
     eUART_BUS_ID_END__,
     eUART_BUS_ID_MAX = eUART_BUS_ID_END__ - eUART_BUS_ID_BEGIN__,
 

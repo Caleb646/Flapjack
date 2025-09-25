@@ -1,18 +1,22 @@
 #include "periphs/gpio.h"
 #include "common.h"
+#include "conf/board.h"
 #include "conf/conf.h"
 #include "hal.h"
 #include "log/logger.h"
+#include "mem/mem.h"
+#include <stdint.h>
+#include <string.h>
 
 #define GPIO_NPORTS eGPIO_PORTID_MAX
 #define GPIO_NPINS  eGPIO_PINID_MAX
 #define PORT_OFFSET 0x400 // each port is offset by 0x400
 
-static IO_t gIOs[GPIO_NPORTS * GPIO_NPINS] = { 0 };
+static SHARED_MEM_SECTION IO_t gIOs[GPIO_NPORTS * GPIO_NPINS] = { 0 };
 
 static void GPIOEnablePortClock (eGPIO_ID_t gpioId) {
 
-    IO_t* pIO = GPIOGetIOfromId (gpioId);
+    vIO_t* pIO = GPIOGetIOfromId (gpioId);
     if (pIO == NULL || pIO->pPort == NULL) {
         return;
     }
@@ -51,7 +55,7 @@ static void GPIOBaseInit (void) {
     }
     for (uint32_t portId = 0; portId < GPIO_NPORTS; ++portId) {
         for (uint32_t pinId = 0; pinId < GPIO_NPINS; ++pinId) {
-            IO_t* pIO    = &gIOs[(portId * GPIO_NPINS) + pinId];
+            vIO_t* pIO   = &gIOs[(portId * GPIO_NPINS) + pinId];
             pIO->pPort   = GPIOA + (portId * PORT_OFFSET);
             pIO->pin     = GPIO_PIN_0 << pinId;
             pIO->ownerId = eDEVICE_ID_NULL;
@@ -60,7 +64,7 @@ static void GPIOBaseInit (void) {
     initialized = TRUE;
 }
 
-IO_t* GPIOGetIOfromId (eGPIO_ID_t gpioId) {
+vIO_t* GPIOGetIOfromId (eGPIO_ID_t gpioId) {
 
     if (GPIO_ID_IS_GPIO (gpioId) == FALSE) {
         return NULL;
@@ -78,7 +82,7 @@ eSTATUS_t GPIOFreeById (eGPIO_ID_t gpioId) {
     return GPIOFreeByIO (GPIOGetIOfromId (gpioId));
 }
 
-eSTATUS_t GPIOFreeByIO (IO_t* pIO) {
+eSTATUS_t GPIOFreeByIO (vIO_t* pIO) {
     if (pIO == NULL) {
         return eSTATUS_FAILURE;
     }
@@ -94,9 +98,9 @@ eSTATUS_t GPIOInitSPI (GPIOSPIInitConf_t conf) {
         return eSTATUS_FAILURE;
     }
 
-    IO_t* pSCK  = GPIOGetIOfromId (conf.sckId);
-    IO_t* pMISO = GPIOGetIOfromId (conf.misoId);
-    IO_t* pMOSI = GPIOGetIOfromId (conf.mosiId);
+    vIO_t* pSCK  = GPIOGetIOfromId (conf.sckId);
+    vIO_t* pMISO = GPIOGetIOfromId (conf.misoId);
+    vIO_t* pMOSI = GPIOGetIOfromId (conf.mosiId);
 
     if (pSCK == NULL || pMISO == NULL || pMOSI == NULL) {
         return eSTATUS_FAILURE;
@@ -132,7 +136,7 @@ eSTATUS_t GPIOInitSPI (GPIOSPIInitConf_t conf) {
     /* Only configure NSS if its being used*/
     if (conf.nssId != eGPIO_ID_NULL) {
 
-        IO_t* pNSS = GPIOGetIOfromId (conf.nssId);
+        vIO_t* pNSS = GPIOGetIOfromId (conf.nssId);
         if (pNSS == NULL) {
             return eSTATUS_FAILURE;
         }
@@ -162,8 +166,8 @@ eSTATUS_t GPIOInitI2C (GPIOI2CInitConf_t conf) {
         return eSTATUS_FAILURE;
     }
 
-    IO_t* pSCL = GPIOGetIOfromId (conf.sclId);
-    IO_t* pSDA = GPIOGetIOfromId (conf.sdaId);
+    vIO_t* pSCL = GPIOGetIOfromId (conf.sclId);
+    vIO_t* pSDA = GPIOGetIOfromId (conf.sdaId);
     if (pSCL == NULL || pSDA == NULL) {
         return eSTATUS_FAILURE;
     }
@@ -209,8 +213,8 @@ eSTATUS_t GPIOInitUART (GPIOUARTInitConf_t conf) {
         return eSTATUS_FAILURE;
     }
 
-    IO_t* pTX = GPIOGetIOfromId (conf.txId);
-    IO_t* pRX = GPIOGetIOfromId (conf.rxId);
+    vIO_t* pTX = GPIOGetIOfromId (conf.txId);
+    vIO_t* pRX = GPIOGetIOfromId (conf.rxId);
     if (pTX == NULL || pRX == NULL) {
         return eSTATUS_FAILURE;
     }
@@ -242,7 +246,7 @@ eSTATUS_t GPIOInitIO (GPIOIOInitConf_t conf) {
 
     GPIOBaseInit ();
 
-    IO_t* pIO = GPIOGetIOfromId (conf.gpioId);
+    vIO_t* pIO = GPIOGetIOfromId (conf.gpioId);
     if (pIO == NULL) {
         return eSTATUS_FAILURE;
     }

@@ -105,9 +105,33 @@
 
 // clang-format on
 
+typedef void (*LoggerWriteToSink_t) (uint8_t const* pData, uint32_t len);
+
 eSTATUS_t LoggerInit (void);
-UART_HandleTypeDef* LoggerGetUARTHandle (void);
+eSTATUS_t LoggerAddSink (LoggerWriteToSink_t sink);
+eSTATUS_t LoggerRemoveSink (LoggerWriteToSink_t sink);
 // void LogStackTrace (void);
+
+typedef struct {
+    eDEVICE_ID_t deviceId;
+} SerialDebugInitConf_t;
+
+typedef struct {
+    eBUS_ID_t busId;
+    eDEVICE_ID_t deviceId;
+    BOOL_t isInitialized;
+} SerialDebug_t;
+
+typedef SerialDebug_t volatile vSerialDebug_t;
+
+eSTATUS_t SerialDebugInit (SerialDebugInitConf_t conf, DeviceBoardConf_t boardConf);
+
+#define SERIAL_DEBUG_INIT_FROM_BOARD_CONF(pSTATUS, DEVICE_BOARD_CONF) \
+    do {                                                              \
+        SerialDebugInitConf_t conf = { 0 };                           \
+        conf.deviceId              = (DEVICE_BOARD_CONF).deviceId;    \
+        *(pSTATUS) = SerialDebugInit (conf, (DEVICE_BOARD_CONF));     \
+    } while (0)
 
 
 #endif // LOG_H
