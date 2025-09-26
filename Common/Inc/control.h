@@ -113,6 +113,8 @@ typedef struct {
 } FCState;
 
 
+typedef FCState volatile vFCState;
+
 STATIC_ASSERT (sizeof (DefaultCommand) <= COMMAND_TOTAL_SIZE, "");
 STATIC_ASSERT (sizeof (ChangeOpStateCmd) <= sizeof (DefaultCommand), "");
 STATIC_ASSERT (sizeof (ChangeFlightModeCmd) <= sizeof (DefaultCommand), "");
@@ -135,7 +137,7 @@ eSTATUS_t ControlRegister_CmdHandler (eCMD_t cmdType, CmdHandler_t handler);
 char const* ControlOpState2Char (eCMD_OP_STATE_t opState);
 char const* ControlCmdType2Char (eCMD_t commandType);
 FCState ControlGetCopyFCState (void);
-eSTATUS_t ControlUpdateFCState (FCState const* pNewState);
+eSTATUS_t ControlUpdateFCState (vFCState const* pNewState);
 eCMD_OP_STATE_t ControlGetOpState (void);
 
 #endif /* CONTROL_H */

@@ -133,9 +133,7 @@ void HAL_UART_ErrorCallback (UART_HandleTypeDef* huart) {
         }                                                                 \
         if (HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct) != HAL_OK) { \
             *(pSTATUS) = eSTATUS_FAILURE;                                 \
-            return;                                                       \
         }                                                                 \
-        *(pSTATUS) = eSTATUS_SUCCESS;                                     \
     } while (0)
 
 static eSTATUS_t UARTClockInit (eBUS_ID_t busId) {

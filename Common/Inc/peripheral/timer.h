@@ -2,12 +2,13 @@
 #define __PERIPHS_TIMER_H
 
 #include "common.h"
+#include "conf/board.h"
 #include "conf/conf.h"
+#include "conf/ids.h"
 #include "hal.h"
 #include "log/logger.h"
 #include "peripheral/dma.h"
 #include <stdint.h>
-
 
 #define PWM_MHZ2HZ(x) ((x) * 1000000U)
 #define PWM_HZ2US(hz) \
@@ -50,19 +51,22 @@ enum {
 typedef struct {
     eDEVICE_ID_t deviceId;
     eTIMER_MODE_t mode;
-    eTIMER_ID_t timerId;
-    uint32_t hzPeriod; // PWM period frequency in Hz
+    uint32_t hzPeriod;
     BOOL_t usingDMA;
     BOOL_t doAutoPreload;
+    TimerBoardConf_t timerBoardConf;
 } TimerInitConf_t;
 
 typedef void (*TimerCallback_t) (eTIMER_ID_t timerId);
 
 typedef struct {
-    TimerInitConf_t conf;
-    BOOL_t isChannelInitialized;
+    eDEVICE_ID_t deviceId;
+    eTIMER_MODE_t mode;
+    eTIMER_ID_t timerId;
     TimerCallback_t errorCallback;
     TimerCallback_t pulseFinishedCallback;
+    BOOL_t usingDMA;
+    BOOL_t isChannelInitialized;
 } TimerChannel_t;
 
 typedef struct {
@@ -85,6 +89,7 @@ eSTATUS_t TimerStop (eTIMER_ID_t timerId);
 eSTATUS_t TimerWrite (eTIMER_ID_t timerId, uint32_t usUpTime);
 eSTATUS_t TimerRegisterCallback (eTIMER_ID_t timerId, TimerCallback_t callback, eTIMER_CALLBACK_ID_t cbType);
 eSTATUS_t TimerSetRegister (eTIMER_ID_t timerId, eTIMER_SET_REG_t regType, uint32_t value);
+eTIMER_CHANNEL_STATE_t TimerGetChannelState (eTIMER_ID_t timerId);
 
 #define TIMER_SET_PRESCALER(TIMER_ID, PRESCALER) \
     TimerSetRegister ((TIMER_ID), eTIMER_SET_REG_PRESCALER, (PRESCALER))
@@ -94,30 +99,25 @@ eSTATUS_t TimerSetRegister (eTIMER_ID_t timerId, eTIMER_SET_REG_t regType, uint3
     TimerSetRegister ((TIMER_ID), eTIMER_SET_REG_COMPARE, (COMPARE))
 
 
-#define TIMER_INIT_PWM(pSTATUS, DEVICE_ID, TIMER_ID, HZ, DO_AUTO_PRELOAD) \
-    do {                                                                  \
-        TimerInitConf_t conf = { 0 };                                     \
-        conf.deviceId        = (DEVICE_ID);                               \
-        conf.mode            = eTIMER_MODE_PWM;                           \
-        conf.timerId         = (TIMER_ID);                                \
-        conf.hzPeriod        = (HZ);                                      \
-        conf.usingDMA        = FALSE;                                     \
-        conf.doAutoPreload   = (DO_AUTO_PRELOAD);                         \
-        *(pSTATUS)           = TimerInit (conf);                          \
+#define TIMER_INIT(pSTATUS, DEVICE_ID, MODE, HZ, USING_DMA, DO_AUTO_PRELOAD, TIM_BOARD_CONF) \
+    do {                                                                                     \
+        TimerInitConf_t conf = { 0 };                                                        \
+        conf.deviceId        = (DEVICE_ID);                                                  \
+        conf.mode            = (MODE);                                                       \
+        conf.hzPeriod        = (HZ);                                                         \
+        conf.usingDMA        = (USING_DMA);                                                  \
+        conf.timerBoardConf  = (TIM_BOARD_CONF);                                             \
+        conf.doAutoPreload   = (DO_AUTO_PRELOAD);                                            \
+        *(pSTATUS)           = TimerInit (conf);                                             \
     } while (0)
 
 
-#define TIMER_INIT_PWM_DMA(pSTATUS, DEVICE_ID, TIMER_ID) \
-    do {                                                 \
-        TimerInitConf_t conf = { 0 };                    \
-        conf.deviceId        = (DEVICE_ID);              \
-        conf.mode            = eTIMER_MODE_PWM;          \
-        conf.timerId         = (TIMER_ID);               \
-        conf.hzPeriod        = 0U;                       \
-        conf.usingDMA        = TRUE;                     \
-        conf.doAutoPreload   = TRUE;                     \
-        *(pSTATUS)           = TimerInit (conf);         \
-    } while (0)
+#define TIMER_INIT_PWM(pSTATUS, DEVICE_ID, TIMER_ID, HZ, TIM_BOARD_CONF) \
+    TIMER_INIT ((pSTATUS), (DEVICE_ID), eTIMER_MODE_PWM, (HZ), FALSE, TRUE, (TIM_BOARD_CONF))
+
+
+#define TIMER_INIT_PWM_DMA(pSTATUS, DEVICE_ID, TIMER_ID, TIM_BOARD_CONF) \
+    TIMER_INIT ((pSTATUS), (DEVICE_ID), eTIMER_MODE_PWM, 0U, TRUE, TRUE, (TIM_BOARD_CONF))
 
 
 #endif // __PERIPHS_TIMER_H

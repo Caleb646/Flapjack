@@ -14,7 +14,7 @@
     LOG_DATA (LOG_DATA_TYPE_IMU_CALIB, "{\"rslt\":%u,\"error\":%u}", rslt, error)
 
 typedef uint8_t IMU_ACC_RANGE;
-typedef enum {
+enum {
     eIMU_ACC_RANGE_2G  = 0x00,
     eIMU_ACC_RANGE_4G  = 0x01,
     eIMU_ACC_RANGE_8G  = 0x02,
@@ -23,7 +23,7 @@ typedef enum {
 
 // Accelerometer output data rate in Hertz
 typedef uint8_t IMU_ACC_ODR;
-typedef enum {
+enum {
     eIMU_ACC_ODR_50   = 0x07,
     eIMU_ACC_ODR_100  = 0x08,
     eIMU_ACC_ODR_200  = 0x09,
@@ -33,13 +33,13 @@ typedef enum {
 };
 
 typedef uint8_t IMU_ACC_BW;
-typedef enum {
+enum {
     eIMU_ACC_BW_HALF    = BMI3_ACC_BW_ODR_HALF,
     eIMU_ACC_BW_QUARTER = BMI3_ACC_BW_ODR_QUARTER
 };
 
 typedef uint8_t IMU_ACC_AVG;
-typedef enum {
+enum {
     eIMU_ACC_AVG_1  = BMI3_ACC_AVG1,
     eIMU_ACC_AVG_2  = BMI3_ACC_AVG2,
     eIMU_ACC_AVG_4  = BMI3_ACC_AVG4,
@@ -50,7 +50,7 @@ typedef enum {
 };
 
 typedef uint8_t IMU_ACC_MODE;
-typedef enum {
+enum {
     eIMU_ACC_MODE_DISABLE   = BMI3_ACC_MODE_DISABLE,
     eIMU_ACC_MODE_LOW_PWR   = BMI3_ACC_MODE_LOW_PWR,
     eIMU_ACC_MODE_NORMAL    = BMI3_ACC_MODE_NORMAL,
@@ -59,7 +59,7 @@ typedef enum {
 
 // degrees per second
 typedef uint8_t IMU_GYRO_RANGE;
-typedef enum {
+enum {
     eIMU_GYRO_RANGE_125  = 0x00,
     eIMU_GYRO_RANGE_250  = 0x01,
     eIMU_GYRO_RANGE_500  = 0x02,
@@ -69,7 +69,7 @@ typedef enum {
 
 // Gyro output data rate in Hertz
 typedef uint8_t IMU_GYRO_ODR;
-typedef enum {
+enum {
     eIMU_GYRO_ODR_50   = 0x07,
     eIMU_GYRO_ODR_100  = 0x08,
     eIMU_GYRO_ODR_200  = 0x09,
@@ -79,13 +79,13 @@ typedef enum {
 };
 
 typedef uint8_t IMU_GYRO_BW;
-typedef enum {
+enum {
     eIMU_GYRO_BW_HALF    = BMI3_GYR_BW_ODR_HALF,
     eIMU_GYRO_BW_QUARTER = BMI3_GYR_BW_ODR_HALF
 };
 
 typedef uint8_t IMU_GYRO_AVG;
-typedef enum {
+enum {
     eIMU_GYRO_AVG_1  = BMI3_GYR_AVG1,
     eIMU_GYRO_AVG_2  = BMI3_GYR_AVG2,
     eIMU_GYRO_AVG_4  = BMI3_GYR_AVG4,
@@ -96,7 +96,7 @@ typedef enum {
 };
 
 typedef uint8_t IMU_GYRO_MODE;
-typedef enum {
+enum {
     eIMU_GYRO_MODE_DISABLE   = BMI3_GYR_MODE_DISABLE,
     eIMU_GYRO_MODE_SUSPEND   = BMI3_GYR_MODE_SUSPEND,
     eIMU_GYRO_MODE_LOW_PWR   = BMI3_GYR_MODE_LOW_PWR,

@@ -1,18 +1,21 @@
 #include "peripheral/timer.h"
 #include "common.h"
 #include "conf/conf.h"
-#include "dma.h"
 #include "hal.h"
 #include "log/logger.h"
 #include "mem/mem.h"
+#include "peripheral/dma.h"
 #include "peripheral/gpio.h"
 #include <stdint.h>
 #include <string.h>
+
 
 static SHARED_MEM_SECTION vTimer_t gTimers[TIMER_NTIMERS] = { 0 };
 
 static vTimer_t* TimerGetByInstance (TIM_TypeDef* instance);
 static void TimerHandleCallback (TIM_HandleTypeDef* htim, eTIMER_CALLBACK_ID_t callbackType);
+static eSTATUS_t
+TimerDMAInit (vTimer_t* pTimer, TimerChannel_t* pChannel, TimerInitConf_t conf);
 
 /*
  * The callback set by HAL_PWM_DMA_START call this function for Timer DMA transfer error callback.
@@ -60,15 +63,17 @@ static void TimerHandleCallback (TIM_HandleTypeDef* htim, eTIMER_CALLBACK_ID_t c
         return;
     }
 
+    eTIMER_ID_t timerId = pChannel->timerId;
+
     switch (callbackType) {
     case eTIMER_CALLBACK_TRANSFER_COMPLETE:
         if (pChannel->pulseFinishedCallback != NULL) {
-            pChannel->pulseFinishedCallback (pChannel->conf.timerId);
+            pChannel->pulseFinishedCallback (timerId);
         }
         break;
     case eTIMER_CALLBACK_TRANSFER_ERROR:
         if (pChannel->errorCallback != NULL) {
-            pChannel->errorCallback (pChannel->conf.timerId);
+            pChannel->errorCallback (timerId);
         }
         break;
     default: break;
@@ -144,53 +149,57 @@ static uint32_t TimerID2DMARequestID (eTIMER_ID_t timerId) {
     }
 }
 
-static eSTATUS_t TimerClockInit (TimerInitConf_t conf, vTimer_t* pOutTimer) {
+static eSTATUS_t
+TimerClockInit (vTimer_t* pTimer, TimerChannel_t* pChannel, TimerInitConf_t conf) {
 
-    if (pOutTimer == NULL) {
+    if (pTimer == NULL || pChannel == NULL) {
         LOG_ERROR ("Invalid timer pointer");
         return eSTATUS_FAILURE;
     }
 
-    switch (TIMER_ID_CLEAR_CHANNEL_BITS (conf.timerId)) {
+    eTIMER_ID_t timerId = pChannel->timerId;
+    switch (TIMER_ID_CLEAR_CHANNEL_BITS (timerId)) {
     case eTIMER_5_DEV_ID: __HAL_RCC_TIM5_CLK_ENABLE (); break;
     case eTIMER_8_DEV_ID: __HAL_RCC_TIM8_CLK_ENABLE (); break;
     case eTIMER_12_DEV_ID: __HAL_RCC_TIM12_CLK_ENABLE (); break;
     case eTIMER_13_DEV_ID: __HAL_RCC_TIM13_CLK_ENABLE (); break;
     default:
-        LOG_ERROR ("Invalid timer ID: %u", (uint16_t)conf.timerId);
+        LOG_ERROR ("Invalid timer ID: %u", (uint16_t)timerId);
         return eSTATUS_FAILURE;
     }
     return eSTATUS_SUCCESS;
 }
 
-static eSTATUS_t TimerPWMInit (TimerInitConf_t conf, vTimer_t* pOutTimer) {
+static eSTATUS_t
+TimerPWMInit (vTimer_t* pTimer, TimerChannel_t* pChannel, TimerInitConf_t conf) {
 
-    if (pOutTimer == NULL) {
+    if (pTimer == NULL || pChannel == NULL) {
         LOG_ERROR ("Invalid timer pointer");
         return eSTATUS_FAILURE;
     }
 
-    uint32_t channel    = TIMER_ID2HALCHANNEL (conf.timerId);
+    eTIMER_ID_t timerId = pChannel->timerId;
+    uint32_t channel    = TIMER_ID2HALCHANNEL (timerId);
     uint32_t autoReload = TIM_AUTORELOAD_PRELOAD_ENABLE;
     uint32_t prescaler  = (uint16_t)(SystemCoreClock / 1000000U) - 1U;
     uint32_t period = (uint16_t)(1000000U / MAX_U32 (conf.hzPeriod, 1U)) - 1U;
 
-    if (pOutTimer->isTimerInitialized == FALSE) {
+    if (pTimer->isTimerInitialized == FALSE) {
 
         if (conf.doAutoPreload == FALSE) {
             LOG_INFO ("Disabling auto-reload for PWM timer");
             autoReload = TIM_AUTORELOAD_PRELOAD_DISABLE;
         }
 
-        pOutTimer->handle.Instance = TimerGetInstanceById (conf.timerId);
-        pOutTimer->handle.Init.Prescaler         = prescaler;
-        pOutTimer->handle.Init.Period            = period;
-        pOutTimer->handle.Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
-        pOutTimer->handle.Init.CounterMode       = TIM_COUNTERMODE_UP;
-        pOutTimer->handle.Init.RepetitionCounter = 0;
-        pOutTimer->handle.Init.AutoReloadPreload = autoReload;
+        pTimer->handle.Instance           = TimerGetInstanceById (timerId);
+        pTimer->handle.Init.Prescaler     = prescaler;
+        pTimer->handle.Init.Period        = period;
+        pTimer->handle.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+        pTimer->handle.Init.CounterMode   = TIM_COUNTERMODE_UP;
+        pTimer->handle.Init.RepetitionCounter = 0;
+        pTimer->handle.Init.AutoReloadPreload = autoReload;
 
-        if (HAL_TIM_PWM_Init (&pOutTimer->handle) != HAL_OK) {
+        if (HAL_TIM_PWM_Init (&pTimer->handle) != HAL_OK) {
             LOG_ERROR ("Failed to initialize timer PWM");
             return eSTATUS_FAILURE;
         }
@@ -205,13 +214,13 @@ static eSTATUS_t TimerPWMInit (TimerInitConf_t conf, vTimer_t* pOutTimer) {
     sConfig.OCIdleState        = TIM_OCIDLESTATE_RESET;
     sConfig.OCNIdleState       = TIM_OCNIDLESTATE_RESET;
 
-    if (HAL_TIM_PWM_ConfigChannel (&pOutTimer->handle, &sConfig, channel) != HAL_OK) {
+    if (HAL_TIM_PWM_ConfigChannel (&pTimer->handle, &sConfig, channel) != HAL_OK) {
         LOG_ERROR ("Failed to configure PWM channel");
         return eSTATUS_FAILURE;
     }
 
     if (conf.usingDMA == TRUE) {
-        if (TimerDMAInit (conf, pOutTimer) != eSTATUS_SUCCESS) {
+        if (TimerDMAInit (pTimer, pChannel, conf) != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to initialize Timer DMA");
             return eSTATUS_FAILURE;
         }
@@ -220,22 +229,25 @@ static eSTATUS_t TimerPWMInit (TimerInitConf_t conf, vTimer_t* pOutTimer) {
     return eSTATUS_SUCCESS;
 }
 
-static eSTATUS_t TimerDMAInit (TimerInitConf_t conf, vTimer_t* pOutTimer) {
+static eSTATUS_t
+TimerDMAInit (vTimer_t* pTimer, TimerChannel_t* pChannel, TimerInitConf_t conf) {
 
-    if (pOutTimer == NULL || conf.usingDMA == FALSE) {
+    if (pTimer == NULL || pChannel == NULL) {
         LOG_ERROR ("Invalid timer pointer");
         return eSTATUS_FAILURE;
     }
 
+    eSTATUS_t status    = eSTATUS_SUCCESS;
+    eTIMER_ID_t timerId = pChannel->timerId;
+    BOOL_t usingDMA     = pChannel->usingDMA;
+    if (usingDMA == FALSE) {
+        return eSTATUS_FAILURE;
+    }
     eDMA_STREAM_ID_t dmaStreamId = eDMA_STREAM_MAX;
-    DMAInitConf_t dmaConfig      = { 0 };
-    dmaConfig.direction          = eDMA_DIRECTION_MEMORY_TO_PERIPH;
-    dmaConfig.priority           = eDMA_PRIORITY_HIGH;
-    dmaConfig.request            = TimerID2DMARequestID (conf.timerId);
-    dmaConfig.transferMode       = DMA_NORMAL;
-    dmaConfig.fifoMode           = DMA_FIFOMODE_DISABLE;
+    uint32_t dmaRequestId        = TimerID2DMARequestID (timerId);
+    DMA_INIT_TIMER_PWM (&status, dmaRequestId, &dmaStreamId);
 
-    if (DMAInit (dmaConfig, &dmaStreamId) != eSTATUS_SUCCESS) {
+    if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize DMA");
         return eSTATUS_FAILURE;
     }
@@ -247,74 +259,38 @@ static eSTATUS_t TimerDMAInit (TimerInitConf_t conf, vTimer_t* pOutTimer) {
     }
 
     /*
-     * Link the DMA handle to the specific capture/compare timer register
-     * it is going to be writing to.
+     * Link the DMA handle to the specific capture/compare timer
+     * register it is going to be writing to.
      */
-    uint32_t channelIdx = TIMER_ID2CHANNEL_IDX (conf.timerId);
+    uint32_t channelIdx = TIMER_ID2CHANNEL_IDX (timerId);
     switch (channelIdx) {
-    case 0: pOutTimer->handle.hdma[TIM_DMA_ID_CC1] = &pDMA->handle; break;
-    case 1: pOutTimer->handle.hdma[TIM_DMA_ID_CC2] = &pDMA->handle; break;
-    case 2: pOutTimer->handle.hdma[TIM_DMA_ID_CC3] = &pDMA->handle; break;
-    case 3: pOutTimer->handle.hdma[TIM_DMA_ID_CC4] = &pDMA->handle; break;
+    case 0: pTimer->handle.hdma[TIM_DMA_ID_CC1] = &pDMA->handle; break;
+    case 1: pTimer->handle.hdma[TIM_DMA_ID_CC2] = &pDMA->handle; break;
+    case 2: pTimer->handle.hdma[TIM_DMA_ID_CC3] = &pDMA->handle; break;
+    case 3: pTimer->handle.hdma[TIM_DMA_ID_CC4] = &pDMA->handle; break;
     default:
         LOG_ERROR ("Invalid timer channel index: %u", channelIdx);
         return eSTATUS_FAILURE;
     }
     // Link the DMA handle to the parent timer
-    pDMA->handle.Parent = &pOutTimer->handle;
+    pDMA->handle.Parent = (TIM_HandleTypeDef*)&pTimer->handle;
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t TimerInitGPIO (TimerChannel_t* pTimerChannel) {
+eSTATUS_t TimerInitGPIO (vTimer_t* pTimer, TimerChannel_t* pChannel, TimerInitConf_t conf) {
 
-    if (pTimerChannel == NULL) {
+    if (pTimer == NULL || pChannel == NULL) {
         LOG_ERROR ("Invalid timer pointer");
         return eSTATUS_FAILURE;
     }
 
-    eTIMER_ID_t timerId         = pTimerChannel->conf.timerId;
-    eTIMER_DEV_ID_t deviceId    = TIMER_ID_CLEAR_CHANNEL_BITS (timerId);
-    eTIMER_CHANNEL_ID_t channel = TIMER_ID2CHANNEL_IDX (timerId);
-    eGPIO_ID_t gpioId           = eGPIO_ID_NULL;
-    uint32_t alternate          = 0;
-
-    if (deviceId == eTIMER_5_DEV_ID) {
-        alternate = GPIO_AF2_TIM5;
-        if (channel == eTIMER_CHANNEL_1_ID) {
-            gpioId = GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_0); // TIM5_CH1
-        } else if (channel == eTIMER_CHANNEL_2_ID) {
-            gpioId = GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_1); // TIM5_CH2
-        } else if (channel == eTIMER_CHANNEL_3_ID) {
-            gpioId = GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_2); // TIM5_CH3
-        } else if (channel == eTIMER_CHANNEL_4_ID) {
-            gpioId = GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_3); // TIM5_CH4
-        }
-    } else if (deviceId == eTIMER_8_DEV_ID) {
-        alternate = GPIO_AF3_TIM8;
-        if (channel == eTIMER_CHANNEL_1_ID) {
-            gpioId = GPIO_ID_MAKE (eGPIO_PORTID_C, eGPIO_PINID_6); // TIM8_CH1
-        } else if (channel == eTIMER_CHANNEL_2_ID) {
-            gpioId = GPIO_ID_MAKE (eGPIO_PORTID_C, eGPIO_PINID_7); // TIM8_CH2
-        } else if (channel == eTIMER_CHANNEL_3_ID) {
-            gpioId = GPIO_ID_MAKE (eGPIO_PORTID_C, eGPIO_PINID_8); // TIM8_CH3
-        } else if (channel == eTIMER_CHANNEL_4_ID) {
-            gpioId = GPIO_ID_MAKE (eGPIO_PORTID_C, eGPIO_PINID_9); // TIM8_CH4
-        }
-    } else if (deviceId == eTIMER_12_DEV_ID) {
-        alternate = GPIO_AF2_TIM12;
-        if (channel == eTIMER_CHANNEL_1_ID) {
-            gpioId = GPIO_ID_MAKE (eGPIO_PORTID_H, eGPIO_PINID_6); // TIM12_CH1
-        } else if (channel == eTIMER_CHANNEL_2_ID) {
-            gpioId = GPIO_ID_MAKE (eGPIO_PORTID_H, eGPIO_PINID_9); // TIM12_CH2
-        }
-    } // else if (deviceId == eTIMER_13_DEV_ID) {
-      // if (channel == eTIMER_CHANNEL_1_ID) {
-      //  gpioId = GPIO_ID_MAKE (eGPIO_PORTID_F, eGPIO_PINID_8); // TIM13_CH1
-    //}
-    eSTATUS_t status = eSTATUS_SUCCESS;
+    eSTATUS_t status    = eSTATUS_SUCCESS;
+    eTIMER_ID_t timerId = pChannel->timerId;
+    eGPIO_ID_t gpioId   = conf.timerBoardConf.gpioId;
+    uint32_t alternate  = conf.timerBoardConf.gpioAlternate;
     GPIO_INIT_TIMER (&status, timerId, gpioId, alternate);
     if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to initialize GPIO for timer");
+        LOG_ERROR ("Failed to initialize timer GPIO");
         return eSTATUS_FAILURE;
     }
     return eSTATUS_SUCCESS;
@@ -322,8 +298,16 @@ eSTATUS_t TimerInitGPIO (TimerChannel_t* pTimerChannel) {
 
 eSTATUS_t TimerInit (TimerInitConf_t conf) {
 
-    vTimer_t* pTimer = TimerGetById (conf.timerId);
-    if (pTimer == NULL) {
+    TimerBoardConf_t boardConf = conf.timerBoardConf;
+    eTIMER_ID_t timerId        = boardConf.timerId;
+    eDEVICE_ID_t deviceId      = conf.deviceId;
+    eTIMER_MODE_t mode         = conf.mode;
+    uint32_t hzPeriod          = conf.hzPeriod;
+    BOOL_t usingDMA            = conf.usingDMA;
+    BOOL_t doAutoPreload       = conf.doAutoPreload;
+    vTimer_t* pTimer           = TimerGetById (timerId);
+    TimerChannel_t* pChannel   = TimerGetChannelById (timerId);
+    if (pTimer == NULL || pChannel == NULL) {
         LOG_ERROR ("Failed to find timer or timer handle");
         return eSTATUS_FAILURE;
     }
@@ -331,16 +315,14 @@ eSTATUS_t TimerInit (TimerInitConf_t conf) {
     if (pTimer->isTimerInitialized == FALSE) {
 
         memset (pTimer, 0, sizeof (vTimer_t));
-        if (TimerClockInit (conf, pTimer) != eSTATUS_SUCCESS) {
+        pChannel->timerId  = timerId;
+        pChannel->deviceId = deviceId;
+        pChannel->mode     = mode;
+        pChannel->usingDMA = usingDMA;
+        if (TimerClockInit (pTimer, pChannel, conf) != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to initialize timer clock");
             goto error;
         }
-    }
-
-    TimerChannel_t* pChannel = TimerGetChannelById (conf.timerId);
-    if (pChannel == NULL) {
-        LOG_ERROR ("Timer channel was null or already initialized");
-        return eSTATUS_FAILURE;
     }
 
     if (pChannel->isChannelInitialized == TRUE) {
@@ -348,12 +330,9 @@ eSTATUS_t TimerInit (TimerInitConf_t conf) {
         return eSTATUS_FAILURE;
     }
 
-    memset (pChannel, 0, sizeof (TimerChannel_t));
-    pChannel->conf = conf;
-
     if (conf.mode == eTIMER_MODE_PWM) {
 
-        if (TimerPWMInit (conf, pTimer) != eSTATUS_SUCCESS) {
+        if (TimerPWMInit (pTimer, pChannel, conf) != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to initialize timer PWM");
             goto error;
         }
@@ -363,7 +342,7 @@ eSTATUS_t TimerInit (TimerInitConf_t conf) {
         goto error;
     }
 
-    if (TimerInitGPIO (pChannel) != eSTATUS_SUCCESS) {
+    if (TimerInitGPIO (pTimer, pChannel, conf) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize timer GPIO");
         goto error;
     }
@@ -387,10 +366,11 @@ eSTATUS_t TimerStart (eTIMER_ID_t timerId, uint32_t const* pData, uint16_t Lengt
     }
 
     TIM_HandleTypeDef* pHandle = &pTimer->handle;
-    TimerInitConf_t* pConf     = &pChannel->conf;
+    eTIMER_MODE_t mode         = pChannel->mode;
+    BOOL_t usingDMA            = pChannel->usingDMA;
     uint32_t channel           = TIMER_ID2HALCHANNEL (timerId);
 
-    if (pConf->usingDMA == TRUE && pConf->mode == eTIMER_MODE_PWM) {
+    if (usingDMA == TRUE && mode == eTIMER_MODE_PWM) {
 
         if (pData == NULL || Length == 0) {
             LOG_ERROR ("Invalid data or length for PWM DMA start");
@@ -402,7 +382,7 @@ eSTATUS_t TimerStart (eTIMER_ID_t timerId, uint32_t const* pData, uint16_t Lengt
             return eSTATUS_FAILURE;
         }
 
-    } else if (pConf->usingDMA == FALSE && pConf->mode == eTIMER_MODE_PWM) {
+    } else if (usingDMA == FALSE && mode == eTIMER_MODE_PWM) {
 
         if (HAL_TIM_PWM_Start (pHandle, channel) != HAL_OK) {
             LOG_ERROR ("Failed to start PWM");
@@ -427,17 +407,18 @@ eSTATUS_t TimerStop (eTIMER_ID_t timerId) {
     }
 
     TIM_HandleTypeDef* pHandle = &pTimer->handle;
-    TimerInitConf_t* pConf     = &pChannel->conf;
+    eTIMER_MODE_t mode         = pChannel->mode;
+    BOOL_t usingDMA            = pChannel->usingDMA;
     uint32_t channel           = TIMER_ID2HALCHANNEL (timerId);
 
-    if (pConf->usingDMA == TRUE && pConf->mode == eTIMER_MODE_PWM) {
+    if (usingDMA == TRUE && mode == eTIMER_MODE_PWM) {
 
         if (HAL_TIM_PWM_Stop_DMA (pHandle, channel) != HAL_OK) {
             LOG_ERROR ("Failed to stop PWM DMA");
             return eSTATUS_FAILURE;
         }
 
-    } else if (pConf->usingDMA == FALSE && pConf->mode == eTIMER_MODE_PWM) {
+    } else if (usingDMA == FALSE && mode == eTIMER_MODE_PWM) {
 
         if (HAL_TIM_PWM_Stop (pHandle, channel) != HAL_OK) {
             LOG_ERROR ("Failed to stop PWM");

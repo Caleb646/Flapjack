@@ -1,40 +1,10 @@
-/*
-* MIT License
-
-* Copyright (c) 2023 Eunhye Seok
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-*/
-
-/*
- * dshot.h
- *
- *  Created on: 2021. 1. 27.
- *      Author: mokhwasomssi
- */
-
-
 #ifndef __MOTION_CONTROL_DSHOT_H__
 #define __MOTION_CONTROL_DSHOT_H__
 
 #include "common.h"
+#include "conf/board.h"
 #include "conf/conf.h"
+#include "conf/ids.h"
 #include "hal.h"
 #include "peripheral/dma.h"
 #include "peripheral/gpio.h"
@@ -47,32 +17,20 @@
 #define DSHOT_RANGE           (DSHOT_MAX_THROTTLE - DSHOT_MIN_THROTTLE)
 
 typedef uint8_t eDSHOT_TYPE_t;
-enum {
-    eDSHOT_TYPE_DMA_150 = 0,
-    eDSHOT_TYPE_DMA_300 = 1,
-    eDSHOT_TYPE_DMA_600 = 2,
+enum { eDSHOT_TYPE_150 = 0, eDSHOT_TYPE_300 = 1, eDSHOT_TYPE_600 = 2 };
 
-    eDSHOT_TYPE_BITBANG_150 = 4,
-    eDSHOT_TYPE_BITBANG_300 = 5,
-    eDSHOT_TYPE_BITBANG_600 = 6,
-};
-
-#define DSHOT_TYPE_CLEAR_TYPE(type) ((type) & 0b11U)
-#define DSHOT_TYPE_IS_DMA(type)     (((type) & 0b11U) == eDSHOT_TYPE_DMA_150)
-#define DSHOT_TYPE_IS_BITBANG(type) \
-    (((type) & 0b11U) == eDSHOT_TYPE_BITBANG_150)
+typedef struct {
+    TimerBoardConf_t timerBoardConf;
+    MotorBoardConf_t motorBoardConf;
+} DShotInitConf_t;
 
 typedef struct {
     eDSHOT_TYPE_t dshotType;
     eDEVICE_ID_t deviceId;
     eTIMER_ID_t timerId;
-    eGPIO_ID_t gpioId;
-} DShotInitConf_t;
-
-typedef struct {
-    DShotInitConf_t conf;
-    uint32_t pMotorDmaBuffer[DSHOT_DMA_BUFFER_SIZE]; /*!< DMA buffer for DShot */
+    BOOL_t usingDMA;
     vIO_t* pGPIO; /*!< GPIO handle for bitbang */
+    uint32_t pMotorDmaBuffer[DSHOT_DMA_BUFFER_SIZE]; /*!< DMA buffer for DShot */
 
     uint16_t timerTicksPeriod;
     uint16_t timerTicksforBit_1; /*!< microsecond value to send a 1 */
@@ -81,8 +39,11 @@ typedef struct {
     float usPeriod;      /*!< microsecond value for one bit period */
     float usValforBit_1; /*!< microsecond value to send a 1 */
     float usValforBit_0; /*!< microsecond value to send a 0 */
+
+    BOOL_t isInitialized;
 } DShot_t;
 
+typedef DShot_t volatile vDShot_t;
 
 /* Functions */
 eSTATUS_t DShotInit (DShotInitConf_t conf);
@@ -90,24 +51,20 @@ eSTATUS_t DShotStart (eDEVICE_ID_t deviceId);
 eSTATUS_t DShotStop (eDEVICE_ID_t deviceId);
 eSTATUS_t DShotWrite (eDEVICE_ID_t deviceId, uint16_t motorVal);
 
-#define DSHOT_INIT_BITBANG(pSTATUS, DEVICE_ID, TIMER_ID, GPIO_ID, DSHOT_TYPE) \
-    do {                                                                      \
-        DShotInitConf_t conf = { 0 };                                         \
-        conf.deviceId        = (DEVICE_ID);                                   \
-        conf.timerId         = (TIMER_ID);                                    \
-        conf.gpioId          = (GPIO_ID);                                     \
-        conf.dshotType       = (DSHOT_TYPE);                                  \
-        *(pSTATUS)           = DShotInit (conf);                              \
+#define DSHOT_INIT_BITBANG(pSTATUS, MOTOR_BOARD_CONF, TIMER_BOARD_CONF) \
+    do {                                                                \
+        DShotInitConf_t conf = { 0 };                                   \
+        conf.timerBoardConf  = (TIMER_BOARD_CONF);                      \
+        conf.motorBoardConf  = (MOTOR_BOARD_CONF);                      \
+        *(pSTATUS)           = DShotInit (conf);                        \
     } while (0)
 
-#define DSHOT_INIT_DMA(pSTATUS, DEVICE_ID, TIMER_ID, GPIO_ID, DSHOT_TYPE) \
-    do {                                                                  \
-        DShotInitConf_t conf = { 0 };                                     \
-        conf.deviceId        = (DEVICE_ID);                               \
-        conf.timerId         = (TIMER_ID);                                \
-        conf.gpioId          = (GPIO_ID);                                 \
-        conf.dshotType       = (DSHOT_TYPE);                              \
-        *(pSTATUS)           = DShotInit (conf);                          \
+#define DSHOT_INIT_DMA(pSTATUS, MOTOR_BOARD_CONF, TIMER_BOARD_CONF) \
+    do {                                                            \
+        DShotInitConf_t conf = { 0 };                               \
+        conf.timerBoardConf  = (TIMER_BOARD_CONF);                  \
+        conf.motorBoardConf  = (MOTOR_BOARD_CONF);                  \
+        *(pSTATUS)           = DShotInit (conf);                    \
     } while (0)
 
 

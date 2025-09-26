@@ -232,6 +232,7 @@ eSTATUS_t SerialDebugInit (SerialDebugInitConf_t conf, DeviceBoardConf_t devBoar
 
         UARTBoardConf_t* pUARTBoardConf = (UARTBoardConf_t*)devBoardConf.pBusBoardConf;
         uint32_t baudRate = pUARTBoardConf->baudRate;
+        (void)baudRate;
         UART_INIT_FROM_BOARD_CONF (&status, devBoardConf, *pUARTBoardConf);
         if (status != eSTATUS_SUCCESS) {
             goto error;

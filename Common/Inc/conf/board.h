@@ -58,19 +58,19 @@ typedef struct {
 
 // } IMUDeviceBoardConf_t;
 
-struct MotorBoardConf_t;
+typedef struct MotorBoardConf_s MotorBoardConf_t;
 
 typedef struct {
     eDEVICE_ID_t servoId;
     TimerBoardConf_t* pTimerBoardConf;
-    struct MotorBoardConf_t* pLinkedMotorBoardConf;
+    MotorBoardConf_t* pLinkedMotorBoardConf;
     uint32_t pwmFrequency;
     float pidRollMix;
     float pidPitchMix;
     float pidYawMix;
 } ServoBoardConf_t;
 
-typedef struct {
+typedef struct MotorBoardConf_s {
     eDEVICE_ID_t motorId;
     TimerBoardConf_t* pTimerBoardConf;
     ServoBoardConf_t* pLinkedServoBoardConf;

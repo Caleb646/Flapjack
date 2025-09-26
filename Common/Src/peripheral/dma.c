@@ -1,4 +1,4 @@
-#include "dma.h"
+#include "peripheral/dma.h"
 #include "common.h"
 #include "hal.h"
 #include "log/logger.h"
@@ -86,6 +86,7 @@ static eSTATUS_t DMAClockInit (DMAInitConf_t conf, DMAStream_t* pOutStream) {
         return eSTATUS_FAILURE;
     }
     __HAL_RCC_DMA1_CLK_ENABLE ();
+    return eSTATUS_SUCCESS;
 }
 
 eSTATUS_t DMAInit (DMAInitConf_t conf, eDMA_STREAM_ID_t* pOutStreamId) {

@@ -2,6 +2,8 @@
 #define LOG_H
 
 #include "common.h"
+#include "conf/board.h"
+#include "conf/conf.h"
 #include "hal.h"
 #include "log/format.h"
 #include <stdint.h>

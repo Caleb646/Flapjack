@@ -4,16 +4,12 @@
 #include "common.h"
 #include "conf/board.h"
 #include "conf/conf.h"
-#include "dma.h"
 #include "hal.h"
 #include "mc/dshot.h"
+#include "peripheral/dma.h"
 #include "peripheral/timer.h"
 #include <stdint.h>
 #include <string.h>
-
-// #define MOTOR_CREATE_CONF(PTR_TIMER, CHANNEL_ID, DMA_STREAM, DMA_REQUEST_ID) \
-//     { .pwm = PWM_CREATE_CONF (PTR_TIMER, CHANNEL_ID, 0, FALSE),              \
-//       .dma = DMA_CREATE_PWM_CONF (DMA_STREAM, eDMA_DIRECTION_MEMORY_TO_PERIPH, eDMA_PRIORITY_HIGH, DMA_REQUEST_ID) }
 
 #define PID_INIT(PID_CONTEXT)                                 \
     PID_CONTEXT.rollP          = PID_STARTING_ROLL_P;         \
@@ -55,21 +51,10 @@ typedef struct {
     ServoBoardConf_t boardConf;
 } ServoInitConf_t;
 
-// typedef struct {
-//     eDEVICE_ID_t id;
-//     uint32_t usLeftDutyCycle;
-//     uint32_t usMiddleDutyCycle;
-//     uint32_t usRightDutyCycle;
-//     float maxAngle;
-//     float usableMaxAngle;
-//     float pitchMix;
-//     float yawMix;
-//     float rollMix;
-// } ServoDescriptor;
-
 typedef struct {
     eDEVICE_ID_t id;
     eDEVICE_ID_t linkedMotorId;
+    eTIMER_ID_t timerId;
     uint32_t usLeftDutyCycle;
     uint32_t usMiddleDutyCycle;
     uint32_t usRightDutyCycle;
@@ -93,16 +78,10 @@ typedef struct {
     MotorBoardConf_t boardConf;
 } MotorInitConf_t;
 
-// typedef struct {
-//     eDEVICE_ID_t id;
-//     float pitchMix;
-//     float yawMix;
-//     float rollMix;
-// } MotorDescriptor;
-
 typedef struct {
     eDEVICE_ID_t id;
     eDEVICE_ID_t linkedServoId;
+    eTIMER_ID_t timerId;
     float pitchMix;
     float yawMix;
     float rollMix;
@@ -115,13 +94,6 @@ typedef struct {
     Vec3 up;
     Vec3 right;
 } AxisMap;
-
-// eSTATUS_t UpdateTargetAttitudeThrottle (
-// Vec3f maxAttitude,
-// RadioPWMChannels radio,
-// Vec3f* pOutputTargetAttitude,
-// float* pOutputThrottle);
-// eSTATUS_t PIDInit (PIDContext* pContext);
 
 eSTATUS_t PIDUpdateAttitude (
 PIDContext* pidContext,
@@ -142,11 +114,11 @@ eSTATUS_t ServoInit (ServoInitConf_t conf);
 eSTATUS_t ServoStart (eDEVICE_ID_t servoId);
 eSTATUS_t ServoWrite (eDEVICE_ID_t servoId, float targetAngle);
 
-#define SERVO_INIT_FROM_BOARD_CONF(pSTATUS, DEVICE_BOARD_CONF) \
-    do {                                                       \
-        ServoInitConf_t conf = { 0 };                          \
-        conf.boardConf       = (DEVICE_BOARD_CONF);            \
-        *(pSTATUS)           = ServoInit (conf);               \
+#define SERVO_INIT(pSTATUS, DEVICE_BOARD_CONF)      \
+    do {                                            \
+        ServoInitConf_t conf = { 0 };               \
+        conf.boardConf       = (DEVICE_BOARD_CONF); \
+        *(pSTATUS)           = ServoInit (conf);    \
     } while (0)
 
 #ifdef UNIT_TEST
@@ -158,11 +130,11 @@ eSTATUS_t MotorStart (eDEVICE_ID_t motorId);
 eSTATUS_t MotorWrite (eDEVICE_ID_t motorId, float motorValue);
 eSTATUS_t MotorWriteCmd (eDEVICE_ID_t motorId, eMOTOR_CMD_t command);
 
-#define MOTOR_INIT_FROM_BOARD_CONF(pSTATUS, DEVICE_BOARD_CONF) \
-    do {                                                       \
-        MotorInitConf_t conf = { 0 };                          \
-        conf.boardConf       = (DEVICE_BOARD_CONF);            \
-        *(pSTATUS)           = MotorInit (conf);               \
+#define MOTOR_INIT(pSTATUS, DEVICE_BOARD_CONF)      \
+    do {                                            \
+        MotorInitConf_t conf = { 0 };               \
+        conf.boardConf       = (DEVICE_BOARD_CONF); \
+        *(pSTATUS)           = MotorInit (conf);    \
     } while (0)
 
 #ifdef UNIT_TEST
@@ -181,18 +153,18 @@ eSTATUS_t ActuatorsWrite (Vec3f pidAttitude, float targetThrottle);
 Servo* ActuatorsGetLeftServo (void);
 void ActuatorsLogData (void);
 
-#define ACTUATOR_INIT_SERVO_FROM_BOARD_CONF(pSTATUS, DEVICE_BOARD_CONF) \
-    do {                                                                \
-        ServoInitConf_t conf = { 0 };                                   \
-        conf.boardConf       = (DEVICE_BOARD_CONF);                     \
-        *(pSTATUS)           = ActuatorsInitServo (conf);               \
+#define ACTUATORS_INIT_SERVO(pSTATUS, DEVICE_BOARD_CONF)  \
+    do {                                                  \
+        ServoInitConf_t conf = { 0 };                     \
+        conf.boardConf       = (DEVICE_BOARD_CONF);       \
+        *(pSTATUS)           = ActuatorsInitServo (conf); \
     } while (0)
 
-#define ACTUATOR_INIT_MOTOR_FROM_BOARD_CONF(pSTATUS, DEVICE_BOARD_CONF) \
-    do {                                                                \
-        MotorInitConf_t conf = { 0 };                                   \
-        conf.boardConf       = (DEVICE_BOARD_CONF);                     \
-        *(pSTATUS)           = ActuatorsInitMotor (conf);               \
+#define ACTUATORS_INIT_MOTOR(pSTATUS, DEVICE_BOARD_CONF)  \
+    do {                                                  \
+        MotorInitConf_t conf = { 0 };                     \
+        conf.boardConf       = (DEVICE_BOARD_CONF);       \
+        *(pSTATUS)           = ActuatorsInitMotor (conf); \
     } while (0)
 
 #endif // MOTION_CONTROL_ACTUATORS_H

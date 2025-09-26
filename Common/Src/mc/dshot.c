@@ -31,10 +31,13 @@
 
 #include "mc/dshot.h"
 #include "common.h"
+#include "conf/board.h"
 #include "conf/conf.h"
-#include "dma.h"
+#include "conf/ids.h"
 #include "hal.h"
 #include "log/logger.h"
+#include "mem/mem.h"
+#include "peripheral/dma.h"
 #include "peripheral/gpio.h"
 #include "peripheral/timer.h"
 #include <stdint.h>
@@ -46,12 +49,12 @@
 #define DSHOT300_HZ PWM_MHZ2HZ (6U)
 #define DSHOT150_HZ PWM_MHZ2HZ (3U)
 
-static DShot_t gDShotHandles[eMOTOR_ID_MAX] = { 0 };
+static SHARED_MEM_SECTION DShot_t gDShotHandles[eMOTOR_ID_MAX] = { 0 };
 
 static void DShotDMACompleteCallback (eTIMER_ID_t timerId);
 static uint16_t DShotPreparePacket (uint16_t value);
-static void DShotPrepareDMABuffer (DShot_t* pDShotHandle, uint16_t value);
-static void DShotDMAStart (DShot_t* pDShotHandle);
+static void DShotPrepareDMABuffer (vDShot_t* pDShotHandle, uint16_t value);
+static void DShotDMAStart (vDShot_t* pDShotHandle);
 
 static void DShotDMACompleteCallback (eTIMER_ID_t timerId) {
 }
@@ -79,9 +82,9 @@ static uint16_t DShotPreparePacket (uint16_t value) {
 }
 
 // Convert 16 bits packet to 16 pwm signal
-static void DShotPrepareDMABuffer (DShot_t* pDShot, uint16_t value) {
+static void DShotPrepareDMABuffer (vDShot_t* pDShot, uint16_t value) {
 
-    uint32_t* motor_dmabuffer   = pDShot->pMotorDmaBuffer;
+    uint32_t* motor_dmabuffer   = (uint32_t*)pDShot->pMotorDmaBuffer;
     uint16_t packet             = DShotPreparePacket (value);
     uint16_t timerTicksforBit_1 = pDShot->timerTicksforBit_1;
     uint16_t timerTicksforBit_0 = pDShot->timerTicksforBit_0;
@@ -96,16 +99,16 @@ static void DShotPrepareDMABuffer (DShot_t* pDShot, uint16_t value) {
 }
 
 
-static void DShotDMAStart (DShot_t* pDShotHandle) {
+static void DShotDMAStart (vDShot_t* pDShot) {
 
-    if (TimerStart (pDShotHandle->conf.timerId, pDShotHandle->pMotorDmaBuffer, DSHOT_DMA_BUFFER_SIZE) !=
-        eSTATUS_SUCCESS) {
+    eTIMER_ID_t timerId = pDShot->timerId;
+    if (TimerStart (timerId, pDShot->pMotorDmaBuffer, DSHOT_DMA_BUFFER_SIZE) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start DShot timer with DMA");
         return;
     }
 }
 
-static DShot_t* DShotGetById (eDEVICE_ID_t deviceId) {
+static vDShot_t* DShotGetById (eDEVICE_ID_t deviceId) {
 
     if (DEVICE_ID_IS_MOTOR (deviceId) == FALSE) {
         return NULL;
@@ -119,27 +122,27 @@ static DShot_t* DShotGetById (eDEVICE_ID_t deviceId) {
     return &gDShotHandles[idx];
 }
 
-static eSTATUS_t DShotInitBitbang (DShot_t* pDShot) {
+static eSTATUS_t DShotInitBitbang (vDShot_t* pDShot, DShotInitConf_t conf) {
 
     if (pDShot == NULL) {
         LOG_ERROR ("DShot is null");
         return eSTATUS_FAILURE;
     }
 
-    DShotInitConf_t* pConf = &pDShot->conf;
-    if (DSHOT_TYPE_IS_BITBANG (pConf->dshotType) == FALSE) {
-        LOG_ERROR ("DShot type does NOT use bitbang");
-        return eSTATUS_FAILURE;
-    }
+    eDSHOT_TYPE_t dshotType         = pDShot->dshotType;
+    TimerBoardConf_t timerBoardConf = conf.timerBoardConf;
+    eGPIO_ID_t timerGpioId          = timerBoardConf.gpioId;
+    MotorBoardConf_t motorBoardConf = conf.motorBoardConf;
+    eDEVICE_ID_t motorId            = motorBoardConf.motorId;
+    eSTATUS_t status                = eSTATUS_SUCCESS;
 
-    eSTATUS_t status = eSTATUS_SUCCESS;
-    GPIO_INIT_OUTPUT (&status, pConf->deviceId, pConf->gpioId);
+    GPIO_INIT_OUTPUT (&status, motorId, timerGpioId);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize GPIO for DShot");
         return status;
     }
 
-    pDShot->pGPIO = GPIOGetIOfromId (pConf->gpioId);
+    pDShot->pGPIO = GPIOGetIOfromId (timerGpioId);
 
     /*
      * Scale clock frequency from 64 MHz to 1 MHz.
@@ -155,8 +158,8 @@ static eSTATUS_t DShotInitBitbang (DShot_t* pDShot) {
      * signal needs to be high in order to be counted as a 0. Bit is pwm
      * period in us
      */
-    switch (DSHOT_TYPE_CLEAR_TYPE (pConf->dshotType)) {
-    case eDSHOT_TYPE_DMA_150:
+    switch (dshotType) {
+    case eDSHOT_TYPE_150:
         pDShot->timerTicksPeriod   = 427 - 1;
         pDShot->timerTicksforBit_1 = 320; // 75% of 6.67 us / 427 ticks
         pDShot->timerTicksforBit_0 = 160; // 37.5% of 6.67 us / 427 ticks
@@ -165,20 +168,8 @@ static eSTATUS_t DShotInitBitbang (DShot_t* pDShot) {
         pDShot->usValforBit_1 = 5.0F;  // 5 us
         pDShot->usValforBit_0 = 2.5F;  // 2.5 us
         break;
-    case eDSHOT_TYPE_DMA_300:
-        // // Closet us value to 3.33 us is 3 us
-        // pOutHandle->usValforBit_1 = 2; // 2 us for bit 1
-        // pOutHandle->usValforBit_0 = 1; // 1 us for bit 0
-        return eSTATUS_FAILURE; // DShot300 is not supported
-    case eDSHOT_TYPE_DMA_600:
-        // // Closet us value to 1.67 us is 2 us
-        // // Closet us value to 1.25 us is 1 us
-        // pOutHandle->usValforBit_1 = 1; // 1 us for bit 1
-        // // Closet us value to 0.625 us is 1 us
-        // pOutHandle->usValforBit_0 = 1;
-        return eSTATUS_FAILURE; // DShot600 is not supported
     default:
-        LOG_ERROR ("Invalid DShot type: %d", pConf->dshotType);
+        LOG_ERROR ("Invalid DShot type: %d", dshotType);
         return eSTATUS_FAILURE;
     }
 
@@ -186,34 +177,34 @@ static eSTATUS_t DShotInitBitbang (DShot_t* pDShot) {
     return eSTATUS_SUCCESS;
 }
 
-static eSTATUS_t DShotInitDMA (DShot_t* pDShot) {
+static eSTATUS_t DShotInitDMA (vDShot_t* pDShot, DShotInitConf_t conf) {
 
     if (pDShot == NULL) {
         LOG_ERROR ("DShot is null");
         return eSTATUS_FAILURE;
     }
 
-    DShotInitConf_t* pConf = &pDShot->conf;
-    if (DSHOT_TYPE_IS_DMA (pConf->dshotType) == FALSE) {
-        LOG_ERROR ("DShot type does NOT use dma");
-    }
+    eDSHOT_TYPE_t dshotType         = pDShot->dshotType;
+    TimerBoardConf_t timerBoardConf = conf.timerBoardConf;
+    eTIMER_ID_t timerId             = timerBoardConf.timerId;
+    MotorBoardConf_t motorBoardConf = conf.motorBoardConf;
+    eDEVICE_ID_t motorId            = motorBoardConf.motorId;
+    eSTATUS_t status                = eSTATUS_SUCCESS;
 
-    eSTATUS_t status = eSTATUS_SUCCESS;
-    TIMER_INIT_PWM_DMA (&status, pConf->deviceId, pConf->timerId);
+    TIMER_INIT_PWM_DMA (&status, motorId, timerId, timerBoardConf);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize timer for DShot");
         return eSTATUS_FAILURE;
     }
 
-    if (TimerRegisterCallback (pConf->timerId, DShotDMACompleteCallback, eTIMER_CALLBACK_TRANSFER_COMPLETE) !=
+    if (TimerRegisterCallback (timerId, DShotDMACompleteCallback, eTIMER_CALLBACK_TRANSFER_COMPLETE) !=
         eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to register timer callback for DShot");
         return eSTATUS_FAILURE;
     }
 
     uint16_t prescaler = 0U;
-    TIMER_SET_PRESCALER (pConf->timerId, prescaler);
-
+    TIMER_SET_PRESCALER (timerId, prescaler);
     /*
      * Scale clock frequency from 64 MHz to 1 MHz.
      * Then set ARR to the us value in the Bit column.
@@ -228,9 +219,9 @@ static eSTATUS_t DShotInitDMA (DShot_t* pDShot) {
      * signal needs to be high in order to be counted as a 0. Bit is pwm
      * period in us
      */
-    switch (DSHOT_TYPE_CLEAR_TYPE (pConf->dshotType)) {
-    case eDSHOT_TYPE_DMA_150:
-        TIMER_SET_PERIOD (pConf->timerId, 427 - 1);
+    switch (dshotType) {
+    case eDSHOT_TYPE_150:
+        TIMER_SET_PERIOD (timerId, 427 - 1);
         pDShot->timerTicksPeriod   = 427 - 1;
         pDShot->timerTicksforBit_1 = 320; // 75% of 6.67 us / 427 ticks
         pDShot->timerTicksforBit_0 = 160; // 37.5% of 6.67 us / 427 ticks
@@ -239,36 +230,22 @@ static eSTATUS_t DShotInitDMA (DShot_t* pDShot) {
         pDShot->usValforBit_1 = 5.0F;  // 5 us
         pDShot->usValforBit_0 = 2.5F;  // 2.5 us
         break;
-    case eDSHOT_TYPE_DMA_300:
-        // // Closet us value to 3.33 us is 3 us
-        // PWM_SET_PERIOD (ppwm, 3 - 1);
-        // pOutHandle->usValforBit_1 = 2; // 2 us for bit 1
-        // pOutHandle->usValforBit_0 = 1; // 1 us for bit 0
-        return eSTATUS_FAILURE; // DShot300 is not supported
-    case eDSHOT_TYPE_DMA_600:
-        // // Closet us value to 1.67 us is 2 us
-        // PWM_SET_PERIOD (ppwm, 2 - 1);
-        // // Closet us value to 1.25 us is 1 us
-        // pOutHandle->usValforBit_1 = 1; // 1 us for bit 1
-        // // Closet us value to 0.625 us is 1 us
-        // pOutHandle->usValforBit_0 = 1;
-        return eSTATUS_FAILURE; // DShot600 is not supported
     default:
-        LOG_ERROR ("Invalid DShot type: %d", pConf->dshotType);
+        LOG_ERROR ("Invalid DShot type: %d", dshotType);
         return eSTATUS_FAILURE;
     }
 
     return eSTATUS_SUCCESS;
 }
 
-static eSTATUS_t DShotWriteDMA (DShot_t* pDShot, uint16_t motorVal) {
+static eSTATUS_t DShotWriteDMA (vDShot_t* pDShot, uint16_t motorVal) {
 
     if (pDShot == NULL) {
         LOG_ERROR ("Received NULL pointer for DShot handle");
         return eSTATUS_FAILURE;
     }
 
-    if (TimerGetChannelState (pDShot->conf.timerId) == eTIMER_CHANNEL_STATE_BUSY) {
+    if (TimerGetChannelState (pDShot->timerId) == eTIMER_CHANNEL_STATE_BUSY) {
         return eSTATUS_BUSY;
     }
 
@@ -277,7 +254,7 @@ static eSTATUS_t DShotWriteDMA (DShot_t* pDShot, uint16_t motorVal) {
     return eSTATUS_SUCCESS;
 }
 
-static eSTATUS_t DShotWriteBitbang (DShot_t* pDShot, uint16_t motorVal) {
+static eSTATUS_t DShotWriteBitbang (vDShot_t* pDShot, uint16_t motorVal) {
 
     if (pDShot == NULL || pDShot->pGPIO == NULL) {
         LOG_ERROR ("Received NULL pointer for DShot handle");
@@ -306,6 +283,7 @@ static eSTATUS_t DShotWriteBitbang (DShot_t* pDShot, uint16_t motorVal) {
             motorVal <<= 1U;
         }
     }
+    return eSTATUS_SUCCESS;
 }
 
 // static eSTATUS_t
@@ -325,43 +303,48 @@ static eSTATUS_t DShotWriteBitbang (DShot_t* pDShot, uint16_t motorVal) {
 
 eSTATUS_t DShotInit (DShotInitConf_t conf) {
 
-    if (DEVICE_ID_IS_MOTOR (conf.deviceId) == FALSE) {
+    TimerBoardConf_t timerBoardConf = conf.timerBoardConf;
+    eTIMER_ID_t timerId             = timerBoardConf.timerId;
+    MotorBoardConf_t motorBoardConf = conf.motorBoardConf;
+    eDEVICE_ID_t motorId            = motorBoardConf.motorId;
+    BOOL_t usingDMA                 = motorBoardConf.useDMA ? TRUE : FALSE;
+    if (DEVICE_ID_IS_MOTOR (motorId) == FALSE) {
         LOG_ERROR ("deviceId is not motor");
         return eSTATUS_FAILURE;
     }
 
-    DShot_t* pDShot = DShotGetById (conf.deviceId);
-    if (pDShot == NULL) {
+    vDShot_t* pDShot = DShotGetById (motorId);
+    if (pDShot == NULL || pDShot->isInitialized == TRUE) {
         LOG_ERROR ("Failed to get DShot handle by device ID");
         return eSTATUS_FAILURE;
     }
 
-    memset (pDShot, 0, sizeof (DShot_t));
-    pDShot->conf = conf;
+    memset ((void*)pDShot, 0, sizeof (vDShot_t));
+    pDShot->deviceId  = motorId;
+    pDShot->timerId   = timerId;
+    pDShot->dshotType = eDSHOT_TYPE_150;
+    pDShot->usingDMA  = usingDMA;
 
-    if (DSHOT_TYPE_IS_DMA (conf.dshotType)) {
+    if (usingDMA == TRUE) {
 
-        if (DShotInitDMA (pDShot) != eSTATUS_SUCCESS) {
+        if (DShotInitDMA (pDShot, conf) != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to initialize DShot DMA");
             goto error;
         }
 
-    } else if (DSHOT_TYPE_IS_BITBANG (conf.dshotType)) {
+    } else {
 
-        if (DShotInitBitbang (pDShot) != eSTATUS_SUCCESS) {
+        if (DShotInitBitbang (pDShot, conf) != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to initialize DShot bitbang");
             goto error;
         }
-
-    } else {
-        LOG_ERROR ("Invalid DShot type: %d", conf.dshotType);
-        goto error;
     }
 
+    pDShot->isInitialized == TRUE;
     return eSTATUS_SUCCESS;
 
 error:
-    memset (pDShot, 0, sizeof (DShot_t));
+    memset ((void*)pDShot, 0, sizeof (vDShot_t));
     return eSTATUS_FAILURE;
 }
 
@@ -380,21 +363,16 @@ eSTATUS_t DShotStop (eDEVICE_ID_t deviceId) {
 
 eSTATUS_t DShotWrite (eDEVICE_ID_t deviceId, uint16_t motorVal) {
 
-    DShot_t* pDShot = DShotGetById (deviceId);
+    vDShot_t* pDShot = DShotGetById (deviceId);
     if (pDShot == NULL) {
         LOG_ERROR ("Received NULL pointer for DShot handle");
         return eSTATUS_FAILURE;
     }
 
-    if (DSHOT_TYPE_IS_DMA (pDShot->conf.dshotType)) {
+    if (pDShot->usingDMA == TRUE) {
         return DShotWriteDMA (pDShot, motorVal);
     }
-    if (DSHOT_TYPE_IS_BITBANG (pDShot->conf.dshotType)) {
-        return DShotWriteBitbang (pDShot, motorVal);
-    }
-
-    LOG_ERROR ("Invalid DShot type: %d", pDShot->conf.dshotType);
-    return eSTATUS_FAILURE;
+    return DShotWriteBitbang (pDShot, motorVal);
 }
 
 // eSTATUS_t

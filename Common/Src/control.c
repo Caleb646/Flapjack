@@ -33,7 +33,7 @@ static SHARED_MEM_SECTION FCState g_FlightState = { 0 };
 static eSTATUS_t ControlInit_Producer (void);
 static eSTATUS_t ControlInit_SharedCmdQueue (void);
 static eSTATUS_t ControlInit_Consumer (void);
-static eSTATUS_t ControlInit_FCState (FCState* pState);
+static eSTATUS_t ControlInit_FCState (vFCState* pState);
 static eSTATUS_t ControlProcessEmptyCmd (DefaultCommand cmd);
 static eSTATUS_t ControlProcessOpStateChange (DefaultCommand cmd);
 static eSTATUS_t ControlProcessFlightModeChange (DefaultCommand cmd);
@@ -111,7 +111,7 @@ STATIC_TESTABLE_DECL eSTATUS_t ControlInit_Consumer (void) {
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t ControlInit_FCState (FCState* pState) {
+STATIC_TESTABLE_DECL eSTATUS_t ControlInit_FCState (vFCState* pState) {
 
     if (pState == NULL) {
         LOG_ERROR ("Flight controller state pointer is NULL");
@@ -250,20 +250,20 @@ eSTATUS_t ControlInit (void) {
 eSTATUS_t ControlStart (void) {
 
     if (IS_PRODUCER_ME () == TRUE) {
-        if (UARTRegisterCallback (busId, eUART_CALLBACK_ID_RX, ControlRecvCallBack) !=
-            eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to register UART receive callback");
-            return eSTATUS_FAILURE;
-        }
-        if (UARTEnableInterrupt (busId, 8) != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to enable UART interrupts");
-            return eSTATUS_FAILURE;
-        }
-        if (UARTRead_IT (busId, ga_UartInterruptBuffer, sizeof (DefaultCommand)) !=
-            eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to start UART reception");
-            return eSTATUS_FAILURE;
-        }
+        // if (UARTRegisterCallback (busId, eUART_CALLBACK_ID_RX, ControlRecvCallBack) !=
+        //     eSTATUS_SUCCESS) {
+        //     LOG_ERROR ("Failed to register UART receive callback");
+        //     return eSTATUS_FAILURE;
+        // }
+        // if (UARTEnableInterrupt (busId, 8) != eSTATUS_SUCCESS) {
+        //     LOG_ERROR ("Failed to enable UART interrupts");
+        //     return eSTATUS_FAILURE;
+        // }
+        // if (UARTRead_IT (busId, ga_UartInterruptBuffer, sizeof (DefaultCommand)) !=
+        //     eSTATUS_SUCCESS) {
+        //     LOG_ERROR ("Failed to start UART reception");
+        //     return eSTATUS_FAILURE;
+        // }
     }
 
     return eSTATUS_SUCCESS;
@@ -388,7 +388,7 @@ FCState ControlGetCopyFCState (void) {
     return g_FlightState;
 }
 
-eSTATUS_t ControlUpdateFCState (FCState const* pNewState) {
+eSTATUS_t ControlUpdateFCState (vFCState const* pNewState) {
 
     if (pNewState == NULL) {
         LOG_ERROR ("Invalid flight controller state pointer");

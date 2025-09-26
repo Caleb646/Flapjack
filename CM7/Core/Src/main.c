@@ -35,10 +35,10 @@
 #include "conf/conf.h"
 #include "control.h"
 #include "device/imu/imu.h"
-#include "dma.h"
 #include "log/logger.h"
 #include "mc/actuators.h"
 #include "mc/filter.h"
+#include "peripheral/dma.h"
 #include "peripheral/gpio.h"
 #include "sync.h"
 
@@ -128,7 +128,7 @@ BOOL_t StateTransitionFromStopped2Running (FCState curState) {
         doTransition = FALSE;
     }
 
-    if (IMUStart (&gIMU) != eSTATUS_SUCCESS) {
+    if (IMUStart (IMUGetActiveDevice ()) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start IMU");
         doTransition = FALSE;
     }
@@ -139,7 +139,7 @@ BOOL_t StateTransitionFromStopped2Running (FCState curState) {
 BOOL_t StateTransitionFromRunning2Stopped (FCState curState) {
 
     BOOL_t doTransition = TRUE;
-    if (IMUStop (&gIMU) != eSTATUS_SUCCESS) {
+    if (IMUStop (IMUGetActiveDevice ()) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to stop IMU");
         doTransition = FALSE;
     }
@@ -163,7 +163,7 @@ void TaskMainLoop (void* pvParameters) {
     ControlRegister_OPStateTransitionHandler (eCMD_OP_STATE_STOPPED, eCMD_OP_STATE_RUNNING, StateTransitionFromStopped2Running);
     ControlRegister_OPStateTransitionHandler (eCMD_OP_STATE_RUNNING, eCMD_OP_STATE_STOPPED, StateTransitionFromRunning2Stopped);
 
-    if (ControlStart (NULL) != eSTATUS_SUCCESS) {
+    if (ControlStart () != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start control module");
         // configASSERT (0);
         CriticalErrorHandler ();
@@ -217,7 +217,8 @@ void TaskMotionControlUpdate (void* pvParameters) {
         //     LOG_ERROR ("Failed to process IMU data from interrupt");
         //     continue;
         // }
-        if (IMUProcessUpdatefromPolling (&gIMU, &accel, &gyro) != eSTATUS_SUCCESS) {
+        if (IMUProcessUpdatefromPolling (IMUGetActiveDevice (), &accel, &gyro) !=
+            eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to process IMU data from polling");
             continue;
         }
@@ -371,24 +372,16 @@ int main (void) {
     /*
      * Init IMU
      */
-    {
-        /*
-         * NOTE: Target LOCAL coordinate system is FRD (Forward, Right, Down).
-         * So +x is forward, +y is right, +z is down.
-         * +roll is right wing down, +pitch is nose up, +yaw is nose moves right / right wing tip moves right.
-         *
-         * On a flat surface if the IMU z axis is pointing up (opposite of gravity) then the sign of g is positive.
-         * In FRD, if the IMU is on a flat surface the expected IMU measured acceleration is: (0, 0, +1g).
-         */
-        IMUAxesRemapConf axesRemap = { 0 };
-        axesRemap.remap            = eIMU_AXES_REMAP_YXZ;
-        axesRemap.xDir             = eIMU_AXES_DIR_INVERTED;
-        axesRemap.yDir             = eIMU_AXES_DIR_INVERTED;
-        axesRemap.zDir             = eIMU_AXES_DIR_INVERTED;
-        if (IMUInit (&gIMU, &hspi2, &axesRemap) != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to init IMU");
-        }
-    }
+    /*
+     * NOTE: Target LOCAL coordinate system is FRD (Forward, Right, Down).
+     * So +x is forward, +y is right, +z is down.
+     * +roll is right wing down, +pitch is nose up, +yaw is nose moves
+     * right / right wing tip moves right.
+     *
+     * On a flat surface if the IMU z axis is pointing up (opposite of
+     * gravity) then the sign of g is positive. In FRD, if the IMU is on a
+     * flat surface the expected IMU measured acceleration is: (0, 0, +1g).
+     */
 
     PID_INIT (gPIDContext);
 
@@ -397,19 +390,33 @@ int main (void) {
     /*
      * NOTE: During filter warmup the IMU is polled and interrupts are disabled. So IMUStart doesnt need to be called
      */
-    status =
-    FilterMadgwickWarmUp (500U, &gIMU, 1.0F, 3.0F, &gFilterMadgwickContext, &gCurrentAttitude);
+    status = FilterMadgwickWarmUp (500U, 1.0F, 3.0F, &gFilterMadgwickContext, &gCurrentAttitude);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to warm up Madgwick Filter");
     }
 
-    MotorConfig left_Motor =
-    MOTOR_CREATE_CONF (LEFT_MOTOR_PWM_TIMER, LEFT_MOTOR_PWM_CHANNEL, LEFT_MOTOR_DMA_STREAM, LEFT_MOTOR_DMA_REQUEST);
-    PWMConfig left_Servo =
-    PWM_CREATE_CONF (LEFT_SERVO_PWM_TIMER, LEFT_SERVO_PWM_CHANNEL, LEFT_SERVO_PWM_FREQUENCY, TRUE);
-    status = ActuatorsInit (left_Servo, left_Motor);
-    if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to init Actuators");
+    for (uint32_t i = 0; i < pBoardConf->numMotors; ++i) {
+
+        eSTATUS_t status                = eSTATUS_SUCCESS;
+        MotorBoardConf_t motorBoardConf = pBoardConf->pMotorBoardConfs[i];
+
+        ACTUATORS_INIT_MOTOR (&status, motorBoardConf);
+        if (status != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to init motor %d", motorBoardConf.motorId);
+            CriticalErrorHandler ();
+        }
+    }
+
+    for (uint32_t i = 0; i < pBoardConf->numServos; ++i) {
+
+        eSTATUS_t status                = eSTATUS_SUCCESS;
+        ServoBoardConf_t servoBoardConf = pBoardConf->pServoBoardConfs[i];
+
+        ACTUATORS_INIT_SERVO (&status, servoBoardConf);
+        if (status != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to init servo %d", servoBoardConf.servoId);
+            CriticalErrorHandler ();
+        }
     }
 
     /*

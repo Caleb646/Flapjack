@@ -27,7 +27,7 @@
 #include "common.h"
 #include "control.h"
 #include "log/logger.h"
-#include "periphs/uart.h"
+#include "peripheral/uart.h"
 #include "sync.h"
 
 
@@ -56,7 +56,7 @@ void TaskMainLoop (void* pvParameters) {
     uint32_t startTime = xTaskGetTickCount ();
     uint32_t logStep   = 5000;
 
-    if (ControlStart (LoggerGetUARTHandle ()) != eSTATUS_SUCCESS) {
+    if (ControlStart () != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start control module");
         CriticalErrorHandler ();
     }
@@ -102,10 +102,6 @@ int main (void) {
         CriticalErrorHandler ();
     }
 
-    if (UARTSystemInit () != eSTATUS_SUCCESS) {
-        CriticalErrorHandler ();
-    }
-
     if (LoggerInit () != eSTATUS_SUCCESS) {
         CriticalErrorHandler ();
     }
@@ -114,20 +110,11 @@ int main (void) {
         LOG_ERROR ("Failed to init control module");
         CriticalErrorHandler ();
     }
-    /*
-     * NOTE: Wait for Control to be initialized before starting UART interrupts.
-     * This is because Control module will use UART to recv commands.
-     */
-    if (UARTSystemEnableInterrupts () != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to enable UART interrupts");
-        CriticalErrorHandler ();
-    }
     HAL_Delay (1000);
 
     uint16_t taskPriority = 1;
-    BaseType_t taskStatus = xTaskCreate (
-    TaskMainLoop, "Motion Control Update Task", configMINIMAL_STACK_SIZE,
-    NULL, taskPriority, NULL);
+    BaseType_t taskStatus =
+    xTaskCreate (TaskMainLoop, "Motion Control Update Task", configMINIMAL_STACK_SIZE, NULL, taskPriority, NULL);
 
     if (taskStatus != pdPASS) {
         LOG_ERROR ("Failed to create motion control update task");

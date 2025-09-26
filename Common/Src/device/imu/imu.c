@@ -780,27 +780,24 @@ IMUConvertRaw (IMU_ACC_RANGE aRange, Vec3 ra, IMU_GYRO_RANGE gRange, Vec3 rg, Ve
 
 eSTATUS_t IMUInit (IMUInitConf_t conf) {
 
-    IMUAccConf accConf             = conf.aconf;
-    IMUGyroConf gyroConf           = conf.gconf;
-    IMUAxesRemapConf axesRemapConf = conf.axesRemapConf;
-    DeviceBoardConf_t boardConf    = conf.boardConf;
-    EXTIBoardConf_t extiConf       = boardConf.extiBoardConf;
+    IMUAccConf accConf                  = conf.aconf;
+    IMUGyroConf gyroConf                = conf.gconf;
+    IMUAxesRemapConf axesRemapConf      = conf.axesRemapConf;
+    DeviceBoardConf_t boardConf         = conf.boardConf;
+    BusHeaderBoardConf_t* pBusBoardConf = boardConf.pBusBoardConf;
+    EXTIBoardConf_t extiConf            = boardConf.extiBoardConf;
 
-    if (boardConf.pBusBoardConf == NULL) {
-        LOG_ERROR ("boardConf.pBusBoardConf is NULL");
+    if (pBusBoardConf == NULL) {
+        LOG_ERROR ("BusBoardConf is NULL");
         return (eSTATUS_t)eIMU_NULL_PTR;
     }
 
     eSTATUS_t status      = eSTATUS_SUCCESS;
-    eBUS_ID_t busId       = boardConf.pBusBoardConf->busId;
+    eBUS_ID_t busId       = pBusBoardConf->busId;
     eDEVICE_ID_t deviceId = boardConf.deviceId;
 
     if (BUS_ID_IS_SPI (busId) == TRUE) {
-        SPI_INIT_FROM_BOARD_CONF (
-        &status,
-        boardConf,
-        *(SPIBoardConf_t*)boardConf.pBusBoardConf
-        );
+        SPI_INIT_FROM_BOARD_CONF (&status, boardConf, *(SPIBoardConf_t*)pBusBoardConf);
         RETURN_IF (STATUS_FAIL (status), eSTATUS_FAILURE, "Failed to init SPI bus for imu");
     } else {
         LOG_ERROR ("vIMU_t only supports SPI bus");
@@ -918,10 +915,10 @@ eSTATUS_t IMUInit (IMUInitConf_t conf) {
     // TODO: what alternate function do I need for EXTI.
     // Also the NVIC exti interrupt needs to be enabled.
     // EXTI interface also needs to be enabled.
-    GPIO_INIT_EXTI (&status, extiConf.extiId, extiConf.gpioId);
-    /* Enable EXTI interrupt for vIMU_t data ready interrupt */
-    HAL_NVIC_SetPriority (IMU_INT_EXTI_IRQn, 8, 8);
-    HAL_NVIC_EnableIRQ (IMU_INT_EXTI_IRQn);
+    // GPIO_INIT_EXTI (&status, extiConf.extiId, extiConf.gpioId);
+    // /* Enable EXTI interrupt for vIMU_t data ready interrupt */
+    // HAL_NVIC_SetPriority (IMU_INT_EXTI_IRQn, 8, 8);
+    // HAL_NVIC_EnableIRQ (IMU_INT_EXTI_IRQn);
 
     return eSTATUS_SUCCESS;
 error:

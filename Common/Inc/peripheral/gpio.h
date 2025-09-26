@@ -2,6 +2,8 @@
 #define PERIPHS_GPIO_H
 
 #include "common.h"
+#include "conf/board.h"
+#include "conf/conf.h"
 #include "hal.h"
 
 // #define TIM5_CH1_GPIO_Pin           GPIO_PIN_0
