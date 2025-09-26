@@ -3,8 +3,8 @@
 #include "conf/conf.h"
 #include "log/logger.h"
 #include "mc/dshot.h"
-#include "periphs/gpio.h"
-#include "periphs/timer.h"
+#include "peripheral/gpio.h"
+#include "peripheral/timer.h"
 #include <string.h>
 
 
@@ -128,16 +128,16 @@ STATIC_TESTABLE_DECL float ServoAngle2PWM (Servo* pServo, float targetAngle) {
      *
      * Clip the target angle to the usable range first, then map it to the PWM duty cycle using the max angle.
      */
-    ServoDescriptor* pDesc = &pServo->desc;
+
     // Handle asymmetric servo ranges: map negative angles to
     // [usLeftDutyCycle, usMiddleDutyCycle], positive to [usMiddleDutyCycle, usRightDutyCycle]
     if (targetAngle < 0) {
         return mapf32 (
         targetAngle,
-        -pDesc->maxAngle,
+        -pServo->maxAngle,
         0.0F,
-        (float)pDesc->usLeftDutyCycle,
-        (float)pDesc->usMiddleDutyCycle
+        (float)pServo->usLeftDutyCycle,
+        (float)pServo->usMiddleDutyCycle
         );
     }
 
@@ -145,13 +145,13 @@ STATIC_TESTABLE_DECL float ServoAngle2PWM (Servo* pServo, float targetAngle) {
         return mapf32 (
         targetAngle,
         0.0F,
-        pDesc->maxAngle,
-        (float)pDesc->usMiddleDutyCycle,
-        (float)pDesc->usRightDutyCycle
+        pServo->maxAngle,
+        (float)pServo->usMiddleDutyCycle,
+        (float)pServo->usRightDutyCycle
         );
     }
 
-    return (float)pDesc->usMiddleDutyCycle;
+    return (float)pServo->usMiddleDutyCycle;
 }
 
 static Servo* ServoGetById (eDEVICE_ID_t deviceId) {
@@ -166,18 +166,43 @@ static Servo* ServoGetById (eDEVICE_ID_t deviceId) {
 
 eSTATUS_t ServoInit (ServoInitConf_t conf) {
 
-    Servo* pServo = ServoGetById (conf.id);
+    eSTATUS_t status                  = eSTATUS_SUCCESS;
+    ServoBoardConf_t boardConf        = conf.boardConf;
+    TimerBoardConf_t* pTimerBoardConf = boardConf.pTimerBoardConf;
+    MotorBoardConf_t* pLinkedMotorBoardConf = boardConf.pLinkedMotorBoardConf;
+    eDEVICE_ID_t id       = boardConf.servoId;
+    uint32_t pwmFrequency = boardConf.pwmFrequency;
+    float pidRollMix      = boardConf.pidRollMix;
+    float pidPitchMix     = boardConf.pidPitchMix;
+    float pidYawMix       = boardConf.pidYawMix;
+
+    if (pTimerBoardConf == NULL) {
+        LOG_ERROR ("ServoInit: pTimerBoardConf is NULL");
+        return eSTATUS_FAILURE;
+    }
+
+    eTIMER_ID_t timerId = pTimerBoardConf->timerId;
+    eGPIO_ID_t gpioId   = pTimerBoardConf->gpioId;
+
+    Servo* pServo = ServoGetById (id);
     if (pServo == NULL) {
         LOG_ERROR ("Failed to get Servo by ID");
         return eSTATUS_FAILURE;
     }
     memset (pServo, 0, sizeof (Servo));
-    pServo->conf                   = conf;
-    pServo->desc.usLeftDutyCycle   = 500;
-    pServo->desc.usMiddleDutyCycle = 1500;
-    pServo->desc.usRightDutyCycle  = 2500;
-    pServo->desc.maxAngle          = 90.0F;
-    pServo->desc.usableMaxAngle    = 25.0F;
+    pServo->id                = id;
+    pServo->pitchMix          = pidPitchMix;
+    pServo->yawMix            = pidYawMix;
+    pServo->rollMix           = pidRollMix;
+    pServo->curAngle          = 0.0F;
+    pServo->curTargetAngle    = 0.0F;
+    pServo->usLeftDutyCycle   = 500;
+    pServo->usMiddleDutyCycle = 1500;
+    pServo->usRightDutyCycle  = 2500;
+    pServo->maxAngle          = 90.0F;
+    pServo->usableMaxAngle    = 25.0F;
+
+    TIMER_INIT_PWM (&status, id, );
 
     TimerInitConf_t timerConf =
     TIMER_CREATE_PWM_CONF (conf.id, conf.timerId, 50U, TRUE);
@@ -281,42 +306,57 @@ static Motor* MotorGetById (eDEVICE_ID_t deviceId) {
     return &gMotors[MOTOR_ID2IDX (deviceId)];
 }
 
-eSTATUS_t MotorInit (MotorInitConf_t conf, GPIO_TypeDef* pPort, uint16_t pin) {
+eSTATUS_t MotorInit (MotorInitConf_t conf) {
 
-    Motor* pMotor = MotorGetById (conf.id);
+    eSTATUS_t status                  = eSTATUS_SUCCESS;
+    MotorBoardConf_t boardConf        = conf.boardConf;
+    TimerBoardConf_t* pTimerBoardConf = boardConf.pTimerBoardConf;
+    ServoBoardConf_t* pLinkedServoBoardConf = boardConf.pLinkedServoBoardConf;
+    eDEVICE_ID_t id    = boardConf.motorId;
+    uint8_t useDMA     = boardConf.useDMA;
+    uint8_t dshotSpeed = boardConf.dshotSpeed;
+    float pidRollMix   = boardConf.pidRollMix;
+    float pidPitchMix  = boardConf.pidPitchMix;
+    float pidYawMix    = boardConf.pidYawMix;
+
+    if (pTimerBoardConf == NULL) {
+        LOG_ERROR ("MotorInit: pTimerBoardConf is NULL");
+        return eSTATUS_FAILURE;
+    }
+
+    Motor* pMotor = MotorGetById (id);
     if (pMotor == NULL) {
         LOG_ERROR ("Failed to get Motor by ID");
         return eSTATUS_FAILURE;
     }
 
     memset (pMotor, 0, sizeof (Motor));
-    pMotor->conf = conf;
+    pMotor->id                = id;
+    pMotor->pitchMix          = pidPitchMix;
+    pMotor->yawMix            = pidYawMix;
+    pMotor->rollMix           = pidRollMix;
+    pMotor->curThrottle       = 0.0F;
+    pMotor->curTargetThrottle = 0.0F;
 
-    DShotInitConf_t dshotConfig = { 0 };
-    dshotConfig.deviceId        = conf.id;
-    dshotConfig.timerId         = conf.timerId;
-    dshotConfig.dshotType       = conf.dshotType;
-    dshotConfig.gpio.pPort      = pPort;
-    dshotConfig.gpio.pin        = pin;
+    eTIMER_ID_t timerId = pTimerBoardConf->timerId;
+    eGPIO_ID_t gpioId   = pTimerBoardConf->gpioId;
 
-    if (DShotInit (dshotConfig) != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to initialize DShot for Motor");
-        goto error;
+    if (useDMA == FALSE) {
+        DSHOT_INIT_BITBANG (&status, id, timerId, gpioId, eDSHOT_TYPE_BITBANG_150);
+        if (status != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to create DShotInitConf_t for Motor");
+            goto error;
+        }
+    } else {
+        DSHOT_INIT_DMA (&status, id, timerId, gpioId, eDSHOT_TYPE_BITBANG_150);
+        if (status != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to create DShotInitConf_t for Motor");
+            goto error;
+        }
     }
 
-    eDEVICE_ID_t id = conf.id;
-    if (id == eLEFT_MOTOR_ID) {
-        pMotor->desc.pitchMix = MOTOR_PID_PITCH_MIX * LEFT_MOTOR_PID_PITCH_MIX_DIR;
-        pMotor->desc.yawMix = MOTOR_PID_YAW_MIX * LEFT_MOTOR_PID_YAW_MIX_DIR;
-        pMotor->desc.rollMix = MOTOR_PID_ROLL_MIX * LEFT_MOTOR_PID_ROLL_MIX_DIR;
-
-    } else if (id == eRIGHT_MOTOR_ID) {
-        pMotor->desc.pitchMix = MOTOR_PID_PITCH_MIX * RIGHT_MOTOR_PID_PITCH_MIX_DIR;
-        pMotor->desc.yawMix = MOTOR_PID_YAW_MIX * RIGHT_MOTOR_PID_YAW_MIX_DIR;
-        pMotor->desc.rollMix = MOTOR_PID_ROLL_MIX * RIGHT_MOTOR_PID_ROLL_MIX_DIR;
-    } else {
-        LOG_ERROR ("Invalid actuator ID for Motor: %u", id);
-        goto error;
+    if (pLinkedServoBoardConf != NULL) {
+        pMotor->linkedServoId = pLinkedServoBoardConf->servoId;
     }
 
     return eSTATUS_SUCCESS;
@@ -511,6 +551,20 @@ STATIC_TESTABLE_DECL eSTATUS_t ActuatorsArm (void) {
     }
 
     return eSTATUS_SUCCESS;
+}
+
+eSTATUS_t ActuatorsInitMotor (MotorInitConf_t conf) {
+
+    eSTATUS_t status = MotorInit (conf);
+    if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to initialize motor");
+        return status;
+    }
+
+    return eSTATUS_SUCCESS;
+}
+
+eSTATUS_t ActuatorsInitServo (ServoInitConf_t conf) {
 }
 
 eSTATUS_t ActuatorsInit () {

@@ -1,22 +1,23 @@
-#include "periphs/timer.h"
+#include "peripheral/timer.h"
 #include "common.h"
 #include "conf/conf.h"
 #include "dma.h"
 #include "hal.h"
 #include "log/logger.h"
-#include "periphs/gpio.h"
+#include "mem/mem.h"
+#include "peripheral/gpio.h"
 #include <stdint.h>
+#include <string.h>
 
-static Timer_t gTimers[TIMER_NTIMERS] = { 0 };
+static SHARED_MEM_SECTION vTimer_t gTimers[TIMER_NTIMERS] = { 0 };
 
-static Timer_t* TimerGetByInstance (TIM_TypeDef* instance);
+static vTimer_t* TimerGetByInstance (TIM_TypeDef* instance);
 static void TimerHandleCallback (TIM_HandleTypeDef* htim, eTIMER_CALLBACK_ID_t callbackType);
 
 /*
  * The callback set by HAL_PWM_DMA_START call this function for Timer DMA transfer error callback.
  */
 void HAL_TIM_ErrorCallback (TIM_HandleTypeDef* htim) {
-
     TimerHandleCallback (htim, eTIMER_CALLBACK_TRANSFER_ERROR);
 }
 
@@ -44,7 +45,7 @@ static void TimerHandleCallback (TIM_HandleTypeDef* htim, eTIMER_CALLBACK_ID_t c
         return;
     }
 
-    Timer_t* pTimer = TimerGetByInstance (htim->Instance);
+    vTimer_t* pTimer = TimerGetByInstance (htim->Instance);
     if (pTimer == NULL) {
         return;
     }
@@ -74,7 +75,7 @@ static void TimerHandleCallback (TIM_HandleTypeDef* htim, eTIMER_CALLBACK_ID_t c
     }
 }
 
-static Timer_t* TimerGetByInstance (TIM_TypeDef* instance) {
+static vTimer_t* TimerGetByInstance (TIM_TypeDef* instance) {
 
     if (instance == NULL) {
         return NULL;
@@ -102,7 +103,7 @@ static TIM_TypeDef* TimerGetInstanceById (eTIMER_ID_t timerId) {
     }
 }
 
-static Timer_t* TimerGetById (eTIMER_ID_t timerId) {
+static vTimer_t* TimerGetById (eTIMER_ID_t timerId) {
 
     uint32_t timerIdx = TIMER_ID2IDX (timerId);
     if (timerIdx >= TIMER_NTIMERS) {
@@ -114,7 +115,7 @@ static Timer_t* TimerGetById (eTIMER_ID_t timerId) {
 
 static TimerChannel_t* TimerGetChannelById (eTIMER_ID_t timerId) {
 
-    Timer_t* pTimer = TimerGetById (timerId);
+    vTimer_t* pTimer = TimerGetById (timerId);
     if (pTimer == NULL) {
         LOG_ERROR ("Invalid timer ID: %u", (uint16_t)timerId);
         return NULL;
@@ -143,7 +144,7 @@ static uint32_t TimerID2DMARequestID (eTIMER_ID_t timerId) {
     }
 }
 
-static eSTATUS_t TimerClockInit (TimerInitConf_t conf, Timer_t* pOutTimer) {
+static eSTATUS_t TimerClockInit (TimerInitConf_t conf, vTimer_t* pOutTimer) {
 
     if (pOutTimer == NULL) {
         LOG_ERROR ("Invalid timer pointer");
@@ -162,7 +163,7 @@ static eSTATUS_t TimerClockInit (TimerInitConf_t conf, Timer_t* pOutTimer) {
     return eSTATUS_SUCCESS;
 }
 
-static eSTATUS_t TimerPWMInit (TimerInitConf_t conf, Timer_t* pOutTimer) {
+static eSTATUS_t TimerPWMInit (TimerInitConf_t conf, vTimer_t* pOutTimer) {
 
     if (pOutTimer == NULL) {
         LOG_ERROR ("Invalid timer pointer");
@@ -219,7 +220,7 @@ static eSTATUS_t TimerPWMInit (TimerInitConf_t conf, Timer_t* pOutTimer) {
     return eSTATUS_SUCCESS;
 }
 
-static eSTATUS_t TimerDMAInit (TimerInitConf_t conf, Timer_t* pOutTimer) {
+static eSTATUS_t TimerDMAInit (TimerInitConf_t conf, vTimer_t* pOutTimer) {
 
     if (pOutTimer == NULL || conf.usingDMA == FALSE) {
         LOG_ERROR ("Invalid timer pointer");
@@ -321,7 +322,7 @@ eSTATUS_t TimerInitGPIO (TimerChannel_t* pTimerChannel) {
 
 eSTATUS_t TimerInit (TimerInitConf_t conf) {
 
-    Timer_t* pTimer = TimerGetById (conf.timerId);
+    vTimer_t* pTimer = TimerGetById (conf.timerId);
     if (pTimer == NULL) {
         LOG_ERROR ("Failed to find timer or timer handle");
         return eSTATUS_FAILURE;
@@ -329,7 +330,7 @@ eSTATUS_t TimerInit (TimerInitConf_t conf) {
 
     if (pTimer->isTimerInitialized == FALSE) {
 
-        memset (pTimer, 0, sizeof (Timer_t));
+        memset (pTimer, 0, sizeof (vTimer_t));
         if (TimerClockInit (conf, pTimer) != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to initialize timer clock");
             goto error;
@@ -372,13 +373,13 @@ eSTATUS_t TimerInit (TimerInitConf_t conf) {
     return eSTATUS_SUCCESS;
 
 error:
-    memset (pTimer, 0, sizeof (Timer_t));
+    memset (pTimer, 0, sizeof (vTimer_t));
     return eSTATUS_FAILURE;
 }
 
 eSTATUS_t TimerStart (eTIMER_ID_t timerId, uint32_t const* pData, uint16_t Length) {
 
-    Timer_t* pTimer          = TimerGetById (timerId);
+    vTimer_t* pTimer         = TimerGetById (timerId);
     TimerChannel_t* pChannel = TimerGetChannelById (timerId);
     if (pTimer == NULL || pChannel == NULL) {
         LOG_ERROR ("Failed to get timer or channel by ID");
@@ -418,7 +419,7 @@ eSTATUS_t TimerStart (eTIMER_ID_t timerId, uint32_t const* pData, uint16_t Lengt
 
 eSTATUS_t TimerStop (eTIMER_ID_t timerId) {
 
-    Timer_t* pTimer          = TimerGetById (timerId);
+    vTimer_t* pTimer         = TimerGetById (timerId);
     TimerChannel_t* pChannel = TimerGetChannelById (timerId);
     if (pTimer == NULL || pChannel == NULL) {
         LOG_ERROR ("Failed to get timer or channel by ID");
@@ -453,7 +454,7 @@ eSTATUS_t TimerStop (eTIMER_ID_t timerId) {
 
 eSTATUS_t TimerWrite (eTIMER_ID_t timerId, uint32_t usUpTime) {
 
-    Timer_t* pTimer = TimerGetById (timerId);
+    vTimer_t* pTimer = TimerGetById (timerId);
     if (pTimer == NULL) {
         LOG_ERROR ("Failed to get timer by ID");
         return eSTATUS_FAILURE;
@@ -498,7 +499,7 @@ eSTATUS_t TimerRegisterCallback (eTIMER_ID_t timerId, TimerCallback_t callback, 
 
 eSTATUS_t TimerSetRegister (eTIMER_ID_t timerId, eTIMER_SET_REG_t regType, uint32_t value) {
 
-    Timer_t* pTimer = TimerGetById (timerId);
+    vTimer_t* pTimer = TimerGetById (timerId);
     if (pTimer == NULL) {
         LOG_ERROR ("Failed to get timer by ID");
         return eSTATUS_FAILURE;
@@ -524,7 +525,7 @@ eSTATUS_t TimerSetRegister (eTIMER_ID_t timerId, eTIMER_SET_REG_t regType, uint3
 
 eTIMER_CHANNEL_STATE_t TimerGetChannelState (eTIMER_ID_t timerId) {
 
-    Timer_t* pTimer = TimerGetById (timerId);
+    vTimer_t* pTimer = TimerGetById (timerId);
     if (pTimer == NULL) {
         LOG_ERROR ("Failed to get timer by ID");
         return eSTATUS_FAILURE;

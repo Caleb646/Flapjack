@@ -35,9 +35,10 @@
 
 #include "common.h"
 #include "conf/conf.h"
-#include "dma.h"
 #include "hal.h"
-#include "periphs/timer.h"
+#include "peripheral/dma.h"
+#include "peripheral/gpio.h"
+#include "peripheral/timer.h"
 
 #define DSHOT_DMA_BUFFER_SIZE 18U /* resolution + frame reset (2us) */
 #define DSHOT_FRAME_SIZE      16U
@@ -71,7 +72,7 @@ typedef struct {
 typedef struct {
     DShotInitConf_t conf;
     uint32_t pMotorDmaBuffer[DSHOT_DMA_BUFFER_SIZE]; /*!< DMA buffer for DShot */
-    IO_t* pGPIO; /*!< GPIO handle for bitbang */
+    vIO_t* pGPIO; /*!< GPIO handle for bitbang */
 
     uint16_t timerTicksPeriod;
     uint16_t timerTicksforBit_1; /*!< microsecond value to send a 1 */

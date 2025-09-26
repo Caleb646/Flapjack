@@ -15,12 +15,12 @@ static uint32_t g_ProcessID = 1;
 
 #ifndef UNIT_TEST
 
-static eSTATUS_t Queue_EnterCritical (Queue const* pQueue);
-static void Queue_ExitCritical (Queue const* pQueue);
+static eSTATUS_t Queue_EnterCritical (Queue_t const* pQueue);
+static void Queue_ExitCritical (Queue_t const* pQueue);
 
 #endif // UNIT_TEST
 
-static eSTATUS_t Queue_EnterCritical (Queue const* pQueue) {
+static eSTATUS_t Queue_EnterCritical (Queue_t const* pQueue) {
     /*
      * Disable interrupts before taking the semaphore.
      * Do not want to enter an interrupt after taking the semaphore.
@@ -53,7 +53,7 @@ static eSTATUS_t Queue_EnterCritical (Queue const* pQueue) {
     return eSTATUS_SUCCESS;
 }
 
-static void Queue_ExitCritical (Queue const* pQueue) {
+static void Queue_ExitCritical (Queue_t const* pQueue) {
 #if 0
     HAL_HSEM_Release (SEMAPHORE_ID, pQueue->processID);
     portENABLE_INTERRUPTS ();
@@ -62,11 +62,12 @@ static void Queue_ExitCritical (Queue const* pQueue) {
 }
 
 eSTATUS_t
-QueueInit (Queue* pQueue, void* pBuffer, uint16_t capacity, uint16_t elementSize, BOOL_t isShared) {
+QueueInit (Queue_t* pQueue, void* pBuffer, uint16_t capacity, uint16_t elementSize, BOOL_t isShared) {
+
     if (pQueue == NULL || pBuffer == NULL || capacity == 0 || elementSize == 0) {
         return eSTATUS_FAILURE;
     }
-    memset (pQueue, 0, sizeof (Queue));
+    memset (pQueue, 0, sizeof (Queue_t));
     memset (pBuffer, 0, (uint32_t)capacity * (uint32_t)elementSize);
     // Check if capacity is a power of 2
     if ((capacity & (capacity - 1U)) != 0U) {
@@ -91,52 +92,53 @@ QueueInit (Queue* pQueue, void* pBuffer, uint16_t capacity, uint16_t elementSize
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t
-QueueInit_SharedMemory (void* pMemoryStart, uint32_t memorySize, uint16_t capacity, uint16_t elementSize) {
+// eSTATUS_t
+// QueueInit_SharedMemory (void* pMemoryStart, uint32_t memorySize, uint16_t capacity, uint16_t elementSize) {
 
-    /* Add 3 for potential 4 byte alignment */
-    uint32_t totalSize = sizeof (Queue) + 3U + (uint32_t)capacity * (uint32_t)elementSize;
-    if (totalSize > memorySize) {
-        return eSTATUS_FAILURE;
-    }
+//     /* Add 3 for potential 4 byte alignment */
+//     uint32_t totalSize = sizeof (Queue_t) + 3U + (uint32_t)capacity *
+//     (uint32_t)elementSize; if (totalSize > memorySize) {
+//         return eSTATUS_FAILURE;
+//     }
 
-    void* pQueueBuffer =
-    (void*)MEM_U32_ALIGN4 ((uint32_t)pMemoryStart + sizeof (Queue));
-    if (QueueInit ((Queue*)pMemoryStart, pQueueBuffer, capacity, elementSize, TRUE) != eSTATUS_SUCCESS) {
-        return eSTATUS_FAILURE;
-    }
-    return eSTATUS_SUCCESS;
-}
+//     void* pQueueBuffer =
+//     (void*)MEM_U32_ALIGN4 ((uint32_t)pMemoryStart + sizeof (Queue_t));
+//     if (QueueInit ((Queue_t*)pMemoryStart, pQueueBuffer, capacity, elementSize, TRUE) !=
+//         eSTATUS_SUCCESS) {
+//         return eSTATUS_FAILURE;
+//     }
+//     return eSTATUS_SUCCESS;
+// }
 
-BOOL_t QueueIsEmpty (Queue const* pQueue) {
+BOOL_t QueueIsEmpty (Queue_t const* pQueue) {
     if (pQueue == NULL) {
         return TRUE; // Consider NULL queue as empty
     }
     return pQueue->count == 0;
 }
 
-BOOL_t QueueIsFull (Queue const* pQueue) {
+BOOL_t QueueIsFull (Queue_t const* pQueue) {
     if (pQueue == NULL) {
         return TRUE; // Consider NULL queue as full
     }
     return pQueue->count == pQueue->capacity;
 }
 
-uint16_t QueueGetElementCount (Queue const* pQueue) {
+uint16_t QueueGetElementCount (Queue_t const* pQueue) {
     if (pQueue == NULL) {
         return 0;
     }
     return pQueue->count;
 }
 
-uint16_t QueueGetCapacity (Queue const* pQueue) {
+uint16_t QueueGetCapacity (Queue_t const* pQueue) {
     if (pQueue == NULL) {
         return 0;
     }
     return pQueue->capacity;
 }
 
-eSTATUS_t Queue_Push (Queue* pQueue, void const* pElement) {
+eSTATUS_t Queue_Push (Queue_t* pQueue, void const* pElement) {
     if (pQueue == NULL || pElement == NULL) {
         return eSTATUS_FAILURE;
     }
@@ -176,7 +178,7 @@ eSTATUS_t Queue_Push (Queue* pQueue, void const* pElement) {
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t Queue_Pop (Queue* pQueue, void* pOutElement) {
+eSTATUS_t Queue_Pop (Queue_t* pQueue, void* pOutElement) {
     if (pQueue == NULL || pOutElement == NULL) {
         return eSTATUS_FAILURE;
     }
@@ -216,7 +218,7 @@ eSTATUS_t Queue_Pop (Queue* pQueue, void* pOutElement) {
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t Queue_Peek (Queue const* pQueue, void* pOutElement) {
+eSTATUS_t Queue_Peek (Queue_t const* pQueue, void* pOutElement) {
     if (pQueue == NULL || pOutElement == NULL) {
         return eSTATUS_FAILURE;
     }
@@ -236,7 +238,7 @@ eSTATUS_t Queue_Peek (Queue const* pQueue, void* pOutElement) {
     return eSTATUS_SUCCESS;
 }
 
-void Queue_Clear (Queue* pQueue) {
+void Queue_Clear (Queue_t* pQueue) {
     if (pQueue == NULL) {
         return;
     }

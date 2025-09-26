@@ -4,8 +4,7 @@
 #include "conf/board.h"
 #include "conf/conf.h"
 #include "hal.h"
-#include "periphs/gpio.h"
-
+#include "peripheral/gpio.h"
 
 typedef uint32_t eUART_BAUD_t;
 enum {

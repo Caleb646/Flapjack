@@ -163,19 +163,19 @@ static DeviceBoardConf_t gDeviceBoardConfs[] = {
 
 static ServoBoardConf_t gServoBoardConfs[] = {
     // Left servo motor
-    { eSERVO_1_ID, &gTimerBoardConfs[TIM5_CH1_IDX], 0, 50, 1.0F, 1.0F, 1.0F, 1, 1, 1 },
+    { eSERVO_1_ID, &gTimerBoardConfs[TIM5_CH1_IDX], 0, 50, 1.0F, 1.0F, 1.0F },
     // Left servo aileron
-    { eSERVO_2_ID, &gTimerBoardConfs[TIM5_CH2_IDX], 0, 50, 1.0F, 1.0F, 1.0F, 1, 1, 1 },
+    { eSERVO_2_ID, &gTimerBoardConfs[TIM5_CH2_IDX], 0, 50, 1.0F, 1.0F, 1.0F },
     // Servo elevator
-    { eSERVO_3_ID, &gTimerBoardConfs[TIM5_CH3_IDX], 0, 50, 1.0F, 1.0F, 1.0F, 1, 1, 1 },
+    { eSERVO_3_ID, &gTimerBoardConfs[TIM5_CH3_IDX], 0, 50, 1.0F, 1.0F, 1.0F },
     // Servo rudder
-    { eSERVO_4_ID, &gTimerBoardConfs[TIM5_CH4_IDX], 0, 50, 1.0F, 1.0F, 1.0F, 1, 1, 1 },
+    { eSERVO_4_ID, &gTimerBoardConfs[TIM5_CH4_IDX], 0, 50, 1.0F, 1.0F, 1.0F },
     // Right servo motor
-    { eSERVO_5_ID, &gTimerBoardConfs[TIM8_CH3_IDX], 0, 50, 1.0F, 1.0F, 1.0F, 1, 1, 1 },
+    { eSERVO_5_ID, &gTimerBoardConfs[TIM8_CH3_IDX], 0, 50, 1.0F, 1.0F, 1.0F },
     // Right servo aileron
-    { eSERVO_6_ID, &gTimerBoardConfs[TIM8_CH4_IDX], 0, 50, 1.0F, 1.0F, 1.0F, 1, 1, 1 },
+    { eSERVO_6_ID, &gTimerBoardConfs[TIM8_CH4_IDX], 0, 50, 1.0F, 1.0F, 1.0F },
     // Servo flight mode
-    { eSERVO_7_ID, &gTimerBoardConfs[TIM12_CH1_IDX], 0, 50, 1.0F, 1.0F, 1.0F, 1, 1, 1 }
+    { eSERVO_7_ID, &gTimerBoardConfs[TIM12_CH1_IDX], 0, 50, 1.0F, 1.0F, 1.0F }
 };
 
 #define LEFT_SERVO_MOTOR_IDX  0
@@ -183,29 +183,23 @@ static ServoBoardConf_t gServoBoardConfs[] = {
 
 static MotorBoardConf_t gMotorBoardConfs[] = {
     // Left motor
-    { eMOTOR_1_ID,
-      &gTimerBoardConfs[TIM12_CH1_IDX],
-      &gServoBoardConfs[LEFT_SERVO_MOTOR_IDX],
-      1,
-      150,
-      1.0F,
-      1.0F,
-      1.0F,
-      1,
-      1,
-      1 },
+    { .motorId               = eMOTOR_1_ID,
+      .pTimerBoardConf       = &gTimerBoardConfs[TIM12_CH1_IDX],
+      .pLinkedServoBoardConf = &gServoBoardConfs[LEFT_SERVO_MOTOR_IDX],
+      .useDMA                = 1,
+      .dshotSpeed            = 150,
+      .pidRollMix            = 1.0F,
+      .pidPitchMix           = 1.0F,
+      .pidYawMix             = 1.0F },
     // Right motor
-    { eMOTOR_2_ID,
-      &gTimerBoardConfs[TIM12_CH2_IDX],
-      &gServoBoardConfs[RIGHT_SERVO_MOTOR_IDX],
-      1,
-      150,
-      1.0F,
-      1.0F,
-      1.0F,
-      1,
-      1,
-      1 }
+    { .motorId               = eMOTOR_2_ID,
+      .pTimerBoardConf       = &gTimerBoardConfs[TIM12_CH2_IDX],
+      .pLinkedServoBoardConf = &gServoBoardConfs[RIGHT_SERVO_MOTOR_IDX],
+      .useDMA                = 1,
+      .dshotSpeed            = 150,
+      .pidRollMix            = 1.0F,
+      .pidPitchMix           = 1.0F,
+      .pidYawMix             = 1.0F }
 };
 
 #define LEFT_MOTOR_IDX  0

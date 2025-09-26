@@ -29,7 +29,13 @@
         "mmc5983.h": "c",
         "dev_board.h": "c",
         "my_board.h": "c",
-        "hal.h": "c"
+        "hal.h": "c",
+        "spi.h": "c",
+        "gpio.h": "c",
+        "timer.h": "c",
+        "conf.h": "c",
+        "logger.h": "c",
+        "dma.h": "c"
     },
     "C_Cpp.codeAnalysis.clangTidy.enabled": true,
     // "C_Cpp.codeAnalysis.clangTidy.path": "${Env:CLANG_TIDY_PATH}",

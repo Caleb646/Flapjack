@@ -5,8 +5,7 @@
 #include "log/logger.h"
 #include "mem/mem.h"
 #include "mem/queue.h"
-#include "periphs/uart.h"
-
+#include "peripheral/uart.h"
 
 #define PRODUCER_ID            CM4_CPUID
 #define CONSUMER_ID            CM7_CPUID
@@ -26,14 +25,8 @@ gaa_OpStateTransitionHandlers[eNUMBER_OF_OP_STATES][eNUMBER_OF_OP_STATES] = { 0 
 static CmdHandler_t ga_CmdHandlers[eNUMBER_OF_CMD_TYPES] = { 0 };
 
 /* Shared global variables */
-QUEUE_DEFINE_STATIC_SHARED_MEMORY (
-SharedCommand,
-DefaultCommand,
-(Queue*)MEM_SHARED_COMMAND_QUEUE_START,
-MEM_SHARED_COMMAND_QUEUE_TOTAL_LEN,
-COMMAND_QUEUE_CAPACITY
-);
-static FCState* gp_FlightState = (FCState*)MEM_SHARED_FLIGHT_STATE_START;
+QUEUE_DEFINE_STATIC_SHARED (SharedCommand, DefaultCommand, COMMAND_QUEUE_CAPACITY);
+static SHARED_MEM_SECTION FCState g_FlightState = { 0 };
 
 #ifndef UNIT_TEST
 
@@ -55,7 +48,8 @@ static BOOL_t IsCmdTypeValid (eCMD_t cmdType);
  * Global UART recv complete callback. The reason this can work is because
  * their is only 1 uart that is set to recv. If there are multiple receiving uarts, this will not work.
  */
-void ControlRecvCallBack (eUART_BUS_ID_t busId) {
+void ControlRecvCallBack (eBUS_ID_t busId) {
+
     if (RawCommandQueue_IsFull () == TRUE) {
         return;
     }
@@ -234,7 +228,7 @@ eSTATUS_t ControlInit (void) {
             return eSTATUS_FAILURE;
         }
 
-        if (ControlInit_FCState (gp_FlightState) != eSTATUS_SUCCESS) {
+        if (ControlInit_FCState (&g_FlightState) != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to initialize flight controller state");
             return eSTATUS_FAILURE;
         }
@@ -253,7 +247,7 @@ eSTATUS_t ControlInit (void) {
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t ControlStart (eUART_BUS_ID_t busId) {
+eSTATUS_t ControlStart (void) {
 
     if (IS_PRODUCER_ME () == TRUE) {
         if (UARTRegisterCallback (busId, eUART_CALLBACK_ID_RX, ControlRecvCallBack) !=
@@ -391,35 +385,23 @@ char const* ControlCmdType2Char (eCMD_t commandType) {
 
 
 FCState ControlGetCopyFCState (void) {
-
-    if (gp_FlightState == NULL) {
-        LOG_ERROR ("Flight controller state pointer is NULL");
-        FCState emptyState = { 0 };
-        return emptyState;
-    }
-
-    return *gp_FlightState;
+    return g_FlightState;
 }
 
 eSTATUS_t ControlUpdateFCState (FCState const* pNewState) {
 
-    if (pNewState == NULL || gp_FlightState == NULL) {
+    if (pNewState == NULL) {
         LOG_ERROR ("Invalid flight controller state pointer");
         return eSTATUS_FAILURE;
     }
 
     // Update the flight mode and operation state
-    gp_FlightState->flightMode = pNewState->flightMode;
-    gp_FlightState->opState    = pNewState->opState;
+    g_FlightState.flightMode = pNewState->flightMode;
+    g_FlightState.opState    = pNewState->opState;
 
     return eSTATUS_SUCCESS;
 }
 
 eCMD_OP_STATE_t ControlGetOpState (void) {
-
-    if (gp_FlightState == NULL) {
-        LOG_ERROR ("Flight controller state pointer is NULL");
-        return eCMD_OP_STATE_ERROR;
-    }
-    return gp_FlightState->opState;
+    return g_FlightState.opState;
 }

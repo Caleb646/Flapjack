@@ -7,14 +7,20 @@
 
 #define MAILBOX_CM4_ID (0U)
 #define MAILBOX_CM7_ID (1U)
+#define MAILBOX_COUNT  (2U)
 
 typedef uint8_t eSYNC_TASKID_t;
 enum {
     eSYNC_TASKID_UART_OUT = 0U,
 
-    NUMBER_OF_SYNC_TASKS,
-    eSYNC_TASKID_MAX = 256U
+    eSYNC_TASKID_MAX
 };
+
+typedef struct MailBox_t {
+    uint8_t data[8U];
+} MailBox_t;
+
+typedef MailBox_t volatile vMailBox_t;
 
 typedef struct {
     uint64_t padding;
@@ -31,9 +37,7 @@ typedef struct {
     uint16_t len;
 } SyncTaskUartOut;
 
-STATIC_ASSERT (sizeof (DefaultTask) == MEM_SHARED_MAILBOX_LEN, "");
 STATIC_ASSERT (sizeof (SyncTaskHeader) == 4U, "");
-STATIC_ASSERT (sizeof (SyncTaskUartOut) <= MEM_SHARED_MAILBOX_LEN, "");
 
 typedef eSTATUS_t (*task_handler_fn_t) (DefaultTask const* pTask);
 

@@ -3,10 +3,11 @@
 
 #include "common.h"
 #include "conf/conf.h"
-#include "dma.h"
 #include "hal.h"
 #include "log/logger.h"
+#include "peripheral/dma.h"
 #include <stdint.h>
+
 
 #define PWM_MHZ2HZ(x) ((x) * 1000000U)
 #define PWM_HZ2US(hz) \
@@ -69,6 +70,8 @@ typedef struct {
     TimerChannel_t channels[TIMER_NCHANNELS];
     BOOL_t isTimerInitialized;
 } Timer_t;
+
+typedef Timer_t volatile vTimer_t;
 
 typedef uint8_t eTIMER_CALLBACK_ID_t;
 enum {

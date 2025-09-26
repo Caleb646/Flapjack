@@ -1,11 +1,11 @@
-#include "periphs/spi.h"
+#include "peripheral/spi.h"
 #include "common.h"
 #include "conf/board.h"
 #include "conf/conf.h"
 #include "hal.h"
 #include "log/logger.h"
 #include "mem/mem.h"
-#include "periphs/gpio.h"
+#include "peripheral/gpio.h"
 #include <stdint.h>
 #include <string.h>
 
@@ -276,3 +276,17 @@ SPIWriteRead_Blocking (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pT
     SPI_END ();
     return status;
 }
+
+// eSTATUS_t SPIRead (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t* pData, uint16_t size) {
+//     // TODO implement non-blocking version
+//     return SPIRead_Blocking (busId, deviceId, pData, size);
+// }
+
+// eSTATUS_t SPIWrite (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pData, uint16_t size) {
+//     return SPIWrite_Blocking (busId, deviceId, pData, size);
+// }
+
+// eSTATUS_t
+// SPIWriteRead (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pTxData, uint8_t* pRxData, uint16_t size) {
+//     return SPIWriteRead_Blocking (busId, deviceId, pTxData, pRxData, size);
+// }

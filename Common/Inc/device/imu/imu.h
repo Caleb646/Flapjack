@@ -10,7 +10,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#define IMU_MAGIC 0xFAFAAFAF
 #define IMU_LOG_CALIB_DATA(rslt, error) \
     LOG_DATA (LOG_DATA_TYPE_IMU_CALIB, "{\"rslt\":%u,\"error\":%u}", rslt, error)
 
@@ -253,6 +252,7 @@ eSTATUS_t IMUGetAltConf (vIMU_t* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf);
 eSTATUS_t IMUSetConf (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf);
 eSTATUS_t IMUSetAltConf (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf);
 eSTATUS_t IMUCompareConfs (IMUAccConf aconf, IMUGyroConf gconf, IMUAccConf aconf2, IMUGyroConf gconf2);
+vIMU_t* IMUGetActiveDevice (void);
 void IMU2CPUInterruptHandler (vIMU_t* pIMU);
 
 #define IMU_INIT_FROM_BOARD_CONF(pSTATUS, DEVICE_BOARD_CONF) \

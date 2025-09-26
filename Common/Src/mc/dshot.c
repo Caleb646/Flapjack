@@ -35,8 +35,8 @@
 #include "dma.h"
 #include "hal.h"
 #include "log/logger.h"
-#include "periphs/gpio.h"
-#include "periphs/timer.h"
+#include "peripheral/gpio.h"
+#include "peripheral/timer.h"
 #include <stdint.h>
 
 

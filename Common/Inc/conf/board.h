@@ -68,9 +68,6 @@ typedef struct {
     float pidRollMix;
     float pidPitchMix;
     float pidYawMix;
-    int8_t pidRollMixDir;
-    int8_t pidPitchMixDir;
-    int8_t pidYawMixDir;
 } ServoBoardConf_t;
 
 typedef struct {
@@ -82,9 +79,6 @@ typedef struct {
     float pidRollMix;
     float pidPitchMix;
     float pidYawMix;
-    int8_t pidRollMixDir;
-    int8_t pidPitchMixDir;
-    int8_t pidYawMixDir;
 } MotorBoardConf_t;
 
 typedef struct {

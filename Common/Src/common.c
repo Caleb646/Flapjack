@@ -1,7 +1,7 @@
 #include "common.h"
 #include "hal.h"
 #include <stdint.h>
-
+#include <string.h>
 
 // Global variable to store assertion information when printf is not
 // available AssertionInfo_t AssertionInfo = { 0 };

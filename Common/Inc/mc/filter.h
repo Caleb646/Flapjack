@@ -2,7 +2,7 @@
 #define MOTION_CONTROL_FILTER_H
 
 #include "common.h"
-#include "sensors/imu/imu.h"
+#include "device/imu/imu.h"
 #include <stdint.h>
 
 // #define DEG2RAD(degrees) ((degrees) * (3.14159265359F / 180.0F))
@@ -20,7 +20,8 @@ FilterMadgwickContext* pContext,
 Vec3f const* pAccel,
 Vec3f const* pGyroDegs,
 float dt,
-Vec3f* pOutputAttitude);
+Vec3f* pOutputAttitude
+);
 
 // eSTATUS_t
 // FilterMadgwick9DOF (FilterMadgwickContext* pContext, Vec3f accel, Vec3f gyro, Vec3f magno, float dt, Vec3f* pOutputAttitude);
@@ -28,11 +29,11 @@ Vec3f* pOutputAttitude);
 
 eSTATUS_t FilterMadgwickWarmUp (
 uint32_t iterations,
-IMU* pIMU,
 float expectedGyroErrorDegs,
 float beta,
 FilterMadgwickContext* pOutContext,
-Vec3f* pOutAttitude);
+Vec3f* pOutAttitude
+);
 
 eSTATUS_t
 FilterMadgwickInit (FilterMadgwickContext* pContext, float gyroMeasureErrorDegs, Vec4f* pInitialQuaternion);

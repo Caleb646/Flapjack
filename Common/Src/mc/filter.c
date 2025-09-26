@@ -1,7 +1,7 @@
 #include "mc/filter.h"
+#include "device/imu/imu.h"
 #include "hal.h"
 #include "log/logger.h"
-#include "sensors/imu/imu.h"
 #include <math.h>
 #include <string.h>
 
@@ -19,9 +19,11 @@ FilterMadgwickContext* pContext,
 Vec3f const* pAccel,
 Vec3f const* pGyroDegs,
 float dt,
-Vec3f* pOutputAttitude) {
+Vec3f* pOutputAttitude
+) {
     // Source: https://courses.cs.washington.edu/courses/cse474/17wi/labs/l4/madgwick_internal_report.pdf
-    if (pContext == NULL || pAccel == NULL || pGyroDegs == NULL || pOutputAttitude == NULL) {
+    if (pContext == NULL || pAccel == NULL || pGyroDegs == NULL ||
+        pOutputAttitude == NULL) {
         return eSTATUS_FAILURE;
     }
 
@@ -99,7 +101,8 @@ Vec3f* pOutputAttitude) {
 
     float factor = sqrtf (
     SEqHatDot_1 * SEqHatDot_1 + SEqHatDot_2 * SEqHatDot_2 +
-    SEqHatDot_3 * SEqHatDot_3 + SEqHatDot_4 * SEqHatDot_4);
+    SEqHatDot_3 * SEqHatDot_3 + SEqHatDot_4 * SEqHatDot_4
+    );
     if (factor > 0.0F) {
         norm = 1.0F / factor;
         SEqHatDot_1 *= norm;
@@ -145,12 +148,14 @@ Vec3f* pOutputAttitude) {
      * NOTE: atan and asin are NON reentrant
      */
     pOutputAttitude->yaw = RAD2DEG (
-    atan2f (2.0F * q2 * q3 - 2.0F * q1 * q4, 2.0F * q1 * q1 + 2.0F * q2 * q2 - 1));
+    atan2f (2.0F * q2 * q3 - 2.0F * q1 * q4, 2.0F * q1 * q1 + 2.0F * q2 * q2 - 1)
+    );
 
     pOutputAttitude->pitch = RAD2DEG (-asinf (2.0F * q2 * q4 + 2.0F * q1 * q3));
 
     pOutputAttitude->roll = RAD2DEG (
-    atan2f (2.0F * q3 * q4 - 2.0F * q1 * q2, 2.0F * q1 * q1 + 2.0F * q4 * q4 - 1.0F));
+    atan2f (2.0F * q3 * q4 - 2.0F * q1 * q2, 2.0F * q1 * q1 + 2.0F * q4 * q4 - 1.0F)
+    );
 
     return eSTATUS_SUCCESS;
 }
@@ -162,12 +167,13 @@ Vec3f* pOutputAttitude) {
 
 eSTATUS_t FilterMadgwickWarmUp (
 uint32_t iterations,
-IMU* pIMU,
 float expectedGyroErrorDegs,
 float warmUpBeta,
 FilterMadgwickContext* pOutContext,
-Vec3f* pOutAttitude) {
+Vec3f* pOutAttitude
+) {
 
+    vIMU_t* pIMU = IMUGetActiveDevice ();
     if (pIMU == NULL || pOutContext == NULL || pOutAttitude == NULL) {
         LOG_ERROR ("Invalid parameters: pIMU or pOutContext is NULL");
         return eSTATUS_FAILURE;

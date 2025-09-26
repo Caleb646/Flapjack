@@ -2,10 +2,12 @@
 #define PERIPHS_SPI_H
 
 #include "common.h"
+#include "conf/board.h"
 #include "conf/conf.h"
 #include "hal.h"
-#include "periphs/gpio.h"
+#include "peripheral/gpio.h"
 #include <stdint.h>
+#include <string.h>
 
 #define SPI_MAX_DEVICES_PER_BUS 3U
 
@@ -22,6 +24,7 @@ typedef struct {
     eDEVICE_ID_t deviceIds[SPI_MAX_DEVICES_PER_BUS];
     uint8_t nDevices;
     BOOL_t isInitialized;
+    BOOL_t useDMA;
 } SPIBus_t;
 
 typedef SPIBus_t volatile vSPIBus_t;
@@ -33,6 +36,11 @@ eSTATUS_t
 SPIWrite_Blocking (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pData, uint16_t size);
 eSTATUS_t
 SPIWriteRead_Blocking (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pTxData, uint8_t* pRxData, uint16_t size);
+
+// eSTATUS_t SPIRead (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t* pData, uint16_t size);
+// eSTATUS_t SPIWrite (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pData, uint16_t size);
+// eSTATUS_t
+// SPIWriteRead (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pTxData, uint8_t* pRxData, uint16_t size);
 
 #define SPI_INIT_FROM_BOARD_CONF(pSTATUS, DEVICE_BOARD_CONF, BOARD_CONF) \
     do {                                                                 \

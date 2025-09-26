@@ -6,7 +6,7 @@
 #include "log/format.h"
 #include "mem/mem.h"
 #include "mem/ring_buff.h"
-#include "periphs/uart.h"
+#include "peripheral/uart.h"
 #include "sync.h"
 #include <stdint.h>
 #include <stdio.h>

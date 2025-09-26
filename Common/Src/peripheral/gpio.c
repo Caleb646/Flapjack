@@ -1,4 +1,4 @@
-#include "periphs/gpio.h"
+#include "peripheral/gpio.h"
 #include "common.h"
 #include "conf/board.h"
 #include "conf/conf.h"
@@ -47,7 +47,7 @@ static void GPIOEnablePortClock (eGPIO_ID_t gpioId) {
     }
 }
 
-static void GPIOBaseInit (void) {
+static void GPIOSystemInit (void) {
 
     static BOOL_t initialized = FALSE;
     if (initialized == TRUE) {
@@ -92,7 +92,7 @@ eSTATUS_t GPIOFreeByIO (vIO_t* pIO) {
 
 eSTATUS_t GPIOInitSPI (GPIOSPIInitConf_t conf) {
 
-    GPIOBaseInit ();
+    GPIOSystemInit ();
 
     if (BUS_ID_IS_SPI (conf.busId) == FALSE) {
         return eSTATUS_FAILURE;
@@ -160,7 +160,7 @@ eSTATUS_t GPIOInitSPI (GPIOSPIInitConf_t conf) {
 
 eSTATUS_t GPIOInitI2C (GPIOI2CInitConf_t conf) {
 
-    GPIOBaseInit ();
+    GPIOSystemInit ();
 
     if (BUS_ID_IS_I2C (conf.busId) == FALSE) {
         return eSTATUS_FAILURE;
@@ -207,7 +207,7 @@ eSTATUS_t GPIOInitUART (GPIOUARTInitConf_t conf) {
     //     eGPIO_PINID_10, GPIO_AF7_USART3); initialized = TRUE;
     // }
 
-    GPIOBaseInit ();
+    GPIOSystemInit ();
 
     if (BUS_ID_IS_UART (conf.busId) == FALSE) {
         return eSTATUS_FAILURE;
@@ -244,7 +244,7 @@ eSTATUS_t GPIOInitUART (GPIOUARTInitConf_t conf) {
 
 eSTATUS_t GPIOInitIO (GPIOIOInitConf_t conf) {
 
-    GPIOBaseInit ();
+    GPIOSystemInit ();
 
     vIO_t* pIO = GPIOGetIOfromId (conf.gpioId);
     if (pIO == NULL) {

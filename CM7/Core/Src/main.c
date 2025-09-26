@@ -54,7 +54,7 @@ static void MX_GPIO_Init (void);
 static void MX_SPI2_Init (void);
 
 // NOLINTBEGIN
-IMU gIMU                                     = { 0 };
+// IMU gIMU                                     = { 0 };
 FilterMadgwickContext gFilterMadgwickContext = { 0 };
 PIDContext gPIDContext                       = { 0 };
 TaskHandle_t gpTaskMotionControlUpdate       = { 0 };
@@ -322,7 +322,6 @@ int main (void) {
 
     eSTATUS_t status        = eSTATUS_SUCCESS;
     BoardConf_t* pBoardConf = BoardConfGet ();
-
     /*
      * Setup serial debug first so errors can be logged.
      * TODO: flash maybe should be setup first as well. So if serial debug
@@ -338,8 +337,8 @@ int main (void) {
     }
 
     for (uint32_t i = 0; i < pBoardConf->numDevices; ++i) {
-        DeviceBoardConf_t deviceConf = pBoardConf->pDeviceBoardConfs[i];
 
+        DeviceBoardConf_t deviceConf = pBoardConf->pDeviceBoardConfs[i];
         // Serial debug already initialized
         if (deviceConf.deviceId == eSERIAL_DEBUG_DEVICE_ID) {
             continue;

@@ -2,13 +2,14 @@
 #define MOTION_CONTROL_ACTUATORS_H
 
 #include "common.h"
+#include "conf/board.h"
 #include "conf/conf.h"
 #include "dma.h"
 #include "hal.h"
 #include "mc/dshot.h"
-#include "periphs/timer.h"
+#include "peripheral/timer.h"
 #include <stdint.h>
-
+#include <string.h>
 
 // #define MOTOR_CREATE_CONF(PTR_TIMER, CHANNEL_ID, DMA_STREAM, DMA_REQUEST_ID) \
 //     { .pwm = PWM_CREATE_CONF (PTR_TIMER, CHANNEL_ID, 0, FALSE),              \
@@ -51,12 +52,24 @@ typedef struct {
 } PIDContext;
 
 typedef struct {
-    eDEVICE_ID_t id;
-    eTIMER_ID_t timerId;
+    ServoBoardConf_t boardConf;
 } ServoInitConf_t;
+
+// typedef struct {
+//     eDEVICE_ID_t id;
+//     uint32_t usLeftDutyCycle;
+//     uint32_t usMiddleDutyCycle;
+//     uint32_t usRightDutyCycle;
+//     float maxAngle;
+//     float usableMaxAngle;
+//     float pitchMix;
+//     float yawMix;
+//     float rollMix;
+// } ServoDescriptor;
 
 typedef struct {
     eDEVICE_ID_t id;
+    eDEVICE_ID_t linkedMotorId;
     uint32_t usLeftDutyCycle;
     uint32_t usMiddleDutyCycle;
     uint32_t usRightDutyCycle;
@@ -65,11 +78,6 @@ typedef struct {
     float pitchMix;
     float yawMix;
     float rollMix;
-} ServoDescriptor;
-
-typedef struct {
-    ServoInitConf_t conf;
-    ServoDescriptor desc;
     // Between -usableMaxAngle angle and +usableMaxAngle angle
     float curAngle;
     float curTargetAngle;
@@ -82,21 +90,22 @@ enum {
 };
 
 typedef struct {
-    eDEVICE_ID_t id;
-    eTIMER_ID_t timerId;
-    eDSHOT_TYPE_t dshotType;
+    MotorBoardConf_t boardConf;
 } MotorInitConf_t;
+
+// typedef struct {
+//     eDEVICE_ID_t id;
+//     float pitchMix;
+//     float yawMix;
+//     float rollMix;
+// } MotorDescriptor;
 
 typedef struct {
     eDEVICE_ID_t id;
+    eDEVICE_ID_t linkedServoId;
     float pitchMix;
     float yawMix;
     float rollMix;
-} MotorDescriptor;
-
-typedef struct {
-    MotorInitConf_t conf;
-    MotorDescriptor desc;
     float curThrottle; // Between 0.0 and 1.0
     float curTargetThrottle;
 } Motor;
@@ -133,6 +142,13 @@ eSTATUS_t ServoInit (ServoInitConf_t conf);
 eSTATUS_t ServoStart (eDEVICE_ID_t servoId);
 eSTATUS_t ServoWrite (eDEVICE_ID_t servoId, float targetAngle);
 
+#define SERVO_INIT_FROM_BOARD_CONF(pSTATUS, DEVICE_BOARD_CONF) \
+    do {                                                       \
+        ServoInitConf_t conf = { 0 };                          \
+        conf.boardConf       = (DEVICE_BOARD_CONF);            \
+        *(pSTATUS)           = ServoInit (conf);               \
+    } while (0)
+
 #ifdef UNIT_TEST
 
 #endif // UNIT_TEST
@@ -142,6 +158,13 @@ eSTATUS_t MotorStart (eDEVICE_ID_t motorId);
 eSTATUS_t MotorWrite (eDEVICE_ID_t motorId, float motorValue);
 eSTATUS_t MotorWriteCmd (eDEVICE_ID_t motorId, eMOTOR_CMD_t command);
 
+#define MOTOR_INIT_FROM_BOARD_CONF(pSTATUS, DEVICE_BOARD_CONF) \
+    do {                                                       \
+        MotorInitConf_t conf = { 0 };                          \
+        conf.boardConf       = (DEVICE_BOARD_CONF);            \
+        *(pSTATUS)           = MotorInit (conf);               \
+    } while (0)
+
 #ifdef UNIT_TEST
 
 eSTATUS_t
@@ -150,11 +173,26 @@ eSTATUS_t ActuatorsArm (void);
 
 #endif // UNIT_TEST
 
-eSTATUS_t ActuatorsInit (PWMConfig left_ServoPWM, MotorConfig left_Motor);
+eSTATUS_t ActuatorsInitMotor (MotorInitConf_t conf);
+eSTATUS_t ActuatorsInitServo (ServoInitConf_t conf);
 eSTATUS_t ActuatorsStart (void);
 eSTATUS_t ActuatorsStop (void);
 eSTATUS_t ActuatorsWrite (Vec3f pidAttitude, float targetThrottle);
 Servo* ActuatorsGetLeftServo (void);
 void ActuatorsLogData (void);
+
+#define ACTUATOR_INIT_SERVO_FROM_BOARD_CONF(pSTATUS, DEVICE_BOARD_CONF) \
+    do {                                                                \
+        ServoInitConf_t conf = { 0 };                                   \
+        conf.boardConf       = (DEVICE_BOARD_CONF);                     \
+        *(pSTATUS)           = ActuatorsInitServo (conf);               \
+    } while (0)
+
+#define ACTUATOR_INIT_MOTOR_FROM_BOARD_CONF(pSTATUS, DEVICE_BOARD_CONF) \
+    do {                                                                \
+        MotorInitConf_t conf = { 0 };                                   \
+        conf.boardConf       = (DEVICE_BOARD_CONF);                     \
+        *(pSTATUS)           = ActuatorsInitMotor (conf);               \
+    } while (0)
 
 #endif // MOTION_CONTROL_ACTUATORS_H
