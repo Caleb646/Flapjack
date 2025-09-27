@@ -20,7 +20,8 @@ typedef struct MailBox_t {
     uint8_t data[8U];
 } MailBox_t;
 
-typedef MailBox_t volatile vMailBox_t;
+// typedef MailBox_t volatile vMailBox_t;
+typedef MailBox_t vMailBox_t;
 
 typedef struct {
     uint64_t padding;

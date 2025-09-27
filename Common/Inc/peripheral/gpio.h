@@ -174,7 +174,8 @@ typedef struct {
     eDEVICE_ID_t ownerId;
 } IO_t;
 
-typedef IO_t volatile vIO_t;
+// typedef IO_t volatile vIO_t;
+typedef IO_t vIO_t;
 
 vIO_t* GPIOGetIOfromId (eGPIO_ID_t gpioId);
 eSTATUS_t GPIOFreeById (eGPIO_ID_t gpioId);

@@ -15,9 +15,9 @@ typedef struct {
 } Queue_t;
 
 eSTATUS_t
-QueueInit (Queue_t* pQueue, void* pBuffer, uint16_t capacity, uint16_t elementSize, BOOL_t isShared);
-BOOL_t QueueIsEmpty (Queue_t const* pQueue);
-BOOL_t QueueIsFull (Queue_t const* pQueue);
+QueueInit (Queue_t* pQueue, void* pBuffer, uint16_t capacity, uint16_t elementSize, bool isShared);
+bool QueueIsEmpty (Queue_t const* pQueue);
+bool QueueIsFull (Queue_t const* pQueue);
 uint16_t QueueGetElementCount (Queue_t const* pQueue);
 uint16_t QueueGetCapacity (Queue_t const* pQueue);
 eSTATUS_t Queue_Push (Queue_t* pQueue, void const* pElement);
@@ -52,7 +52,7 @@ void Queue_Clear (Queue_t* pQueue);
 
 #define QUEUE_DEFINE_STATIC_SHARED(NAME, TYPE, CAPACITY)          \
     static SHARED_MEM_SECTION TYPE g_##NAME##_buffer[(CAPACITY)]; \
-    static Queue_t g_##NAME##_queue = { 0 };                      \
-    QUEUE_DEFINE_FUNCTIONS_ONLY (NAME, TYPE, CAPACITY, TRUE)
+    static SHARED_MEM_SECTION Queue_t g_##NAME##_queue = { 0 };   \
+    QUEUE_DEFINE_FUNCTIONS_ONLY (NAME, TYPE, CAPACITY, true)
 
 #endif // MEM_QUEUE_H

@@ -49,7 +49,7 @@
 
 #define LOG_ERROR_IF(cond, ...) \
     do {                                 \
-        if ((cond) == TRUE) {                     \
+        if ((cond) == true) {                     \
             LOG_ERROR (__VA_ARGS__);    \
         }                                \
     } while (0)
@@ -59,7 +59,7 @@
 
 #define RETURN_IF(cond, retval, ...)                \
     do {                                    \
-        if ((cond) == TRUE) {               \
+        if ((cond) == true) {               \
             LOG_ERROR (__VA_ARGS__);        \
             return (retval);                \
         }                                   \
@@ -121,10 +121,11 @@ typedef struct {
 typedef struct {
     eBUS_ID_t busId;
     eDEVICE_ID_t deviceId;
-    BOOL_t isInitialized;
+    bool isInitialized;
 } SerialDebug_t;
 
-typedef SerialDebug_t volatile vSerialDebug_t;
+// typedef SerialDebug_t volatile vSerialDebug_t;
+typedef SerialDebug_t vSerialDebug_t;
 
 eSTATUS_t SerialDebugInit (SerialDebugInitConf_t conf, DeviceBoardConf_t boardConf);
 

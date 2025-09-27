@@ -4,10 +4,13 @@
 #include "common.h"
 #include "conf/board.h"
 #include "conf/conf.h"
+#include "device/motor/motor.h"
+#include "device/servo/servo.h"
 #include "hal.h"
 #include "mc/dshot.h"
 #include "peripheral/dma.h"
 #include "peripheral/timer.h"
+#include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -47,54 +50,6 @@ typedef struct {
     Vec3f prevIntegral;
 } PIDContext;
 
-typedef struct {
-    ServoBoardConf_t boardConf;
-} ServoInitConf_t;
-
-typedef struct {
-    eDEVICE_ID_t id;
-    eDEVICE_ID_t linkedMotorId;
-    eTIMER_ID_t timerId;
-    uint32_t usLeftDutyCycle;
-    uint32_t usMiddleDutyCycle;
-    uint32_t usRightDutyCycle;
-    float maxAngle;
-    float usableMaxAngle;
-    float pitchMix;
-    float yawMix;
-    float rollMix;
-    // Between -usableMaxAngle angle and +usableMaxAngle angle
-    float curAngle;
-    float curTargetAngle;
-} Servo;
-
-typedef uint8_t eMOTOR_CMD_t;
-enum {
-    eMOTOR_CMD_ARM    = 0x00,
-    eMOTOR_CMD_DISARM = 0x00,
-};
-
-typedef struct {
-    MotorBoardConf_t boardConf;
-} MotorInitConf_t;
-
-typedef struct {
-    eDEVICE_ID_t id;
-    eDEVICE_ID_t linkedServoId;
-    eTIMER_ID_t timerId;
-    float pitchMix;
-    float yawMix;
-    float rollMix;
-    float curThrottle; // Between 0.0 and 1.0
-    float curTargetThrottle;
-} Motor;
-
-typedef struct {
-    Vec3 forward;
-    Vec3 up;
-    Vec3 right;
-} AxisMap;
-
 eSTATUS_t PIDUpdateAttitude (
 PIDContext* pidContext,
 Vec3f currentAttitude, // degrees
@@ -105,52 +60,18 @@ Vec3f* pOutputPIDAttitude // degrees
 );
 
 #ifdef UNIT_TEST
-
-float ServoAngle2PWM (Servo* pServo, float targetAngle);
-
-#endif // UNIT_TEST
-
-eSTATUS_t ServoInit (ServoInitConf_t conf);
-eSTATUS_t ServoStart (eDEVICE_ID_t servoId);
-eSTATUS_t ServoWrite (eDEVICE_ID_t servoId, float targetAngle);
-
-#define SERVO_INIT(pSTATUS, DEVICE_BOARD_CONF)      \
-    do {                                            \
-        ServoInitConf_t conf = { 0 };               \
-        conf.boardConf       = (DEVICE_BOARD_CONF); \
-        *(pSTATUS)           = ServoInit (conf);    \
-    } while (0)
-
-#ifdef UNIT_TEST
-
-#endif // UNIT_TEST
-
-eSTATUS_t MotorInit (MotorInitConf_t conf);
-eSTATUS_t MotorStart (eDEVICE_ID_t motorId);
-eSTATUS_t MotorWrite (eDEVICE_ID_t motorId, float motorValue);
-eSTATUS_t MotorWriteCmd (eDEVICE_ID_t motorId, eMOTOR_CMD_t command);
-
-#define MOTOR_INIT(pSTATUS, DEVICE_BOARD_CONF)      \
-    do {                                            \
-        MotorInitConf_t conf = { 0 };               \
-        conf.boardConf       = (DEVICE_BOARD_CONF); \
-        *(pSTATUS)           = MotorInit (conf);    \
-    } while (0)
-
-#ifdef UNIT_TEST
-
 eSTATUS_t
 ActuatorsMixPair (eDEVICE_ID_t servoId, eDEVICE_ID_t motorId, Vec3f pidAttitude, float tthrottle);
 eSTATUS_t ActuatorsArm (void);
-
 #endif // UNIT_TEST
 
 eSTATUS_t ActuatorsInitMotor (MotorInitConf_t conf);
 eSTATUS_t ActuatorsInitServo (ServoInitConf_t conf);
+eSTATUS_t
+ActuatorsInit (MotorBoardConf_t* pMotorBoardConfs, uint32_t numMotors, ServoBoardConf_t* pServoBoardConfs, uint32_t numServos);
 eSTATUS_t ActuatorsStart (void);
 eSTATUS_t ActuatorsStop (void);
 eSTATUS_t ActuatorsWrite (Vec3f pidAttitude, float targetThrottle);
-Servo* ActuatorsGetLeftServo (void);
 void ActuatorsLogData (void);
 
 #define ACTUATORS_INIT_SERVO(pSTATUS, DEVICE_BOARD_CONF)  \
@@ -165,6 +86,17 @@ void ActuatorsLogData (void);
         MotorInitConf_t conf = { 0 };                     \
         conf.boardConf       = (DEVICE_BOARD_CONF);       \
         *(pSTATUS)           = ActuatorsInitMotor (conf); \
+    } while (0)
+
+
+#define ACTUATORS_INIT(pSTATUS, pBOARD_CONF) \
+    do {                                     \
+        *(pSTATUS) = ActuatorsInit (         \
+        (pBOARD_CONF)->pMotorBoardConfs,     \
+        (pBOARD_CONF)->numMotors,            \
+        (pBOARD_CONF)->pServoBoardConfs,     \
+        (pBOARD_CONF)->numServos             \
+        );                                   \
     } while (0)
 
 #endif // MOTION_CONTROL_ACTUATORS_H

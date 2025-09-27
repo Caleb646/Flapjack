@@ -9,10 +9,10 @@
 #include <stdint.h>
 #include <string.h>
 
-#define IS_BUS_VALID(pBus) (pBus != NULL && pBus->isInitialized == TRUE)
+#define IS_BUS_VALID(pBus) (pBus != NULL && pBus->isInitialized == true)
 #define SPI_BEGIN(busId)                                    \
     vSPIBus_t* pBus = SPIGetBusById (busId);                \
-    if (IS_BUS_VALID (pBus) == FALSE) {                     \
+    if (IS_BUS_VALID (pBus) == false) {                     \
         LOG_ERROR ("Failed to get SPI bus by ID");          \
         return eSTATUS_FAILURE;                             \
     }                                                       \
@@ -43,7 +43,7 @@ static SPI_TypeDef* SPIGetInstanceById (eBUS_ID_t busId) {
 static vSPIBus_t* SPIGetBusById (eBUS_ID_t busId) {
 
     uint32_t busIndex = SPI_BUS_ID2IDX (busId);
-    if (BUS_ID_IS_SPI (busId) == FALSE || busIndex >= eSPI_BUS_ID_MAX) {
+    if (BUS_ID_IS_SPI (busId) == false || busIndex >= eSPI_BUS_ID_MAX) {
         LOG_ERROR ("Invalid SPI bus ID");
         return NULL;
     }
@@ -64,16 +64,16 @@ static IO_t* SPIGetGPIOByDeviceId (vSPIBus_t* pBus, eDEVICE_ID_t deviceId) {
     return NULL;
 }
 
-static BOOL_t SPIAddDevice2Bus (vSPIBus_t* pBus, eGPIO_ID_t nssId, eDEVICE_ID_t deviceId) {
+static bool SPIAddDevice2Bus (vSPIBus_t* pBus, eGPIO_ID_t nssId, eDEVICE_ID_t deviceId) {
 
     if (pBus == NULL) {
         LOG_ERROR ("Failed to get SPI bus by ID");
-        return FALSE;
+        return false;
     }
 
     if (pBus->nDevices >= SPI_MAX_DEVICES_PER_BUS) {
         LOG_ERROR ("SPI bus has reached maximum number of devices");
-        return FALSE;
+        return false;
     }
 
     eSTATUS_t status = eSTATUS_SUCCESS;
@@ -82,7 +82,7 @@ static BOOL_t SPIAddDevice2Bus (vSPIBus_t* pBus, eGPIO_ID_t nssId, eDEVICE_ID_t 
     pBus->nss[pBus->nDevices]       = nssId;
     pBus->deviceIds[pBus->nDevices] = deviceId;
     pBus->nDevices++;
-    return TRUE;
+    return true;
 }
 
 #define SPI_INIT_CLOCK(pSTATUS, BUS_ID, RCC_PERIPH_CLK_SELECTION, RCC_SPI_CLK_SELECTION) \
@@ -158,6 +158,7 @@ eSTATUS_t SPIInit (SPIInitConf_t conf, SPIBoardConf_t boardConf) {
     eGPIO_ID_t nssId      = conf.nssId;
     eBUS_ID_t busId       = boardConf.header.busId;
     uint16_t speedKHz     = boardConf.speedKHz;
+    (void)speedKHz;
     LOG_INFO ("Initializing SPI bus %u", busId);
 
     RETURN_IF_NOT (BUS_ID_IS_SPI (busId), eSTATUS_FAILURE, "Invalid SPI bus ID");
@@ -165,9 +166,9 @@ eSTATUS_t SPIInit (SPIInitConf_t conf, SPIBoardConf_t boardConf) {
     vSPIBus_t* pBus = SPIGetBusById (busId);
     RETURN_IF_NULL (pBus, eSTATUS_FAILURE, "Failed to get SPI bus by ID");
 
-    if (pBus->isInitialized == TRUE) {
+    if (pBus->isInitialized == true) {
 
-        if (SPIAddDevice2Bus (pBus, nssId, deviceId) != TRUE) {
+        if (SPIAddDevice2Bus (pBus, nssId, deviceId) != true) {
             LOG_ERROR ("Failed to add additional device to SPI bus");
             return eSTATUS_FAILURE;
         }
@@ -218,12 +219,12 @@ eSTATUS_t SPIInit (SPIInitConf_t conf, SPIBoardConf_t boardConf) {
         goto error;
     }
 
-    if (SPIAddDevice2Bus (pBus, nssId, deviceId) != TRUE) {
+    if (SPIAddDevice2Bus (pBus, nssId, deviceId) != true) {
         LOG_ERROR ("Failed to add device to SPI bus");
         goto error;
     }
 
-    pBus->isInitialized = TRUE;
+    pBus->isInitialized = true;
     return eSTATUS_SUCCESS;
 
 error:

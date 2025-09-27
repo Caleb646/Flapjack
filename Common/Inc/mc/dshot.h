@@ -28,7 +28,7 @@ typedef struct {
     eDSHOT_TYPE_t dshotType;
     eDEVICE_ID_t deviceId;
     eTIMER_ID_t timerId;
-    BOOL_t usingDMA;
+    bool usingDMA;
     vIO_t* pGPIO; /*!< GPIO handle for bitbang */
     uint32_t pMotorDmaBuffer[DSHOT_DMA_BUFFER_SIZE]; /*!< DMA buffer for DShot */
 
@@ -40,10 +40,11 @@ typedef struct {
     float usValforBit_1; /*!< microsecond value to send a 1 */
     float usValforBit_0; /*!< microsecond value to send a 0 */
 
-    BOOL_t isInitialized;
+    bool isInitialized;
 } DShot_t;
 
-typedef DShot_t volatile vDShot_t;
+// typedef DShot_t volatile vDShot_t;
+typedef DShot_t vDShot_t;
 
 /* Functions */
 eSTATUS_t DShotInit (DShotInitConf_t conf);

@@ -184,9 +184,9 @@ TimerPWMInit (vTimer_t* pTimer, TimerChannel_t* pChannel, TimerInitConf_t conf) 
     uint32_t prescaler  = (uint16_t)(SystemCoreClock / 1000000U) - 1U;
     uint32_t period = (uint16_t)(1000000U / MAX_U32 (conf.hzPeriod, 1U)) - 1U;
 
-    if (pTimer->isTimerInitialized == FALSE) {
+    if (pTimer->isTimerInitialized == false) {
 
-        if (conf.doAutoPreload == FALSE) {
+        if (conf.doAutoPreload == false) {
             LOG_INFO ("Disabling auto-reload for PWM timer");
             autoReload = TIM_AUTORELOAD_PRELOAD_DISABLE;
         }
@@ -219,7 +219,7 @@ TimerPWMInit (vTimer_t* pTimer, TimerChannel_t* pChannel, TimerInitConf_t conf) 
         return eSTATUS_FAILURE;
     }
 
-    if (conf.usingDMA == TRUE) {
+    if (conf.usingDMA == true) {
         if (TimerDMAInit (pTimer, pChannel, conf) != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to initialize Timer DMA");
             return eSTATUS_FAILURE;
@@ -239,8 +239,8 @@ TimerDMAInit (vTimer_t* pTimer, TimerChannel_t* pChannel, TimerInitConf_t conf) 
 
     eSTATUS_t status    = eSTATUS_SUCCESS;
     eTIMER_ID_t timerId = pChannel->timerId;
-    BOOL_t usingDMA     = pChannel->usingDMA;
-    if (usingDMA == FALSE) {
+    bool usingDMA       = pChannel->usingDMA;
+    if (usingDMA == false) {
         return eSTATUS_FAILURE;
     }
     eDMA_STREAM_ID_t dmaStreamId = eDMA_STREAM_MAX;
@@ -303,16 +303,18 @@ eSTATUS_t TimerInit (TimerInitConf_t conf) {
     eDEVICE_ID_t deviceId      = conf.deviceId;
     eTIMER_MODE_t mode         = conf.mode;
     uint32_t hzPeriod          = conf.hzPeriod;
-    BOOL_t usingDMA            = conf.usingDMA;
-    BOOL_t doAutoPreload       = conf.doAutoPreload;
-    vTimer_t* pTimer           = TimerGetById (timerId);
-    TimerChannel_t* pChannel   = TimerGetChannelById (timerId);
+    (void)hzPeriod;
+    bool usingDMA      = conf.usingDMA;
+    bool doAutoPreload = conf.doAutoPreload;
+    (void)doAutoPreload;
+    vTimer_t* pTimer         = TimerGetById (timerId);
+    TimerChannel_t* pChannel = TimerGetChannelById (timerId);
     if (pTimer == NULL || pChannel == NULL) {
         LOG_ERROR ("Failed to find timer or timer handle");
         return eSTATUS_FAILURE;
     }
 
-    if (pTimer->isTimerInitialized == FALSE) {
+    if (pTimer->isTimerInitialized == false) {
 
         memset (pTimer, 0, sizeof (vTimer_t));
         pChannel->timerId  = timerId;
@@ -325,7 +327,7 @@ eSTATUS_t TimerInit (TimerInitConf_t conf) {
         }
     }
 
-    if (pChannel->isChannelInitialized == TRUE) {
+    if (pChannel->isChannelInitialized == true) {
         LOG_ERROR ("Timer channel already initialized");
         return eSTATUS_FAILURE;
     }
@@ -347,8 +349,8 @@ eSTATUS_t TimerInit (TimerInitConf_t conf) {
         goto error;
     }
 
-    pChannel->isChannelInitialized = TRUE;
-    pTimer->isTimerInitialized     = TRUE;
+    pChannel->isChannelInitialized = true;
+    pTimer->isTimerInitialized     = true;
     return eSTATUS_SUCCESS;
 
 error:
@@ -367,10 +369,10 @@ eSTATUS_t TimerStart (eTIMER_ID_t timerId, uint32_t const* pData, uint16_t Lengt
 
     TIM_HandleTypeDef* pHandle = &pTimer->handle;
     eTIMER_MODE_t mode         = pChannel->mode;
-    BOOL_t usingDMA            = pChannel->usingDMA;
+    bool usingDMA              = pChannel->usingDMA;
     uint32_t channel           = TIMER_ID2HALCHANNEL (timerId);
 
-    if (usingDMA == TRUE && mode == eTIMER_MODE_PWM) {
+    if (usingDMA == true && mode == eTIMER_MODE_PWM) {
 
         if (pData == NULL || Length == 0) {
             LOG_ERROR ("Invalid data or length for PWM DMA start");
@@ -382,7 +384,7 @@ eSTATUS_t TimerStart (eTIMER_ID_t timerId, uint32_t const* pData, uint16_t Lengt
             return eSTATUS_FAILURE;
         }
 
-    } else if (usingDMA == FALSE && mode == eTIMER_MODE_PWM) {
+    } else if (usingDMA == false && mode == eTIMER_MODE_PWM) {
 
         if (HAL_TIM_PWM_Start (pHandle, channel) != HAL_OK) {
             LOG_ERROR ("Failed to start PWM");
@@ -408,17 +410,17 @@ eSTATUS_t TimerStop (eTIMER_ID_t timerId) {
 
     TIM_HandleTypeDef* pHandle = &pTimer->handle;
     eTIMER_MODE_t mode         = pChannel->mode;
-    BOOL_t usingDMA            = pChannel->usingDMA;
+    bool usingDMA              = pChannel->usingDMA;
     uint32_t channel           = TIMER_ID2HALCHANNEL (timerId);
 
-    if (usingDMA == TRUE && mode == eTIMER_MODE_PWM) {
+    if (usingDMA == true && mode == eTIMER_MODE_PWM) {
 
         if (HAL_TIM_PWM_Stop_DMA (pHandle, channel) != HAL_OK) {
             LOG_ERROR ("Failed to stop PWM DMA");
             return eSTATUS_FAILURE;
         }
 
-    } else if (usingDMA == FALSE && mode == eTIMER_MODE_PWM) {
+    } else if (usingDMA == false && mode == eTIMER_MODE_PWM) {
 
         if (HAL_TIM_PWM_Stop (pHandle, channel) != HAL_OK) {
             LOG_ERROR ("Failed to stop PWM");

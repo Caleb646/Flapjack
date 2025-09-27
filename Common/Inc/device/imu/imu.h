@@ -202,10 +202,11 @@ typedef struct {
     // uint32_t volatile msLastAccUpdateTime;
     // uint32_t volatile msLastGyroUpdateTime;
     uint8_t nDummyBytes;
-    BOOL_t isInitialized;
+    bool isInitialized;
 } IMU_t;
 
-typedef IMU_t volatile vIMU_t;
+// typedef IMU_t volatile vIMU_t;
+typedef IMU_t vIMU_t;
 
 typedef struct {
     /*! Stores the self-calibration result */
@@ -255,7 +256,7 @@ eSTATUS_t IMUCompareConfs (IMUAccConf aconf, IMUGyroConf gconf, IMUAccConf aconf
 vIMU_t* IMUGetActiveDevice (void);
 void IMU2CPUInterruptHandler (vIMU_t* pIMU);
 
-#define IMU_INIT_FROM_BOARD_CONF(pSTATUS, DEVICE_BOARD_CONF) \
+#define IMU_INIT(pSTATUS, DEVICE_BOARD_CONF)                 \
     do {                                                     \
         IMUInitConf_t conf = { 0 };                          \
                                                              \

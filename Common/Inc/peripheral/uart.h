@@ -35,13 +35,14 @@ typedef struct {
     UART_HandleTypeDef handle;
     eBUS_ID_t busId;
     eDEVICE_ID_t deviceId;
-    BOOL_t isInitialized;
+    bool isInitialized;
     UART_Callback_t rxCallback;
     UART_Callback_t txCallback;
     UART_Callback_t errorCallback;
 } UARTBus_t;
 
-typedef UARTBus_t volatile vUARTBus_t;
+// typedef UARTBus_t volatile vUARTBus_t;
+typedef UARTBus_t vUARTBus_t;
 
 eSTATUS_t UARTInit (UARTInitConf_t conf, UARTBoardConf_t boardConf);
 eSTATUS_t UARTRead_Blocking (eBUS_ID_t busId, uint8_t* pData, uint32_t size);
@@ -49,7 +50,7 @@ eSTATUS_t UARTWrite_Blocking (eBUS_ID_t busId, uint8_t const* pData, uint32_t si
 eSTATUS_t UARTRead_IT (eBUS_ID_t busId, uint8_t* pData, uint32_t size);
 eSTATUS_t UARTRegisterCallback (eBUS_ID_t busId, eUART_CALLBACK_ID_t cbId, UART_Callback_t callback);
 eSTATUS_t UARTEnableInterrupts (eBUS_ID_t busId, uint32_t priority);
-BOOL_t UARTIsValid (eBUS_ID_t busId);
+bool UARTIsValid (eBUS_ID_t busId);
 
 #define UART_INIT_FROM_BOARD_CONF(pSTATUS, DEVICE_BOARD_CONF, UART_BOARD_CONF) \
     do {                                                                       \

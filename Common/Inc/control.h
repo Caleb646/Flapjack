@@ -113,7 +113,8 @@ typedef struct {
 } FCState;
 
 
-typedef FCState volatile vFCState;
+// typedef FCState volatile vFCState;
+typedef FCState vFCState;
 
 STATIC_ASSERT (sizeof (DefaultCommand) <= COMMAND_TOTAL_SIZE, "");
 STATIC_ASSERT (sizeof (ChangeOpStateCmd) <= sizeof (DefaultCommand), "");
@@ -121,7 +122,7 @@ STATIC_ASSERT (sizeof (ChangeFlightModeCmd) <= sizeof (DefaultCommand), "");
 STATIC_ASSERT (sizeof (ChangeVelocityCmd) <= sizeof (DefaultCommand), "");
 STATIC_ASSERT (sizeof (ChangePIDCmd) <= sizeof (DefaultCommand), "");
 
-typedef BOOL_t (*OpStateTransitionHandler_t) (FCState curState);
+typedef bool (*OpStateTransitionHandler_t) (FCState curState);
 typedef eSTATUS_t (*CmdHandler_t) (DefaultCommand cmd);
 
 eSTATUS_t ControlInit (void);

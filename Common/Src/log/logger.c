@@ -38,7 +38,9 @@ static SHARED_MEM_SECTION uint8_t gCM7RingBufStorage[4096] = { 0 };
 static SHARED_MEM_SECTION RingBuff* gp_CM4_RingBuf         = NULL;
 static SHARED_MEM_SECTION RingBuff* gp_CM7_RingBuf         = NULL;
 static uint8_t ga_TempReadBuffer[TEMP_BUFFER_SIZE]         = { 0 };
-typedef RingBuff volatile vRingBuff_t;
+
+// typedef RingBuff volatile vRingBuff_t;
+typedef RingBuff vRingBuff_t;
 // NOLINTEND
 
 static eSTATUS_t LoggerSyncUARTTaskHandler (DefaultTask const* pTask);
@@ -51,7 +53,7 @@ static void LoggerWriteChar (void* p, char ch);
 
 static eSTATUS_t LoggerSyncUARTTaskHandler (DefaultTask const* pTask) {
     // Write the other core's ring buffer out to the UART
-    if (PRIMARY_LOGGER_IS_ME () == TRUE) {
+    if (PRIMARY_LOGGER_IS_ME () == true) {
         SyncTaskUartOut const* pSyncTaskUartOut = (SyncTaskUartOut const*)pTask;
         return LoggerWriteToSinks (
         LoggerGetOtherRingBuf (),
@@ -63,7 +65,7 @@ static eSTATUS_t LoggerSyncUARTTaskHandler (DefaultTask const* pTask) {
 
 static eSTATUS_t LoggerWriteToSinks (vRingBuff_t* pRingBuf, uint32_t totalLen) {
 
-    if (RingBuffIsValid (pRingBuf) != TRUE) {
+    if (RingBuffIsValid (pRingBuf) != true) {
         return eSTATUS_FAILURE;
     }
 
@@ -111,7 +113,7 @@ static void LoggerWriteChar_Blocking (char ch) {
      *   Secondary Logger = wait until primary logger writes my ring buffer out to the uart and makes more space.
      */
     if (RingBuffGetFree (pMyRingBuf) == 0U) {
-        if (PRIMARY_LOGGER_IS_ME () == TRUE) {
+        if (PRIMARY_LOGGER_IS_ME () == true) {
             LoggerWriteToSinks (pMyRingBuf, RingBuffGetFull (pMyRingBuf));
         } else {
             int32_t timeout = 10000;
@@ -131,7 +133,7 @@ static void LoggerWriteChar_NonBlocking (char ch) {
     RingBuffWrite (pMyRingBuf, (void*)&ch, 1);
 
     if ((char)ch == '\n') {
-        if (PRIMARY_LOGGER_IS_ME () == TRUE) {
+        if (PRIMARY_LOGGER_IS_ME () == true) {
             LoggerWriteToSinks (pMyRingBuf, RingBuffGetFull (pMyRingBuf));
         } else {
             SyncNotifyTaskUartOut (RingBuffGetFull (pMyRingBuf));
@@ -190,11 +192,11 @@ eSTATUS_t LoggerInit (void) {
         return eSTATUS_FAILURE;
     }
 
-    if (PRIMARY_LOGGER_IS_ME () == TRUE) {
-        BOOL_t ok = TRUE;
+    if (PRIMARY_LOGGER_IS_ME () == true) {
+        bool ok = true;
         ok &= RingBuffInit (gp_CM4_RingBuf, gCM4RingBufStorage, sizeof (gCM4RingBufStorage));
         ok &= RingBuffInit (gp_CM7_RingBuf, gCM7RingBufStorage, sizeof (gCM7RingBufStorage));
-        if (ok != TRUE) {
+        if (ok != true) {
             return eSTATUS_FAILURE;
         }
     }
@@ -206,14 +208,14 @@ static SHARED_MEM_SECTION SerialDebug_t g_SerialDebug = { 0 };
 
 static void SerialDebugSink (uint8_t const* pData, uint32_t len) {
 
-    if (UARTIsValid (g_SerialDebug.busId) == TRUE) {
+    if (UARTIsValid (g_SerialDebug.busId) == true) {
         UARTWrite_Blocking (g_SerialDebug.busId, pData, len);
     }
 }
 
 eSTATUS_t SerialDebugInit (SerialDebugInitConf_t conf, DeviceBoardConf_t devBoardConf) {
 
-    if (g_SerialDebug.isInitialized == TRUE) {
+    if (g_SerialDebug.isInitialized == true) {
         return eSTATUS_FAILURE;
     }
 
@@ -228,7 +230,7 @@ eSTATUS_t SerialDebugInit (SerialDebugInitConf_t conf, DeviceBoardConf_t devBoar
     g_SerialDebug.busId    = busId;
     g_SerialDebug.deviceId = deviceId;
 
-    if (BUS_ID_IS_UART (busId) == TRUE) {
+    if (BUS_ID_IS_UART (busId) == true) {
 
         UARTBoardConf_t* pUARTBoardConf = (UARTBoardConf_t*)devBoardConf.pBusBoardConf;
         uint32_t baudRate = pUARTBoardConf->baudRate;
@@ -243,7 +245,7 @@ eSTATUS_t SerialDebugInit (SerialDebugInitConf_t conf, DeviceBoardConf_t devBoar
         goto error;
     }
 
-    g_SerialDebug.isInitialized = TRUE;
+    g_SerialDebug.isInitialized = true;
     return eSTATUS_SUCCESS;
 error:
     memset (&g_SerialDebug, 0, sizeof (g_SerialDebug));

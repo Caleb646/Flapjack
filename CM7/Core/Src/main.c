@@ -22,6 +22,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -33,7 +34,9 @@
 #include "common.h"
 #include "conf/board.h"
 #include "conf/conf.h"
+#include "conf/ids.h"
 #include "control.h"
+#include "device/device.h"
 #include "device/imu/imu.h"
 #include "log/logger.h"
 #include "mc/actuators.h"
@@ -41,7 +44,6 @@
 #include "peripheral/dma.h"
 #include "peripheral/gpio.h"
 #include "sync.h"
-
 
 #ifndef HSEM_ID_0
 #define HSEM_ID_0 (0U) /* HW semaphore 0*/
@@ -120,33 +122,33 @@ eSTATUS_t ProcessVelocityChange (DefaultCommand cmd) {
     return eSTATUS_SUCCESS;
 }
 
-BOOL_t StateTransitionFromStopped2Running (FCState curState) {
+bool StateTransitionFromStopped2Running (FCState curState) {
 
-    BOOL_t doTransition = TRUE;
+    bool doTransition = true;
     if (ActuatorsStart () != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start Actuators");
-        doTransition = FALSE;
+        doTransition = false;
     }
 
     if (IMUStart (IMUGetActiveDevice ()) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start IMU");
-        doTransition = FALSE;
+        doTransition = false;
     }
 
     return doTransition;
 }
 
-BOOL_t StateTransitionFromRunning2Stopped (FCState curState) {
+bool StateTransitionFromRunning2Stopped (FCState curState) {
 
-    BOOL_t doTransition = TRUE;
+    bool doTransition = true;
     if (IMUStop (IMUGetActiveDevice ()) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to stop IMU");
-        doTransition = FALSE;
+        doTransition = false;
     }
 
     if (ActuatorsStop () != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to stop Actuators");
-        doTransition = FALSE;
+        doTransition = false;
     }
 
     return doTransition;
@@ -309,6 +311,7 @@ int main (void) {
         asm volatile ("NOP");
     }
 
+    eSTATUS_t status = eSTATUS_SUCCESS;
     if (SyncInit () != eSTATUS_SUCCESS) {
         CriticalErrorHandler ();
     }
@@ -317,49 +320,12 @@ int main (void) {
         CriticalErrorHandler ();
     }
 
-    if (BoardConfInit () != TRUE) {
+    if (BoardConfInit () != true) {
         CriticalErrorHandler ();
     }
 
-    eSTATUS_t status        = eSTATUS_SUCCESS;
-    BoardConf_t* pBoardConf = BoardConfGet ();
-    /*
-     * Setup serial debug first so errors can be logged.
-     * TODO: flash maybe should be setup first as well. So if serial debug
-     * is not available logs can be written to flash.
-     */
-    DeviceBoardConf_t* pSerialDebugConf =
-    BoardConfGetDeviceById (eSERIAL_DEBUG_DEVICE_ID);
-    if (pSerialDebugConf != NULL) {
-        SERIAL_DEBUG_INIT_FROM_BOARD_CONF (&status, *pSerialDebugConf);
-        if (status != eSTATUS_SUCCESS) {
-            CriticalErrorHandler ();
-        }
-    }
-
-    for (uint32_t i = 0; i < pBoardConf->numDevices; ++i) {
-
-        DeviceBoardConf_t deviceConf = pBoardConf->pDeviceBoardConfs[i];
-        // Serial debug already initialized
-        if (deviceConf.deviceId == eSERIAL_DEBUG_DEVICE_ID) {
-            continue;
-        }
-
-        switch (deviceConf.deviceId) {
-        case eIMU_DEVICE_ID:
-            IMU_INIT_FROM_BOARD_CONF (&status, deviceConf);
-            LOG_ERROR_IF (status != eSTATUS_SUCCESS, "Failed to init IMU");
-            break;
-        case eMAG_DEVICE_ID: break;            // TODO
-        case eBARO_DEVICE_ID: break;           // TODO
-        case eGPS_DEVICE_ID: break;            // TODO
-        case eFLASH_DEVICE_ID: break;          // TODO
-        case eRF_RECEIVER_DEVICE_ID: break;    // TODO
-        case eCURRENT_SENSOR_DEVICE_ID: break; // TODO
-        default:
-            LOG_ERROR ("Unknown device ID: %d", deviceConf.deviceId);
-            continue;
-        }
+    if (DeviceInitAll (BoardConfGet ()) != eSTATUS_SUCCESS) {
+        CriticalErrorHandler ();
     }
 
     if (ControlInit () != eSTATUS_SUCCESS) {
@@ -393,30 +359,6 @@ int main (void) {
     status = FilterMadgwickWarmUp (500U, 1.0F, 3.0F, &gFilterMadgwickContext, &gCurrentAttitude);
     if (status != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to warm up Madgwick Filter");
-    }
-
-    for (uint32_t i = 0; i < pBoardConf->numMotors; ++i) {
-
-        eSTATUS_t status                = eSTATUS_SUCCESS;
-        MotorBoardConf_t motorBoardConf = pBoardConf->pMotorBoardConfs[i];
-
-        ACTUATORS_INIT_MOTOR (&status, motorBoardConf);
-        if (status != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to init motor %d", motorBoardConf.motorId);
-            CriticalErrorHandler ();
-        }
-    }
-
-    for (uint32_t i = 0; i < pBoardConf->numServos; ++i) {
-
-        eSTATUS_t status                = eSTATUS_SUCCESS;
-        ServoBoardConf_t servoBoardConf = pBoardConf->pServoBoardConfs[i];
-
-        ACTUATORS_INIT_SERVO (&status, servoBoardConf);
-        if (status != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to init servo %d", servoBoardConf.servoId);
-            CriticalErrorHandler ();
-        }
     }
 
     /*

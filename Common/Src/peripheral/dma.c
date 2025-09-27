@@ -2,9 +2,11 @@
 #include "common.h"
 #include "hal.h"
 #include "log/logger.h"
+#include "mem/mem.h"
 #include <stdint.h>
 
-static DMAStream_t gDMAStreams[eDMA_STREAM_MAX] = { 0 };
+
+static SHARED_MEM_SECTION DMAStream_t gDMAStreams[eDMA_STREAM_MAX] = { 0 };
 
 /**
  * @brief This function handles DMA1 stream0 global interrupt.
@@ -58,14 +60,14 @@ void DMA1_Stream6_IRQHandler (void) {
 static eDMA_STREAM_ID_t DMAGetFreeStreamId (void) {
 
     for (uint32_t i = 0U; i < eDMA_STREAM_MAX; ++i) {
-        if (gDMAStreams[i].isInUse == FALSE) {
+        if (gDMAStreams[i].isInUse == false) {
             return i;
         }
     }
     return eDMA_STREAM_MAX;
 }
 
-static DMA_TypeDef* DMAGetInstanceById (eDMA_STREAM_ID_t id) {
+static DMA_Stream_TypeDef* DMAGetInstanceById (eDMA_STREAM_ID_t id) {
 
     switch (id) {
     case eDMA_STREAM_0: return DMA1_Stream0;
@@ -108,7 +110,7 @@ eSTATUS_t DMAInit (DMAInitConf_t conf, eDMA_STREAM_ID_t* pOutStreamId) {
     }
 
     DMAStream_t* pStream = DMAGetStreamById (streamId);
-    if (pStream->isInitialized == TRUE || pStream->isInUse == TRUE) {
+    if (pStream->isInitialized == true || pStream->isInUse == true) {
         LOG_ERROR ("DMA stream is already in use");
         return eSTATUS_FAILURE;
     }
@@ -150,8 +152,8 @@ eSTATUS_t DMAInit (DMAInitConf_t conf, eDMA_STREAM_ID_t* pOutStreamId) {
         goto error;
     }
 
-    pStream->isInUse       = TRUE;
-    pStream->isInitialized = TRUE;
+    pStream->isInUse       = true;
+    pStream->isInitialized = true;
     return eSTATUS_SUCCESS;
 
 error:
@@ -162,7 +164,7 @@ error:
 eSTATUS_t DMAEnableInterrupts (eDMA_STREAM_ID_t streamId, uint32_t priority) {
 
     DMAStream_t* pStream = DMAGetStreamById (streamId);
-    if (pStream == NULL || pStream->isInitialized == FALSE) {
+    if (pStream == NULL || pStream->isInitialized == false) {
         LOG_ERROR ("DMA stream is not initialized");
         return eSTATUS_FAILURE;
     }

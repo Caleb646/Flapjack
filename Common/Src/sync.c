@@ -17,7 +17,7 @@
 
 static SHARED_MEM_SECTION MailBox_t ga_MailBoxes[MAILBOX_COUNT] = { 0 };
 static task_handler_fn_t ga_Handlers[eSYNC_TASKID_MAX]          = { 0 };
-QUEUE_DEFINE_STATIC (SyncTask, DefaultTask, TASK_QUEUE_CAPACITY, TRUE);
+QUEUE_DEFINE_STATIC (SyncTask, DefaultTask, TASK_QUEUE_CAPACITY, true);
 
 #ifndef UNIT_TEST
 static eSTATUS_t SyncMailBoxWrite (uint32_t mbID, uint8_t const* pBuffer, uint32_t len);
@@ -100,7 +100,7 @@ STATIC_TESTABLE_DECL eSTATUS_t SyncMailBoxRead (uint32_t mbID, uint8_t* pBuffer,
 
 STATIC_TESTABLE_DECL task_handler_fn_t SyncGetTaskHandler (eSYNC_TASKID_t taskId) {
 
-    if (TASK_TYPE_IS_VALID (taskId) == FALSE) {
+    if (TASK_TYPE_IS_VALID (taskId) == false) {
         return NULL;
     }
     return ga_Handlers[taskId];
@@ -112,11 +112,11 @@ STATIC_TESTABLE_DECL void SyncIRQHandler (uint16_t myCPUMailBoxId) {
     eSTATUS_t status =
     SyncMailBoxRead (myCPUMailBoxId, (uint8_t*)&task, sizeof (DefaultTask));
 
-    if (TASK_IS_VALID (&task) == FALSE || status != eSTATUS_SUCCESS) {
+    if (TASK_IS_VALID (&task) == false || status != eSTATUS_SUCCESS) {
         return;
     }
 
-    if (SyncTaskQueue_IsFull () == TRUE) {
+    if (SyncTaskQueue_IsFull () == true) {
         return;
     }
     SyncTaskQueue_Push (&task);
@@ -142,7 +142,7 @@ eSTATUS_t SyncInit (void) {
 
 eSTATUS_t SyncRegisterHandler (eSYNC_TASKID_t taskID, task_handler_fn_t fn) {
 
-    if (TASK_TYPE_IS_VALID (taskID) == FALSE || fn == NULL) {
+    if (TASK_TYPE_IS_VALID (taskID) == false || fn == NULL) {
         return eSTATUS_FAILURE;
     }
     ga_Handlers[taskID] = fn;
@@ -151,13 +151,13 @@ eSTATUS_t SyncRegisterHandler (eSYNC_TASKID_t taskID, task_handler_fn_t fn) {
 
 eSTATUS_t SyncProcessTasks (void) {
 
-    if (SyncTaskQueue_IsEmpty () == TRUE) {
+    if (SyncTaskQueue_IsEmpty () == true) {
         return eSTATUS_SUCCESS;
     }
 
     DefaultTask task = { 0 };
     while (SyncTaskQueue_Pop (&task) == eSTATUS_SUCCESS) {
-        if (TASK_IS_VALID (&task) == FALSE) {
+        if (TASK_IS_VALID (&task) == false) {
             continue;
         }
         SyncTaskHeader const* pHeader = (SyncTaskHeader const*)&task;

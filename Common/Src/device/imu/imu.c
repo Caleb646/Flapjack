@@ -371,7 +371,7 @@ STATIC_TESTABLE_DECL eSTATUS_t IMUSoftReset (vIMU_t* pIMU) {
         status = IMUWriteReg (pIMU, BMI3_REG_FEATURE_CTRL, featureEngine, 2);
     }
 
-    uint8_t featEnabled = FALSE;
+    uint8_t featEnabled = false;
     if (status == eSTATUS_SUCCESS) {
         int16_t loop       = 0;
         uint8_t regData[2] = { 0 };
@@ -381,13 +381,13 @@ STATIC_TESTABLE_DECL eSTATUS_t IMUSoftReset (vIMU_t* pIMU) {
             status = IMUReadReg (pIMU, BMI3_REG_FEATURE_IO1, regData, 2);
             if (status == eSTATUS_SUCCESS) {
                 if (regData[0] & (uint16_t)BMI3_FEATURE_ENGINE_ENABLE_MASK) {
-                    featEnabled = TRUE;
+                    featEnabled = true;
                     break;
                 }
             }
         }
     }
-    if (featEnabled != TRUE) {
+    if (featEnabled != true) {
         LOG_ERROR ("Failed to enable feature engine after soft reset");
         IMULogDeviceErr (pIMU, NULL);
         return eSTATUS_FAILURE;
@@ -485,7 +485,7 @@ IMUSetConf_ (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf, 
         avgNum = BMI3_SET_BITS (pRegData[1], BMI3_ACC_AVG_NUM, pAConf->avg);
         accMode = BMI3_SET_BITS (pRegData[1], BMI3_ACC_MODE, pAConf->mode);
 
-        if (altConfFlag == TRUE) {
+        if (altConfFlag == true) {
             regAddr = BMI3_REG_ALT_ACC_CONF;
             odr = BMI3_SET_BIT_POS0 (pRegData[0], BMI3_ALT_ACC_ODR, pAConf->odr);
             avgNum =
@@ -501,7 +501,7 @@ IMUSetConf_ (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf, 
             // LOG_ERROR ("Failed to configure vIMU_t accelerometer");
             return status;
         }
-        if (status == eSTATUS_SUCCESS && altConfFlag == FALSE) {
+        if (status == eSTATUS_SUCCESS && altConfFlag == false) {
             pIMU->aconf = *pAConf;
         }
     }
@@ -522,7 +522,7 @@ IMUSetConf_ (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf, 
         avgNum = BMI3_SET_BITS (pRegData[1], BMI3_GYR_AVG_NUM, pGConf->avg);
         accMode = BMI3_SET_BITS (pRegData[1], BMI3_GYR_MODE, pGConf->mode);
 
-        if (altConfFlag == TRUE) {
+        if (altConfFlag == true) {
             regAddr = BMI3_REG_ALT_GYR_CONF;
             odr = BMI3_SET_BIT_POS0 (pRegData[0], BMI3_ALT_GYR_ODR, pGConf->odr);
             avgNum =
@@ -538,7 +538,7 @@ IMUSetConf_ (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf, 
             LOG_ERROR ("Failed to configure vIMU_t gyroscope");
             return eSTATUS_FAILURE;
         }
-        if (status == eSTATUS_SUCCESS && altConfFlag == FALSE) {
+        if (status == eSTATUS_SUCCESS && altConfFlag == false) {
             pIMU->gconf = *pGConf;
         }
     }
@@ -553,7 +553,7 @@ IMUCalibrate (vIMU_t* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMU
         return (eSTATUS_t)eIMU_NULL_PTR;
     }
 
-    pResultOut->result = FALSE;
+    pResultOut->result = false;
 
     /* Save the current configs */
     IMUAccConf aconf;
@@ -652,10 +652,10 @@ IMUCalibrate (vIMU_t* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMU
         uint16_t systemState = featureStatus.systemState;
 
         if (scComplete > 0 && scResult > 0 && scErrStatus == 0x5U && systemState == 0x00) {
-            pResultOut->result = TRUE;
+            pResultOut->result = true;
             pResultOut->error  = 0;
         } else {
-            pResultOut->result = FALSE;
+            pResultOut->result = false;
             pResultOut->error  = (uint8_t)scErrStatus;
             LOG_ERROR ("vIMU_t self-calibration failed. SC Err Status [0x%X] System State [0x%X]", scErrStatus, systemState);
             IMULogDeviceErr (pIMU, NULL);
@@ -786,6 +786,7 @@ eSTATUS_t IMUInit (IMUInitConf_t conf) {
     DeviceBoardConf_t boardConf         = conf.boardConf;
     BusHeaderBoardConf_t* pBusBoardConf = boardConf.pBusBoardConf;
     EXTIBoardConf_t extiConf            = boardConf.extiBoardConf;
+    (void)extiConf;
 
     if (pBusBoardConf == NULL) {
         LOG_ERROR ("BusBoardConf is NULL");
@@ -796,7 +797,7 @@ eSTATUS_t IMUInit (IMUInitConf_t conf) {
     eBUS_ID_t busId       = pBusBoardConf->busId;
     eDEVICE_ID_t deviceId = boardConf.deviceId;
 
-    if (BUS_ID_IS_SPI (busId) == TRUE) {
+    if (BUS_ID_IS_SPI (busId) == true) {
         SPI_INIT_FROM_BOARD_CONF (&status, boardConf, *(SPIBoardConf_t*)pBusBoardConf);
         RETURN_IF (STATUS_FAIL (status), eSTATUS_FAILURE, "Failed to init SPI bus for imu");
     } else {
@@ -861,7 +862,7 @@ eSTATUS_t IMUInit (IMUInitConf_t conf) {
             LOG_ERROR ("Failed to self calibrate vIMU_t");
             goto error;
         }
-        if (calibResult.result != TRUE ||
+        if (calibResult.result != true ||
             calibResult.error !=
             ((calibResult.error & BMI3_SET_LOW_NIBBLE) == BMI3_NO_ERROR_MASK)) {
             LOG_ERROR (
@@ -928,7 +929,7 @@ error:
 
 eSTATUS_t IMUStart (vIMU_t* pIMU) {
 
-    if (SENSOR_UPDATE_MODE_IS_INTERRUPT == TRUE) {
+    if (SENSOR_UPDATE_MODE_IS_INTERRUPT == true) {
         if (IMUEnableInterrupts (pIMU) != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to enable vIMU_t interrupts");
             return eSTATUS_FAILURE;
@@ -980,8 +981,8 @@ eSTATUS_t IMUProcessUpdatefromPolling (vIMU_t* pIMU, Vec3f* pOutputAccel, Vec3f*
     }
 
     eSTATUS_t status = eSTATUS_SUCCESS;
-    uint8_t accelRdy = FALSE;
-    uint8_t gyroRdy  = FALSE;
+    uint8_t accelRdy = false;
+    uint8_t gyroRdy  = false;
     int32_t timeout  = 1000; // 1000ms
     while (timeout-- > 0) {
         uint16_t intStatus = 0; // BMI3_REG_STATUS
@@ -991,22 +992,22 @@ eSTATUS_t IMUProcessUpdatefromPolling (vIMU_t* pIMU, Vec3f* pOutputAccel, Vec3f*
             return status;
         }
 
-        if (BIT_ISSET (intStatus, STATUS_ACCEL_DATA_RDY_BIT) == TRUE && accelRdy == FALSE) {
+        if (BIT_ISSET (intStatus, STATUS_ACCEL_DATA_RDY_BIT) == true && accelRdy == false) {
             status = IMUUpdateAccel (pIMU);
             if (status != eSTATUS_SUCCESS) {
                 LOG_ERROR ("Failed to update accelerometer data");
                 return status;
             }
-            accelRdy = TRUE;
+            accelRdy = true;
         }
 
-        if (BIT_ISSET (intStatus, STATUS_GYRO_DATA_RDY_BIT) == TRUE && gyroRdy == FALSE) {
+        if (BIT_ISSET (intStatus, STATUS_GYRO_DATA_RDY_BIT) == true && gyroRdy == false) {
             status = IMUUpdateGyro (pIMU);
             if (status != eSTATUS_SUCCESS) {
                 LOG_ERROR ("Failed to update gyroscope data");
                 return status;
             }
-            gyroRdy = TRUE;
+            gyroRdy = true;
         }
         if (accelRdy && gyroRdy) {
             break;
@@ -1124,7 +1125,7 @@ eSTATUS_t IMUSetConf (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const*
 }
 
 eSTATUS_t IMUSetAltConf (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf) {
-    return IMUSetConf_ (pIMU, pAConf, pGConf, TRUE);
+    return IMUSetConf_ (pIMU, pAConf, pGConf, true);
 }
 
 eSTATUS_t IMUCompareConfs (IMUAccConf aconf, IMUGyroConf gconf, IMUAccConf aconf2, IMUGyroConf gconf2) {

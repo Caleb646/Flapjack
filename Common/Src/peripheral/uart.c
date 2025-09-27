@@ -7,14 +7,14 @@
 #include <string.h>
 
 #define IS_BUS_VALID(pBUS) \
-    ((pBUS) != NULL && (pBUS)->isInitialized == TRUE)
+    ((pBUS) != NULL && (pBUS)->isInitialized == true)
 
 static SHARED_MEM_SECTION UARTBus_t gBuses[eUART_BUS_ID_MAX] = { 0 };
 
 static vUARTBus_t* UARTGetBusById (eBUS_ID_t busId) {
 
     uint32_t busIndex = UART_BUS_ID2IDX (busId);
-    if (BUS_ID_IS_UART (busId) == FALSE || busIndex >= eUART_BUS_ID_MAX) {
+    if (BUS_ID_IS_UART (busId) == false || busIndex >= eUART_BUS_ID_MAX) {
         return NULL;
     }
     return &gBuses[busIndex];
@@ -59,7 +59,7 @@ void USART3_IRQHandler (void) {
 void HAL_UART_TxCpltCallback (UART_HandleTypeDef* huart) {
 
     vUARTBus_t* pBus = UARTGetBusByInstance (huart->Instance);
-    if (IS_BUS_VALID (pBus) == FALSE) {
+    if (IS_BUS_VALID (pBus) == false) {
         return;
     }
     if (pBus->txCallback != NULL) {
@@ -70,7 +70,7 @@ void HAL_UART_TxCpltCallback (UART_HandleTypeDef* huart) {
 void HAL_UART_RxCpltCallback (UART_HandleTypeDef* huart) {
 
     vUARTBus_t* pBus = UARTGetBusByInstance (huart->Instance);
-    if (IS_BUS_VALID (pBus) == FALSE) {
+    if (IS_BUS_VALID (pBus) == false) {
         return;
     }
     if (pBus->rxCallback != NULL) {
@@ -81,7 +81,7 @@ void HAL_UART_RxCpltCallback (UART_HandleTypeDef* huart) {
 void HAL_UART_ErrorCallback (UART_HandleTypeDef* huart) {
 
     vUARTBus_t* pBus = UARTGetBusByInstance (huart->Instance);
-    if (IS_BUS_VALID (pBus) == FALSE) {
+    if (IS_BUS_VALID (pBus) == false) {
         return;
     }
     if (pBus->errorCallback != NULL) {
@@ -175,12 +175,12 @@ eSTATUS_t UARTInit (UARTInitConf_t conf, UARTBoardConf_t boardConf) {
     eDEVICE_ID_t deviceId = conf.deviceId;
     uint32_t baudRate     = boardConf.baudRate;
 
-    if (BUS_ID_IS_UART (busId) == FALSE || baudRate == 0) {
+    if (BUS_ID_IS_UART (busId) == false || baudRate == 0) {
         return eSTATUS_FAILURE;
     }
 
     vUARTBus_t* pBus = UARTGetBusById (busId);
-    if (pBus->isInitialized == TRUE) {
+    if (pBus->isInitialized == true) {
         return eSTATUS_FAILURE;
     }
 
@@ -223,7 +223,7 @@ eSTATUS_t UARTInit (UARTInitConf_t conf, UARTBoardConf_t boardConf) {
         goto error;
     }
 
-    pBus->isInitialized = TRUE;
+    pBus->isInitialized = true;
     return eSTATUS_SUCCESS;
 error:
     memset (pBus, 0, sizeof (UARTBus_t));
@@ -325,6 +325,6 @@ eSTATUS_t UARTEnableInterrupts (eBUS_ID_t busId, uint32_t priority) {
     return eSTATUS_SUCCESS;
 }
 
-BOOL_t UARTIsValid (eBUS_ID_t busId) {
+bool UARTIsValid (eBUS_ID_t busId) {
     return IS_BUS_VALID (UARTGetBusById (busId));
 }

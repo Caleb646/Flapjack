@@ -62,7 +62,7 @@ static void DShotDMACompleteCallback (eTIMER_ID_t timerId) {
 static uint16_t DShotPreparePacket (uint16_t value) {
 
     uint16_t packet;
-    uint8_t dshot_telemetry = FALSE;
+    uint8_t dshot_telemetry = false;
 
     packet = (value << 1U) | (dshot_telemetry ? 1U : 0U);
 
@@ -110,7 +110,7 @@ static void DShotDMAStart (vDShot_t* pDShot) {
 
 static vDShot_t* DShotGetById (eDEVICE_ID_t deviceId) {
 
-    if (DEVICE_ID_IS_MOTOR (deviceId) == FALSE) {
+    if (DEVICE_ID_IS_MOTOR (deviceId) == false) {
         return NULL;
     }
 
@@ -307,14 +307,14 @@ eSTATUS_t DShotInit (DShotInitConf_t conf) {
     eTIMER_ID_t timerId             = timerBoardConf.timerId;
     MotorBoardConf_t motorBoardConf = conf.motorBoardConf;
     eDEVICE_ID_t motorId            = motorBoardConf.motorId;
-    BOOL_t usingDMA                 = motorBoardConf.useDMA ? TRUE : FALSE;
-    if (DEVICE_ID_IS_MOTOR (motorId) == FALSE) {
+    bool usingDMA                   = motorBoardConf.useDMA ? true : false;
+    if (DEVICE_ID_IS_MOTOR (motorId) == false) {
         LOG_ERROR ("deviceId is not motor");
         return eSTATUS_FAILURE;
     }
 
     vDShot_t* pDShot = DShotGetById (motorId);
-    if (pDShot == NULL || pDShot->isInitialized == TRUE) {
+    if (pDShot == NULL || pDShot->isInitialized == true) {
         LOG_ERROR ("Failed to get DShot handle by device ID");
         return eSTATUS_FAILURE;
     }
@@ -325,7 +325,7 @@ eSTATUS_t DShotInit (DShotInitConf_t conf) {
     pDShot->dshotType = eDSHOT_TYPE_150;
     pDShot->usingDMA  = usingDMA;
 
-    if (usingDMA == TRUE) {
+    if (usingDMA == true) {
 
         if (DShotInitDMA (pDShot, conf) != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to initialize DShot DMA");
@@ -340,7 +340,7 @@ eSTATUS_t DShotInit (DShotInitConf_t conf) {
         }
     }
 
-    pDShot->isInitialized == TRUE;
+    pDShot->isInitialized = true;
     return eSTATUS_SUCCESS;
 
 error:
@@ -369,7 +369,7 @@ eSTATUS_t DShotWrite (eDEVICE_ID_t deviceId, uint16_t motorVal) {
         return eSTATUS_FAILURE;
     }
 
-    if (pDShot->usingDMA == TRUE) {
+    if (pDShot->usingDMA == true) {
         return DShotWriteDMA (pDShot, motorVal);
     }
     return DShotWriteBitbang (pDShot, motorVal);

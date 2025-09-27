@@ -35,7 +35,11 @@
         "timer.h": "c",
         "conf.h": "c",
         "logger.h": "c",
-        "peripheral/dma.h": "c"
+        "peripheral/dma.h": "c",
+        "string_view": "c",
+        "initializer_list": "c",
+        "string": "c",
+        "stdint.h": "c"
     },
     "C_Cpp.codeAnalysis.clangTidy.enabled": true,
     // "C_Cpp.codeAnalysis.clangTidy.path": "${Env:CLANG_TIDY_PATH}",

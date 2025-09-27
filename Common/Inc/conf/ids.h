@@ -27,10 +27,10 @@ enum {
 // #define GPIO_CHANNELID_NBITS    ((__builtin_ctz (eGPIO_PINID_MAX)))
 #define GPIO_CHANNELID_NBITS (4U)
 
-// NOTE: because the port ids are not powers of two they
-// cannot be or'ed together.
-// Also the first port id starts at 1 so 0 can be used
-// to indicate an invalid port.
+/* NOTE: because the port ids are not powers of two they
+ cannot be or'ed together.
+ Also the first port id starts at 1 so 0 can be used
+ to indicate an invalid port. */
 typedef uint8_t eGPIO_PORTID_t;
 enum {
     eGPIO_PORTID_A = 1U * (eGPIO_PINID_MAX * 1U),
@@ -55,8 +55,7 @@ enum {
     eGPIO_ID_NULL = 0U,
 };
 
-// #define GPIO_ID2PORTIDX(id) \
-//     (((id) >> 15U) > 0U ? __builtin_ctz ((id) >> 15U) : 0U)
+// #define GPIO_ID2PORTIDX(id) (((id) >> 15U) > 0U ? __builtin_ctz ((id) >> 15U) : 0U)
 #define GPIO_ID2PORTIDX(id)     (((id) >> GPIO_CHANNELID_NBITS) - 1U)
 #define GPIO_ID2PINIDX(id)      ((id) & (~(eGPIO_PINID_MAX - 1U)))
 #define GPIO_ID_MAKE(port, pin) ((port) | (pin))

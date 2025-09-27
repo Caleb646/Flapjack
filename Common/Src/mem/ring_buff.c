@@ -103,7 +103,7 @@ uint8_t RingBuffInit (RINGBUFF_VOLATILE RingBuff* pBuff, void* pData, size_t siz
  * \param[in]       buff: Buffer handle
  * \return          `1` if ready, `0` otherwise
  */
-BOOL_t RingBuffIsValid (RINGBUFF_VOLATILE RingBuff* buff) {
+bool RingBuffIsValid (RINGBUFF_VOLATILE RingBuff* buff) {
     return BUF_IS_VALID (buff);
 }
 

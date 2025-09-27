@@ -15,7 +15,7 @@
 #define UART_RECV_BUFFER_SIZE  (COMMAND_TOTAL_SIZE) // + 2U)
 
 /* Consumer global variables */
-QUEUE_DEFINE_STATIC (RawCommand, DefaultCommand, COMMAND_QUEUE_CAPACITY, TRUE);
+QUEUE_DEFINE_STATIC (RawCommand, DefaultCommand, COMMAND_QUEUE_CAPACITY, true);
 // A local only buffer to store raw commands during the interrupt handler
 static uint8_t ga_UartInterruptBuffer[UART_RECV_BUFFER_SIZE] = { 0 };
 
@@ -39,8 +39,8 @@ static eSTATUS_t ControlProcessOpStateChange (DefaultCommand cmd);
 static eSTATUS_t ControlProcessFlightModeChange (DefaultCommand cmd);
 static eSTATUS_t ControlProcessVelocityChange (DefaultCommand cmd);
 static eSTATUS_t ControlProcessPIDChange (DefaultCommand cmd);
-static BOOL_t ControlGetNewCmd (DefaultCommand* pOutCmd);
-static BOOL_t IsCmdTypeValid (eCMD_t cmdType);
+static bool ControlGetNewCmd (DefaultCommand* pOutCmd);
+static bool IsCmdTypeValid (eCMD_t cmdType);
 
 #endif /* UNIT_TEST */
 
@@ -50,7 +50,7 @@ static BOOL_t IsCmdTypeValid (eCMD_t cmdType);
  */
 void ControlRecvCallBack (eBUS_ID_t busId) {
 
-    if (RawCommandQueue_IsFull () == TRUE) {
+    if (RawCommandQueue_IsFull () == true) {
         return;
     }
     // LOG_INFO ("%u", ga_UartInterruptBuffer[0]);
@@ -150,12 +150,12 @@ STATIC_TESTABLE_DECL eSTATUS_t ControlProcessOpStateChange (DefaultCommand cmd) 
 
     OpStateTransitionHandler_t handler =
     gaa_OpStateTransitionHandlers[curState.opState][requestedState];
-    BOOL_t doTransition = TRUE;
+    bool doTransition = true;
     if (handler != NULL) {
         doTransition = handler (curState);
     }
 
-    if (doTransition == TRUE) {
+    if (doTransition == true) {
         curState.opState = requestedState;
         if (ControlUpdateFCState (&curState) != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to update flight controller state");
@@ -189,39 +189,39 @@ STATIC_TESTABLE_DECL eSTATUS_t ControlProcessPIDChange (DefaultCommand cmd) {
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL BOOL_t ControlGetNewCmd (DefaultCommand* pOutCmd) {
+STATIC_TESTABLE_DECL bool ControlGetNewCmd (DefaultCommand* pOutCmd) {
 
-    if (IS_PRODUCER_ME () == TRUE) {
+    if (IS_PRODUCER_ME () == true) {
         LOG_ERROR ("Should only be called for the core that is consuming");
-        return FALSE;
+        return false;
     }
 
-    if (SharedCommandQueue_IsEmpty () == TRUE) {
-        return FALSE;
+    if (SharedCommandQueue_IsEmpty () == true) {
+        return false;
     }
 
     // LOG_INFO ("%d", gpSharedCommandQueue->count);
     if (SharedCommandQueue_Pop (pOutCmd) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to dequeue command from shared queue");
-        return FALSE;
+        return false;
     }
-    return TRUE;
+    return true;
 }
 
-STATIC_TESTABLE_DECL BOOL_t IsCmdTypeValid (eCMD_t cmdType) {
+STATIC_TESTABLE_DECL bool IsCmdTypeValid (eCMD_t cmdType) {
     switch (cmdType) {
     case eCMD_TYPE_EMPTY:
     case eCMD_TYPE_CHANGE_OP_STATE:
     case eCMD_TYPE_CHANGE_FLIGHT_MODE:
     case eCMD_TYPE_CHANGE_VELOCITY:
-    case eCMD_TYPE_CHANGE_PID: return TRUE;
-    default: LOG_ERROR ("Unknown command type: %u", cmdType); return FALSE;
+    case eCMD_TYPE_CHANGE_PID: return true;
+    default: LOG_ERROR ("Unknown command type: %u", cmdType); return false;
     }
 }
 
 eSTATUS_t ControlInit (void) {
 
-    if (IS_PRODUCER_ME () == TRUE) {
+    if (IS_PRODUCER_ME () == true) {
 
         if (ControlInit_SharedCmdQueue () != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to initialize command queue");
@@ -249,7 +249,7 @@ eSTATUS_t ControlInit (void) {
 
 eSTATUS_t ControlStart (void) {
 
-    if (IS_PRODUCER_ME () == TRUE) {
+    if (IS_PRODUCER_ME () == true) {
         // if (UARTRegisterCallback (busId, eUART_CALLBACK_ID_RX, ControlRecvCallBack) !=
         //     eSTATUS_SUCCESS) {
         //     LOG_ERROR ("Failed to register UART receive callback");
@@ -271,7 +271,7 @@ eSTATUS_t ControlStart (void) {
 
 eSTATUS_t ControlProcess_RawCmds (void) {
 
-    if (IS_CONSUMER_ME () == TRUE) {
+    if (IS_CONSUMER_ME () == true) {
         LOG_ERROR ("Should only be called for the core that is producing");
         return eSTATUS_FAILURE;
     }
@@ -280,8 +280,8 @@ eSTATUS_t ControlProcess_RawCmds (void) {
      * or RF remote control is always a valid command and doesn't require parsing.
      * The buffer can simply be cast to the appriopriate command type based on the header.
      */
-    if (RawCommandQueue_IsEmpty () != TRUE) {
-        if (SharedCommandQueue_IsFull () == TRUE) {
+    if (RawCommandQueue_IsEmpty () != true) {
+        if (SharedCommandQueue_IsFull () == true) {
             LOG_ERROR ("Shared command queue is full, cannot process new raw commands");
             return eSTATUS_FAILURE;
         }
@@ -301,16 +301,16 @@ eSTATUS_t ControlProcess_RawCmds (void) {
 
 eSTATUS_t ControlProcess_Cmds (void) {
 
-    if (IS_PRODUCER_ME () == TRUE) {
+    if (IS_PRODUCER_ME () == true) {
         LOG_ERROR ("Should only be called by the core that is consuming");
         return eSTATUS_FAILURE;
     }
     DefaultCommand cmd = { 0 };
-    if (ControlGetNewCmd (&cmd) == FALSE) {
+    if (ControlGetNewCmd (&cmd) == false) {
         return eSTATUS_SUCCESS; // No new command to process
     }
     // LOG_INFO ("2");
-    if (IsCmdTypeValid (cmd.header.commandType) == FALSE) {
+    if (IsCmdTypeValid (cmd.header.commandType) == false) {
         LOG_ERROR ("Invalid command type: %d", cmd.header.commandType);
         return eSTATUS_FAILURE;
     }
@@ -352,7 +352,7 @@ OpStateTransitionHandler_t handler
 
 eSTATUS_t ControlRegister_CmdHandler (eCMD_t cmdType, CmdHandler_t handler) {
 
-    if (IsCmdTypeValid (cmdType) == FALSE) {
+    if (IsCmdTypeValid (cmdType) == false) {
         LOG_ERROR ("Invalid command type: %d", cmdType);
         return eSTATUS_FAILURE;
     }

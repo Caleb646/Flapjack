@@ -62,7 +62,7 @@ static void Queue_ExitCritical (Queue_t const* pQueue) {
 }
 
 eSTATUS_t
-QueueInit (Queue_t* pQueue, void* pBuffer, uint16_t capacity, uint16_t elementSize, BOOL_t isShared) {
+QueueInit (Queue_t* pQueue, void* pBuffer, uint16_t capacity, uint16_t elementSize, bool isShared) {
 
     if (pQueue == NULL || pBuffer == NULL || capacity == 0 || elementSize == 0) {
         return eSTATUS_FAILURE;
@@ -82,7 +82,7 @@ QueueInit (Queue_t* pQueue, void* pBuffer, uint16_t capacity, uint16_t elementSi
     pQueue->tail        = 0;
     pQueue->count       = 0;
 
-    if (isShared == TRUE) {
+    if (isShared == true) {
         if ((g_ProcessID + 1U) > 256U) {
             return eSTATUS_FAILURE;
         }
@@ -103,23 +103,23 @@ QueueInit (Queue_t* pQueue, void* pBuffer, uint16_t capacity, uint16_t elementSi
 
 //     void* pQueueBuffer =
 //     (void*)MEM_U32_ALIGN4 ((uint32_t)pMemoryStart + sizeof (Queue_t));
-//     if (QueueInit ((Queue_t*)pMemoryStart, pQueueBuffer, capacity, elementSize, TRUE) !=
+//     if (QueueInit ((Queue_t*)pMemoryStart, pQueueBuffer, capacity, elementSize, true) !=
 //         eSTATUS_SUCCESS) {
 //         return eSTATUS_FAILURE;
 //     }
 //     return eSTATUS_SUCCESS;
 // }
 
-BOOL_t QueueIsEmpty (Queue_t const* pQueue) {
+bool QueueIsEmpty (Queue_t const* pQueue) {
     if (pQueue == NULL) {
-        return TRUE; // Consider NULL queue as empty
+        return true; // Consider NULL queue as empty
     }
     return pQueue->count == 0;
 }
 
-BOOL_t QueueIsFull (Queue_t const* pQueue) {
+bool QueueIsFull (Queue_t const* pQueue) {
     if (pQueue == NULL) {
-        return TRUE; // Consider NULL queue as full
+        return true; // Consider NULL queue as full
     }
     return pQueue->count == pQueue->capacity;
 }
@@ -165,7 +165,7 @@ eSTATUS_t Queue_Push (Queue_t* pQueue, void const* pElement) {
      * pops or 1 interrupt pushes and 1 core pops. There is not a case
      * where 1 core pushes & pops while another core pushes & pops
      */
-    if (IS_QUEUE_SHARED (pQueue) == TRUE) {
+    if (IS_QUEUE_SHARED (pQueue) == true) {
         if (Queue_EnterCritical (pQueue) != eSTATUS_SUCCESS) {
             return eSTATUS_FAILURE;
         }
@@ -205,7 +205,7 @@ eSTATUS_t Queue_Pop (Queue_t* pQueue, void* pOutElement) {
      * pops or 1 interrupt pushes and 1 core pops. There is not a case
      * where 1 core pushes & pops while another core pushes & pops
      */
-    if (IS_QUEUE_SHARED (pQueue) == TRUE) {
+    if (IS_QUEUE_SHARED (pQueue) == true) {
         if (Queue_EnterCritical (pQueue) != eSTATUS_SUCCESS) {
             return eSTATUS_FAILURE;
         }

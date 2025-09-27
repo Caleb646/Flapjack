@@ -56,8 +56,8 @@ typedef struct {
     DMACallback_t halfTransferCallback;
     DMACallback_t transferErrorCallback;
     DMACallback_t abortCallback;
-    BOOL_t isInUse;
-    BOOL_t isInitialized;
+    bool isInUse;
+    bool isInitialized;
 } DMAStream_t;
 
 eSTATUS_t DMAInit (DMAInitConf_t conf, eDMA_STREAM_ID_t* pOutStreamId);

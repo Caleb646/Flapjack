@@ -655,7 +655,7 @@
 #define BMI3_ENABLE                          UINT8_C (1)
 #define BMI3_DISABLE                         UINT8_C (0)
 
-/*! To define TRUE or FALSE */
+/*! To define true or false */
 #define BMI3_TRUE                            UINT8_C (1)
 #define BMI3_FALSE                           UINT8_C (0)
 

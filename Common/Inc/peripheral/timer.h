@@ -52,8 +52,8 @@ typedef struct {
     eDEVICE_ID_t deviceId;
     eTIMER_MODE_t mode;
     uint32_t hzPeriod;
-    BOOL_t usingDMA;
-    BOOL_t doAutoPreload;
+    bool usingDMA;
+    bool doAutoPreload;
     TimerBoardConf_t timerBoardConf;
 } TimerInitConf_t;
 
@@ -65,17 +65,18 @@ typedef struct {
     eTIMER_ID_t timerId;
     TimerCallback_t errorCallback;
     TimerCallback_t pulseFinishedCallback;
-    BOOL_t usingDMA;
-    BOOL_t isChannelInitialized;
+    bool usingDMA;
+    bool isChannelInitialized;
 } TimerChannel_t;
 
 typedef struct {
     TIM_HandleTypeDef handle;
     TimerChannel_t channels[TIMER_NCHANNELS];
-    BOOL_t isTimerInitialized;
+    bool isTimerInitialized;
 } Timer_t;
 
-typedef Timer_t volatile vTimer_t;
+// typedef Timer_t volatile vTimer_t;
+typedef Timer_t vTimer_t;
 
 typedef uint8_t eTIMER_CALLBACK_ID_t;
 enum {
@@ -113,11 +114,11 @@ eTIMER_CHANNEL_STATE_t TimerGetChannelState (eTIMER_ID_t timerId);
 
 
 #define TIMER_INIT_PWM(pSTATUS, DEVICE_ID, TIMER_ID, HZ, TIM_BOARD_CONF) \
-    TIMER_INIT ((pSTATUS), (DEVICE_ID), eTIMER_MODE_PWM, (HZ), FALSE, TRUE, (TIM_BOARD_CONF))
+    TIMER_INIT ((pSTATUS), (DEVICE_ID), eTIMER_MODE_PWM, (HZ), false, true, (TIM_BOARD_CONF))
 
 
 #define TIMER_INIT_PWM_DMA(pSTATUS, DEVICE_ID, TIMER_ID, TIM_BOARD_CONF) \
-    TIMER_INIT ((pSTATUS), (DEVICE_ID), eTIMER_MODE_PWM, 0U, TRUE, TRUE, (TIM_BOARD_CONF))
+    TIMER_INIT ((pSTATUS), (DEVICE_ID), eTIMER_MODE_PWM, 0U, true, true, (TIM_BOARD_CONF))
 
 
 #endif // __PERIPHS_TIMER_H

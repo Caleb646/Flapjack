@@ -49,8 +49,8 @@ static void GPIOEnablePortClock (eGPIO_ID_t gpioId) {
 
 static void GPIOSystemInit (void) {
 
-    static BOOL_t initialized = FALSE;
-    if (initialized == TRUE) {
+    static bool initialized = false;
+    if (initialized == true) {
         return;
     }
     for (uint32_t portId = 0; portId < GPIO_NPORTS; ++portId) {
@@ -61,12 +61,12 @@ static void GPIOSystemInit (void) {
             pIO->ownerId = eDEVICE_ID_NULL;
         }
     }
-    initialized = TRUE;
+    initialized = true;
 }
 
 vIO_t* GPIOGetIOfromId (eGPIO_ID_t gpioId) {
 
-    if (GPIO_ID_IS_GPIO (gpioId) == FALSE) {
+    if (GPIO_ID_IS_GPIO (gpioId) == false) {
         return NULL;
     }
     eGPIO_PORTID_t portIdx = GPIO_ID2PORTIDX (gpioId);
@@ -94,7 +94,7 @@ eSTATUS_t GPIOInitSPI (GPIOSPIInitConf_t conf) {
 
     GPIOSystemInit ();
 
-    if (BUS_ID_IS_SPI (conf.busId) == FALSE) {
+    if (BUS_ID_IS_SPI (conf.busId) == false) {
         return eSTATUS_FAILURE;
     }
 
@@ -162,7 +162,7 @@ eSTATUS_t GPIOInitI2C (GPIOI2CInitConf_t conf) {
 
     GPIOSystemInit ();
 
-    if (BUS_ID_IS_I2C (conf.busId) == FALSE) {
+    if (BUS_ID_IS_I2C (conf.busId) == false) {
         return eSTATUS_FAILURE;
     }
 
@@ -197,19 +197,19 @@ eSTATUS_t GPIOInitI2C (GPIOI2CInitConf_t conf) {
 
 eSTATUS_t GPIOInitUART (GPIOUARTInitConf_t conf) {
 
-    // static BOOL_t initialized = FALSE;
-    // if (initialized == FALSE) {
+    // static bool initialized = false;
+    // if (initialized == false) {
     //     REG_UART (eUART_1_BUS_ID, eGPIO_PORTID_B | eGPIO_PINID_15,
     //     eGPIO_PORTID_B | eGPIO_PINID_14, GPIO_AF7_USART1); REG_UART
     //     (eUART_2_BUS_ID, eGPIO_PORTID_D | eGPIO_PINID_6, eGPIO_PORTID_D
     //     | eGPIO_PINID_5, GPIO_AF7_USART2); REG_UART (eUART_3_BUS_ID,
     //     eGPIO_PORTID_B | eGPIO_PINID_11, eGPIO_PORTID_B |
-    //     eGPIO_PINID_10, GPIO_AF7_USART3); initialized = TRUE;
+    //     eGPIO_PINID_10, GPIO_AF7_USART3); initialized = true;
     // }
 
     GPIOSystemInit ();
 
-    if (BUS_ID_IS_UART (conf.busId) == FALSE) {
+    if (BUS_ID_IS_UART (conf.busId) == false) {
         return eSTATUS_FAILURE;
     }
 

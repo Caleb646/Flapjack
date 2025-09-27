@@ -23,11 +23,12 @@ typedef struct {
     eGPIO_ID_t nss[SPI_MAX_DEVICES_PER_BUS];
     eDEVICE_ID_t deviceIds[SPI_MAX_DEVICES_PER_BUS];
     uint8_t nDevices;
-    BOOL_t isInitialized;
-    BOOL_t useDMA;
+    bool isInitialized;
+    bool useDMA;
 } SPIBus_t;
 
-typedef SPIBus_t volatile vSPIBus_t;
+// typedef SPIBus_t volatile vSPIBus_t;
+typedef SPIBus_t vSPIBus_t;
 
 eSTATUS_t SPIInit (SPIInitConf_t conf, SPIBoardConf_t boardConf);
 eSTATUS_t
