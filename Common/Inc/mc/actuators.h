@@ -33,15 +33,6 @@
     PID_CONTEXT.prevIntegral.z = 0.0F;
 
 typedef struct {
-    uint32_t channel1;
-    uint32_t channel2;
-    uint32_t channel3;
-    uint32_t channel4;
-    uint32_t channel5;
-    uint32_t channel6;
-} RadioPWMChannels;
-
-typedef struct {
     float rollP, rollI, rollD;
     float pitchP, pitchI, pitchD;
     float yawP, yawI, yawD;

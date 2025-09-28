@@ -193,16 +193,18 @@ typedef struct {
 typedef struct {
     eDEVICE_ID_t deviceId;
     eBUS_ID_t busId;
-    Vec3 volatile rawAccel;
-    Vec3 volatile rawGyro;
+    Vec3i rawAccel;
+    Vec3i rawGyro;
     IMUAccConf aconf;
     IMUGyroConf gconf;
-    // IMUAxesRemapConf axesRemapConf;
-    eSTATUS_t volatile status;
-    // uint32_t volatile msLastAccUpdateTime;
-    // uint32_t volatile msLastGyroUpdateTime;
-    uint8_t nDummyBytes;
+    eSTATUS_t status;
+    uint32_t msLastAccUpdateTime;
+    uint32_t msLastGyroUpdateTime;
+    uint8_t nSPIDummyBytes;
+    bool usingInterrupt;
     bool isInitialized;
+    bool gyroDataUpdated;
+    bool accelDataUpdated;
 } IMU_t;
 
 // typedef IMU_t volatile vIMU_t;
@@ -225,8 +227,8 @@ eSTATUS_t IMUGetDeviceErr (vIMU_t* pIMU, IMUErr* pOutErr);
 void IMULogDeviceErr (vIMU_t* pIMU, IMUErr const* pErr);
 eSTATUS_t IMUReadReg (vIMU_t const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
 eSTATUS_t IMUWriteReg (vIMU_t const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
-eSTATUS_t IMUUpdateGyro (vIMU_t* pIMU);
-eSTATUS_t IMUUpdateAccel (vIMU_t* pIMU);
+eSTATUS_t IMUUpdateRawGyro (vIMU_t* pIMU);
+eSTATUS_t IMUUpdateRawAccel (vIMU_t* pIMU);
 eSTATUS_t IMUSetAxesRemap (vIMU_t* pIMU, IMUAxesRemapConf remap);
 eSTATUS_t IMUSoftReset (vIMU_t* pIMU);
 eSTATUS_t IMUGetConf_ (vIMU_t* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf, uint8_t altConfFlag);
@@ -238,7 +240,7 @@ eSTATUS_t IMUSetupInterrupts (vIMU_t const* pIMU);
 eSTATUS_t IMUEnableInterrupts (vIMU_t const* pIMU);
 eSTATUS_t IMUDisableInterrupts (vIMU_t const* pIMU);
 eSTATUS_t
-IMUConvertRaw (IMU_ACC_RANGE aRange, Vec3 ra, IMU_GYRO_RANGE gRange, Vec3 rg, Vec3f* pAccelOut, Vec3f* pGyroOut);
+IMUConvertRaw (IMU_ACC_RANGE aRange, Vec3i ra, IMU_GYRO_RANGE gRange, Vec3i rg, Vec3f* pAccelOut, Vec3f* pGyroOut);
 
 #endif
 
@@ -246,8 +248,7 @@ eSTATUS_t IMUInit (IMUInitConf_t conf);
 eSTATUS_t IMUStart (vIMU_t* pIMU);
 eSTATUS_t IMUStop (vIMU_t* pIMU);
 eSTATUS_t IMUHandleErr (vIMU_t* pIMU);
-eSTATUS_t IMUProcessUpdatefromINT (vIMU_t* pIMU, Vec3f* pOutputAccel, Vec3f* pOutputGyro);
-eSTATUS_t IMUProcessUpdatefromPolling (vIMU_t* pIMU, Vec3f* pOutputAccel, Vec3f* pOutputGyro);
+eSTATUS_t IMUUpdate (vIMU_t* pIMU, bool forcePolling, Vec3f* pOutputAccel, Vec3f* pOutputGyro);
 eSTATUS_t IMUGetConf (vIMU_t* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf);
 eSTATUS_t IMUGetAltConf (vIMU_t* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf);
 eSTATUS_t IMUSetConf (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf);

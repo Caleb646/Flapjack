@@ -3,39 +3,70 @@
 
 #include "common.h"
 #include "device/imu/imu.h"
+#include <stdbool.h>
 #include <stdint.h>
 
-// #define DEG2RAD(degrees) ((degrees) * (3.14159265359F / 180.0F))
-// #define RAD2DEG(radians) ((radians) * (180.0F / 3.14159265359F))
+typedef uint8_t eFILTER_ID_t;
+enum {
+    eFILTER_MADGWICK_6DOF = (1U << 1U),
+    eFILTER_MADGWICK_9DOF = (1U << 2U),
+    eFILTER_LOWPASS       = (1U << 3U)
+};
+
+typedef struct {
+    float cutoffFreq;
+    float sampleRate;
+} FilterLowPassInitConf_t;
+
+typedef struct {
+
+} FilterLowPass_t;
+
+typedef struct {
+    float gyroMeasureErrorDegs;
+    float gyroMeasureDriftDegs;
+} FilterMadgwickInitConf_t;
 
 typedef struct {
     // estimated orientation quaternion elements with initial conditions
-    Vec4f est;
+    Vec4f qEst;
+    // gyro bias error
+    Vec3f gbias;
     // Gamma_t (γt)
     float beta;
-} FilterMadgwickContext;
+    float zeta;
+    // reference direction of flux in earth frame
+    float bx;
+    float bz;
+} FilterMadgwick_t;
 
-eSTATUS_t FilterMadgwick6DOF (
-FilterMadgwickContext* pContext,
-Vec3f const* pAccel,
-Vec3f const* pGyroDegs,
-float dt,
-Vec3f* pOutputAttitude
-);
+typedef struct {
+    FilterLowPassInitConf_t lowpassConf;
+    FilterMadgwickInitConf_t madgwickConf;
+} FilterInitConf_t;
 
-// eSTATUS_t
-// FilterMadgwick9DOF (FilterMadgwickContext* pContext, Vec3f accel, Vec3f gyro, Vec3f magno, float dt, Vec3f* pOutputAttitude);
-// eSTATUS_t FilterMadgwickInit (FilterMadgwickContext* pContext, float gyroMeasureErrorDegs);
+typedef struct Filter_s {
+    FilterLowPass_t lowpass;
+    FilterMadgwick_t madgwick;
+    uint32_t msLastUpdateTime;
+    bool isInitialized;
+} Filter_t;
 
-eSTATUS_t FilterMadgwickWarmUp (
-uint32_t iterations,
-float expectedGyroErrorDegs,
-float beta,
-FilterMadgwickContext* pOutContext,
-Vec3f* pOutAttitude
-);
+typedef Filter_t vFilter_t;
 
+eSTATUS_t FilterInit (FilterInitConf_t conf);
+eSTATUS_t FilterStart (vFilter_t* pFilter, Vec3f* pOutAttitude, uint32_t warmUpIterations);
+eSTATUS_t FilterStop (vFilter_t* pFilter);
 eSTATUS_t
-FilterMadgwickInit (FilterMadgwickContext* pContext, float gyroMeasureErrorDegs, Vec4f* pInitialQuaternion);
+FilterUpdate (vFilter_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyro, Vec3f const* pMag, Vec3f* pOutput);
+vFilter_t* FilterGetActiveFilter (void);
+
+#define FILTER_INIT(pSTATUS)                                        \
+    do {                                                            \
+        FilterInitConf_t conf                  = { 0 };             \
+        conf.madgwickConf.gyroMeasureErrorDegs = 5.0f;              \
+        conf.madgwickConf.gyroMeasureDriftDegs = 0.2f;              \
+        *(pSTATUS)                             = FilterInit (conf); \
+    } while (0)
 
 #endif // MOTION_CONTROL_FILTER_H

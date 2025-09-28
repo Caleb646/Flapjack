@@ -67,6 +67,17 @@
 #define RETURN_IF_NOT(cond, retval, ...) RETURN_IF (!(cond), (retval), __VA_ARGS__)
 #define RETURN_IF_NULL(ptr, retval, ...) RETURN_IF ((ptr) == NULL, (retval), __VA_ARGS__)
 
+#define GOTO_IF(cond, label, ...)          \
+    do {                                    \
+        if ((cond) == true) {               \
+            LOG_ERROR (__VA_ARGS__);        \
+            goto label;                     \
+        }                                   \
+    } while (0)
+
+#define GOTO_IF_NOT(cond, label, ...) GOTO_IF (!(cond), label, __VA_ARGS__)
+#define GOTO_IF_NULL(ptr, label, ...) GOTO_IF ((ptr) == NULL, label, __VA_ARGS__)
+
 #define LOG_DATA_TYPE_ATTITUDE  "attitude"
 #define LOG_DATA_TYPE_PID_ATTITUDE  "pid_attitude"
 #define LOG_DATA_TYPE_IMU_CALIB "imu_calib"

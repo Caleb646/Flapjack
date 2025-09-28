@@ -11,7 +11,9 @@
 // Test visibility macros
 #ifdef UNIT_TEST
 #define STATIC_TESTABLE_DECL
+#define INLINE
 #else
+#define INLINE               inline
 #define STATIC_TESTABLE_DECL static
 #endif
 
@@ -41,11 +43,14 @@
 
 typedef int8_t eSTATUS_t;
 enum {
+
+    eSTATUS_FAILURE = -126,
+    eSTATUS_BUSY    = -124,
+    eSTATUS_TIMEOUT = -123,
+
+    eSTATUS_SUB_STATUS_START,
+
     eSTATUS_SUCCESS = 0,
-    eSTATUS_BUSY    = -1,
-
-
-    eSTATUS_FAILURE = -126
 };
 
 #define STATUS_OK(STATUS)   ((STATUS) == eSTATUS_SUCCESS)
@@ -53,7 +58,11 @@ enum {
 
 typedef struct {
     int32_t x, y, z;
-} Vec3;
+} Vec3i;
+
+typedef struct {
+    uint32_t x, y, z;
+} Vec3u;
 
 typedef struct {
     union {

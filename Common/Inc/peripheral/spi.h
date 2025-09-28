@@ -43,12 +43,12 @@ SPIWriteRead_Blocking (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pT
 // eSTATUS_t
 // SPIWriteRead (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pTxData, uint8_t* pRxData, uint16_t size);
 
-#define SPI_INIT_FROM_BOARD_CONF(pSTATUS, DEVICE_BOARD_CONF, BOARD_CONF) \
-    do {                                                                 \
-        SPIInitConf_t conf = { 0 };                                      \
-        conf.deviceId      = (DEVICE_BOARD_CONF).deviceId;               \
-        conf.nssId         = (DEVICE_BOARD_CONF).nssId;                  \
-        *(pSTATUS)         = SPIInit (conf, (BOARD_CONF));               \
+#define SPI_INIT(pSTATUS, DEVICE_BOARD_CONF, BOARD_CONF)   \
+    do {                                                   \
+        SPIInitConf_t conf = { 0 };                        \
+        conf.deviceId      = (DEVICE_BOARD_CONF).deviceId; \
+        conf.nssId         = (DEVICE_BOARD_CONF).nssId;    \
+        *(pSTATUS)         = SPIInit (conf, (BOARD_CONF)); \
     } while (0)
 
 

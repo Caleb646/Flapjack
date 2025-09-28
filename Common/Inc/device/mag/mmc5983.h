@@ -58,17 +58,4 @@
 #define MMC5983_XYZ_1_SHIFT      2U
 
 
-typedef int8_t eMMC5983_ERROR_t;
-enum {
-    eMMC5983_NONE                         = -1,
-    eMMC5983_I2C_INITIALIZATION_ERROR     = -2,
-    eMMC5983_SPI_INITIALIZATION_ERROR     = -3,
-    eMMC5983_INVALID_DEVICE               = -4,
-    eMMC5983_BUS_ERROR                    = -5,
-    eMMC5983_INVALID_FILTER_BANDWIDTH     = -6,
-    eMMC5983_INVALID_CONTINUOUS_FREQUENCY = -7,
-    eMMC5983_INVALID_PERIODIC_SAMPLES     = -8
-};
-
-
 #endif // MAG_MMC5983_H

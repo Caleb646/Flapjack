@@ -6,13 +6,14 @@
 #include "log/logger.h"
 #include "mem/mem.h"
 #include "peripheral/gpio.h"
+#include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 
-#define IS_BUS_VALID(pBus) (pBus != NULL && pBus->isInitialized == true)
+#define SPI_VALID(pBus) (pBus != NULL && pBus->isInitialized == true)
 #define SPI_BEGIN(busId)                                    \
     vSPIBus_t* pBus = SPIGetBusById (busId);                \
-    if (IS_BUS_VALID (pBus) == false) {                     \
+    if (SPI_VALID (pBus) == false) {                        \
         LOG_ERROR ("Failed to get SPI bus by ID");          \
         return eSTATUS_FAILURE;                             \
     }                                                       \
