@@ -4,35 +4,31 @@
 #include "common.h"
 #include "hal.h"
 #include "log/logger.h"
+#include "mc/fcstate.h"
 #include "mem/mem.h"
 #include "peripheral/uart.h"
 
-#define COMMAND_TOTAL_SIZE  8U
-#define COMMAND_HEADER_SIZE 1U
-#define COMMAND_DATA_SIZE   (COMMAND_TOTAL_SIZE - COMMAND_HEADER_SIZE)
-
-typedef uint8_t eCMD_FLIGHT_MODE_t;
-enum { eCMD_FLIGHT_MODE_HOVER = 0, eCMD_FLIGHT_MODE_AIRPLANE };
-
-typedef uint8_t eCMD_OP_STATE_t;
+typedef uint32_t eCMD_t;
 enum {
-    eCMD_OP_STATE_STOPPED = 0,
-    eCMD_OP_STATE_RUNNING,
-    eCMD_OP_STATE_ERROR,
-
-    eNUMBER_OF_OP_STATES
+    eCMD_NULL               = 0,
+    eCMD_CHANGE_OP_STATE    = (1U << 8U),
+    eCMD_CHANGE_FLIGHT_MODE = (1U << 9U),
+    eCMD_CHANGE_VELOCITY    = (1U << 10U),
+    eCMD_CHANGE_PID         = (1U << 11U),
 };
 
-typedef uint8_t eCMD_t;
-enum {
-    eCMD_TYPE_EMPTY = 0, // represents invalid command
-    eCMD_TYPE_CHANGE_OP_STATE,
-    eCMD_TYPE_CHANGE_FLIGHT_MODE,
-    eCMD_TYPE_CHANGE_VELOCITY,
-    eCMD_TYPE_CHANGE_PID,
+typedef union {
+    uint32_t raw;
+    struct {
+        uint16_t cState;
+        uint16_t nState;
+    } opstate;
+} SubCommand_t;
 
-    eNUMBER_OF_CMD_TYPES
-};
+#define COMMAND_TOTAL_SIZE   16U
+#define COMMAND_HEADER_SIZE  (sizeof (eCMD_t))
+#define COMMAND_DATA_SIZE    (COMMAND_TOTAL_SIZE - COMMAND_HEADER_SIZE)
+#define eNUMBER_OF_CMD_TYPES 5U
 
 typedef int8_t cmd_velocity_t;
 typedef uint16_t cmd_pid_t;
@@ -62,12 +58,12 @@ typedef struct {
 
 typedef struct {
     CommandHeader header;
-    eCMD_OP_STATE_t requestedState;
+    eOP_STATE_t requestedState;
 } ChangeOpStateCmd;
 
 typedef struct {
     CommandHeader header;
-    eCMD_FLIGHT_MODE_t flightMode;
+    eFLIGHT_MODE_t flightMode;
 } ChangeFlightModeCmd;
 
 typedef struct {
@@ -107,38 +103,30 @@ typedef struct {
     } D; // 0 to 65,535
 } ChangePIDCmd;
 
-typedef struct {
-    eCMD_FLIGHT_MODE_t flightMode;
-    eCMD_OP_STATE_t opState;
-} FCState;
-
-
-// typedef FCState volatile vFCState;
-typedef FCState vFCState;
-
 STATIC_ASSERT (sizeof (DefaultCommand) <= COMMAND_TOTAL_SIZE, "");
 STATIC_ASSERT (sizeof (ChangeOpStateCmd) <= sizeof (DefaultCommand), "");
 STATIC_ASSERT (sizeof (ChangeFlightModeCmd) <= sizeof (DefaultCommand), "");
 STATIC_ASSERT (sizeof (ChangeVelocityCmd) <= sizeof (DefaultCommand), "");
 STATIC_ASSERT (sizeof (ChangePIDCmd) <= sizeof (DefaultCommand), "");
 
-typedef bool (*OpStateTransitionHandler_t) (FCState curState);
-typedef eSTATUS_t (*CmdHandler_t) (DefaultCommand cmd);
+typedef bool (*OpStateTransitionHandler_t) (vFCState_t curState);
+typedef eSTATUS_t (*CmdHandlerFn_t) (DefaultCommand cmd);
 
 eSTATUS_t ControlInit (void);
 eSTATUS_t ControlStart (void);
 eSTATUS_t ControlProcess_RawCmds (void);
 eSTATUS_t ControlProcess_Cmds (void);
-eSTATUS_t ControlRegister_OPStateTransitionHandler (
-eCMD_OP_STATE_t fromState,
-eCMD_OP_STATE_t toState,
-OpStateTransitionHandler_t handler
-);
-eSTATUS_t ControlRegister_CmdHandler (eCMD_t cmdType, CmdHandler_t handler);
-char const* ControlOpState2Char (eCMD_OP_STATE_t opState);
-char const* ControlCmdType2Char (eCMD_t commandType);
-FCState ControlGetCopyFCState (void);
-eSTATUS_t ControlUpdateFCState (vFCState const* pNewState);
-eCMD_OP_STATE_t ControlGetOpState (void);
+bool ControlRegisterHandler (eCMD_t cmdType, SubCommand_t subCmd, CmdHandlerFn_t handler);
+
+#define CONTROL_INIT(pSTATUS)        \
+    do {                             \
+        *(pSTATUS) = ControlInit (); \
+    } while (0)
+
+#define CONTROL_REG_HANDLER(CMD_TYPE, HANDLER) \
+    ControlRegisterHandler (CMD_TYPE, (SubCommand_t){ .raw = 0 }, HANDLER)
+
+#define CONTROL_REG_OPSTATE_HANDLER(CUR_STATE, NEW_STATE, HANDLER) \
+    ControlRegisterHandler (eCMD_CHANGE_OP_STATE, (SubCommand_t){ .opstate = { CUR_STATE, NEW_STATE } }, HANDLER)
 
 #endif /* CONTROL_H */

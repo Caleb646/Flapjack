@@ -1,11 +1,8 @@
 #include "common.h"
 #include "hal.h"
+#include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
-
-// Global variable to store assertion information when printf is not
-// available AssertionInfo_t AssertionInfo = { 0 };
-
 
 void CriticalErrorHandler (void) {
     __disable_irq ();
@@ -50,6 +47,7 @@ float mapf32 (float v, float fromMin, float fromMax, float toMin, float toMax) {
 }
 
 static inline void DWTInit (void) {
+
     static bool dwtEnabled = false;
     if (dwtEnabled == true) {
         return;
@@ -62,7 +60,8 @@ static inline void DWTInit (void) {
 }
 
 uint32_t GetMilliseconds (void) {
-    return pdMS_TO_TICKS (xTaskGetTickCount ());
+    // return pdMS_TO_TICKS (xTaskGetTickCount ());
+    return HAL_GetTick ();
 }
 
 uint32_t GetMicroseconds (void) {

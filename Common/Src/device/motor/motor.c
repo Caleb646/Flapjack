@@ -60,6 +60,15 @@ eSTATUS_t MotorsApply (MotorApplyFn_t fn, void* pContext) {
 
 eSTATUS_t MotorInit (MotorInitConf_t conf) {
 
+    static bool isVectorInitialized = false;
+    if (isVectorInitialized == false) {
+        if (MotorVector_Init () != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to initialize motor vector");
+            return eSTATUS_FAILURE;
+        }
+        isVectorInitialized = true;
+    }
+
     eSTATUS_t status                  = eSTATUS_SUCCESS;
     MotorBoardConf_t boardConf        = conf.boardConf;
     TimerBoardConf_t* pTimerBoardConf = boardConf.pTimerBoardConf;

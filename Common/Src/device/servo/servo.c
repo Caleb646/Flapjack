@@ -96,6 +96,15 @@ eSTATUS_t ServosApply (ServoApplyFn_t fn, void* pContext) {
 
 eSTATUS_t ServoInit (ServoInitConf_t conf) {
 
+    static bool isVectorInitialized = false;
+    if (isVectorInitialized == false) {
+        if (ServoVector_Init () != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to initialize servo vector");
+            return eSTATUS_FAILURE;
+        }
+        isVectorInitialized = true;
+    }
+
     eSTATUS_t status                  = eSTATUS_SUCCESS;
     ServoBoardConf_t boardConf        = conf.boardConf;
     TimerBoardConf_t* pTimerBoardConf = boardConf.pTimerBoardConf;

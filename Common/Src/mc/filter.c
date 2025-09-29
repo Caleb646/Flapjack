@@ -337,10 +337,15 @@ float dt
 }
 
 STATIC_TESTABLE_DECL bool
-FilterMadgwickWarmUp (FilterMadgwick_t* pFilter, uint32_t iterations, Vec3f* pOutAttitude) {
+FilterMadgwickWarmUp (FilterMadgwick_t* pFilter, vIMU_t* pIMU, vMag_t* pMag, uint32_t iterations, Vec3f* pOutAttitude) {
 
-    vIMU_t* pIMU      = IMUGetActiveDevice ();
-    vMag_t* pMag      = MagGetActiveDevice ();
+    if (pIMU == NULL) {
+        pIMU = IMUGetActiveDevice ();
+    }
+    if (pMag == NULL) {
+        pMag = MagGetActiveDevice ();
+    }
+
     float msStartTime = (float)GetMilliseconds ();
     RETURN_IF_NULL (pIMU, false, "No IMU device available");
 
@@ -435,15 +440,19 @@ Vec3f* pOutAttitude
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t FilterInit (FilterInitConf_t conf) {
+eSTATUS_t FilterInit (FilterInitConf_t conf, Filter_t* pOut) {
 
-    memset ((void*)&gFilter, 0, sizeof (vFilter_t));
+    vFilter_t* pFilter = &gFilter;
+    if (pOut != NULL) {
+        pFilter = pOut;
+    }
 
-    eSTATUS_t status = FilterMadgwickInit (conf.madgwickConf, &gFilter.madgwick);
+    memset ((void*)pFilter, 0, sizeof (vFilter_t));
+    eSTATUS_t status = FilterMadgwickInit (conf.madgwickConf, &pFilter->madgwick);
     RETURN_IF (status != eSTATUS_SUCCESS, eSTATUS_FAILURE, "Failed to init Madgwick filter");
 
-    gFilter.msLastUpdateTime = GetMilliseconds ();
-    gFilter.isInitialized    = true;
+    pFilter->msLastUpdateTime = GetMilliseconds ();
+    pFilter->isInitialized    = true;
     return eSTATUS_SUCCESS;
 }
 
@@ -451,16 +460,16 @@ eSTATUS_t FilterInit (FilterInitConf_t conf) {
  * If pOutAttitude is not NULL then the filters will warm up and return
  * the attitude in pOutAttitude.
  */
-eSTATUS_t FilterStart (vFilter_t* pFilter, Vec3f* pOutAttitude, uint32_t warmUpIterations) {
+eSTATUS_t FilterStart (vFilter_t* pFilter, uint32_t warmUpIterations, Vec3f* pOutAttitude) {
 
-    if (pFilter == NULL) {
+    if (FILTER_VALID (pFilter) == false) {
         return eSTATUS_FAILURE;
     }
 
     bool success = true;
     if (pOutAttitude != NULL) {
         success &=
-        FilterMadgwickWarmUp (&pFilter->madgwick, warmUpIterations, pOutAttitude);
+        FilterMadgwickWarmUp (&pFilter->madgwick, NULL, NULL, warmUpIterations, pOutAttitude);
     }
 
     return success ? eSTATUS_SUCCESS : eSTATUS_FAILURE;
@@ -468,7 +477,7 @@ eSTATUS_t FilterStart (vFilter_t* pFilter, Vec3f* pOutAttitude, uint32_t warmUpI
 
 eSTATUS_t FilterStop (vFilter_t* pFilter) {
 
-    if (pFilter == NULL) {
+    if (FILTER_VALID (pFilter) == false) {
         return eSTATUS_FAILURE;
     }
     return eSTATUS_SUCCESS;
@@ -477,7 +486,7 @@ eSTATUS_t FilterStop (vFilter_t* pFilter) {
 eSTATUS_t
 FilterUpdate (vFilter_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyro, Vec3f const* pMag, Vec3f* pOutput) {
 
-    if (pFilter == NULL || pOutput == NULL) {
+    if (FILTER_VALID (pFilter) == false || pOutput == NULL) {
         return eSTATUS_FAILURE;
     }
 

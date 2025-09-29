@@ -32,24 +32,6 @@
     PID_CONTEXT.prevIntegral.y = 0.0F;                        \
     PID_CONTEXT.prevIntegral.z = 0.0F;
 
-typedef struct {
-    float rollP, rollI, rollD;
-    float pitchP, pitchI, pitchD;
-    float yawP, yawI, yawD;
-    float integralLimit;
-    Vec3f prevError;
-    Vec3f prevIntegral;
-} PIDContext;
-
-eSTATUS_t PIDUpdateAttitude (
-PIDContext* pidContext,
-Vec3f currentAttitude, // degrees
-Vec3f targetAttitude,  // degrees
-Vec3f maxAttitude,     // degrees
-float dt,
-Vec3f* pOutputPIDAttitude // degrees
-);
-
 #ifdef UNIT_TEST
 eSTATUS_t
 ActuatorsMixPair (eDEVICE_ID_t servoId, eDEVICE_ID_t motorId, Vec3f pidAttitude, float tthrottle);

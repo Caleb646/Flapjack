@@ -3,10 +3,19 @@
 #include "conf/conf.h"
 #include "hal.h"
 #include "log/logger.h"
+#include "mc/fcstate.h"
 #include "mem/mem.h"
 #include "mem/queue.h"
+#include "mem/umap.h"
 #include "peripheral/uart.h"
+#include <stdbool.h>
+#include <stdint.h>
+#include <string.h>
 
+#define CMD_TYPE_VALID(CMD_TYPE) \
+    ((CMD_TYPE) != eCMD_NULL && (CMD_TYPE) < eNUMBER_OF_CMD_TYPES)
+#define OP_CMD2KEY(CMD_TYPE, cSTATE, nSTATE) \
+    ((((CMD_TYPE) * 31U) + (uint32_t)(cSTATE)) * 31U + (uint32_t)(nSTATE))
 #define PRODUCER_ID            CM4_CPUID
 #define CONSUMER_ID            CM7_CPUID
 #define IS_PRODUCER_ME()       (HAL_GetCurrentCPUID () == PRODUCER_ID)
@@ -19,28 +28,16 @@ QUEUE_DEFINE_STATIC (RawCommand, DefaultCommand, COMMAND_QUEUE_CAPACITY, true);
 // A local only buffer to store raw commands during the interrupt handler
 static uint8_t ga_UartInterruptBuffer[UART_RECV_BUFFER_SIZE] = { 0 };
 
-/* Producer global variables */
-static OpStateTransitionHandler_t
-gaa_OpStateTransitionHandlers[eNUMBER_OF_OP_STATES][eNUMBER_OF_OP_STATES] = { 0 };
-static CmdHandler_t ga_CmdHandlers[eNUMBER_OF_CMD_TYPES] = { 0 };
-
 /* Shared global variables */
 QUEUE_DEFINE_STATIC_SHARED (SharedCommand, DefaultCommand, COMMAND_QUEUE_CAPACITY);
-static SHARED_MEM_SECTION FCState g_FlightState = { 0 };
+UMAP_DEFINE_STATIC_SHARED (CmdHandlers, eCMD_t, CmdHandlerFn_t, eNUMBER_OF_CMD_TYPES * 5U);
 
 #ifndef UNIT_TEST
 
 static eSTATUS_t ControlInit_Producer (void);
-static eSTATUS_t ControlInit_SharedCmdQueue (void);
+static eSTATUS_t ControlInit_Shared (void);
 static eSTATUS_t ControlInit_Consumer (void);
-static eSTATUS_t ControlInit_FCState (vFCState* pState);
-static eSTATUS_t ControlProcessEmptyCmd (DefaultCommand cmd);
-static eSTATUS_t ControlProcessOpStateChange (DefaultCommand cmd);
-static eSTATUS_t ControlProcessFlightModeChange (DefaultCommand cmd);
-static eSTATUS_t ControlProcessVelocityChange (DefaultCommand cmd);
-static eSTATUS_t ControlProcessPIDChange (DefaultCommand cmd);
 static bool ControlGetNewCmd (DefaultCommand* pOutCmd);
-static bool IsCmdTypeValid (eCMD_t cmdType);
 
 #endif /* UNIT_TEST */
 
@@ -58,6 +55,24 @@ void ControlRecvCallBack (eBUS_ID_t busId) {
     UARTRead_IT (busId, ga_UartInterruptBuffer, sizeof (DefaultCommand));
 }
 
+STATIC_TESTABLE_DECL CmdHandlerFn_t ControlGetHandler (DefaultCommand defCmd) {
+
+    eCMD_t cmdType = defCmd.header.commandType;
+    if (cmdType == eCMD_CHANGE_OP_STATE) {
+
+        vFCState_t const* pState = FCStateGetActiveState ();
+        ChangeOpStateCmd cmd     = *(ChangeOpStateCmd*)&defCmd;
+        uint16_t cState          = pState->opState;
+        uint16_t nState          = cmd.requestedState;
+        uint32_t key             = OP_CMD2KEY (cmdType, cState, nState);
+        CmdHandlerFn_t* pHandler = CmdHandlersUMap_FindPtr (&key);
+        return pHandler ? *pHandler : NULL;
+    }
+
+    CmdHandlerFn_t* pHandler = CmdHandlersUMap_FindPtr (&cmdType);
+    return pHandler ? *pHandler : NULL;
+}
+
 STATIC_TESTABLE_DECL eSTATUS_t ControlInit_Producer (void) {
 
     if (RawCommandQueue_Init () != eSTATUS_SUCCESS) {
@@ -67,7 +82,12 @@ STATIC_TESTABLE_DECL eSTATUS_t ControlInit_Producer (void) {
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t ControlInit_SharedCmdQueue (void) {
+STATIC_TESTABLE_DECL eSTATUS_t ControlInit_Shared (void) {
+
+    if (CmdHandlersUMap_Init () == false) {
+        LOG_ERROR ("Failed to initialize command handlers map");
+        return eSTATUS_FAILURE;
+    }
 
     if (SharedCommandQueue_Init () != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize shared command queue");
@@ -77,115 +97,34 @@ STATIC_TESTABLE_DECL eSTATUS_t ControlInit_SharedCmdQueue (void) {
     return eSTATUS_SUCCESS;
 }
 
+STATIC_TESTABLE_DECL bool ControlDefaultCmdHandler (DefaultCommand cmd) {
+
+    eCMD_t cmdType = cmd.header.commandType;
+    LOG_WARN ("No handler registered for command type: %s", ControlCmdType2Char (cmdType));
+    return false;
+}
+
 STATIC_TESTABLE_DECL eSTATUS_t ControlInit_Consumer (void) {
 
-    if (ControlRegister_CmdHandler (eCMD_TYPE_EMPTY, ControlProcessEmptyCmd) != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to register empty command handler");
-        return eSTATUS_FAILURE;
-    }
+    eCMD_t cmds[]             = { eCMD_NULL,
+                                  // eCMD_CHANGE_OP_STATE, // op state changes can have multiple handlers based on current and next state
+                                  eCMD_CHANGE_FLIGHT_MODE,
+                                  eCMD_CHANGE_VELOCITY,
+                                  eCMD_CHANGE_PID };
+    CmdHandlerFn_t handlers[] = { ControlDefaultCmdHandler,
+                                  // ControlDefaultCmdHandler,
+                                  ControlDefaultCmdHandler,
+                                  ControlDefaultCmdHandler,
+                                  ControlDefaultCmdHandler };
 
-    if (ControlRegister_CmdHandler (eCMD_TYPE_CHANGE_OP_STATE, ControlProcessOpStateChange) !=
-        eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to register change op state command handler");
-        return eSTATUS_FAILURE;
-    }
+    for (size_t i = 0; i < sizeof (cmds) / sizeof (cmds[0]); i++) {
 
-    if (ControlRegister_CmdHandler (eCMD_TYPE_CHANGE_FLIGHT_MODE, ControlProcessFlightModeChange) !=
-        eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to register change flight mode command handler");
-        return eSTATUS_FAILURE;
-    }
-
-    if (ControlRegister_CmdHandler (eCMD_TYPE_CHANGE_VELOCITY, ControlProcessVelocityChange) !=
-        eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to register change velocity command handler");
-        return eSTATUS_FAILURE;
-    }
-
-    if (ControlRegister_CmdHandler (eCMD_TYPE_CHANGE_PID, ControlProcessPIDChange) !=
-        eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to register change pid command handler");
-        return eSTATUS_FAILURE;
-    }
-
-    return eSTATUS_SUCCESS;
-}
-
-STATIC_TESTABLE_DECL eSTATUS_t ControlInit_FCState (vFCState* pState) {
-
-    if (pState == NULL) {
-        LOG_ERROR ("Flight controller state pointer is NULL");
-        return eSTATUS_FAILURE;
-    }
-
-    pState->flightMode = eCMD_FLIGHT_MODE_HOVER;
-    pState->opState    = eCMD_OP_STATE_STOPPED;
-
-    return eSTATUS_SUCCESS;
-}
-
-STATIC_TESTABLE_DECL eSTATUS_t ControlProcessEmptyCmd (DefaultCommand cmd) {
-    LOG_INFO ("Received empty command");
-    return eSTATUS_SUCCESS;
-}
-
-STATIC_TESTABLE_DECL eSTATUS_t ControlProcessOpStateChange (DefaultCommand cmd) {
-
-    FCState curState = ControlGetCopyFCState ();
-    eCMD_OP_STATE_t requestedState = ((ChangeOpStateCmd*)&cmd)->requestedState;
-
-    if (curState.opState == requestedState) {
-        LOG_INFO ("Already in state: %s", ControlOpState2Char (curState.opState));
-        return eSTATUS_SUCCESS;
-    }
-
-    switch (requestedState) {
-    case eCMD_OP_STATE_STOPPED:
-    case eCMD_OP_STATE_RUNNING:
-    case eCMD_OP_STATE_ERROR: break;
-    default:
-        LOG_ERROR ("Invalid requested state: %d", requestedState);
-        return eSTATUS_FAILURE;
-    }
-
-    OpStateTransitionHandler_t handler =
-    gaa_OpStateTransitionHandlers[curState.opState][requestedState];
-    bool doTransition = true;
-    if (handler != NULL) {
-        doTransition = handler (curState);
-    }
-
-    if (doTransition == true) {
-        curState.opState = requestedState;
-        if (ControlUpdateFCState (&curState) != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to update flight controller state");
+        SubCommand_t subCmd = { .raw = 0 };
+        if (ControlRegisterHandler (cmds[i], subCmd, handlers[i]) != false) {
+            LOG_ERROR ("Failed to register command handler for command: %d", cmds[i]);
             return eSTATUS_FAILURE;
         }
-        LOG_INFO (
-        "Transitioned to state: %s",
-        ControlOpState2Char (curState.opState)
-        );
-    } else {
-        LOG_INFO ("Transition to state: %s was not performed", ControlOpState2Char (requestedState));
     }
-    return eSTATUS_SUCCESS;
-}
-
-STATIC_TESTABLE_DECL eSTATUS_t ControlProcessFlightModeChange (DefaultCommand cmd) {
-
-    LOG_INFO ("Received flight mode change command");
-    return eSTATUS_SUCCESS;
-}
-
-STATIC_TESTABLE_DECL eSTATUS_t ControlProcessVelocityChange (DefaultCommand cmd) {
-
-    LOG_INFO ("Received velocity change command");
-    return eSTATUS_SUCCESS;
-}
-
-STATIC_TESTABLE_DECL eSTATUS_t ControlProcessPIDChange (DefaultCommand cmd) {
-
-    LOG_INFO ("Received PID change command");
     return eSTATUS_SUCCESS;
 }
 
@@ -208,28 +147,12 @@ STATIC_TESTABLE_DECL bool ControlGetNewCmd (DefaultCommand* pOutCmd) {
     return true;
 }
 
-STATIC_TESTABLE_DECL bool IsCmdTypeValid (eCMD_t cmdType) {
-    switch (cmdType) {
-    case eCMD_TYPE_EMPTY:
-    case eCMD_TYPE_CHANGE_OP_STATE:
-    case eCMD_TYPE_CHANGE_FLIGHT_MODE:
-    case eCMD_TYPE_CHANGE_VELOCITY:
-    case eCMD_TYPE_CHANGE_PID: return true;
-    default: LOG_ERROR ("Unknown command type: %u", cmdType); return false;
-    }
-}
-
 eSTATUS_t ControlInit (void) {
 
     if (IS_PRODUCER_ME () == true) {
 
-        if (ControlInit_SharedCmdQueue () != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to initialize command queue");
-            return eSTATUS_FAILURE;
-        }
-
-        if (ControlInit_FCState (&g_FlightState) != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to initialize flight controller state");
+        if (ControlInit_Shared () != eSTATUS_SUCCESS) {
+            LOG_ERROR ("Failed to initialize shared");
             return eSTATUS_FAILURE;
         }
 
@@ -301,107 +224,45 @@ eSTATUS_t ControlProcess_RawCmds (void) {
 
 eSTATUS_t ControlProcess_Cmds (void) {
 
-    if (IS_PRODUCER_ME () == true) {
-        LOG_ERROR ("Should only be called by the core that is consuming");
-        return eSTATUS_FAILURE;
-    }
+    RETURN_IF (IS_CONSUMER_ME () == false, eSTATUS_FAILURE, "Should only be called by the core that is consuming");
+
     DefaultCommand cmd = { 0 };
-    if (ControlGetNewCmd (&cmd) == false) {
-        return eSTATUS_SUCCESS; // No new command to process
-    }
-    // LOG_INFO ("2");
-    if (IsCmdTypeValid (cmd.header.commandType) == false) {
-        LOG_ERROR ("Invalid command type: %d", cmd.header.commandType);
-        return eSTATUS_FAILURE;
-    }
-    // LOG_INFO ("3");
-    CmdHandler_t handler = ga_CmdHandlers[cmd.header.commandType];
-    if (handler == NULL) {
-        LOG_ERROR (
-        "No handler registered for command type: %s",
-        ControlCmdType2Char (cmd.header.commandType)
-        );
-        return eSTATUS_FAILURE;
-    }
-    // LOG_INFO ("4");
-    if (handler (cmd) != eSTATUS_SUCCESS) {
-        LOG_ERROR (
-        "Failed to process command: %s",
-        ControlCmdType2Char (cmd.header.commandType)
-        );
-        return eSTATUS_FAILURE;
-    }
+    RETURN_IF (ControlGetNewCmd (&cmd) == false, eSTATUS_FAILURE, "Failed to get new command");
 
+    eCMD_t cmdType = cmd.header.commandType;
+    RETURN_IF (CMD_TYPE_VALID (cmdType) == false, eSTATUS_FAILURE, "Invalid command type: %d", cmdType);
+
+    CmdHandlerFn_t handler = ControlGetHandler (cmd);
+    RETURN_IF_NULL (handler, eSTATUS_FAILURE, "No handler registered for command type: %d", cmdType);
+
+    RETURN_IF (handler (cmd) != eSTATUS_SUCCESS, eSTATUS_FAILURE, "Failed to process command");
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t ControlRegister_OPStateTransitionHandler (
-eCMD_OP_STATE_t fromState,
-eCMD_OP_STATE_t toState,
-OpStateTransitionHandler_t handler
-) {
+bool ControlRegisterHandler (eCMD_t cmdType, SubCommand_t subCmd, CmdHandlerFn_t handler) {
 
-    if (fromState >= eNUMBER_OF_OP_STATES || toState >= eNUMBER_OF_OP_STATES) {
-        LOG_ERROR ("Invalid state transition: %d -> %d", fromState, toState);
-        return eSTATUS_FAILURE;
+    RETURN_IF (CMD_TYPE_VALID (cmdType) == false, false, "Invalid command type: %d", cmdType);
+    RETURN_IF (handler == NULL, false, "Invalid handler for command type: %d", cmdType);
+
+    uint32_t key = 0;
+    if (cmdType == eCMD_CHANGE_OP_STATE) {
+        uint16_t cState = subCmd.opstate.cState;
+        uint16_t nState = subCmd.opstate.nState;
+        key             = OP_CMD2KEY (cmdType, cState, nState);
+    } else {
+        key = cmdType;
     }
-
-    gaa_OpStateTransitionHandlers[fromState][toState] = handler;
-    return eSTATUS_SUCCESS;
-}
-
-eSTATUS_t ControlRegister_CmdHandler (eCMD_t cmdType, CmdHandler_t handler) {
-
-    if (IsCmdTypeValid (cmdType) == false) {
-        LOG_ERROR ("Invalid command type: %d", cmdType);
-        return eSTATUS_FAILURE;
-    }
-
-    ga_CmdHandlers[cmdType] = handler;
-    return eSTATUS_SUCCESS;
-}
-
-char const* ControlOpState2Char (eCMD_OP_STATE_t opState) {
-
-    switch (opState) {
-    case eCMD_OP_STATE_STOPPED: return "[STOPPED]";
-    case eCMD_OP_STATE_RUNNING: return "[RUNNING]";
-    case eCMD_OP_STATE_ERROR: return "[ERROR]";
-    default: return "[UNKNOWN]";
-    }
+    return CmdHandlersUMap_InsertByValue (key, handler);
 }
 
 char const* ControlCmdType2Char (eCMD_t commandType) {
 
     switch (commandType) {
-    case eCMD_TYPE_EMPTY: return "[EMPTY]";
-    case eCMD_TYPE_CHANGE_OP_STATE: return "[CHANGE_OP_STATE]";
-    case eCMD_TYPE_CHANGE_FLIGHT_MODE: return "[CHANGE_FLIGHT_MODE]";
-    case eCMD_TYPE_CHANGE_VELOCITY: return "[CHANGE_VELOCITY]";
-    case eCMD_TYPE_CHANGE_PID: return "[CHANGE_PID]";
+    case eCMD_NULL: return "[NULL]";
+    case eCMD_CHANGE_OP_STATE: return "[CHANGE_OP_STATE]";
+    case eCMD_CHANGE_FLIGHT_MODE: return "[CHANGE_FLIGHT_MODE]";
+    case eCMD_CHANGE_VELOCITY: return "[CHANGE_VELOCITY]";
+    case eCMD_CHANGE_PID: return "[CHANGE_PID]";
     default: return "[UNKNOWN_COMMAND_TYPE]";
     }
-}
-
-
-FCState ControlGetCopyFCState (void) {
-    return g_FlightState;
-}
-
-eSTATUS_t ControlUpdateFCState (vFCState const* pNewState) {
-
-    if (pNewState == NULL) {
-        LOG_ERROR ("Invalid flight controller state pointer");
-        return eSTATUS_FAILURE;
-    }
-
-    // Update the flight mode and operation state
-    g_FlightState.flightMode = pNewState->flightMode;
-    g_FlightState.opState    = pNewState->opState;
-
-    return eSTATUS_SUCCESS;
-}
-
-eCMD_OP_STATE_t ControlGetOpState (void) {
-    return g_FlightState.opState;
 }

@@ -38,9 +38,12 @@
 #include "control.h"
 #include "device/device.h"
 #include "device/imu/imu.h"
+#include "device/mag/mag.h"
 #include "log/logger.h"
 #include "mc/actuators.h"
+#include "mc/fcstate.h"
 #include "mc/filter.h"
+#include "mc/pid.h"
 #include "peripheral/dma.h"
 #include "peripheral/gpio.h"
 #include "sync.h"
@@ -57,14 +60,11 @@ static void MX_SPI2_Init (void);
 
 // NOLINTBEGIN
 // IMU gIMU                                     = { 0 };
-FilterMadgwickContext gFilterMadgwickContext = { 0 };
-PIDContext gPIDContext                       = { 0 };
-TaskHandle_t gpTaskMotionControlUpdate       = { 0 };
-Vec3f gCurrentAttitude                       = { 0.0F };
-Vec3f gTargetAttitude                        = { 0.0F };
-Vec3f gMaxAttitude    = { .roll = 45.0F, .pitch = 45.0F, .yaw = 180.0F };
-float gTargetThrottle = MOTOR_STARTUP_THROTTLE;
-// NOLINTEND
+// TaskHandle_t gpTaskMotionControlUpdate = { 0 };
+// Vec3f gCurrentAttitude                 = { 0.0F };
+// Vec3f gTargetAttitude                  = { 0.0F };
+// Vec3f gMaxAttitude    = { .roll = 45.0F, .pitch = 45.0F, .yaw = 180.0F
+// }; float gTargetThrottle = MOTOR_STARTUP_THROTTLE; NOLINTEND
 
 /**
  * @brief This function handles EXTI line[9:5] interrupts. Call chain is:
@@ -84,75 +84,75 @@ float gTargetThrottle = MOTOR_STARTUP_THROTTLE;
 //     }
 // }
 
-eSTATUS_t ProcessPIDChange (DefaultCommand cmd) {
+// eSTATUS_t ProcessPIDChange (DefaultCommand cmd) {
 
-    ChangePIDCmd* pChangePIDCmd = (ChangePIDCmd*)&cmd;
-    float p = mapf32 ((float)pChangePIDCmd->P.v, 0.0F, 65535.0F, PID_MIN_VALUE, PID_MAX_VALUE);
-    float i = mapf32 ((float)pChangePIDCmd->I.v, 0.0F, 65535.0F, PID_MIN_VALUE, PID_MAX_VALUE);
-    float d = mapf32 ((float)pChangePIDCmd->D.v, 0.0F, 65535.0F, PID_MIN_VALUE, PID_MAX_VALUE);
+//     ChangePIDCmd* pChangePIDCmd = (ChangePIDCmd*)&cmd;
+//     float p = mapf32 ((float)pChangePIDCmd->P.v, 0.0F, 65535.0F, PID_MIN_VALUE, PID_MAX_VALUE);
+//     float i = mapf32 ((float)pChangePIDCmd->I.v, 0.0F, 65535.0F, PID_MIN_VALUE, PID_MAX_VALUE);
+//     float d = mapf32 ((float)pChangePIDCmd->D.v, 0.0F, 65535.0F, PID_MIN_VALUE, PID_MAX_VALUE);
 
-    if (pChangePIDCmd->pidType == eCMD_PID_ROLL) {
-        gPIDContext.rollP = p;
-        gPIDContext.rollI = i;
-        gPIDContext.rollD = d;
-    } else if (pChangePIDCmd->pidType == eCMD_PID_PITCH) {
-        gPIDContext.pitchP = p;
-        gPIDContext.pitchI = i;
-        gPIDContext.pitchD = d;
-    } else if (pChangePIDCmd->pidType == eCMD_PID_YAW) {
-        gPIDContext.yawP = p;
-        gPIDContext.yawI = i;
-        gPIDContext.yawD = d;
-    } else if (pChangePIDCmd->pidType == eCMD_PID_THROTTLE) {
-        LOG_ERROR ("Throttle PID change is not supported");
-        return eSTATUS_FAILURE;
-    } else {
-        LOG_ERROR ("Unknown PID command type: %d", pChangePIDCmd->pidType);
-        return eSTATUS_FAILURE;
-    }
-    LOG_INFO ("PID values updated");
-    return eSTATUS_SUCCESS;
-}
+//     if (pChangePIDCmd->pidType == eCMD_PID_ROLL) {
+//         gPIDContext.rollP = p;
+//         gPIDContext.rollI = i;
+//         gPIDContext.rollD = d;
+//     } else if (pChangePIDCmd->pidType == eCMD_PID_PITCH) {
+//         gPIDContext.pitchP = p;
+//         gPIDContext.pitchI = i;
+//         gPIDContext.pitchD = d;
+//     } else if (pChangePIDCmd->pidType == eCMD_PID_YAW) {
+//         gPIDContext.yawP = p;
+//         gPIDContext.yawI = i;
+//         gPIDContext.yawD = d;
+//     } else if (pChangePIDCmd->pidType == eCMD_PID_THROTTLE) {
+//         LOG_ERROR ("Throttle PID change is not supported");
+//         return eSTATUS_FAILURE;
+//     } else {
+//         LOG_ERROR ("Unknown PID command type: %d",
+//         pChangePIDCmd->pidType); return eSTATUS_FAILURE;
+//     }
+//     LOG_INFO ("PID values updated");
+//     return eSTATUS_SUCCESS;
+// }
 
-eSTATUS_t ProcessVelocityChange (DefaultCommand cmd) {
-    // TODO: need work out how I will change forward/backward/right...
-    // velocity values to a target attitude
-    ChangeVelocityCmd* pChangeVelocityCmd = (ChangeVelocityCmd*)&cmd;
-    gTargetThrottle = (float)pChangeVelocityCmd->vThrottle / 100.0F;
-    return eSTATUS_SUCCESS;
-}
+// eSTATUS_t ProcessVelocityChange (DefaultCommand cmd) {
+//     // TODO: need work out how I will change forward/backward/right...
+//     // velocity values to a target attitude
+//     ChangeVelocityCmd* pChangeVelocityCmd = (ChangeVelocityCmd*)&cmd;
+//     gTargetThrottle = (float)pChangeVelocityCmd->vThrottle / 100.0F;
+//     return eSTATUS_SUCCESS;
+// }
 
-bool StateTransitionFromStopped2Running (FCState curState) {
+// bool StateTransitionFromStopped2Running (FCState curState) {
 
-    bool doTransition = true;
-    if (ActuatorsStart () != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to start Actuators");
-        doTransition = false;
-    }
+//     bool doTransition = true;
+//     if (ActuatorsStart () != eSTATUS_SUCCESS) {
+//         LOG_ERROR ("Failed to start Actuators");
+//         doTransition = false;
+//     }
 
-    if (IMUStart (IMUGetActiveDevice ()) != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to start IMU");
-        doTransition = false;
-    }
+//     if (IMUStart (IMUGetActiveDevice ()) != eSTATUS_SUCCESS) {
+//         LOG_ERROR ("Failed to start IMU");
+//         doTransition = false;
+//     }
 
-    return doTransition;
-}
+//     return doTransition;
+// }
 
-bool StateTransitionFromRunning2Stopped (FCState curState) {
+// bool StateTransitionFromRunning2Stopped (FCState curState) {
 
-    bool doTransition = true;
-    if (IMUStop (IMUGetActiveDevice ()) != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to stop IMU");
-        doTransition = false;
-    }
+//     bool doTransition = true;
+//     if (IMUStop (IMUGetActiveDevice ()) != eSTATUS_SUCCESS) {
+//         LOG_ERROR ("Failed to stop IMU");
+//         doTransition = false;
+//     }
 
-    if (ActuatorsStop () != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to stop Actuators");
-        doTransition = false;
-    }
+//     if (ActuatorsStop () != eSTATUS_SUCCESS) {
+//         LOG_ERROR ("Failed to stop Actuators");
+//         doTransition = false;
+//     }
 
-    return doTransition;
-}
+//     return doTransition;
+// }
 
 void TaskMainLoop (void* pvParameters) {
 
@@ -160,10 +160,10 @@ void TaskMainLoop (void* pvParameters) {
     uint32_t const msLogStep = 3000;
     LOG_INFO ("Main loop started");
 
-    ControlRegister_CmdHandler (eCMD_TYPE_CHANGE_PID, ProcessPIDChange);
-    ControlRegister_CmdHandler (eCMD_TYPE_CHANGE_VELOCITY, ProcessVelocityChange);
-    ControlRegister_OPStateTransitionHandler (eCMD_OP_STATE_STOPPED, eCMD_OP_STATE_RUNNING, StateTransitionFromStopped2Running);
-    ControlRegister_OPStateTransitionHandler (eCMD_OP_STATE_RUNNING, eCMD_OP_STATE_STOPPED, StateTransitionFromRunning2Stopped);
+    // ControlRegister_CmdHandler (eCMD_TYPE_CHANGE_PID, ProcessPIDChange);
+    // ControlRegister_CmdHandler (eCMD_TYPE_CHANGE_VELOCITY, ProcessVelocityChange);
+    // ControlRegister_OPStateTransitionHandler (eCMD_OP_STATE_STOPPED, eCMD_OP_STATE_RUNNING, StateTransitionFromStopped2Running);
+    // ControlRegister_OPStateTransitionHandler (eCMD_OP_STATE_RUNNING, eCMD_OP_STATE_STOPPED, StateTransitionFromRunning2Stopped);
 
     if (ControlStart () != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start control module");
@@ -189,19 +189,23 @@ void TaskMainLoop (void* pvParameters) {
 
 void TaskMotionControlUpdate (void* pvParameters) {
 
-    float msStartTime        = (float)xTaskGetTickCount ();
-    uint32_t msLogStart      = xTaskGetTickCount ();
+    uint32_t msLogStart      = GetMilliseconds ();
     uint32_t const msLogStep = MS_PER_LOG_DATA_UPDATE;
     LOG_INFO ("Motion control update task started");
 
     while (1) {
 
-        if (ControlGetOpState () != eCMD_OP_STATE_RUNNING) {
+        vFCState_t fcState    = FCStateGetCopyOfActiveState ();
+        eOP_STATE_t opState   = fcState.opState;
+        Vec3f currentAttitude = fcState.currentAttitude;
+        Vec3f targetAttitude  = fcState.targetAttitude;
+        Vec3f maxAttitude     = fcState.maxAttitude;
+        float targetThrottle  = fcState.targetThrottle;
+        if (opState != eOP_STATE_RUNNING) {
             /*
              * Update msStartTime and msLogStart so dt does not get too large.
              */
-            msStartTime = (float)xTaskGetTickCount ();
-            msLogStart  = xTaskGetTickCount ();
+            msLogStart = GetMilliseconds ();
             // Limit state checks to 1000Hz
             vTaskDelay (pdMS_TO_TICKS (1));
             continue;
@@ -215,56 +219,55 @@ void TaskMotionControlUpdate (void* pvParameters) {
         eSTATUS_t status = eSTATUS_SUCCESS;
         Vec3f accel      = { 0.0F };
         Vec3f gyro       = { 0.0F };
-        // if (IMUProcessUpdatefromINT (&gIMU, &accel, &gyro) != eSTATUS_SUCCESS) {
-        //     LOG_ERROR ("Failed to process IMU data from interrupt");
-        //     continue;
-        // }
-        if (IMUProcessUpdatefromPolling (IMUGetActiveDevice (), &accel, &gyro) !=
-            eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to process IMU data from polling");
+        Vec3f mag        = { 0.0F };
+        status = IMUUpdate (IMUGetActiveDevice (), false, &accel, &gyro);
+        if (STATUS_FAIL (status)) {
+            LOG_ERROR ("Failed to get IMU data");
             continue;
         }
 
-        float msCurrentTime = (float)xTaskGetTickCount ();
-        // Convert milliseconds to seconds
-        float dt    = (msCurrentTime - msStartTime) / 1000.0F;
-        msStartTime = msCurrentTime;
-
-        if (dt <= 0.0F) {
-            continue;
+        Vec3f* pMag        = NULL;
+        vMag_t* pMagDevice = MagGetActiveDevice ();
+        if (pMagDevice != NULL) {
+            status = MagUpdate (pMagDevice, false, &mag);
+            if (STATUS_FAIL (status)) {
+                LOG_ERROR ("Failed to get Mag data");
+                continue;
+            }
+            pMag = &mag;
         }
 
-        status =
-        FilterMadgwick6DOF (&gFilterMadgwickContext, &accel, &gyro, dt, &gCurrentAttitude);
-        if (status != eSTATUS_SUCCESS) {
+        status = FilterUpdate (FilterGetActiveFilter (), &accel, &gyro, pMag, &currentAttitude);
+        if (STATUS_FAIL (status)) {
             LOG_ERROR ("Failed to filter IMU data with Madgwick filter");
             continue;
         }
 
         Vec3f pidAttitude = { 0.0F };
         status =
-        PIDUpdateAttitude (&gPIDContext, gCurrentAttitude, gTargetAttitude, gMaxAttitude, dt, &pidAttitude);
-        if (status != eSTATUS_SUCCESS) {
+        PIDUpdate (PIDGetActivePID (), &currentAttitude, &targetAttitude, &maxAttitude, &pidAttitude);
+        if (STATUS_FAIL (status)) {
             LOG_ERROR ("Failed to update PID attitude");
             continue;
         }
 
-        status = ActuatorsWrite (pidAttitude, gTargetThrottle);
-        if (status != eSTATUS_SUCCESS) {
+        status = ActuatorsWrite (pidAttitude, targetThrottle);
+        if (STATUS_FAIL (status)) {
             LOG_ERROR ("Failed to write actuators");
             continue;
         }
 
-        if ((xTaskGetTickCount () - msLogStart) >= msLogStep) {
-            msLogStart = xTaskGetTickCount ();
+        if ((GetMilliseconds () - msLogStart) >= msLogStep) {
+
+            msLogStart = GetMilliseconds ();
 
             Vec3f a   = accel;
             Vec3f g   = gyro;
-            Vec3f ca  = gCurrentAttitude;
+            Vec3f ca  = currentAttitude;
             Vec3f pid = pidAttitude;
-            pid.roll *= gMaxAttitude.roll;
-            pid.pitch *= gMaxAttitude.pitch;
-            pid.yaw *= gMaxAttitude.yaw;
+            pid.roll *= maxAttitude.roll;
+            pid.pitch *= maxAttitude.pitch;
+            pid.yaw *= maxAttitude.yaw;
 
             // portENTER_CRITICAL ();
             LOG_DATA_IMU_DATA (a, g);

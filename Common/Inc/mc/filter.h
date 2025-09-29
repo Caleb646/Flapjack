@@ -54,19 +54,19 @@ typedef struct Filter_s {
 
 typedef Filter_t vFilter_t;
 
-eSTATUS_t FilterInit (FilterInitConf_t conf);
-eSTATUS_t FilterStart (vFilter_t* pFilter, Vec3f* pOutAttitude, uint32_t warmUpIterations);
+eSTATUS_t FilterInit (FilterInitConf_t conf, Filter_t* pOut);
+eSTATUS_t FilterStart (vFilter_t* pFilter, uint32_t warmUpIterations, Vec3f* pOutAttitude);
 eSTATUS_t FilterStop (vFilter_t* pFilter);
 eSTATUS_t
 FilterUpdate (vFilter_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyro, Vec3f const* pMag, Vec3f* pOutput);
 vFilter_t* FilterGetActiveFilter (void);
 
-#define FILTER_INIT(pSTATUS)                                        \
-    do {                                                            \
-        FilterInitConf_t conf                  = { 0 };             \
-        conf.madgwickConf.gyroMeasureErrorDegs = 5.0f;              \
-        conf.madgwickConf.gyroMeasureDriftDegs = 0.2f;              \
-        *(pSTATUS)                             = FilterInit (conf); \
+#define FILTER_INIT(pSTATUS)                                              \
+    do {                                                                  \
+        FilterInitConf_t conf                  = { 0 };                   \
+        conf.madgwickConf.gyroMeasureErrorDegs = 5.0f;                    \
+        conf.madgwickConf.gyroMeasureDriftDegs = 0.2f;                    \
+        *(pSTATUS)                             = FilterInit (conf, NULL); \
     } while (0)
 
 #endif // MOTION_CONTROL_FILTER_H
