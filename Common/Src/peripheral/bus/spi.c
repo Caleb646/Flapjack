@@ -1,4 +1,4 @@
-#include "peripheral/spi.h"
+#include "peripheral/bus/spi.h"
 #include "common.h"
 #include "conf/board.h"
 #include "conf/conf.h"
@@ -11,21 +11,6 @@
 #include <string.h>
 
 #define SPI_VALID(pBus) (pBus != NULL && pBus->isInitialized == true)
-#define SPI_BEGIN(busId)                                    \
-    vSPIBus_t* pBus = SPIGetBusById (busId);                \
-    if (SPI_VALID (pBus) == false) {                        \
-        LOG_ERROR ("Failed to get SPI bus by ID");          \
-        return eSTATUS_FAILURE;                             \
-    }                                                       \
-    IO_t* pGPIO = SPIGetGPIOByDeviceId (pBus, deviceId);    \
-    if (pGPIO == NULL) {                                    \
-        LOG_ERROR ("Failed to get GPIO for SPI device ID"); \
-        return eSTATUS_FAILURE;                             \
-    }                                                       \
-    HAL_GPIO_WritePin (pGPIO->pPort, pGPIO->pin, GPIO_PIN_RESET)
-
-#define SPI_END() \
-    HAL_GPIO_WritePin (pGPIO->pPort, pGPIO->pin, GPIO_PIN_SET)
 
 static SHARED_MEM_SECTION SPIBus_t gSPIBusses[eSPI_BUS_ID_MAX] = { 0 };
 
@@ -41,7 +26,7 @@ static SPI_TypeDef* SPIGetInstanceById (eBUS_ID_t busId) {
     }
 }
 
-static vSPIBus_t* SPIGetBusById (eBUS_ID_t busId) {
+static INLINE vSPIBus_t* SPIGetBusById (eBUS_ID_t busId) {
 
     uint32_t busIndex = SPI_BUS_ID2IDX (busId);
     if (BUS_ID_IS_SPI (busId) == false || busIndex >= eSPI_BUS_ID_MAX) {
@@ -51,39 +36,59 @@ static vSPIBus_t* SPIGetBusById (eBUS_ID_t busId) {
     return &gSPIBusses[busIndex];
 }
 
-static IO_t* SPIGetGPIOByDeviceId (vSPIBus_t* pBus, eDEVICE_ID_t deviceId) {
+static INLINE vIO_t* SPIGetGPIOByDeviceId (vSPIBus_t* pBus, eDEVICE_ID_t deviceId) {
 
-    if (pBus == NULL) {
-        LOG_ERROR ("Failed to get SPI bus by ID");
-        return NULL;
-    }
-    for (uint32_t i = 0; i < pBus->nDevices; i++) {
-        if (pBus->deviceIds[i] == deviceId) {
-            return GPIOGetIOfromId (pBus->nss[i]);
+    for (uint32_t i = 0; i < pBus->nDevices; ++i) {
+
+        if (pBus->connectedDevices.ids[i] == deviceId) {
+            return pBus->connectedDevices.gpios[i];
         }
     }
     return NULL;
 }
 
-static bool SPIAddDevice2Bus (vSPIBus_t* pBus, eGPIO_ID_t nssId, eDEVICE_ID_t deviceId) {
+static INLINE bool
+SPIBeginTransaction (eBUS_ID_t busId, eDEVICE_ID_t deviceId, vSPIBus_t** ppOutBus) {
 
-    if (pBus == NULL) {
+    vSPIBus_t* pBus = SPIGetBusById (busId);
+    if (SPI_VALID (pBus) == false) {
         LOG_ERROR ("Failed to get SPI bus by ID");
         return false;
     }
 
-    if (pBus->nDevices >= SPI_MAX_DEVICES_PER_BUS) {
-        LOG_ERROR ("SPI bus has reached maximum number of devices");
+    if (pBus->activeTransaction.pNss != NULL) {
+        LOG_ERROR ("SPI bus is already in a transaction");
         return false;
     }
 
-    eSTATUS_t status = eSTATUS_SUCCESS;
-    GPIO_INIT_SPI_SOFTWARE_NSS_ONLY (&status, deviceId, nssId);
-
-    pBus->nss[pBus->nDevices]       = nssId;
-    pBus->deviceIds[pBus->nDevices] = deviceId;
-    pBus->nDevices++;
+    vIO_t* pGPIO = SPIGetGPIOByDeviceId (pBus, deviceId);
+    if (pGPIO == NULL) {
+        LOG_ERROR ("Failed to get GPIO for SPI device ID");
+        return false;
+    }
+    pBus->activeTransaction.pNss     = pGPIO;
+    pBus->activeTransaction.deviceId = deviceId;
+    HAL_GPIO_WritePin (pGPIO->pPort, pGPIO->pin, GPIO_PIN_RESET);
+    if (ppOutBus != NULL) {
+        *ppOutBus = pBus;
+    }
     return true;
+}
+
+static INLINE void SPIEndTransaction (vSPIBus_t* pBus) {
+
+    if (pBus->activeTransaction.pNss == NULL) {
+        LOG_ERROR ("SPI bus is not in a transaction");
+        return;
+    }
+
+    HAL_GPIO_WritePin (
+    pBus->activeTransaction.pNss->pPort,
+    pBus->activeTransaction.pNss->pin,
+    GPIO_PIN_SET
+    );
+    pBus->activeTransaction.pNss     = NULL;
+    pBus->activeTransaction.deviceId = 0;
 }
 
 #define SPI_INIT_CLOCK(pSTATUS, BUS_ID, RCC_PERIPH_CLK_SELECTION, RCC_SPI_CLK_SELECTION) \
@@ -102,8 +107,7 @@ static bool SPIAddDevice2Bus (vSPIBus_t* pBus, eGPIO_ID_t nssId, eDEVICE_ID_t de
         *(pSTATUS) = eSTATUS_SUCCESS;                                                    \
     } while (0)
 
-static eSTATUS_t
-SPIClockInit (vSPIBus_t* pBus, SPIInitConf_t conf, SPIBoardConf_t busBoardConf) {
+static eSTATUS_t SPIClockInit (vSPIBus_t* pBus, SPIInitConf_t conf) {
 
     eBUS_ID_t busId  = pBus->busId;
     eSTATUS_t status = eSTATUS_SUCCESS;
@@ -136,43 +140,91 @@ SPIClockInit (vSPIBus_t* pBus, SPIInitConf_t conf, SPIBoardConf_t busBoardConf) 
     return eSTATUS_FAILURE;
 }
 
-static eSTATUS_t
-SPIInitGPIO (vSPIBus_t* pBus, SPIInitConf_t conf, SPIBoardConf_t busBoardConf) {
+static eSTATUS_t SPIInitGPIO (vSPIBus_t* pBus, SPIInitConf_t conf) {
 
     eSTATUS_t status = eSTATUS_SUCCESS;
-    eBUS_ID_t busId  = busBoardConf.header.busId;
-    GPIO_INIT_SPI_DATA_ONLY (
-    &status,
-    busId,
-    busBoardConf.sckId,
-    busBoardConf.misoId,
-    busBoardConf.mosiId,
-    busBoardConf.gpioAlternate
-    );
-    LOG_ERROR_IF (STATUS_FAIL (status), "Failed to initialize SPI GPIO");
+
+    DeviceBoardConf_t device = conf.deviceBoardConf;
+    /* Let the first device to initialize the spi bus be the owner of all of nss gpio pins */
+    eDEVICE_ID_t firstDeviceId = device.deviceId;
+
+    SPIBoardConf_t bus                 = conf.busBoardConf.SPIBoardConf;
+    SPIDeviceMapping_t const* pDevices = bus.pConnectedDevices;
+    uint8_t nDevices                   = bus.numConnectedDevices;
+    GPIOBoardConf_t const* pSck        = bus.pSckBoardConf;
+    GPIOBoardConf_t const* pMiso       = bus.pMisoBoardConf;
+    GPIOBoardConf_t const* pMosi       = bus.pMosiBoardConf;
+
+    if (pDevices == NULL || nDevices == 0 || nDevices > SPI_MAX_DEVICES_PER_BUS) {
+        LOG_ERROR ("No or Beyond Max SPI devices configured for bus");
+        return eSTATUS_FAILURE;
+    }
+
+    if (pSck == NULL || pMiso == NULL || pMosi == NULL) {
+        LOG_ERROR ("SPI bus missing required pin configuration");
+        return eSTATUS_FAILURE;
+    }
+
+    GPIO_INIT (&status, firstDeviceId, *pSck);
+    if (STATUS_FAIL (status)) {
+        LOG_ERROR ("Failed to initialize SPI SCK GPIO");
+        return status;
+    }
+
+    GPIO_INIT (&status, firstDeviceId, *pMiso);
+    if (STATUS_FAIL (status)) {
+        LOG_ERROR ("Failed to initialize SPI MISO GPIO");
+        return status;
+    }
+
+    GPIO_INIT (&status, firstDeviceId, *pMosi);
+    if (STATUS_FAIL (status)) {
+        LOG_ERROR ("Failed to initialize SPI MOSI GPIO");
+        return status;
+    }
+
+    for (uint32_t i = 0; i < nDevices; ++i) {
+
+        eDEVICE_ID_t deviceId       = pDevices[i].deviceId;
+        GPIOBoardConf_t const* pNss = pDevices[i].pNssBoardConf;
+        if (pNss == NULL) {
+            LOG_ERROR ("SPI device missing NSS pin configuration");
+            return eSTATUS_FAILURE;
+        }
+
+        GPIO_INIT (&status, firstDeviceId, *pNss);
+        if (STATUS_FAIL (status)) {
+            LOG_ERROR_IF (STATUS_FAIL (status), "Failed to initialize SPI NSS GPIO");
+            return status;
+        }
+
+        pBus->connectedDevices.gpios[i] = GPIOGetIOfromId (pNss->id);
+        pBus->connectedDevices.ids[i]   = deviceId;
+    }
+    pBus->nDevices = nDevices;
     return status;
 }
 
-eSTATUS_t SPIInit (SPIInitConf_t conf, SPIBoardConf_t boardConf) {
+eSTATUS_t SPIInit (SPIInitConf_t conf) {
 
-    eDEVICE_ID_t deviceId = conf.deviceId;
-    eGPIO_ID_t nssId      = conf.nssId;
-    eBUS_ID_t busId       = boardConf.header.busId;
-    uint16_t speedKHz     = boardConf.speedKHz;
+    DeviceBoardConf_t device = conf.deviceBoardConf;
+    eDEVICE_ID_t deviceId    = device.deviceId;
+
+    BusBoardConf_t bus = conf.busBoardConf;
+    eBUS_ID_t busId    = bus.busId;
+    RETURN_IF (BUS_ID_IS_SPI (busId) == false, eSTATUS_FAILURE, "Invalid SPI bus ID");
+
+    SPIBoardConf_t spi = bus.SPIBoardConf;
+    uint16_t speedKHz  = spi.speedKHz;
     (void)speedKHz;
     LOG_INFO ("Initializing SPI bus %u", busId);
-
-    RETURN_IF_NOT (BUS_ID_IS_SPI (busId), eSTATUS_FAILURE, "Invalid SPI bus ID");
 
     vSPIBus_t* pBus = SPIGetBusById (busId);
     RETURN_IF_NULL (pBus, eSTATUS_FAILURE, "Failed to get SPI bus by ID");
 
+    /* Let the first device to initialize the spi bus setup all of the given nss GPIO pins. */
     if (pBus->isInitialized == true) {
-
-        if (SPIAddDevice2Bus (pBus, nssId, deviceId) != true) {
-            LOG_ERROR ("Failed to add additional device to SPI bus");
-            return eSTATUS_FAILURE;
-        }
+        LOG_WARN ("SPI bus %u is already initialized", busId);
         return eSTATUS_SUCCESS;
     }
 
@@ -205,7 +257,7 @@ eSTATUS_t SPIInit (SPIInitConf_t conf, SPIBoardConf_t boardConf) {
     pBus->handle.Init.MasterKeepIOState = SPI_MASTER_KEEP_IO_STATE_DISABLE;
     pBus->handle.Init.IOSwap            = SPI_IO_SWAP_DISABLE;
 
-    if (SPIClockInit (pBus, conf, boardConf) != eSTATUS_SUCCESS) {
+    if (SPIClockInit (pBus, conf) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize SPI clock");
         goto error;
     }
@@ -215,13 +267,8 @@ eSTATUS_t SPIInit (SPIInitConf_t conf, SPIBoardConf_t boardConf) {
         goto error;
     }
 
-    if (SPIInitGPIO (pBus, conf, boardConf) != eSTATUS_SUCCESS) {
+    if (SPIInitGPIO (pBus, conf) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize SPI GPIO data pins");
-        goto error;
-    }
-
-    if (SPIAddDevice2Bus (pBus, nssId, deviceId) != true) {
-        LOG_ERROR ("Failed to add device to SPI bus");
         goto error;
     }
 
@@ -234,40 +281,49 @@ error:
 }
 
 eSTATUS_t
-SPIRead_Blocking (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t* pData, uint16_t size) {
+SPIRead_Blocking (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size) {
 
     eSTATUS_t status = eSTATUS_SUCCESS;
-    SPI_BEGIN (busId);
+    vSPIBus_t* pBus  = NULL;
+    if (SPIBeginTransaction (busId, deviceId, &pBus) == false) {
+        return eSTATUS_FAILURE;
+    }
 
     if (HAL_SPI_Receive (&pBus->handle, pData, size, HAL_MAX_DELAY) != HAL_OK) {
         LOG_ERROR ("Failed to read data from SPI bus");
         status = eSTATUS_FAILURE;
     }
 
-    SPI_END ();
+    SPIEndTransaction (pBus);
     return status;
 }
 
 eSTATUS_t
-SPIWrite_Blocking (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pData, uint16_t size) {
+SPIWrite_Blocking (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pData, size_t size) {
 
     eSTATUS_t status = eSTATUS_SUCCESS;
-    SPI_BEGIN (busId);
+    vSPIBus_t* pBus  = NULL;
+    if (SPIBeginTransaction (busId, deviceId, &pBus) == false) {
+        return eSTATUS_FAILURE;
+    }
 
     if (HAL_SPI_Transmit (&pBus->handle, (uint8_t*)pData, size, HAL_MAX_DELAY) != HAL_OK) {
         LOG_ERROR ("Failed to write data to SPI bus");
         status = eSTATUS_FAILURE;
     }
 
-    SPI_END ();
+    SPIEndTransaction (pBus);
     return status;
 }
 
 eSTATUS_t
-SPIWriteRead_Blocking (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pTxData, uint8_t* pRxData, uint16_t size) {
+SPIWriteRead_Blocking (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pTxData, uint8_t* pRxData, size_t size) {
 
     eSTATUS_t status = eSTATUS_SUCCESS;
-    SPI_BEGIN (busId);
+    vSPIBus_t* pBus  = NULL;
+    if (SPIBeginTransaction (busId, deviceId, &pBus) == false) {
+        return eSTATUS_FAILURE;
+    }
 
     if (HAL_SPI_TransmitReceive (&pBus->handle, (uint8_t*)pTxData, pRxData, size, HAL_MAX_DELAY) !=
         HAL_OK) {
@@ -275,7 +331,7 @@ SPIWriteRead_Blocking (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pT
         status = eSTATUS_FAILURE;
     }
 
-    SPI_END ();
+    SPIEndTransaction (pBus);
     return status;
 }
 

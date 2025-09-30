@@ -39,7 +39,12 @@
         "string_view": "c",
         "initializer_list": "c",
         "string": "c",
-        "stdint.h": "c"
+        "stdint.h": "c",
+        "stdbool.h": "c",
+        "mem.h": "c",
+        "format.h": "c",
+        "bus.h": "c",
+        "stdio.h": "c"
     },
     "C_Cpp.codeAnalysis.clangTidy.enabled": true,
     // "C_Cpp.codeAnalysis.clangTidy.path": "${Env:CLANG_TIDY_PATH}",

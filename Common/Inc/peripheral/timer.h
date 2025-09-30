@@ -84,20 +84,24 @@ enum {
     eTIMER_CALLBACK_TRANSFER_ERROR,
 };
 
-eSTATUS_t TimerInit (TimerInitConf_t conf);
-eSTATUS_t TimerStart (eTIMER_ID_t timerId, uint32_t const* pData, uint16_t Length);
-eSTATUS_t TimerStop (eTIMER_ID_t timerId);
-eSTATUS_t TimerWrite (eTIMER_ID_t timerId, uint32_t usUpTime);
-eSTATUS_t TimerRegisterCallback (eTIMER_ID_t timerId, TimerCallback_t callback, eTIMER_CALLBACK_ID_t cbType);
-eSTATUS_t TimerSetRegister (eTIMER_ID_t timerId, eTIMER_SET_REG_t regType, uint32_t value);
-eTIMER_CHANNEL_STATE_t TimerGetChannelState (eTIMER_ID_t timerId);
+// clang-format off
+vTimer_t* TimerGetById (eTIMER_ID_t timerId);
+TimerChannel_t* TimerGetChannelById (eTIMER_ID_t timerId);
+eSTATUS_t TimerInit (TimerInitConf_t conf, Timer_t* pOutTimer, TimerChannel_t* pOutChannel);
+eSTATUS_t TimerStart (Timer_t* pTimer, TimerChannel_t* pChannel, uint32_t const* pData, uint16_t Length);
+eSTATUS_t TimerStop (Timer_t* pTimer, TimerChannel_t* pChannel);
+eSTATUS_t TimerWrite (Timer_t* pTimer, TimerChannel_t* pChannel, uint32_t usUpTime);
+eSTATUS_t TimerRegisterCallback (Timer_t* pTimer, TimerChannel_t* pChannel, TimerCallback_t callback, eTIMER_CALLBACK_ID_t cbType);
+eSTATUS_t TimerSetRegister (Timer_t* pTimer, TimerChannel_t* pChannel, eTIMER_SET_REG_t regType, uint32_t value);
+eTIMER_CHANNEL_STATE_t TimerGetChannelState (Timer_t* pTimer, TimerChannel_t* pChannel);
+// clang-format on
 
 #define TIMER_SET_PRESCALER(TIMER_ID, PRESCALER) \
-    TimerSetRegister ((TIMER_ID), eTIMER_SET_REG_PRESCALER, (PRESCALER))
+    TimerSetRegister (TimerGetById (TIMER_ID), TimerGetChannelById (TIMER_ID), eTIMER_SET_REG_PRESCALER, (PRESCALER))
 #define TIMER_SET_PERIOD(TIMER_ID, PERIOD) \
-    TimerSetRegister ((TIMER_ID), eTIMER_SET_REG_PERIOD, (PERIOD))
+    TimerSetRegister (TimerGetById (TIMER_ID), TimerGetChannelById (TIMER_ID), eTIMER_SET_REG_PERIOD, (PERIOD))
 #define TIMER_SET_COMPARE(TIMER_ID, COMPARE) \
-    TimerSetRegister ((TIMER_ID), eTIMER_SET_REG_COMPARE, (COMPARE))
+    TimerSetRegister (TimerGetById (TIMER_ID), TimerGetChannelById (TIMER_ID), eTIMER_SET_REG_COMPARE, (COMPARE))
 
 
 #define TIMER_INIT(pSTATUS, DEVICE_ID, MODE, HZ, USING_DMA, DO_AUTO_PRELOAD, TIM_BOARD_CONF) \
@@ -109,7 +113,7 @@ eTIMER_CHANNEL_STATE_t TimerGetChannelState (eTIMER_ID_t timerId);
         conf.usingDMA        = (USING_DMA);                                                  \
         conf.timerBoardConf  = (TIM_BOARD_CONF);                                             \
         conf.doAutoPreload   = (DO_AUTO_PRELOAD);                                            \
-        *(pSTATUS)           = TimerInit (conf);                                             \
+        *(pSTATUS)           = TimerInit (conf, NULL, NULL);                                 \
     } while (0)
 
 
@@ -119,6 +123,24 @@ eTIMER_CHANNEL_STATE_t TimerGetChannelState (eTIMER_ID_t timerId);
 
 #define TIMER_INIT_PWM_DMA(pSTATUS, DEVICE_ID, TIMER_ID, TIM_BOARD_CONF) \
     TIMER_INIT ((pSTATUS), (DEVICE_ID), eTIMER_MODE_PWM, 0U, true, true, (TIM_BOARD_CONF))
+
+#define TIMER_START(TIMER_ID, pDATA, SIZE) \
+    TimerStart (TimerGetById (TIMER_ID), TimerGetChannelById (TIMER_ID), pDATA, SIZE)
+
+#define TIMER_STOP(TIMER_ID) \
+    TimerStop (TimerGetById (TIMER_ID), TimerGetChannelById (TIMER_ID))
+
+#define TIMER_WRITE(TIMER_ID, US_UPTIME) \
+    TimerWrite (TimerGetById (TIMER_ID), TimerGetChannelById (TIMER_ID), US_UPTIME)
+
+#define TIMER_REGISTER_CALLBACK(TIMER_ID, CALLBACK, CB_TYPE) \
+    TimerRegisterCallback (TimerGetById (TIMER_ID), TimerGetChannelById (TIMER_ID), CALLBACK, CB_TYPE)
+
+#define TIMER_SET_REGISTER(TIMER_ID, REG_TYPE, VALUE) \
+    TimerSetRegister (TimerGetById (TIMER_ID), TimerGetChannelById (TIMER_ID), REG_TYPE, VALUE)
+
+#define TIMER_GET_CHANNEL_STATE(TIMER_ID) \
+    TimerGetChannelState (TimerGetById (TIMER_ID), TimerGetChannelById (TIMER_ID))
 
 
 #endif // __PERIPHS_TIMER_H

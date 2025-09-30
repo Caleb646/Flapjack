@@ -6,7 +6,6 @@
 #include "log/format.h"
 #include "mem/mem.h"
 #include "mem/ring_buff.h"
-#include "peripheral/uart.h"
 #include "sync.h"
 #include <stdint.h>
 #include <stdio.h>
@@ -201,53 +200,4 @@ eSTATUS_t LoggerInit (void) {
         }
     }
     return eSTATUS_SUCCESS;
-}
-
-
-static SHARED_MEM_SECTION SerialDebug_t g_SerialDebug = { 0 };
-
-static void SerialDebugSink (uint8_t const* pData, uint32_t len) {
-
-    if (UARTIsValid (g_SerialDebug.busId) == true) {
-        UARTWrite_Blocking (g_SerialDebug.busId, pData, len);
-    }
-}
-
-eSTATUS_t SerialDebugInit (SerialDebugInitConf_t conf, DeviceBoardConf_t devBoardConf) {
-
-    if (g_SerialDebug.isInitialized == true) {
-        return eSTATUS_FAILURE;
-    }
-
-    if (devBoardConf.pBusBoardConf == NULL) {
-        return eSTATUS_FAILURE;
-    }
-
-    eBUS_ID_t busId       = devBoardConf.pBusBoardConf->busId;
-    eDEVICE_ID_t deviceId = conf.deviceId;
-    eSTATUS_t status      = eSTATUS_SUCCESS;
-    memset (&g_SerialDebug, 0, sizeof (g_SerialDebug));
-    g_SerialDebug.busId    = busId;
-    g_SerialDebug.deviceId = deviceId;
-
-    if (BUS_ID_IS_UART (busId) == true) {
-
-        UARTBoardConf_t* pUARTBoardConf = (UARTBoardConf_t*)devBoardConf.pBusBoardConf;
-        uint32_t baudRate = pUARTBoardConf->baudRate;
-        (void)baudRate;
-        UART_INIT_FROM_BOARD_CONF (&status, devBoardConf, *pUARTBoardConf);
-        if (status != eSTATUS_SUCCESS) {
-            goto error;
-        }
-    }
-
-    if (LoggerAddSink (SerialDebugSink) != eSTATUS_SUCCESS) {
-        goto error;
-    }
-
-    g_SerialDebug.isInitialized = true;
-    return eSTATUS_SUCCESS;
-error:
-    memset (&g_SerialDebug, 0, sizeof (g_SerialDebug));
-    return eSTATUS_FAILURE;
 }

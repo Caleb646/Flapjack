@@ -1,4 +1,4 @@
-#include "peripheral/uart.h"
+#include "peripheral/bus/uart.h"
 #include "common.h"
 #include "hal.h"
 #include "mem/mem.h"
@@ -157,25 +157,44 @@ static eSTATUS_t UARTClockInit (eBUS_ID_t busId) {
     return eSTATUS_FAILURE;
 }
 
-static eSTATUS_t
-UARTInitGPIO (vUARTBus_t* pBus, UARTInitConf_t conf, UARTBoardConf_t boardConf) {
+static eSTATUS_t UARTInitGPIO (vUARTBus_t* pBus, UARTInitConf_t conf) {
 
-    eSTATUS_t status       = eSTATUS_SUCCESS;
-    eBUS_ID_t busId        = pBus->busId;
-    eGPIO_ID_t txId        = boardConf.txId;
-    eGPIO_ID_t rxId        = boardConf.rxId;
-    uint16_t gpioAlternate = boardConf.gpioAlternate;
-    GPIO_INIT_UART (&status, busId, txId, rxId, gpioAlternate);
+    eSTATUS_t status = eSTATUS_SUCCESS;
+
+    eDEVICE_ID_t deviceId               = conf.deviceBoardConf.deviceId;
+    UARTBoardConf_t boardConf           = conf.busBoardConf.UARTBoardConf;
+    GPIOBoardConf_t const* pTxBoardConf = boardConf.pTxBoardConf;
+    GPIOBoardConf_t const* pRxBoardConf = boardConf.pRxBoardConf;
+
+    if (pTxBoardConf == NULL || pRxBoardConf == NULL) {
+        return eSTATUS_FAILURE;
+    }
+
+    GPIO_INIT (&status, deviceId, *pTxBoardConf);
+    if (STATUS_FAIL (status)) {
+        return status;
+    }
+    GPIO_INIT (&status, deviceId, *pRxBoardConf);
+    if (STATUS_FAIL (status)) {
+        return status;
+    }
     return status;
 }
 
-eSTATUS_t UARTInit (UARTInitConf_t conf, UARTBoardConf_t boardConf) {
+eSTATUS_t UARTInit (UARTInitConf_t conf) {
 
-    eBUS_ID_t busId       = boardConf.header.busId;
-    eDEVICE_ID_t deviceId = conf.deviceId;
-    uint32_t baudRate     = boardConf.baudRate;
+    DeviceBoardConf_t device = conf.deviceBoardConf;
+    eDEVICE_ID_t deviceId    = device.deviceId;
 
-    if (BUS_ID_IS_UART (busId) == false || baudRate == 0) {
+    BusBoardConf_t bus = conf.busBoardConf;
+    eBUS_ID_t busId    = bus.busId;
+    if (BUS_ID_IS_UART (busId) == false) {
+        return eSTATUS_FAILURE;
+    }
+
+    UARTBoardConf_t uart = bus.UARTBoardConf;
+    uint32_t baudRate    = uart.baudRate;
+    if (baudRate == 0) {
         return eSTATUS_FAILURE;
     }
 
@@ -207,7 +226,7 @@ eSTATUS_t UARTInit (UARTInitConf_t conf, UARTBoardConf_t boardConf) {
         goto error;
     }
 
-    if (UARTInitGPIO (pBus, conf, boardConf) != eSTATUS_SUCCESS) {
+    if (UARTInitGPIO (pBus, conf) != eSTATUS_SUCCESS) {
         goto error;
     }
 
@@ -230,7 +249,8 @@ error:
     return eSTATUS_FAILURE;
 }
 
-eSTATUS_t UARTRead_Blocking (eBUS_ID_t busId, uint8_t* pData, uint32_t size) {
+eSTATUS_t
+UARTRead_Blocking (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size) {
 
     if (pData == NULL || size == 0) {
         return eSTATUS_FAILURE;
@@ -248,7 +268,8 @@ eSTATUS_t UARTRead_Blocking (eBUS_ID_t busId, uint8_t* pData, uint32_t size) {
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t UARTWrite_Blocking (eBUS_ID_t busId, uint8_t const* pData, uint32_t size) {
+eSTATUS_t
+UARTWrite_Blocking (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pData, size_t size) {
 
     if (pData == NULL || size == 0) {
         return eSTATUS_FAILURE;
@@ -266,7 +287,7 @@ eSTATUS_t UARTWrite_Blocking (eBUS_ID_t busId, uint8_t const* pData, uint32_t si
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t UARTRead_IT (eBUS_ID_t busId, uint8_t* pData, uint32_t size) {
+eSTATUS_t UARTRead_IT (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size) {
 
     if (pData == NULL || size == 0) {
         return eSTATUS_FAILURE;

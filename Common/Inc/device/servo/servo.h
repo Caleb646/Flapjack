@@ -19,7 +19,7 @@
 #define SERVO_COUNT (eSERVO_ID_MAX)
 
 typedef struct {
-    ServoBoardConf_t boardConf;
+    DeviceBoardConf_t boardConf;
 } ServoInitConf_t;
 
 typedef struct Motor_s Motor_t;
@@ -43,7 +43,7 @@ typedef struct Servo_s {
     bool isInitialized;
 } Servo_t;
 
-typedef eSTATUS_t (*ServoApplyFn_t) (Servo_t* pServo, void* pContext);
+// typedef eSTATUS_t (*ServoApplyFn_t) (Servo_t* pServo, void* pContext);
 
 #ifdef UNIT_TEST
 float ServoAngle2PWM (Servo_t* pServo, float targetAngle);
@@ -51,17 +51,17 @@ float ServoAngle2PWM (Servo_t* pServo, float targetAngle);
 
 Servo_t* ServoGetById (eDEVICE_ID_t servoId);
 Vector_t* ServoGetAll (void);
-eSTATUS_t ServosApply (ServoApplyFn_t fn, void* pContext);
-eSTATUS_t ServoInit (ServoInitConf_t conf);
+// eSTATUS_t ServosApply (ServoApplyFn_t fn, void* pContext);
+eSTATUS_t ServoInit (ServoInitConf_t conf, Servo_t* pOutServo);
 eSTATUS_t ServoStart (Servo_t* pServo);
 eSTATUS_t ServoStop (Servo_t* pServo);
 eSTATUS_t ServoWrite (Servo_t* pServo, float targetAngle);
 
-#define SERVO_INIT(pSTATUS, DEVICE_BOARD_CONF)      \
-    do {                                            \
-        ServoInitConf_t conf = { 0 };               \
-        conf.boardConf       = (DEVICE_BOARD_CONF); \
-        *(pSTATUS)           = ServoInit (conf);    \
+#define SERVO_INIT(pSTATUS, DEVICE_BOARD_CONF)         \
+    do {                                               \
+        ServoInitConf_t conf = { 0 };                  \
+        conf.boardConf       = (DEVICE_BOARD_CONF);    \
+        *(pSTATUS)           = ServoInit (conf, NULL); \
     } while (0)
 
 #define SERVO_START(SERVO_ID) ServoStart (ServoGetById (SERVO_ID))

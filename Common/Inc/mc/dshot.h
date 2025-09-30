@@ -20,8 +20,8 @@ typedef uint8_t eDSHOT_TYPE_t;
 enum { eDSHOT_TYPE_150 = 0, eDSHOT_TYPE_300 = 1, eDSHOT_TYPE_600 = 2 };
 
 typedef struct {
-    TimerBoardConf_t timerBoardConf;
-    MotorBoardConf_t motorBoardConf;
+    eDEVICE_ID_t motorId;
+    MotorDeviceConf_t motorBoardConf;
 } DShotInitConf_t;
 
 typedef struct {
@@ -46,27 +46,24 @@ typedef struct {
 // typedef DShot_t volatile vDShot_t;
 typedef DShot_t vDShot_t;
 
-/* Functions */
-eSTATUS_t DShotInit (DShotInitConf_t conf);
-eSTATUS_t DShotStart (eDEVICE_ID_t deviceId);
-eSTATUS_t DShotStop (eDEVICE_ID_t deviceId);
-eSTATUS_t DShotWrite (eDEVICE_ID_t deviceId, uint16_t motorVal);
+vDShot_t* DShotGetById (eDEVICE_ID_t deviceId);
+eSTATUS_t DShotInit (DShotInitConf_t conf, DShot_t* pOutDShot);
+eSTATUS_t DShotStart (vDShot_t* pDShot);
+eSTATUS_t DShotStop (vDShot_t* pDShot);
+eSTATUS_t DShotWrite (vDShot_t* pDShot, uint16_t motorVal);
 
-#define DSHOT_INIT_BITBANG(pSTATUS, MOTOR_BOARD_CONF, TIMER_BOARD_CONF) \
-    do {                                                                \
-        DShotInitConf_t conf = { 0 };                                   \
-        conf.timerBoardConf  = (TIMER_BOARD_CONF);                      \
-        conf.motorBoardConf  = (MOTOR_BOARD_CONF);                      \
-        *(pSTATUS)           = DShotInit (conf);                        \
+#define DSHOT_INIT(pSTATUS, DEVICE_BOARD_CONF)               \
+    do {                                                     \
+        DShotInitConf_t conf = { 0 };                        \
+        conf.motorId         = (DEVICE_BOARD_CONF).deviceId; \
+        conf.motorBoardConf  = (DEVICE_BOARD_CONF).motor;    \
+        *(pSTATUS)           = DShotInit (conf, NULL);       \
     } while (0)
 
-#define DSHOT_INIT_DMA(pSTATUS, MOTOR_BOARD_CONF, TIMER_BOARD_CONF) \
-    do {                                                            \
-        DShotInitConf_t conf = { 0 };                               \
-        conf.timerBoardConf  = (TIMER_BOARD_CONF);                  \
-        conf.motorBoardConf  = (MOTOR_BOARD_CONF);                  \
-        *(pSTATUS)           = DShotInit (conf);                    \
-    } while (0)
+#define DSHOT_START(MOTOR_ID) DShotStart (DShotGetById (MOTOR_ID))
+#define DSHOT_STOP(MOTOR_ID)  DShotStop (DShotGetById (MOTOR_ID))
+#define DSHOT_WRITE(MOTOR_ID, VALUE) \
+    DShotWrite (DShotGetById (MOTOR_ID), VALUE)
 
 
 #endif /* __MOTION_CONTROL_DSHOT_H__ */

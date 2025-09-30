@@ -35,30 +35,30 @@ Vector_t* MotorGetAll (void) {
     return MotorVector_GetVector ();
 }
 
-eSTATUS_t MotorsApply (MotorApplyFn_t fn, void* pContext) {
+// eSTATUS_t MotorsApply (MotorApplyFn_t fn, void* pContext) {
 
-    if (fn == NULL) {
-        LOG_ERROR ("Received NULL function pointer");
-        return eSTATUS_FAILURE;
-    }
+//     if (fn == NULL) {
+//         LOG_ERROR ("Received NULL function pointer");
+//         return eSTATUS_FAILURE;
+//     }
 
-    for (uint32_t i = 0; i < MotorVector_Size (); ++i) {
+//     for (uint32_t i = 0; i < MotorVector_Size (); ++i) {
 
-        Motor_t* pMotor = MotorVector_At (i);
-        if (MOTOR_VALID (pMotor) == true) {
-            if (fn (pMotor, pContext) != eSTATUS_SUCCESS) {
-                LOG_ERROR (
-                "Failed to apply function to motor ID %u",
-                pMotor->motorId
-                );
-                return eSTATUS_FAILURE;
-            }
-        }
-    }
-    return eSTATUS_SUCCESS;
-}
+//         Motor_t* pMotor = MotorVector_At (i);
+//         if (MOTOR_VALID (pMotor) == true) {
+//             if (fn (pMotor, pContext) != eSTATUS_SUCCESS) {
+//                 LOG_ERROR (
+//                 "Failed to apply function to motor ID %u",
+//                 pMotor->motorId
+//                 );
+//                 return eSTATUS_FAILURE;
+//             }
+//         }
+//     }
+//     return eSTATUS_SUCCESS;
+// }
 
-eSTATUS_t MotorInit (MotorInitConf_t conf) {
+eSTATUS_t MotorInit (MotorInitConf_t conf, Motor_t* pOutMotor) {
 
     static bool isVectorInitialized = false;
     if (isVectorInitialized == false) {
@@ -69,60 +69,43 @@ eSTATUS_t MotorInit (MotorInitConf_t conf) {
         isVectorInitialized = true;
     }
 
-    eSTATUS_t status                  = eSTATUS_SUCCESS;
-    MotorBoardConf_t boardConf        = conf.boardConf;
-    TimerBoardConf_t* pTimerBoardConf = boardConf.pTimerBoardConf;
-    ServoBoardConf_t* pLinkedServoBoardConf = boardConf.pLinkedServoBoardConf;
-    eDEVICE_ID_t id    = boardConf.motorId;
-    uint8_t useDMA     = boardConf.useDMA;
-    uint8_t dshotSpeed = boardConf.dshotSpeed;
-    (void)dshotSpeed;
-    float pidRollMix  = boardConf.pidRollMix;
-    float pidPitchMix = boardConf.pidPitchMix;
-    float pidYawMix   = boardConf.pidYawMix;
+    eSTATUS_t status         = eSTATUS_SUCCESS;
+    DeviceBoardConf_t device = conf.boardConf;
+    eDEVICE_ID_t motorId     = device.deviceId;
+    RETURN_IF (DEVICE_ID_IS_MOTOR (motorId) == false, eSTATUS_FAILURE, "Invalid motor ID: %u", motorId);
 
-    if (pTimerBoardConf == NULL) {
-        LOG_ERROR ("MotorInit: pTimerBoardConf is NULL");
-        return eSTATUS_FAILURE;
-    }
+    MotorDeviceConf_t motorConf       = device.motor;
+    bool usingDMA                     = motorConf.useDMA;
+    TimerBoardConf_t* pTimerBoardConf = motorConf.pTimerBoardConf;
+    DeviceBoardConf_t* pLinkedServoBoardConf = motorConf.pLinkedServoBoardConf;
+    // uint8_t dshotSpeed                       = motor.dshotSpeed;
+    // (void)dshotSpeed;
+    float pidRollMix  = motorConf.pidRollMix;
+    float pidPitchMix = motorConf.pidPitchMix;
+    float pidYawMix   = motorConf.pidYawMix;
+
+    RETURN_IF_NULL (pTimerBoardConf, eSTATUS_FAILURE, "MotorInit: pTimerBoardConf is NULL");
 
     Motor_t motor   = { 0 };
     Motor_t* pMotor = &motor;
-    if (pMotor == NULL) {
-        LOG_ERROR ("Failed to get Motor_t by ID");
-        return eSTATUS_FAILURE;
+    if (pOutMotor != NULL) {
+        pMotor = pOutMotor;
     }
 
     memset (pMotor, 0, sizeof (Motor_t));
-    pMotor->motorId           = id;
-    pMotor->usingDMA          = useDMA;
+    pMotor->motorId           = motorId;
+    pMotor->usingDMA          = usingDMA;
     pMotor->pitchMix          = pidPitchMix;
     pMotor->yawMix            = pidYawMix;
     pMotor->rollMix           = pidRollMix;
     pMotor->curThrottle       = 0.0F;
     pMotor->curTargetThrottle = 0.0F;
 
-    eTIMER_ID_t timerId = pTimerBoardConf->timerId;
-    (void)timerId;
-    eGPIO_ID_t gpioId = pTimerBoardConf->gpioId;
-    (void)gpioId;
-
-    if (useDMA == false) {
-        DSHOT_INIT_BITBANG (&status, boardConf, *pTimerBoardConf);
-        if (status != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to create DShotInitConf_t for Motor_t");
-            goto error;
-        }
-    } else {
-        DSHOT_INIT_DMA (&status, boardConf, *pTimerBoardConf);
-        if (status != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to create DShotInitConf_t for Motor_t");
-            goto error;
-        }
-    }
+    DSHOT_INIT (&status, device);
+    RETURN_IF (STATUS_FAIL (status), eSTATUS_FAILURE, "Failed to initialize DShot for motor ID %u", motorId);
 
     if (pLinkedServoBoardConf != NULL) {
-        pMotor->linkedServoId = pLinkedServoBoardConf->servoId;
+        pMotor->linkedServoId = pLinkedServoBoardConf->deviceId;
     }
 
     pMotor->isInitialized = true;
@@ -144,7 +127,7 @@ eSTATUS_t MotorStart (Motor_t* pMotor) {
         return eSTATUS_FAILURE;
     }
 
-    if (DShotStart (pMotor->motorId) != eSTATUS_SUCCESS) {
+    if (DSHOT_START (pMotor->motorId) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start DShot for Motor_t");
         return eSTATUS_FAILURE;
     }
@@ -164,7 +147,7 @@ eSTATUS_t MotorStop (Motor_t* pMotor) {
      * NOTE: The motor's ESC will automatically stop the motor
      * when the PWM signal has stopped for more than 5-10ms.
      */
-    if (DShotStop (pMotor->motorId) != eSTATUS_SUCCESS) {
+    if (DSHOT_STOP (pMotor->motorId) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to stop dshot");
         return eSTATUS_FAILURE;
     }
@@ -193,7 +176,7 @@ eSTATUS_t MotorWrite (Motor_t* pMotor, float targetThrottle) {
     pMotor->curTargetThrottle = targetThrottle;
 
     eSTATUS_t status =
-    DShotWrite (pMotor->motorId, DSHOT_MIN_THROTTLE + (uint16_t)(clippedThrottle * (float)DSHOT_RANGE));
+    DSHOT_WRITE (pMotor->motorId, DSHOT_MIN_THROTTLE + (uint16_t)(clippedThrottle * (float)DSHOT_RANGE));
     if (status != eSTATUS_SUCCESS && status != eSTATUS_BUSY) {
         LOG_ERROR ("Failed to write to motor");
         return status;

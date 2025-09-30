@@ -60,7 +60,7 @@ static void MX_SPI2_Init (void);
 
 // NOLINTBEGIN
 // IMU gIMU                                     = { 0 };
-// TaskHandle_t gpTaskMotionControlUpdate = { 0 };
+TaskHandle_t gpTaskMotionControlUpdate = { 0 };
 // Vec3f gCurrentAttitude                 = { 0.0F };
 // Vec3f gTargetAttitude                  = { 0.0F };
 // Vec3f gMaxAttitude    = { .roll = 45.0F, .pitch = 45.0F, .yaw = 180.0F
@@ -179,7 +179,7 @@ void TaskMainLoop (void* pvParameters) {
         if ((xTaskGetTickCount () - msLogStart) >= msLogStep) {
             msLogStart = xTaskGetTickCount ();
             // portENTER_CRITICAL ();
-            LOG_INFO ("Main loop is running, current state: %s", ControlOpState2Char (ControlGetOpState ()));
+            // LOG_INFO ("Main loop is running, current state: %s", ControlOpState2Char (ControlGetOpState ()));
             // portEXIT_CRITICAL ();
         }
         // Aim for 500Hz
@@ -332,7 +332,7 @@ int main (void) {
     }
 
     if (ControlInit () != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to init control module");
+        // LOG_ERROR ("Failed to init control module");
         CriticalErrorHandler ();
     }
     // Wait for CM4 to initialize UART
@@ -352,17 +352,17 @@ int main (void) {
      * flat surface the expected IMU measured acceleration is: (0, 0, +1g).
      */
 
-    PID_INIT (gPIDContext);
+    // PID_INIT (gPIDContext);
 
     /* With an ODR of 100 Hz on the IMU 1000 iterations will take 10 seconds */
     /* With an ODR of 200 Hz on the IMU 1000 iterations will take 5 seconds */
     /*
      * NOTE: During filter warmup the IMU is polled and interrupts are disabled. So IMUStart doesnt need to be called
      */
-    status = FilterMadgwickWarmUp (500U, 1.0F, 3.0F, &gFilterMadgwickContext, &gCurrentAttitude);
-    if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to warm up Madgwick Filter");
-    }
+    // status = FilterMadgwickWarmUp (500U, 1.0F, 3.0F, &gFilterMadgwickContext, &gCurrentAttitude);
+    // if (status != eSTATUS_SUCCESS) {
+    //     LOG_ERROR ("Failed to warm up Madgwick Filter");
+    // }
 
     /*
      *

@@ -27,7 +27,7 @@ static uint16_t UMap_FindIndex (UMap_t const* pUMap, void const* pKey, uint32_t 
     return index; // Return empty slot or wrapped-around position
 }
 
-uint32_t UMap_DefaultHash (void const* pKey, uint32_t keySize) {
+uint32_t UMap_DefaultHash (void const* pKey, size_t keySize) {
 
     if (pKey == NULL || keySize == 0) {
         return 0;
@@ -43,7 +43,7 @@ uint32_t UMap_DefaultHash (void const* pKey, uint32_t keySize) {
     return hash;
 }
 
-bool UMap_DefaultEqual (void const* pKey1, void const* pKey2, uint32_t keySize) {
+bool UMap_DefaultEqual (void const* pKey1, void const* pKey2, size_t keySize) {
 
     if (pKey1 == NULL || pKey2 == NULL) {
         return false;

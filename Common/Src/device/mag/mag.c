@@ -7,7 +7,7 @@
 #include "hal.h"
 #include "log/logger.h"
 #include "mem/mem.h"
-#include "peripheral/spi.h"
+#include "peripheral/bus/bus.h"
 #include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -27,7 +27,7 @@ STATIC_TESTABLE_DECL eMAG_STATUS_t MagRead (vMag_t* pMag, uint8_t reg, uint8_t* 
 
     eBUS_ID_t busId       = pMag->busId;
     eDEVICE_ID_t deviceId = pMag->deviceId;
-    uint16_t totalSize    = size + pMag->nSPIDummyBytes + 1U;
+    uint16_t totalSize    = size + pMag->nBusDummyBytes + 1U;
 
     if (totalSize > MAX_BUFFER_SIZE) {
         LOG_ERROR ("Read size exceeds max buffer size");
@@ -37,20 +37,13 @@ STATIC_TESTABLE_DECL eMAG_STATUS_t MagRead (vMag_t* pMag, uint8_t reg, uint8_t* 
     uint8_t txData[MAX_BUFFER_SIZE] = { reg | 0x80U }; // Set MSB for read operation
     uint8_t rxData[MAX_BUFFER_SIZE] = { 0 };
 
-    if (BUS_ID_IS_SPI (busId) == true) {
-
-        eSTATUS_t status =
-        SPIWriteRead_Blocking (busId, deviceId, txData, rxData, totalSize);
-        if (status != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to write register address to MAG");
-            return eMAG_BUS_ERROR;
-        }
-    } else {
-        LOG_ERROR ("Unsupported MAG bus ID for read");
+    eSTATUS_t status = eSTATUS_SUCCESS;
+    status = pMag->bus.writeRead (busId, deviceId, txData, rxData, totalSize);
+    if (status != eSTATUS_SUCCESS) {
         return eMAG_BUS_ERROR;
     }
 
-    memcpy (pData, &(rxData[pMag->nSPIDummyBytes + 1U]), size);
+    memcpy (pData, &(rxData[pMag->nBusDummyBytes + 1U]), size);
     DelayMicroseconds (2);
     return eSTATUS_SUCCESS;
 }
@@ -70,15 +63,9 @@ STATIC_TESTABLE_DECL eMAG_STATUS_t MagWrite (vMag_t* pMag, uint8_t reg, uint8_t*
     txData[0] = reg & 0x7FU; // Clear MSB for write operation
     memcpy (&(txData[1]), pData, size);
 
-    if (BUS_ID_IS_SPI (busId) == true) {
-
-        eSTATUS_t status = SPIWrite_Blocking (busId, deviceId, txData, totalSize);
-        if (status != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to write data to MAG");
-            return eMAG_BUS_ERROR;
-        }
-    } else {
-        LOG_ERROR ("Unsupported MAG bus ID for write");
+    eSTATUS_t status = eSTATUS_SUCCESS;
+    status = pMag->bus.write (busId, deviceId, txData, totalSize);
+    if (status != eSTATUS_SUCCESS) {
         return eMAG_BUS_ERROR;
     }
 
@@ -118,7 +105,7 @@ STATIC_TESTABLE_DECL bool MagXYZIsReady (vMag_t* pMag) {
 
 STATIC_TESTABLE_DECL eMAG_STATUS_t MagSoftReset (vMag_t* pMag) {
 
-    eMAG_STATUS_t status = eSTATUS_SUCCESS;
+    // eMAG_STATUS_t status = eSTATUS_SUCCESS;
     memset (gControlRegisters, 0, sizeof (gControlRegisters));
 
     bool success =
@@ -206,35 +193,29 @@ error:
     return false;
 }
 
-eMAG_STATUS_t MagInit (MagInitConf_t conf) {
+eMAG_STATUS_t MagInit (MagInitConf_t conf, Mag_t* pOutMag) {
 
-    eSTATUS_t status                    = eSTATUS_SUCCESS;
-    DeviceBoardConf_t boardConf         = conf.boardConf;
-    EXTIBoardConf_t extiConf            = boardConf.extiBoardConf;
-    BusHeaderBoardConf_t* pBusBoardConf = boardConf.pBusBoardConf;
-    eDEVICE_ID_t deviceId               = boardConf.deviceId;
-    eGPIO_ID_t nssId                    = boardConf.nssId;
-    bool useDMARead                     = boardConf.useDMARead;
-    bool useDMAWrite                    = boardConf.useDMAWrite;
+    eSTATUS_t status         = eSTATUS_SUCCESS;
+    DeviceBoardConf_t device = conf.boardConf;
+    eDEVICE_ID_t deviceId    = device.deviceId;
 
-    RETURN_IF_NULL (pBusBoardConf, eMAG_INVALID_DEVICE, "MAG bus configuration is NULL");
-    eBUS_ID_t busId = pBusBoardConf->busId;
-    if (BUS_ID_IS_SPI (busId) == true) {
-
-        SPI_INIT (&status, boardConf, *(SPIBoardConf_t*)pBusBoardConf);
-        RETURN_IF (STATUS_FAIL (status), eMAG_SPI_INITIALIZATION_ERROR, "Failed to init SPI bus for MAG");
-    } else {
-        LOG_ERROR ("Unsupported MAG bus ID");
-        return eMAG_INVALID_DEVICE;
-    }
+    BusBoardConf_t* pBus   = device.generic.pBusBoardConf;
+    EXTIBoardConf_t* pExti = device.generic.pExtiBoardConf;
+    RETURN_IF_NULL (pBus, eMAG_INVALID_DEVICE, "MAG bus configuration is NULL");
+    eBUS_ID_t busId = pBus->busId;
 
     vMag_t* pMag = &gMag;
+    if (pOutMag != NULL) {
+        pMag = pOutMag;
+    }
     memset (pMag, 0, sizeof (vMag_t));
     pMag->deviceId = deviceId;
     pMag->busId    = busId;
-    pMag->nSPIDummyBytes = 1; // SPI reads have 1 dummy byte at the beginning
-    pMag->usingDMA = (useDMARead || useDMAWrite) ? true : false;
-    pMag->usingInterrupt = (extiConf.extiId != eEXTI_ID_NULL) ? true : false;
+    // SPI reads have 1 dummy byte at the beginning
+    pMag->nBusDummyBytes = BUS_ID_IS_SPI (busId) == true ? 1U : 0U;
+
+    BUS_INIT (&status, device, *pBus, &pMag->bus);
+    GOTO_IF (STATUS_FAIL (status), error, "Failed to initialize MAG bus");
 
     GOTO_IF (MagSoftReset (pMag) != eSTATUS_SUCCESS, error, "Failed to soft reset MAG");
 
@@ -242,9 +223,8 @@ eMAG_STATUS_t MagInit (MagInitConf_t conf) {
     GOTO_IF (MagRead (pMag, MMC5983_PROD_ID_REG, &chipId, 1U) != eSTATUS_SUCCESS, error, "Failed to read MAG chip ID");
     GOTO_IF (chipId != MMC5983_PROD_ID, error, "Invalid MAG chip ID");
 
-    eMAG_STATUS_t status = eSTATUS_SUCCESS;
-    bool success         = true;
-    uint8_t flags        = 0;
+    bool success  = true;
+    uint8_t flags = 0;
     flags |= MMC5983_AUTO_SR_EN; // Enable automatic set/reset
     // flags |= MMC5983_INT_MEAS_DONE_EN; // Enable measurement done interrupt
     success = MagControlRegWrite (pMag, MMC5983_INT_CTRL_0_REG, flags, true);
@@ -277,7 +257,7 @@ eMAG_STATUS_t MagStart (vMag_t* pMag) {
 
     eMAG_STATUS_t status = eSTATUS_SUCCESS;
     bool success         = true;
-    if (pMag->usingInterrupt == true) {
+    if (pMag->usingEXTIInterrupt == true) {
         // Enable interrupts on the MAG
         uint8_t flags = MMC5983_INT_MEAS_DONE_EN;
         success = MagControlRegWrite (pMag, MMC5983_INT_CTRL_0_REG, flags, true);
@@ -292,7 +272,7 @@ eMAG_STATUS_t MagStop (vMag_t* pMag) {
 
     eMAG_STATUS_t status = eSTATUS_SUCCESS;
     bool success         = true;
-    if (pMag->usingInterrupt == true) {
+    if (pMag->usingEXTIInterrupt == true) {
         // Disable interrupts on the MAG
         uint8_t flags = ~MMC5983_INT_MEAS_DONE_EN;
         success = MagControlRegWrite (pMag, MMC5983_INT_CTRL_0_REG, flags, true);
@@ -307,7 +287,7 @@ eMAG_STATUS_t MagUpdate (vMag_t* pMag, bool forcePolling, Vec3f* pOutput) {
     RETURN_IF_NULL (pOutput, eMAG_INVALID_DEVICE, "Output pointer is NULL");
 
     bool success = true;
-    bool usePolling = pMag->usingInterrupt == false || forcePolling == true;
+    bool usePolling = pMag->usingEXTIInterrupt == false || forcePolling == true;
     // If using interrupts, the interrupt handler should have already updated the data
     if (usePolling == true) {
         success = MagUpdateFromPolling (pMag);

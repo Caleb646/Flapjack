@@ -25,10 +25,10 @@ typedef struct {
 } UMap_t;
 
 // Default hash function (djb2 algorithm)
-uint32_t UMap_DefaultHash (void const* pKey, uint32_t keySize);
+uint32_t UMap_DefaultHash (void const* pKey, size_t keySize);
 
 // Default equality function (memcmp)
-bool UMap_DefaultEqual (void const* pKey1, void const* pKey2, uint32_t keySize);
+bool UMap_DefaultEqual (void const* pKey1, void const* pKey2, size_t keySize);
 
 bool UMap_Init (
 UMap_t* pUMap,
@@ -50,8 +50,8 @@ uint16_t capacity,
 uint16_t keySize,
 uint16_t valueSize,
 bool isShared,
-uint32_t (*hashFunc) (void const* pKey, uint16_t keySize),
-bool (*equalFunc) (void const* pKey1, void const* pKey2, uint16_t keySize)
+UMapHashFn_t hashFunc,
+UMapEqualFn_t equalFunc
 );
 
 bool UMap_IsEmpty (UMap_t const* pUMap);

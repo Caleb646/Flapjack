@@ -55,24 +55,6 @@ enum {
     eGPIO_ID_NULL = 0U,
 };
 
-typedef uint8_t eGPIO_PURPOSE_t;
-typedef enum {
-    eGPIO_PURPOSE_NULL = 0,
-    eGPIO_PURPOSE_SPI_SCK,
-    eGPIO_PURPOSE_SPI_MISO,
-    eGPIO_PURPOSE_SPI_MOSI,
-    eGPIO_PURPOSE_SPI_NSS,
-    eGPIO_PURPOSE_I2C_SCL,
-    eGPIO_PURPOSE_I2C_SDA,
-    eGPIO_PURPOSE_UART_TX,
-    eGPIO_PURPOSE_UART_RX,
-    eGPIO_PURPOSE_TIMER_CH,
-    eGPIO_PURPOSE_EXTI,
-    eGPIO_PURPOSE_GPIO_OUT,
-    eGPIO_PURPOSE_GPIO_IN,
-    eGPIO_PURPOSE_ANALOG
-} eGPIO_PURPOSE_t;
-
 // #define GPIO_ID2PORTIDX(id) (((id) >> 15U) > 0U ? __builtin_ctz ((id) >> 15U) : 0U)
 #define GPIO_ID2PORTIDX(id)     (((id) >> GPIO_CHANNELID_NBITS) - 1U)
 #define GPIO_ID2PINIDX(id)      ((id) & (~(eGPIO_PINID_MAX - 1U)))

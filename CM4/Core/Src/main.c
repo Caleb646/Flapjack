@@ -27,7 +27,7 @@
 #include "common.h"
 #include "control.h"
 #include "log/logger.h"
-#include "peripheral/uart.h"
+#include "peripheral/bus/uart.h"
 #include "sync.h"
 
 

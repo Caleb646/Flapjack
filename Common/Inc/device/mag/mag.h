@@ -7,6 +7,7 @@
 #include "conf/ids.h"
 #include "device/mag/mmc5983.h"
 #include "hal.h"
+#include "peripheral/bus/bus.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -30,21 +31,28 @@ typedef struct {
 typedef struct Mag_s {
     eDEVICE_ID_t deviceId;
     eBUS_ID_t busId;
-    uint8_t nSPIDummyBytes;
     Vec3u rawData;
     uint32_t msLastUpdateTime;
+    BusInterface_t bus;
+    uint8_t nBusDummyBytes;
     bool isInitialized;
-    bool usingInterrupt;
-    bool usingDMA;
+    bool usingEXTIInterrupt;
     bool dataUpdated;
 } Mag_t;
 
 typedef Mag_t vMag_t;
 
-eMAG_STATUS_t MagInit (MagInitConf_t conf);
+eMAG_STATUS_t MagInit (MagInitConf_t conf, Mag_t* pOutMag);
 eMAG_STATUS_t MagStart (vMag_t* pMag);
 eMAG_STATUS_t MagStop (vMag_t* pMag);
 eMAG_STATUS_t MagUpdate (vMag_t* pMag, bool forcePolling, Vec3f* pOutput);
 vMag_t* MagGetActiveDevice (void);
+
+#define MAG_INIT(pSTATUS, DEVICE_BOARD_CONF)             \
+    do {                                                 \
+        MagInitConf_t magConf = { 0 };                   \
+        magConf.boardConf     = (DEVICE_BOARD_CONF);     \
+        *(pSTATUS)            = MagInit (magConf, NULL); \
+    } while (0)
 
 #endif // DEVICE_MAG_MAG_H

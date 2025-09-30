@@ -6,7 +6,7 @@
 #include "log/logger.h"
 #include "mc/fcstate.h"
 #include "mem/mem.h"
-#include "peripheral/uart.h"
+#include "peripheral/bus/uart.h"
 
 typedef uint32_t eCMD_t;
 enum {
@@ -117,6 +117,7 @@ eSTATUS_t ControlStart (void);
 eSTATUS_t ControlProcess_RawCmds (void);
 eSTATUS_t ControlProcess_Cmds (void);
 bool ControlRegisterHandler (eCMD_t cmdType, SubCommand_t subCmd, CmdHandlerFn_t handler);
+char const* ControlCmdType2Char (eCMD_t commandType);
 
 #define CONTROL_INIT(pSTATUS)        \
     do {                             \

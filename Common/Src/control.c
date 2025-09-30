@@ -7,7 +7,7 @@
 #include "mem/mem.h"
 #include "mem/queue.h"
 #include "mem/umap.h"
-#include "peripheral/uart.h"
+#include "peripheral/bus/uart.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -26,7 +26,7 @@
 /* Consumer global variables */
 QUEUE_DEFINE_STATIC (RawCommand, DefaultCommand, COMMAND_QUEUE_CAPACITY, true);
 // A local only buffer to store raw commands during the interrupt handler
-static uint8_t ga_UartInterruptBuffer[UART_RECV_BUFFER_SIZE] = { 0 };
+// static uint8_t ga_UartInterruptBuffer[UART_RECV_BUFFER_SIZE] = { 0 };
 
 /* Shared global variables */
 QUEUE_DEFINE_STATIC_SHARED (SharedCommand, DefaultCommand, COMMAND_QUEUE_CAPACITY);
@@ -45,15 +45,15 @@ static bool ControlGetNewCmd (DefaultCommand* pOutCmd);
  * Global UART recv complete callback. The reason this can work is because
  * their is only 1 uart that is set to recv. If there are multiple receiving uarts, this will not work.
  */
-void ControlRecvCallBack (eBUS_ID_t busId) {
+// void ControlRecvCallBack (eBUS_ID_t busId) {
 
-    if (RawCommandQueue_IsFull () == true) {
-        return;
-    }
-    // LOG_INFO ("%u", ga_UartInterruptBuffer[0]);
-    RawCommandQueue_Push ((DefaultCommand*)ga_UartInterruptBuffer);
-    UARTRead_IT (busId, ga_UartInterruptBuffer, sizeof (DefaultCommand));
-}
+//     if (RawCommandQueue_IsFull () == true) {
+//         return;
+//     }
+//     // LOG_INFO ("%u", ga_UartInterruptBuffer[0]);
+//     RawCommandQueue_Push ((DefaultCommand*)ga_UartInterruptBuffer);
+//     UARTRead_IT (busId, ga_UartInterruptBuffer, sizeof (DefaultCommand));
+// }
 
 STATIC_TESTABLE_DECL CmdHandlerFn_t ControlGetHandler (DefaultCommand defCmd) {
 

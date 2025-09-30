@@ -72,29 +72,29 @@ Vector_t* ServoGetAll (void) {
     return ServoVector_GetVector ();
 }
 
-eSTATUS_t ServosApply (ServoApplyFn_t fn, void* pContext) {
+// eSTATUS_t ServosApply (ServoApplyFn_t fn, void* pContext) {
 
-    if (fn == NULL) {
-        LOG_ERROR ("Received NULL function pointer");
-        return eSTATUS_FAILURE;
-    }
+//     if (fn == NULL) {
+//         LOG_ERROR ("Received NULL function pointer");
+//         return eSTATUS_FAILURE;
+//     }
 
-    for (uint32_t i = 0; i < ServoVector_Size (); ++i) {
-        Servo_t* pServo = ServoVector_At (i);
-        if (SERVO_VALID (pServo) == true) {
-            if (fn (pServo, pContext) != eSTATUS_SUCCESS) {
-                LOG_ERROR (
-                "Failed to apply function to servo ID %u",
-                pServo->servoId
-                );
-                return eSTATUS_FAILURE;
-            }
-        }
-    }
-    return eSTATUS_SUCCESS;
-}
+//     for (uint32_t i = 0; i < ServoVector_Size (); ++i) {
+//         Servo_t* pServo = ServoVector_At (i);
+//         if (SERVO_VALID (pServo) == true) {
+//             if (fn (pServo, pContext) != eSTATUS_SUCCESS) {
+//                 LOG_ERROR (
+//                 "Failed to apply function to servo ID %u",
+//                 pServo->servoId
+//                 );
+//                 return eSTATUS_FAILURE;
+//             }
+//         }
+//     }
+//     return eSTATUS_SUCCESS;
+// }
 
-eSTATUS_t ServoInit (ServoInitConf_t conf) {
+eSTATUS_t ServoInit (ServoInitConf_t conf, Servo_t* pOutServo) {
 
     static bool isVectorInitialized = false;
     if (isVectorInitialized == false) {
@@ -105,39 +105,29 @@ eSTATUS_t ServoInit (ServoInitConf_t conf) {
         isVectorInitialized = true;
     }
 
-    eSTATUS_t status                  = eSTATUS_SUCCESS;
-    ServoBoardConf_t boardConf        = conf.boardConf;
-    TimerBoardConf_t* pTimerBoardConf = boardConf.pTimerBoardConf;
-    MotorBoardConf_t* pLinkedMotorBoardConf = boardConf.pLinkedMotorBoardConf;
-    (void)pLinkedMotorBoardConf;
-    eDEVICE_ID_t id       = boardConf.servoId;
-    uint32_t pwmFrequency = boardConf.pwmFrequency;
-    float pidRollMix      = boardConf.pidRollMix;
-    float pidPitchMix     = boardConf.pidPitchMix;
-    float pidYawMix       = boardConf.pidYawMix;
+    eSTATUS_t status             = eSTATUS_SUCCESS;
+    DeviceBoardConf_t deviceConf = conf.boardConf;
+    eDEVICE_ID_t servoId         = deviceConf.deviceId;
+    RETURN_IF (DEVICE_ID_IS_SERVO (servoId) == false, eSTATUS_FAILURE, "Invalid servo ID: %u", servoId);
 
-    if (pTimerBoardConf == NULL) {
-        LOG_ERROR ("ServoInit: pTimerBoardConf is NULL");
-        return eSTATUS_FAILURE;
-    }
-
+    ServoDeviceConf_t servoConf       = deviceConf.servo;
+    TimerBoardConf_t* pTimerBoardConf = servoConf.pTimerBoardConf;
+    RETURN_IF_NULL (pTimerBoardConf, eSTATUS_FAILURE, "ServoInit: pTimerBoardConf is NULL");
     eTIMER_ID_t timerId = pTimerBoardConf->timerId;
-    eGPIO_ID_t gpioId   = pTimerBoardConf->gpioId;
-    (void)gpioId;
+    DeviceBoardConf_t* pLinkedMotorBoardConf = servoConf.pLinkedMotorBoardConf;
 
-    if (DEVICE_ID_IS_SERVO (id) == false) {
-        LOG_ERROR ("ServoInit: deviceId is not servo");
-        return eSTATUS_FAILURE;
-    }
+    uint32_t pwmFrequency = servoConf.pwmFrequency;
+    float pidRollMix      = servoConf.pidRollMix;
+    float pidPitchMix     = servoConf.pidPitchMix;
+    float pidYawMix       = servoConf.pidYawMix;
 
     Servo_t servo   = { 0 };
     Servo_t* pServo = &servo;
-    if (pServo == NULL) {
-        LOG_ERROR ("Failed to get Servo_t by ID");
-        return eSTATUS_FAILURE;
+    if (pOutServo != NULL) {
+        pServo = pOutServo;
     }
     memset (pServo, 0, sizeof (Servo_t));
-    pServo->servoId           = id;
+    pServo->servoId           = servoId;
     pServo->timerId           = timerId;
     pServo->usingDMA          = false;
     pServo->pitchMix          = pidPitchMix;
@@ -151,10 +141,11 @@ eSTATUS_t ServoInit (ServoInitConf_t conf) {
     pServo->maxAngle          = 90.0F;
     pServo->usableMaxAngle    = 25.0F;
 
-    TIMER_INIT_PWM (&status, id, timerId, pwmFrequency, *pTimerBoardConf);
-    if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to initialize timer for Servo_t");
-        goto error;
+    TIMER_INIT_PWM (&status, servoId, timerId, pwmFrequency, *pTimerBoardConf);
+    GOTO_IF (STATUS_FAIL (status), error, "Failed to initialize timer for Servo_t");
+
+    if (pLinkedMotorBoardConf != NULL) {
+        pServo->linkedMotorId = pLinkedMotorBoardConf->deviceId;
     }
 
     /*
@@ -188,7 +179,7 @@ eSTATUS_t ServoStart (Servo_t* pServo) {
     }
 
     eTIMER_ID_t timerId = pServo->timerId;
-    if (TimerStart (timerId, NULL, 0) != eSTATUS_SUCCESS) {
+    if (TIMER_START (timerId, NULL, 0) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start Timer for Servo_t");
         return eSTATUS_FAILURE;
     }
@@ -205,7 +196,7 @@ eSTATUS_t ServoStop (Servo_t* pServo) {
     }
 
     eTIMER_ID_t timerId = pServo->timerId;
-    if (TimerStop (timerId) != eSTATUS_SUCCESS) {
+    if (TIMER_STOP (timerId) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to stop Timer for Servo_t");
         return eSTATUS_FAILURE;
     }
@@ -226,5 +217,5 @@ eSTATUS_t ServoWrite (Servo_t* pServo, float targetAngle) {
     pServo->curAngle       = clippedAngle;
     pServo->curTargetAngle = targetAngle;
 
-    return TimerWrite (timerId, (uint32_t)ServoAngle2PWM (pServo, clippedAngle));
+    return TIMER_WRITE (timerId, (uint32_t)ServoAngle2PWM (pServo, clippedAngle));
 }

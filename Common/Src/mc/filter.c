@@ -13,6 +13,14 @@
 
 static SHARED_MEM_SECTION vFilter_t gFilter = { 0 };
 
+// clang-format off
+#ifndef UNIT_TEST
+static eSTATUS_t FilterMadgwickUpdate (FilterMadgwick_t* pFilter,Vec3f const* pAccel,Vec3f const* pGyro,Vec3f const* pMag,float dt,Vec3f* pOutAttitude);
+static bool FilterMadgwickUpdate_6DOF (FilterMadgwick_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyroDegs, float dt);
+static bool FilterMadgwickUpdate_9DOF (FilterMadgwick_t* pFilter,Vec3f const* pAccel,Vec3f const* pGyro,Vec3f const* pMag,float dt);
+#endif
+// clang-format on
+
 /*
  * The filter expects the accel and gyro data to be in the FRD coordinate
  * system. For example, an accel reading of (0, 0, +1g) means the sensor is

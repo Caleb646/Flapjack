@@ -24,7 +24,7 @@ enum {
 };
 
 typedef struct {
-    MotorBoardConf_t boardConf;
+    DeviceBoardConf_t boardConf;
 } MotorInitConf_t;
 
 typedef struct Servo_s Servo_t;
@@ -42,7 +42,7 @@ typedef struct Motor_s {
     bool isInitialized;
 } Motor_t;
 
-typedef eSTATUS_t (*MotorApplyFn_t) (Motor_t* pMotor, void* pContext);
+// typedef eSTATUS_t (*MotorApplyFn_t) (Motor_t* pMotor, void* pContext);
 
 #ifdef UNIT_TEST
 
@@ -50,18 +50,18 @@ typedef eSTATUS_t (*MotorApplyFn_t) (Motor_t* pMotor, void* pContext);
 
 Motor_t* MotorGetById (eDEVICE_ID_t motorId);
 Vector_t* MotorGetAll (void);
-eSTATUS_t MotorsApply (MotorApplyFn_t fn, void* pContext);
-eSTATUS_t MotorInit (MotorInitConf_t conf);
+// eSTATUS_t MotorsApply (MotorApplyFn_t fn, void* pContext);
+eSTATUS_t MotorInit (MotorInitConf_t conf, Motor_t* pOutMotor);
 eSTATUS_t MotorStart (Motor_t* pMotor);
 eSTATUS_t MotorStop (Motor_t* pMotor);
 eSTATUS_t MotorWrite (Motor_t* pMotor, float targetThrottle);
 eSTATUS_t MotorWriteCmd (Motor_t* pMotor, eMOTOR_CMD_t command);
 
-#define MOTOR_INIT(pSTATUS, DEVICE_BOARD_CONF)      \
-    do {                                            \
-        MotorInitConf_t conf = { 0 };               \
-        conf.boardConf       = (DEVICE_BOARD_CONF); \
-        *(pSTATUS)           = MotorInit (conf);    \
+#define MOTOR_INIT(pSTATUS, DEVICE_BOARD_CONF)         \
+    do {                                               \
+        MotorInitConf_t conf = { 0 };                  \
+        conf.boardConf       = (DEVICE_BOARD_CONF);    \
+        *(pSTATUS)           = MotorInit (conf, NULL); \
     } while (0)
 
 #define MOTOR_START(MOTOR_ID) MotorStart (MotorGetById (MOTOR_ID))

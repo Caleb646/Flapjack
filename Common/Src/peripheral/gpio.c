@@ -90,6 +90,44 @@ eSTATUS_t GPIOFreeByIO (vIO_t* pIO) {
     return eSTATUS_SUCCESS;
 }
 
+eSTATUS_t GPIOInit (eDEVICE_ID_t ownerId, GPIOBoardConf_t boardConf) {
+
+    GPIOSystemInit ();
+
+    GPIOSharedConf_t shared = boardConf.conf;
+    if (boardConf.pShared != NULL) {
+        shared = *(boardConf.pShared);
+    }
+
+    eGPIO_ID_t gpioId = boardConf.id;
+    uint8_t mode      = shared.mode;
+    uint8_t pull      = shared.pull;
+    uint8_t speed     = shared.speed;
+    uint8_t alternate = shared.alternate;
+
+    vIO_t* pIO = GPIOGetIOfromId (gpioId);
+    if (pIO == NULL) {
+        return eSTATUS_FAILURE;
+    }
+
+    if (pIO->ownerId != eDEVICE_ID_NULL) {
+        return eSTATUS_FAILURE;
+    }
+
+    GPIOEnablePortClock (gpioId);
+    pIO->ownerId = ownerId;
+
+    GPIO_InitTypeDef GPIO_InitStruct = { 0U };
+    GPIO_InitStruct.Pin              = pIO->pin;
+    GPIO_InitStruct.Mode             = mode;
+    GPIO_InitStruct.Pull             = pull;
+    GPIO_InitStruct.Speed            = speed;
+    GPIO_InitStruct.Alternate        = alternate;
+    HAL_GPIO_Init (pIO->pPort, &GPIO_InitStruct);
+
+    return eSTATUS_SUCCESS;
+}
+
 eSTATUS_t GPIOInitSPI (GPIOSPIInitConf_t conf) {
 
     GPIOSystemInit ();

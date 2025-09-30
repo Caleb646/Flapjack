@@ -7,8 +7,10 @@
 #include "device/imu/bmixxx.h"
 #include "hal.h"
 #include "log/logger.h"
+#include "peripheral/bus/bus.h"
 #include <stdint.h>
 #include <string.h>
+
 
 #define IMU_LOG_CALIB_DATA(rslt, error) \
     LOG_DATA (LOG_DATA_TYPE_IMU_CALIB, "{\"rslt\":%u,\"error\":%u}", rslt, error)
@@ -200,8 +202,9 @@ typedef struct {
     eSTATUS_t status;
     uint32_t msLastAccUpdateTime;
     uint32_t msLastGyroUpdateTime;
-    uint8_t nSPIDummyBytes;
-    bool usingInterrupt;
+    BusInterface_t bus;
+    uint8_t nBusDummyBytes;
+    bool usingEXTIInterrupt;
     bool isInitialized;
     bool gyroDataUpdated;
     bool accelDataUpdated;
@@ -244,7 +247,7 @@ IMUConvertRaw (IMU_ACC_RANGE aRange, Vec3i ra, IMU_GYRO_RANGE gRange, Vec3i rg, 
 
 #endif
 
-eSTATUS_t IMUInit (IMUInitConf_t conf);
+eSTATUS_t IMUInit (IMUInitConf_t conf, IMU_t* pOutIMU);
 eSTATUS_t IMUStart (vIMU_t* pIMU);
 eSTATUS_t IMUStop (vIMU_t* pIMU);
 eSTATUS_t IMUHandleErr (vIMU_t* pIMU);
@@ -285,7 +288,7 @@ void IMU2CPUInterruptHandler (vIMU_t* pIMU);
         conf.gconf         = gconf;                          \
         conf.axesRemapConf = axesRemap;                      \
         conf.boardConf     = (DEVICE_BOARD_CONF);            \
-        *(pSTATUS)         = IMUInit (conf);                 \
+        *(pSTATUS)         = IMUInit (conf, NULL);           \
     } while (0)
 
 

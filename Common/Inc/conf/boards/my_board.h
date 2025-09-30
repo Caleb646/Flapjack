@@ -3,6 +3,8 @@
 
 #include "conf/board.h"
 #include "conf/ids.h"
+#include <stdbool.h>
+#include <stdint.h>
 
 // #define TIM5_CH1_GPIO  GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_0)
 // #define TIM5_CH2_GPIO  GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_1)
@@ -129,10 +131,8 @@
 
 // clang-format on
 
-uint8_t BoardConfInit (void);
+bool BoardConfInit (void);
 BoardConf_t* BoardConfGet (void);
 DeviceBoardConf_t* BoardConfGetDeviceById (eDEVICE_ID_t deviceId);
-ServoBoardConf_t* BoardConfGetServoById (eDEVICE_ID_t servoId);
-MotorBoardConf_t* BoardConfGetMotorById (eDEVICE_ID_t motorId);
 
 #endif // CONF_MY_BOARD_H

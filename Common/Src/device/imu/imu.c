@@ -4,11 +4,12 @@
 #include "device/imu/bmixxx.h"
 #include "log/logger.h"
 #include "mem/mem.h"
+#include "peripheral/bus/bus.h"
 #include "peripheral/gpio.h"
-#include "peripheral/spi.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+
 
 #define IMU_VALID(pIMU)   ((pIMU) != NULL && (pIMU)->isInitialized == true)
 #define BIT_ISSET(v, bit) (((v) & (bit)) > 0U)
@@ -196,25 +197,23 @@ IMUReadReg (vIMU_t const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len) {
      *       2               0x00         data byte 0
      *       N               0x00         data byte N - 1
      */
-    if (len + pIMU->nSPIDummyBytes + 1 > RW_BUFFER_SZ) {
+    if (len + pIMU->nBusDummyBytes + 1 > RW_BUFFER_SZ) {
         return (eSTATUS_t)eIMU_RW_BUFFER_OVERFLOW;
     }
 
-    if (SPIWriteRead_Blocking (
-        pIMU->busId,
-        pIMU->deviceId,
-        pTx,
-        pRx,
-        len + pIMU->nSPIDummyBytes + 1
-        ) != eSTATUS_SUCCESS) {
+    eSTATUS_t status = eSTATUS_SUCCESS;
+    status =
+    pIMU->bus.writeRead (pIMU->busId, pIMU->deviceId, pTx, pRx, len + pIMU->nBusDummyBytes + 1);
+
+    if (status != eSTATUS_SUCCESS) {
         return (eSTATUS_t)eIMU_COM_FAILURE;
     }
 
     // Add 2 microsecond delay after vIMU_t read operation
     DelayMicroseconds (2);
 
-    // The first nSPIDummyBytes + 1 (for the register address) are dummy bytes
-    memcpy (pBuf, &(pRx[pIMU->nSPIDummyBytes + 1]), len);
+    // The first nBusDummyBytes + 1 (for the register address) are dummy bytes
+    memcpy (pBuf, &(pRx[pIMU->nBusDummyBytes + 1]), len);
     return eSTATUS_SUCCESS;
 }
 
@@ -229,7 +228,9 @@ IMUWriteReg (vIMU_t const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len) {
     pTx[0] = reg & BMI3_SPI_WR_MASK;
     memcpy (&pTx[1], (void*)pBuf, len);
 
-    if (SPIWrite_Blocking (pIMU->busId, pIMU->deviceId, pTx, len + 1) != eSTATUS_SUCCESS) {
+    eSTATUS_t status = eSTATUS_SUCCESS;
+    status = pIMU->bus.write (pIMU->busId, pIMU->deviceId, pTx, len + 1);
+    if (status != eSTATUS_SUCCESS) {
         return (eSTATUS_t)eIMU_COM_FAILURE;
     }
     // Add 2 microsecond delay after vIMU_t write operation
@@ -784,80 +785,61 @@ IMUConvertRaw (IMU_ACC_RANGE aRange, Vec3i ra, IMU_GYRO_RANGE gRange, Vec3i rg, 
 }
 
 
-eSTATUS_t IMUInit (IMUInitConf_t conf) {
+eSTATUS_t IMUInit (IMUInitConf_t conf, IMU_t* pOutIMU) {
 
-    IMUAccConf accConf                  = conf.aconf;
-    IMUGyroConf gyroConf                = conf.gconf;
-    IMUAxesRemapConf axesRemapConf      = conf.axesRemapConf;
-    DeviceBoardConf_t boardConf         = conf.boardConf;
-    BusHeaderBoardConf_t* pBusBoardConf = boardConf.pBusBoardConf;
-    EXTIBoardConf_t extiConf            = boardConf.extiBoardConf;
-    (void)extiConf;
+    IMUAccConf accConf             = conf.aconf;
+    IMUGyroConf gyroConf           = conf.gconf;
+    IMUAxesRemapConf axesRemapConf = conf.axesRemapConf;
 
-    if (pBusBoardConf == NULL) {
-        LOG_ERROR ("BusBoardConf is NULL");
-        return (eSTATUS_t)eIMU_NULL_PTR;
-    }
+    DeviceBoardConf_t device = conf.boardConf;
+    eDEVICE_ID_t deviceId    = device.deviceId;
 
-    eSTATUS_t status      = eSTATUS_SUCCESS;
-    eBUS_ID_t busId       = pBusBoardConf->busId;
-    eDEVICE_ID_t deviceId = boardConf.deviceId;
+    BusBoardConf_t* pBus   = conf.boardConf.generic.pBusBoardConf;
+    EXTIBoardConf_t* pExti = conf.boardConf.generic.pExtiBoardConf;
+    RETURN_IF_NULL (pBus, eSTATUS_FAILURE, "imu bus config is NULL");
 
-    if (BUS_ID_IS_SPI (busId) == true) {
-        SPI_INIT (&status, boardConf, *(SPIBoardConf_t*)pBusBoardConf);
-        RETURN_IF (STATUS_FAIL (status), eSTATUS_FAILURE, "Failed to init SPI bus for imu");
-    } else {
-        LOG_ERROR ("vIMU_t only supports SPI bus");
-        return eSTATUS_FAILURE;
-    }
+    eSTATUS_t status = eSTATUS_SUCCESS;
+    eBUS_ID_t busId  = pBus->busId;
 
     vIMU_t* pIMU = &gIMU;
+    if (pOutIMU != NULL) {
+        pIMU = pOutIMU;
+    }
     memset (pIMU, 0, sizeof (vIMU_t));
     pIMU->busId    = busId;
     pIMU->deviceId = deviceId;
     pIMU->aconf    = accConf;
     pIMU->gconf    = gyroConf;
     /* SPI reads have 1 dummy byte at the beginning */
-    pIMU->nSPIDummyBytes = 1;
+    pIMU->nBusDummyBytes = BUS_ID_IS_SPI (busId) ? 1 : 0;
+
+    BUS_INIT (&status, device, *pBus, &pIMU->bus);
+    GOTO_IF (STATUS_FAIL (status), error, "Failed to init bus for imu");
+
+    if (pIMU->bus.read == NULL || pIMU->bus.write == NULL || pIMU->bus.writeRead == NULL) {
+        LOG_ERROR ("Bus for imu does not have read or write or write read function");
+        goto error;
+    }
 
     /*
      * Soft reset vIMU_t and switch to SPI
      */
     status = IMUSoftReset (pIMU);
-    if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to soft reset vIMU_t");
-        goto error;
-    }
+    GOTO_IF (STATUS_FAIL (status), error, "Failed to soft reset imu");
 
     status = IMUSetAxesRemap (pIMU, axesRemapConf);
-    if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to set vIMU_t axes remap");
-        goto error;
-    }
-    LOG_INFO ("Successfully remapped vIMU_t axes");
+    GOTO_IF (STATUS_FAIL (status), error, "Failed to set imu axes remap");
+    LOG_INFO ("Successfully remapped imu axes");
 
     /*
      * Setup the accel and gyro using the provided configurations
      */
     status = IMUSetConf (pIMU, &accConf, &gyroConf);
-    if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("vIMU_t failed to configure accel or gyro");
-        goto error;
-    }
+    GOTO_IF (STATUS_FAIL (status), error, "Failed to set imu config");
 
     uint8_t pChipID[2] = { 0 };
     status             = IMUReadReg (pIMU, BMI3_REG_CHIP_ID, pChipID, 2);
-    if (pChipID[0] != BMI323_CHIP_ID) {
-        LOG_ERROR ("Chip ID [0x%X] [0x%X] is incorrect", pChipID[0], pChipID[1]);
-        goto error;
-    }
-
-    /* Enable acc, gyro, and temperature - data ready interrupts for pin INT1 */
-    status = IMUSetupInterrupts (pIMU);
-    if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to setup vIMU_t interrupts");
-        goto error;
-    }
+    GOTO_IF (STATUS_FAIL (status), error, "Failed to read imu chip id");
 
     /* Self Calibrate */
     {
@@ -926,6 +908,14 @@ eSTATUS_t IMUInit (IMUInitConf_t conf) {
     // /* Enable EXTI interrupt for vIMU_t data ready interrupt */
     // HAL_NVIC_SetPriority (IMU_INT_EXTI_IRQn, 8, 8);
     // HAL_NVIC_EnableIRQ (IMU_INT_EXTI_IRQn);
+
+    if (pExti != NULL) {
+        /* Enable acc, gyro, and temperature - data ready interrupts for pin INT1 */
+        status = IMUSetupInterrupts (pIMU);
+        GOTO_IF (STATUS_FAIL (status), error, "Failed to setup imu interrupts");
+
+        pIMU->usingEXTIInterrupt = true;
+    }
 
     return eSTATUS_SUCCESS;
 error:
@@ -1010,7 +1000,7 @@ eSTATUS_t IMUUpdate (vIMU_t* pIMU, bool forcePolling, Vec3f* pOutputAccel, Vec3f
 
     eSTATUS_t status = eSTATUS_SUCCESS;
     bool success     = true;
-    bool usePolling = pIMU->usingInterrupt == false || forcePolling == true;
+    bool usePolling = pIMU->usingEXTIInterrupt == false || forcePolling == true;
     if (usePolling == true) {
         success = IMUUpdatefromPolling (pIMU);
     }

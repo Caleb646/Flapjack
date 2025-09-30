@@ -102,13 +102,14 @@ static void DShotPrepareDMABuffer (vDShot_t* pDShot, uint16_t value) {
 static void DShotDMAStart (vDShot_t* pDShot) {
 
     eTIMER_ID_t timerId = pDShot->timerId;
-    if (TimerStart (timerId, pDShot->pMotorDmaBuffer, DSHOT_DMA_BUFFER_SIZE) != eSTATUS_SUCCESS) {
+    if (TIMER_START (timerId, pDShot->pMotorDmaBuffer, DSHOT_DMA_BUFFER_SIZE) !=
+        eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start DShot timer with DMA");
         return;
     }
 }
 
-static vDShot_t* DShotGetById (eDEVICE_ID_t deviceId) {
+vDShot_t* DShotGetById (eDEVICE_ID_t deviceId) {
 
     if (DEVICE_ID_IS_MOTOR (deviceId) == false) {
         return NULL;
@@ -129,18 +130,17 @@ static eSTATUS_t DShotInitBitbang (vDShot_t* pDShot, DShotInitConf_t conf) {
         return eSTATUS_FAILURE;
     }
 
-    eDSHOT_TYPE_t dshotType         = pDShot->dshotType;
-    TimerBoardConf_t timerBoardConf = conf.timerBoardConf;
-    eGPIO_ID_t timerGpioId          = timerBoardConf.gpioId;
-    MotorBoardConf_t motorBoardConf = conf.motorBoardConf;
-    eDEVICE_ID_t motorId            = motorBoardConf.motorId;
-    eSTATUS_t status                = eSTATUS_SUCCESS;
+    eSTATUS_t status                  = eSTATUS_SUCCESS;
+    eDEVICE_ID_t motorId              = conf.motorId;
+    MotorDeviceConf_t motorConf       = conf.motorBoardConf;
+    TimerBoardConf_t* pTimerBoardConf = motorConf.pTimerBoardConf;
+    GPIOBoardConf_t const* pGPIOBoardConf = pTimerBoardConf->pGPIOBoardConf;
+    eTIMER_ID_t timerId     = pTimerBoardConf->timerId;
+    eGPIO_ID_t timerGpioId  = pTimerBoardConf->pGPIOBoardConf->id;
+    eDSHOT_TYPE_t dshotType = pDShot->dshotType;
 
-    GPIO_INIT_OUTPUT (&status, motorId, timerGpioId);
-    if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to initialize GPIO for DShot");
-        return status;
-    }
+    GPIO_INIT (&status, motorId, *pGPIOBoardConf);
+    RETURN_IF (STATUS_FAIL (status), eSTATUS_FAILURE, "Failed to initialize GPIO for DShot");
 
     pDShot->pGPIO = GPIOGetIOfromId (timerGpioId);
 
@@ -184,20 +184,17 @@ static eSTATUS_t DShotInitDMA (vDShot_t* pDShot, DShotInitConf_t conf) {
         return eSTATUS_FAILURE;
     }
 
-    eDSHOT_TYPE_t dshotType         = pDShot->dshotType;
-    TimerBoardConf_t timerBoardConf = conf.timerBoardConf;
-    eTIMER_ID_t timerId             = timerBoardConf.timerId;
-    MotorBoardConf_t motorBoardConf = conf.motorBoardConf;
-    eDEVICE_ID_t motorId            = motorBoardConf.motorId;
-    eSTATUS_t status                = eSTATUS_SUCCESS;
+    eSTATUS_t status                  = eSTATUS_SUCCESS;
+    eDEVICE_ID_t motorId              = conf.motorId;
+    MotorDeviceConf_t motorConf       = conf.motorBoardConf;
+    TimerBoardConf_t* pTimerBoardConf = motorConf.pTimerBoardConf;
+    eTIMER_ID_t timerId               = pTimerBoardConf->timerId;
+    eDSHOT_TYPE_t dshotType           = pDShot->dshotType;
 
-    TIMER_INIT_PWM_DMA (&status, motorId, timerId, timerBoardConf);
-    if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to initialize timer for DShot");
-        return eSTATUS_FAILURE;
-    }
+    TIMER_INIT_PWM_DMA (&status, motorId, timerId, *pTimerBoardConf);
+    RETURN_IF (STATUS_FAIL (status), eSTATUS_FAILURE, "Failed to initialize timer for DShot");
 
-    if (TimerRegisterCallback (timerId, DShotDMACompleteCallback, eTIMER_CALLBACK_TRANSFER_COMPLETE) !=
+    if (TIMER_REGISTER_CALLBACK (timerId, DShotDMACompleteCallback, eTIMER_CALLBACK_TRANSFER_COMPLETE) !=
         eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to register timer callback for DShot");
         return eSTATUS_FAILURE;
@@ -245,7 +242,7 @@ static eSTATUS_t DShotWriteDMA (vDShot_t* pDShot, uint16_t motorVal) {
         return eSTATUS_FAILURE;
     }
 
-    if (TimerGetChannelState (pDShot->timerId) == eTIMER_CHANNEL_STATE_BUSY) {
+    if (TIMER_GET_CHANNEL_STATE (pDShot->timerId) == eTIMER_CHANNEL_STATE_BUSY) {
         return eSTATUS_BUSY;
     }
 
@@ -286,38 +283,27 @@ static eSTATUS_t DShotWriteBitbang (vDShot_t* pDShot, uint16_t motorVal) {
     return eSTATUS_SUCCESS;
 }
 
-// static eSTATUS_t
-// DShotWriteMultiBitBang (eDEVICE_ID_t (deviceIds)[eMOTOR_ID_MAX], uint16_t (motorVals)[eMOTOR_ID_MAX]) {
+eSTATUS_t DShotInit (DShotInitConf_t conf, DShot_t* pOutDShot) {
 
-//     ATOMIC_BLOCK_LOCAL (eNVIC_PRIO_LVL_MAX) {
-//         for (uint32_t i = 0; i < 16U; ++i) {
-//             for (uint32_t j = 0; j < eMOTOR_ID_MAX; ++j) {
-//                 uint32_t handleIdx = MOTOR_ID2IDX (deviceIds[j]);
-//                 uint32_t usDelay   = motorVals[j] & 0x8000U ?
-//                                      gDShotHandles[handleIdx].usValforBit_1 :
-//                                      gDShotHandles[handleIdx].usValforBit_0;
-//             }
-//         }
-//     }
-// }
+    eDEVICE_ID_t motorId = conf.motorId;
+    RETURN_IF (DEVICE_ID_IS_MOTOR (motorId) == false, eSTATUS_FAILURE, "deviceId is not motor");
 
-eSTATUS_t DShotInit (DShotInitConf_t conf) {
+    MotorDeviceConf_t motorConf = conf.motorBoardConf;
 
-    TimerBoardConf_t timerBoardConf = conf.timerBoardConf;
-    eTIMER_ID_t timerId             = timerBoardConf.timerId;
-    MotorBoardConf_t motorBoardConf = conf.motorBoardConf;
-    eDEVICE_ID_t motorId            = motorBoardConf.motorId;
-    bool usingDMA                   = motorBoardConf.useDMA ? true : false;
-    if (DEVICE_ID_IS_MOTOR (motorId) == false) {
-        LOG_ERROR ("deviceId is not motor");
-        return eSTATUS_FAILURE;
-    }
+    TimerBoardConf_t* pTimerBoardConf = motorConf.pTimerBoardConf;
+    RETURN_IF_NULL (pTimerBoardConf, eSTATUS_FAILURE, "Timer board config is NULL");
+    GPIOBoardConf_t const* pGPIOBoardConf = pTimerBoardConf->pGPIOBoardConf;
+    RETURN_IF_NULL (pGPIOBoardConf, eSTATUS_FAILURE, "Timer GPIO board config is NULL");
+
+    eTIMER_ID_t timerId = pTimerBoardConf->timerId;
+    bool usingDMA       = motorConf.useDMA;
 
     vDShot_t* pDShot = DShotGetById (motorId);
-    if (pDShot == NULL || pDShot->isInitialized == true) {
-        LOG_ERROR ("Failed to get DShot handle by device ID");
-        return eSTATUS_FAILURE;
+    if (pOutDShot != NULL) {
+        pDShot = pOutDShot;
     }
+    RETURN_IF_NULL (pDShot, eSTATUS_FAILURE, "Failed to get DShot handle by device ID");
+    RETURN_IF (pDShot->isInitialized, eSTATUS_FAILURE, "DShot already initialized");
 
     memset ((void*)pDShot, 0, sizeof (vDShot_t));
     pDShot->deviceId  = motorId;
@@ -348,7 +334,7 @@ error:
     return eSTATUS_FAILURE;
 }
 
-eSTATUS_t DShotStart (eDEVICE_ID_t deviceId) {
+eSTATUS_t DShotStart (vDShot_t* pDShot) {
     /* NOTE: Do NOT start PWM timer yet. Let it be started by DShotWrite */
     return eSTATUS_SUCCESS;
 }
@@ -357,13 +343,12 @@ eSTATUS_t DShotStart (eDEVICE_ID_t deviceId) {
  * Because the last sent timer CCR value is always 0, no shutdown is needed.
  * The PWM line will never go high until DShotWrite is called again.
  */
-eSTATUS_t DShotStop (eDEVICE_ID_t deviceId) {
+eSTATUS_t DShotStop (vDShot_t* pDShot) {
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t DShotWrite (eDEVICE_ID_t deviceId, uint16_t motorVal) {
+eSTATUS_t DShotWrite (vDShot_t* pDShot, uint16_t motorVal) {
 
-    vDShot_t* pDShot = DShotGetById (deviceId);
     if (pDShot == NULL) {
         LOG_ERROR ("Received NULL pointer for DShot handle");
         return eSTATUS_FAILURE;

@@ -6,56 +6,71 @@
 #include <stdint.h>
 
 typedef struct {
+    uint32_t mode;
+    uint32_t pull;
+    uint32_t speed;
+    uint8_t alternate;
+} GPIOSharedConf_t;
+
+typedef struct {
     eGPIO_ID_t id;
-    eGPIO_PURPOSE_t purpose;
-    uint16_t alternate;
+    // union {
+    GPIOSharedConf_t const* pShared;
+    GPIOSharedConf_t conf;
+    // };
 } GPIOBoardConf_t;
 
 typedef struct {
     eTIMER_ID_t timerId;
-    GPIOBoardConf_t* pGPIOBoardConf;
+    GPIOBoardConf_t const* pGPIOBoardConf;
 } TimerBoardConf_t;
 
 typedef struct {
-    eBUS_ID_t busId;
-} BusHeaderBoardConf_t;
-
-typedef struct {
     eDEVICE_ID_t deviceId;
-    GPIOBoardConf_t* pNssBoardConf;
+    GPIOBoardConf_t const* pNssBoardConf;
 } SPIDeviceMapping_t;
 
 typedef struct {
-    BusHeaderBoardConf_t header;
-    GPIOBoardConf_t* pSckBoardConf;
-    GPIOBoardConf_t* pMisoBoardConf;
-    GPIOBoardConf_t* pMosiBoardConf;
-    SPIDeviceMapping_t* pConnectedDevices; // Array of connected devices
+    GPIOBoardConf_t const* pSckBoardConf;
+    GPIOBoardConf_t const* pMisoBoardConf;
+    GPIOBoardConf_t const* pMosiBoardConf;
+    SPIDeviceMapping_t const* pConnectedDevices;
     uint8_t numConnectedDevices;
     uint16_t speedKHz;
 } SPIBoardConf_t;
 
 typedef struct {
-    BusHeaderBoardConf_t header;
-    GPIOBoardConf_t* pTxBoardConf;
-    GPIOBoardConf_t* pRxBoardConf;
+    GPIOBoardConf_t const* pTxBoardConf;
+    GPIOBoardConf_t const* pRxBoardConf;
     uint32_t baudRate;
 } UARTBoardConf_t;
 
 typedef struct {
-    BusHeaderBoardConf_t header;
-    GPIOBoardConf_t* pSclBoardConf;
-    GPIOBoardConf_t* pSdaBoardConf;
+    GPIOBoardConf_t const* pSclBoardConf;
+    GPIOBoardConf_t const* pSdaBoardConf;
 } I2CBoardConf_t;
 
 typedef struct {
+    eBUS_ID_t busId;
+    union {
+        I2CBoardConf_t I2CBoardConf;
+        SPIBoardConf_t SPIBoardConf;
+        UARTBoardConf_t UARTBoardConf;
+    };
+} BusBoardConf_t;
+
+typedef struct {
     eEXTI_ID_t extiId;
-    eGPIO_ID_t gpioId;
+    GPIOBoardConf_t const* pGPIOBoardConf;
 } EXTIBoardConf_t;
 
 typedef struct {
     EXTIBoardConf_t* pExtiBoardConf;
-    BusHeaderBoardConf_t* pBusBoardConf;
+    BusBoardConf_t* pBusBoardConf;
+    bool useDMAForWrites;
+    bool useDMAForReads;
+    bool useInterruptsForWrites;
+    bool useInterruptsForReads;
 } GenericDeviceConf_t;
 
 typedef struct DeviceBoardConf_s DeviceBoardConf_t;
@@ -73,6 +88,7 @@ typedef struct ServoDeviceConf_s {
 typedef struct MotorDeviceConf_s {
     TimerBoardConf_t* pTimerBoardConf;
     DeviceBoardConf_t* pLinkedServoBoardConf;
+    bool useDMA;
     uint8_t dshotSpeed;
     float pidRollMix;
     float pidPitchMix;
@@ -81,7 +97,6 @@ typedef struct MotorDeviceConf_s {
 
 typedef struct DeviceBoardConf_s {
     eDEVICE_ID_t deviceId;
-    bool useDMA;
     union {
         ServoDeviceConf_t servo;
         MotorDeviceConf_t motor;
