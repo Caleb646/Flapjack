@@ -55,16 +55,34 @@ enum {
     eGPIO_ID_NULL = 0U,
 };
 
+typedef uint8_t eGPIO_PURPOSE_t;
+typedef enum {
+    eGPIO_PURPOSE_NULL = 0,
+    eGPIO_PURPOSE_SPI_SCK,
+    eGPIO_PURPOSE_SPI_MISO,
+    eGPIO_PURPOSE_SPI_MOSI,
+    eGPIO_PURPOSE_SPI_NSS,
+    eGPIO_PURPOSE_I2C_SCL,
+    eGPIO_PURPOSE_I2C_SDA,
+    eGPIO_PURPOSE_UART_TX,
+    eGPIO_PURPOSE_UART_RX,
+    eGPIO_PURPOSE_TIMER_CH,
+    eGPIO_PURPOSE_EXTI,
+    eGPIO_PURPOSE_GPIO_OUT,
+    eGPIO_PURPOSE_GPIO_IN,
+    eGPIO_PURPOSE_ANALOG
+} eGPIO_PURPOSE_t;
+
 // #define GPIO_ID2PORTIDX(id) (((id) >> 15U) > 0U ? __builtin_ctz ((id) >> 15U) : 0U)
 #define GPIO_ID2PORTIDX(id)     (((id) >> GPIO_CHANNELID_NBITS) - 1U)
 #define GPIO_ID2PINIDX(id)      ((id) & (~(eGPIO_PINID_MAX - 1U)))
-#define GPIO_ID_MAKE(port, pin) ((port) | (pin))
+#define GPIO_ID_MAKE(port, pin) ((eGPIO_ID_t)(port) | (eGPIO_ID_t)(pin))
 #define GPIO_ID_IS_GPIO(id) \
     ((id) != eGPIO_ID_NULL && (GPIO_ID2PORTIDX ((id)) < eGPIO_PORTID_MAX))
 
 typedef uint8_t eDEVICE_ID_t;
 enum {
-    eDEVICE_ID_NULL = 0,
+    eDEVICE_ID_NULL = 0U,
     eIMU_DEVICE_ID,
     eGPS_DEVICE_ID,
     eBARO_DEVICE_ID,
@@ -105,7 +123,7 @@ enum {
 
 typedef uint8_t eBUS_ID_t;
 enum {
-    eNULL_BUS_ID = 0,
+    eNULL_BUS_ID = 0U,
 
     eI2C_BUS_ID_BEGIN__,
     eI2C_1_BUS_ID = eI2C_BUS_ID_BEGIN__,
@@ -147,7 +165,7 @@ enum {
 
 typedef uint8_t eTIMER_CHANNEL_ID_t;
 enum {
-    eTIMER_CHANNEL_1_ID = 0,
+    eTIMER_CHANNEL_1_ID = 0U,
     eTIMER_CHANNEL_2_ID,
     eTIMER_CHANNEL_3_ID,
     eTIMER_CHANNEL_4_ID,
@@ -181,11 +199,12 @@ enum {
 #define TIMER_ID_CLEAR_CHANNEL_BITS(id) ((id) & (~TIMER_CHANNEL_ID_MASK))
 #define TIMER_ID_IS_TIMER(id) \
     ((((id) != eTIMER_ID_NULL) && (TIMER_ID2IDX ((id)) < eTIMER_ID_MAX)))
-#define TIMER_ID_MAKE(timerId, channelId) ((timerId) | (channelId))
+#define TIMER_ID_MAKE(timerId, channelId) \
+    ((eTIMER_ID_t)(timerId) | (eTIMER_ID_t)(channelId))
 
 typedef uint8_t eEXTI_ID_t;
 enum {
-    eEXTI_ID_NULL = 0,
+    eEXTI_ID_NULL = 0U,
     eEXTI_0_ID,
     eEXTI_1_ID,
     eEXTI_2_ID,

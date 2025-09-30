@@ -137,6 +137,8 @@ enum {
 };
 
 // clang-format off
+// NOTE: Be careful using this with Delay functions as 
+// they may use SysTick which may be disabled by this macro.
 #define ATOMIC_BLOCK_LOCAL(NVIC_PRIO)                                                                    \
     for (uint8_t __basepri_save __attribute__ ((__cleanup__ (BasePriRestoreMem), __unused__)) =  __get_BASEPRI (), __ToDo = BasePriSetMemRetVal ((NVIC_PRIO)); \
     __ToDo; __ToDo = 0); \
