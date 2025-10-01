@@ -219,29 +219,6 @@ eSTATUS_t Vector_Resize (Vector_t* pVector, uint16_t newSize, void const* pFillV
     return eSTATUS_SUCCESS;
 }
 
-void Vector_Reverse (Vector_t* pVector) {
-
-    if (pVector == NULL || pVector->size <= 1) {
-        return;
-    }
-
-    uint8_t* pData       = (uint8_t*)pVector->pData;
-    uint16_t elementSize = pVector->elementSize;
-
-    // Allocate temporary buffer for swapping elements
-    uint8_t temp[elementSize];
-
-    for (uint16_t i = 0; i < pVector->size / 2; i++) {
-        uint8_t* pLeft  = pData + (i * elementSize);
-        uint8_t* pRight = pData + ((pVector->size - 1 - i) * elementSize);
-
-        // Swap elements
-        memcpy (temp, pLeft, elementSize);
-        memcpy (pLeft, pRight, elementSize);
-        memcpy (pRight, temp, elementSize);
-    }
-}
-
 void* Vector_Data (Vector_t const* pVector) {
 
     if (pVector == NULL) {

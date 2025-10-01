@@ -3,8 +3,8 @@
 
 #include "common.h"
 
-typedef bool (*UMapEqualFn_t) (void const* pKey1, void const* pKey2, uint16_t keySize);
-typedef uint32_t (*UMapHashFn_t) (void const* pKey, uint32_t keySize);
+typedef bool (*UMapEqualFn_t) (void const* pKey1, void const* pKey2, size_t keySize);
+typedef uint32_t (*UMapHashFn_t) (void const* pKey, size_t keySize);
 
 typedef struct {
     void* pKey;
@@ -17,9 +17,9 @@ typedef struct {
     uint32_t processID; // If 0 then umap is not shared
     UMapEntry_t* pEntries;
     uint16_t capacity;
-    uint16_t keySize;
-    uint16_t valueSize;
-    uint16_t size;
+    size_t keySize;
+    size_t valueSize;
+    size_t size;
     UMapHashFn_t hashFunc;
     UMapEqualFn_t equalFunc;
 } UMap_t;
@@ -63,7 +63,6 @@ bool UMap_Insert (UMap_t* pUMap, void const* pKey, void const* pValue);
 bool UMap_Find (UMap_t const* pUMap, void const* pKey, void* pOutValue);
 void* UMap_FindPtr (UMap_t const* pUMap, void const* pKey);
 bool UMap_Contains (UMap_t const* pUMap, void const* pKey);
-bool UMap_Erase (UMap_t* pUMap, void const* pKey);
 void UMap_Clear (UMap_t* pUMap);
 
 float UMap_LoadFactor (UMap_t const* pUMap);
@@ -111,9 +110,6 @@ float UMap_LoadFactor (UMap_t const* pUMap);
     }                                                                                       \
     static inline bool NAME##UMap_Contains (KEY_TYPE const* pKey) {                         \
         return UMap_Contains (&g_##NAME##_umap, pKey);                                      \
-    }                                                                                       \
-    static inline bool NAME##UMap_Erase (KEY_TYPE const* pKey) {                            \
-        return UMap_Erase (&g_##NAME##_umap, pKey);                                         \
     }                                                                                       \
     static inline void NAME##UMap_Clear (void) {                                            \
         UMap_Clear (&g_##NAME##_umap);                                                      \

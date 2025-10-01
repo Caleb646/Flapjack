@@ -197,14 +197,12 @@ IMUReadReg (vIMU_t const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len) {
      *       2               0x00         data byte 0
      *       N               0x00         data byte N - 1
      */
-    if (len + pIMU->nBusDummyBytes + 1 > RW_BUFFER_SZ) {
+    size_t totalSize = len + pIMU->nBusDummyBytes + 1;
+    if (totalSize > RW_BUFFER_SZ) {
         return (eSTATUS_t)eIMU_RW_BUFFER_OVERFLOW;
     }
 
-    eSTATUS_t status = eSTATUS_SUCCESS;
-    status =
-    pIMU->bus.writeRead (pIMU->busId, pIMU->deviceId, pTx, pRx, len + pIMU->nBusDummyBytes + 1);
-
+    eSTATUS_t status = BUS_WRITE_READ (pIMU->bus, pTx, pRx, totalSize);
     if (status != eSTATUS_SUCCESS) {
         return (eSTATUS_t)eIMU_COM_FAILURE;
     }
@@ -228,8 +226,7 @@ IMUWriteReg (vIMU_t const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len) {
     pTx[0] = reg & BMI3_SPI_WR_MASK;
     memcpy (&pTx[1], (void*)pBuf, len);
 
-    eSTATUS_t status = eSTATUS_SUCCESS;
-    status = pIMU->bus.write (pIMU->busId, pIMU->deviceId, pTx, len + 1);
+    eSTATUS_t status = BUS_WRITE (pIMU->bus, pTx, len + 1);
     if (status != eSTATUS_SUCCESS) {
         return (eSTATUS_t)eIMU_COM_FAILURE;
     }
@@ -785,7 +782,7 @@ IMUConvertRaw (IMU_ACC_RANGE aRange, Vec3i ra, IMU_GYRO_RANGE gRange, Vec3i rg, 
 }
 
 
-eSTATUS_t IMUInit (IMUInitConf_t conf, IMU_t* pOutIMU) {
+eSTATUS_t IMUInit (IMUInitConf_t conf, IMU_t* pOutIMU, BusInterface_t* pBusOverride) {
 
     IMUAccConf accConf             = conf.aconf;
     IMUGyroConf gyroConf           = conf.gconf;
@@ -813,8 +810,12 @@ eSTATUS_t IMUInit (IMUInitConf_t conf, IMU_t* pOutIMU) {
     /* SPI reads have 1 dummy byte at the beginning */
     pIMU->nBusDummyBytes = BUS_ID_IS_SPI (busId) ? 1 : 0;
 
-    BUS_INIT (&status, device, *pBus, &pIMU->bus);
-    GOTO_IF (STATUS_FAIL (status), error, "Failed to init bus for imu");
+    if (pBusOverride != NULL) {
+        pIMU->bus = *pBusOverride;
+    } else {
+        BUS_INIT (&status, device, *pBus, &pIMU->bus);
+        GOTO_IF (STATUS_FAIL (status), error, "Failed to init bus for imu");
+    }
 
     if (pIMU->bus.read == NULL || pIMU->bus.write == NULL || pIMU->bus.writeRead == NULL) {
         LOG_ERROR ("Bus for imu does not have read or write or write read function");
@@ -937,7 +938,7 @@ eSTATUS_t IMUStart (vIMU_t* pIMU) {
 /*
  * Called by the interrupt handler
  */
-STATIC_TESTABLE_DECL bool IMUUpdatefromINT (vIMU_t* pIMU) {
+STATIC_TESTABLE_DECL UNUSED_FN_DECL bool IMUUpdatefromINT (vIMU_t* pIMU) {
 
     uint16_t interruptStatus = 0;
     eSTATUS_t status         = IMUGetStatusReg (pIMU, &interruptStatus);

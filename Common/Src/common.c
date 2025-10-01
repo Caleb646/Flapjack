@@ -48,6 +48,8 @@ float mapf32 (float v, float fromMin, float fromMax, float toMin, float toMax) {
 
 static inline void DWTInit (void) {
 
+#ifndef UNIT_TEST
+
     static bool dwtEnabled = false;
     if (dwtEnabled == true) {
         return;
@@ -57,6 +59,8 @@ static inline void DWTInit (void) {
     // Enable DWT cycle counter
     DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
     DWT->CYCCNT = 0;
+
+#endif // UNIT_TEST
 }
 
 uint32_t GetMilliseconds (void) {
@@ -70,6 +74,7 @@ uint32_t GetMicroseconds (void) {
     /* VAL   -->  Offset: 0x008 (R/W)  SysTick Current Value Register */
     /* CALIB -->  Offset: 0x00C (R/ )  SysTick Calibration Register */
     /* Systick->LOAD Initial Value -->  SYSTICK_CLOCK_HZ (64MHz) / 1000U ) - 1UL = 64,000 */
+#ifndef UNIT_TEST
     uint32_t msTime = GetMilliseconds ();
 #if MICRO_DELAY_USE_SYSTICK == 1
     if (SysTick->LOAD == SysTick->VAL) {
@@ -82,9 +87,12 @@ uint32_t GetMicroseconds (void) {
     uint32_t usTime = DWT->CYCCNT / (SystemCoreClock / 1000000U);
     return msTime * 1000U + usTime;
 #endif
+#endif // UNIT_TEST
+    return 0;
 }
 
 void DelayMicroseconds (uint32_t us) {
+
     uint32_t usStart = GetMicroseconds ();
     while ((GetMicroseconds () - usStart) < us) {
         __NOP ();
@@ -92,6 +100,9 @@ void DelayMicroseconds (uint32_t us) {
 }
 
 void fDelayMicroseconds (float us) {
+
+#ifndef UNIT_TEST
+
     if (us < 0.0F) {
         return;
     }
@@ -111,15 +122,28 @@ void fDelayMicroseconds (float us) {
     while ((DWT->CYCCNT - start) < cycles) {
         __NOP ();
     }
+
+#endif // UNIT_TEST
 }
 
 /* Source --> Betaflight: https://github.com/betaflight/betaflight/blob/master/src/main/build/atomic.h */
 void BasePriRestoreMem (uint8_t* val) {
+
+#ifndef UNIT_TEST
+
     __set_BASEPRI (*val);
+
+#endif // UNIT_TEST
 }
 
 // set BASEPRI_MAX, with global memory barrier, returns true
 uint8_t BasePriSetMemRetVal (uint8_t prio) {
+
+#ifndef UNIT_TEST
+
     __set_BASEPRI_MAX (prio);
+    return 1;
+
+#endif // UNIT_TEST
     return 1;
 }

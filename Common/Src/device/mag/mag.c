@@ -27,8 +27,8 @@ STATIC_TESTABLE_DECL eMAG_STATUS_t MagRead (vMag_t* pMag, uint8_t reg, uint8_t* 
 
     eBUS_ID_t busId       = pMag->busId;
     eDEVICE_ID_t deviceId = pMag->deviceId;
-    uint16_t totalSize    = size + pMag->nBusDummyBytes + 1U;
 
+    size_t totalSize = size + pMag->nBusDummyBytes + 1U;
     if (totalSize > MAX_BUFFER_SIZE) {
         LOG_ERROR ("Read size exceeds max buffer size");
         return eMAG_BUS_ERROR;
@@ -37,8 +37,7 @@ STATIC_TESTABLE_DECL eMAG_STATUS_t MagRead (vMag_t* pMag, uint8_t reg, uint8_t* 
     uint8_t txData[MAX_BUFFER_SIZE] = { reg | 0x80U }; // Set MSB for read operation
     uint8_t rxData[MAX_BUFFER_SIZE] = { 0 };
 
-    eSTATUS_t status = eSTATUS_SUCCESS;
-    status = pMag->bus.writeRead (busId, deviceId, txData, rxData, totalSize);
+    eSTATUS_t status = BUS_WRITE_READ (pMag->bus, txData, rxData, totalSize);
     if (status != eSTATUS_SUCCESS) {
         return eMAG_BUS_ERROR;
     }
@@ -63,8 +62,7 @@ STATIC_TESTABLE_DECL eMAG_STATUS_t MagWrite (vMag_t* pMag, uint8_t reg, uint8_t*
     txData[0] = reg & 0x7FU; // Clear MSB for write operation
     memcpy (&(txData[1]), pData, size);
 
-    eSTATUS_t status = eSTATUS_SUCCESS;
-    status = pMag->bus.write (busId, deviceId, txData, totalSize);
+    eSTATUS_t status = BUS_WRITE (pMag->bus, txData, totalSize);
     if (status != eSTATUS_SUCCESS) {
         return eMAG_BUS_ERROR;
     }
@@ -113,7 +111,7 @@ STATIC_TESTABLE_DECL eMAG_STATUS_t MagSoftReset (vMag_t* pMag) {
     // 10 ms reset time + 5 ms margin
     DelayMicroseconds (15000);
     // Clear the software reset bit on our registers
-    MagControlRegWrite (pMag, MMC5983_INT_CTRL_1_REG, ~MMC5983_SW_RST, false);
+    MagControlRegWrite (pMag, MMC5983_INT_CTRL_1_REG, (uint8_t)~MMC5983_SW_RST, false);
     return success == true ? eSTATUS_SUCCESS : eMAG_BUS_ERROR;
 }
 
@@ -132,11 +130,11 @@ STATIC_TESTABLE_DECL bool MagUpdateRawData (vMag_t* pMag) {
     x1 = pXYZ[0], x2 = pXYZ[1];
     y1 = pXYZ[2], y2 = pXYZ[3];
     z1 = pXYZ[4], z2 = pXYZ[5];
-    xyz                    = pXYZ[6];
-    pMag->rawData.x        = ((x1 << 8U | x2) << 2U) | (xyz >> 6U);
-    pMag->rawData.y        = ((y1 << 8U | y2) << 2U) | (xyz >> 4U) & 0x3U;
-    pMag->rawData.z        = ((z1 << 8U | z2) << 2U) | (xyz >> 2U) & 0x3U;
-    pMag->dataUpdated      = true;
+    xyz               = pXYZ[6];
+    pMag->rawData.x   = (((x1 << 8U) | x2) << 2U) | (xyz >> 6U);
+    pMag->rawData.y   = (((y1 << 8U) | y2) << 2U) | ((xyz >> 4U) & 0x3U);
+    pMag->rawData.z   = (((z1 << 8U) | z2) << 2U) | ((xyz >> 2U) & 0x3U);
+    pMag->dataUpdated = true;
     pMag->msLastUpdateTime = GetMilliseconds ();
     return true;
 }
@@ -158,7 +156,7 @@ STATIC_TESTABLE_DECL Vec3f MagRaw2NormedGauss (vMag_t const* pMag, Vec3u raw, bo
 /*
  * Called by interrupt handler
  */
-STATIC_TESTABLE_DECL bool MagUpdateFromINT (vMag_t* pMag) {
+STATIC_TESTABLE_DECL UNUSED_FN_DECL bool MagUpdateFromINT (vMag_t* pMag) {
 
     if (MagXYZIsReady (pMag) == false) {
         return false;
@@ -171,8 +169,8 @@ STATIC_TESTABLE_DECL bool MagUpdateFromINT (vMag_t* pMag) {
 
 STATIC_TESTABLE_DECL bool MagUpdateFromPolling (vMag_t* pMag) {
 
-    eMAG_STATUS_t status = eSTATUS_SUCCESS;
-    bool success         = true;
+    // eMAG_STATUS_t status = eSTATUS_SUCCESS;
+    bool success = true;
     // Initiate measurement
     success = MagControlRegWrite (pMag, MMC5983_INT_CTRL_0_REG, MMC5983_TM_M, true);
     GOTO_IF (success == false, error, "Failed to initiate MAG measurement");
@@ -186,14 +184,14 @@ STATIC_TESTABLE_DECL bool MagUpdateFromPolling (vMag_t* pMag) {
     success = MagUpdateRawData (pMag);
     GOTO_IF (success == false, error, "Failed to update MAG raw data");
     // Clear measurement done flag in saved registers
-    MagControlRegWrite (pMag, MMC5983_INT_CTRL_0_REG, ~MMC5983_MEAS_M_DONE, false);
+    MagControlRegWrite (pMag, MMC5983_INT_CTRL_0_REG, (uint8_t)~MMC5983_MEAS_M_DONE, false);
     return success;
 error:
-    MagControlRegWrite (pMag, MMC5983_INT_CTRL_0_REG, ~MMC5983_MEAS_M_DONE, false);
+    MagControlRegWrite (pMag, MMC5983_INT_CTRL_0_REG, (uint8_t)~MMC5983_MEAS_M_DONE, false);
     return false;
 }
 
-eMAG_STATUS_t MagInit (MagInitConf_t conf, Mag_t* pOutMag) {
+eMAG_STATUS_t MagInit (MagInitConf_t conf, Mag_t* pOutMag, BusInterface_t* pBusOverride) {
 
     eSTATUS_t status         = eSTATUS_SUCCESS;
     DeviceBoardConf_t device = conf.boardConf;
@@ -214,8 +212,12 @@ eMAG_STATUS_t MagInit (MagInitConf_t conf, Mag_t* pOutMag) {
     // SPI reads have 1 dummy byte at the beginning
     pMag->nBusDummyBytes = BUS_ID_IS_SPI (busId) == true ? 1U : 0U;
 
-    BUS_INIT (&status, device, *pBus, &pMag->bus);
-    GOTO_IF (STATUS_FAIL (status), error, "Failed to initialize MAG bus");
+    if (pBusOverride != NULL) {
+        pMag->bus = *pBusOverride;
+    } else {
+        BUS_INIT (&status, device, *pBus, &pMag->bus);
+        GOTO_IF (STATUS_FAIL (status), error, "Failed to initialize MAG bus");
+    }
 
     GOTO_IF (MagSoftReset (pMag) != eSTATUS_SUCCESS, error, "Failed to soft reset MAG");
 
@@ -240,6 +242,20 @@ eMAG_STATUS_t MagInit (MagInitConf_t conf, Mag_t* pOutMag) {
     flags |= MMC5983_PRD_SET_0 | MMC5983_PRD_SET_1 | MMC5983_PRD_SET_2 | MMC5983_EN_PRD_SET;
     success = MagControlRegWrite (pMag, MMC5983_INT_CTRL_2_REG, flags, true);
     GOTO_IF (success == false, error, "Failed to configure MAG INT_CTRL_2 register");
+
+    // TODO: Configure EXTI
+    if (pExti != NULL) {
+
+        pMag->usingEXTIInterrupt = true;
+        flags |= MMC5983_AUTO_SR_EN;       // Enable automatic set/reset
+        flags |= MMC5983_INT_MEAS_DONE_EN; // Enable measurement done interrupt
+        success = MagControlRegWrite (pMag, MMC5983_INT_CTRL_0_REG, flags, true);
+        // Configure EXTI
+        // status = ExtiInit (*pExti);
+        // GOTO_IF (STATUS_FAIL (status), error, "Failed to initialize MAG EXTI");
+        // status = ExtiAttachDeviceInterrupt (pExti->extiLine, (void*)pMag, MagUpdateFromINT);
+        // GOTO_IF (STATUS_FAIL (status), error, "Failed to attach MAG EXTI interrupt");
+    }
 
     pMag->isInitialized = true;
     LOG_INFO ("Successfully initialized MAG");
@@ -274,7 +290,7 @@ eMAG_STATUS_t MagStop (vMag_t* pMag) {
     bool success         = true;
     if (pMag->usingEXTIInterrupt == true) {
         // Disable interrupts on the MAG
-        uint8_t flags = ~MMC5983_INT_MEAS_DONE_EN;
+        uint8_t flags = (uint8_t)~MMC5983_INT_MEAS_DONE_EN;
         success = MagControlRegWrite (pMag, MMC5983_INT_CTRL_0_REG, flags, true);
         RETURN_IF (success == false, eMAG_BUS_ERROR, "Failed to configure MAG INT_CTRL_0 register");
     }

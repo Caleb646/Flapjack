@@ -18,14 +18,12 @@ eSTATUS_t BusInit (BusInitConf_t conf, BusInterface_t* pOutBusInterface) {
     eSTATUS_t status = eSTATUS_SUCCESS;
 
     DeviceBoardConf_t device = conf.deviceBoardConf;
-    // eDEVICE_ID_t deviceId    = device.deviceId;
+    eDEVICE_ID_t deviceId    = device.deviceId;
     // TODO: currently not used
     // bool usingDMAForBus        = device.useDMAForWrites;
     // bool usingInterruptsForBus = device.useInterruptsForWrites;
-
     BusBoardConf_t bus = conf.busBoardConf;
     eBUS_ID_t busId    = bus.busId;
-
 
     if (BUS_ID_IS_I2C (busId)) {
         return eSTATUS_FAILURE;
@@ -38,9 +36,11 @@ eSTATUS_t BusInit (BusInitConf_t conf, BusInterface_t* pOutBusInterface) {
             return eSTATUS_FAILURE;
         }
 
-        pOutBusInterface->read      = SPIRead_Blocking;
-        pOutBusInterface->write     = SPIWrite_Blocking;
-        pOutBusInterface->writeRead = SPIWriteRead_Blocking;
+        pOutBusInterface->read      = SPI_READ_BLOCKING;
+        pOutBusInterface->write     = SPI_WRITE_BLOCKING;
+        pOutBusInterface->writeRead = SPI_WRITE_READ_BLOCKING;
+        pOutBusInterface->deviceId  = deviceId;
+        pOutBusInterface->pCtx      = SPIGetBusById (busId);
         return eSTATUS_SUCCESS;
     }
 
@@ -51,12 +51,13 @@ eSTATUS_t BusInit (BusInitConf_t conf, BusInterface_t* pOutBusInterface) {
             return eSTATUS_FAILURE;
         }
 
-        pOutBusInterface->read      = UARTRead_Blocking;
-        pOutBusInterface->write     = UARTWrite_Blocking;
+        pOutBusInterface->read      = UART_READ_BLOCKING;
+        pOutBusInterface->write     = UART_WRITE_BLOCKING;
         pOutBusInterface->writeRead = NULL;
+        pOutBusInterface->deviceId  = deviceId;
+        pOutBusInterface->pCtx      = UARTGetBusById (busId);
         return eSTATUS_SUCCESS;
     }
-
-
-    return status;
+    // invalid bus type
+    return eSTATUS_FAILURE;
 }

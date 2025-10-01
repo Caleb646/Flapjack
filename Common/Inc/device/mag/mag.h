@@ -42,17 +42,17 @@ typedef struct Mag_s {
 
 typedef Mag_t vMag_t;
 
-eMAG_STATUS_t MagInit (MagInitConf_t conf, Mag_t* pOutMag);
+eMAG_STATUS_t MagInit (MagInitConf_t conf, Mag_t* pOutMag, BusInterface_t* pBusOverride);
 eMAG_STATUS_t MagStart (vMag_t* pMag);
 eMAG_STATUS_t MagStop (vMag_t* pMag);
 eMAG_STATUS_t MagUpdate (vMag_t* pMag, bool forcePolling, Vec3f* pOutput);
 vMag_t* MagGetActiveDevice (void);
 
-#define MAG_INIT(pSTATUS, DEVICE_BOARD_CONF)             \
-    do {                                                 \
-        MagInitConf_t magConf = { 0 };                   \
-        magConf.boardConf     = (DEVICE_BOARD_CONF);     \
-        *(pSTATUS)            = MagInit (magConf, NULL); \
+#define MAG_INIT(pSTATUS, DEVICE_BOARD_CONF)                   \
+    do {                                                       \
+        MagInitConf_t magConf = { 0 };                         \
+        magConf.boardConf     = (DEVICE_BOARD_CONF);           \
+        *(pSTATUS)            = MagInit (magConf, NULL, NULL); \
     } while (0)
 
 #endif // DEVICE_MAG_MAG_H

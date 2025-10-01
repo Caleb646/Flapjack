@@ -11,7 +11,7 @@
 
 #define FILTER_VALID(pF) ((pF) != NULL && (pF)->isInitialized == true)
 
-static SHARED_MEM_SECTION vFilter_t gFilter = { 0 };
+static SHARED_MEM_SECTION Filter_t gFilter = { 0 };
 
 // clang-format off
 #ifndef UNIT_TEST

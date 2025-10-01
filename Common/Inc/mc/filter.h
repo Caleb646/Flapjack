@@ -19,7 +19,7 @@ typedef struct {
 } FilterLowPassInitConf_t;
 
 typedef struct {
-
+    uint8_t unused;
 } FilterLowPass_t;
 
 typedef struct {

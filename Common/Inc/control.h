@@ -109,7 +109,7 @@ STATIC_ASSERT (sizeof (ChangeFlightModeCmd) <= sizeof (DefaultCommand), "");
 STATIC_ASSERT (sizeof (ChangeVelocityCmd) <= sizeof (DefaultCommand), "");
 STATIC_ASSERT (sizeof (ChangePIDCmd) <= sizeof (DefaultCommand), "");
 
-typedef bool (*OpStateTransitionHandler_t) (vFCState_t curState);
+// typedef bool (*OpStateTransitionHandler_t) (vFCState_t curState);
 typedef eSTATUS_t (*CmdHandlerFn_t) (DefaultCommand cmd);
 
 eSTATUS_t ControlInit (void);

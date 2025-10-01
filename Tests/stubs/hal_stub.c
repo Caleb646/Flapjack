@@ -11,7 +11,7 @@ HAL_SPI_Transmit (SPI_HandleTypeDef* hspi, uint8_t* pData, uint16_t Size, uint32
     if (gHAL_SPI_Transmit_CB) {
         return gHAL_SPI_Transmit_CB (hspi, pData, Size, Timeout);
     }
-    return HAL_OK; // or your default stub behavior
+    return HAL_OK;
 }
 
 HAL_StatusTypeDef
@@ -19,7 +19,7 @@ HAL_SPI_TransmitReceive (SPI_HandleTypeDef* hspi, uint8_t* pTxData, uint8_t* pRx
     if (gHAL_SPI_TransmitReceive_CB) {
         return gHAL_SPI_TransmitReceive_CB (hspi, pTxData, pRxData, Size, Timeout);
     }
-    return HAL_OK; // or your default stub behavior
+    return HAL_OK;
 }
 
 HAL_StatusTypeDef
@@ -27,7 +27,7 @@ HAL_UART_Transmit (UART_HandleTypeDef* huart, const uint8_t* pData, uint16_t Siz
     if (gHAL_UART_Transmit_CB) {
         return gHAL_UART_Transmit_CB (huart, pData, Size, Timeout);
     }
-    return HAL_OK; // or your default stub behavior
+    return HAL_OK;
 }
 
 uint32_t HAL_GetCurrentCPUID (void) {

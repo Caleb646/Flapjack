@@ -331,8 +331,7 @@ static DeviceBoardConf_t flightModeServo = { .deviceId = eSERVO_7_ID,
 
 static DeviceBoardConf_t leftMotor = { .deviceId = eMOTOR_1_ID,
                                        .motor = { .pTimerBoardConf = &timer12ch1,
-                                                  .pLinkedServoBoardConf =
-                                                  &leftMotorServo.servo,
+                                                  .pLinkedServoBoardConf = NULL,
                                                   .useDMA      = false,
                                                   .dshotSpeed  = 150,
                                                   .pidRollMix  = 1.0F,
@@ -341,8 +340,7 @@ static DeviceBoardConf_t leftMotor = { .deviceId = eMOTOR_1_ID,
 
 static DeviceBoardConf_t rightMotor = { .deviceId = eMOTOR_2_ID,
                                         .motor = { .pTimerBoardConf = &timer12ch2,
-                                                   .pLinkedServoBoardConf =
-                                                   &rightMotorServo.servo,
+                                                   .pLinkedServoBoardConf = NULL,
                                                    .useDMA      = false,
                                                    .dshotSpeed  = 150,
                                                    .pidRollMix  = 1.0F,

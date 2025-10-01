@@ -202,7 +202,7 @@ eSTATUS_t MotorWriteCmd (Motor_t* pMotor, eMOTOR_CMD_t command) {
     default: LOG_ERROR ("Unknown motor command"); return eSTATUS_FAILURE;
     }
 
-    eSTATUS_t status = DShotWrite (pMotor->motorId, command);
+    eSTATUS_t status = DSHOT_WRITE (pMotor->motorId, command);
     if (status != eSTATUS_SUCCESS && status != eSTATUS_BUSY) {
         LOG_ERROR ("Failed to write command to motor");
         return status;

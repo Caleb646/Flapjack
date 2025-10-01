@@ -26,16 +26,6 @@ static SPI_TypeDef* SPIGetInstanceById (eBUS_ID_t busId) {
     }
 }
 
-static INLINE vSPIBus_t* SPIGetBusById (eBUS_ID_t busId) {
-
-    uint32_t busIndex = SPI_BUS_ID2IDX (busId);
-    if (BUS_ID_IS_SPI (busId) == false || busIndex >= eSPI_BUS_ID_MAX) {
-        LOG_ERROR ("Invalid SPI bus ID");
-        return NULL;
-    }
-    return &gSPIBusses[busIndex];
-}
-
 static INLINE vIO_t* SPIGetGPIOByDeviceId (vSPIBus_t* pBus, eDEVICE_ID_t deviceId) {
 
     for (uint32_t i = 0; i < pBus->nDevices; ++i) {
@@ -47,10 +37,8 @@ static INLINE vIO_t* SPIGetGPIOByDeviceId (vSPIBus_t* pBus, eDEVICE_ID_t deviceI
     return NULL;
 }
 
-static INLINE bool
-SPIBeginTransaction (eBUS_ID_t busId, eDEVICE_ID_t deviceId, vSPIBus_t** ppOutBus) {
+static INLINE bool SPIBeginTransaction (vSPIBus_t* pBus, eDEVICE_ID_t deviceId) {
 
-    vSPIBus_t* pBus = SPIGetBusById (busId);
     if (SPI_VALID (pBus) == false) {
         LOG_ERROR ("Failed to get SPI bus by ID");
         return false;
@@ -69,9 +57,6 @@ SPIBeginTransaction (eBUS_ID_t busId, eDEVICE_ID_t deviceId, vSPIBus_t** ppOutBu
     pBus->activeTransaction.pNss     = pGPIO;
     pBus->activeTransaction.deviceId = deviceId;
     HAL_GPIO_WritePin (pGPIO->pPort, pGPIO->pin, GPIO_PIN_RESET);
-    if (ppOutBus != NULL) {
-        *ppOutBus = pBus;
-    }
     return true;
 }
 
@@ -205,7 +190,17 @@ static eSTATUS_t SPIInitGPIO (vSPIBus_t* pBus, SPIInitConf_t conf) {
     return status;
 }
 
-eSTATUS_t SPIInit (SPIInitConf_t conf) {
+vSPIBus_t* SPIGetBusById (eBUS_ID_t busId) {
+
+    uint32_t busIndex = SPI_BUS_ID2IDX (busId);
+    if (BUS_ID_IS_SPI (busId) == false || busIndex >= eSPI_BUS_ID_MAX) {
+        LOG_ERROR ("Invalid SPI bus ID");
+        return NULL;
+    }
+    return &gSPIBusses[busIndex];
+}
+
+eSTATUS_t SPIInit (SPIInitConf_t conf, vSPIBus_t* pOutBus) {
 
     DeviceBoardConf_t device = conf.deviceBoardConf;
     eDEVICE_ID_t deviceId    = device.deviceId;
@@ -220,6 +215,9 @@ eSTATUS_t SPIInit (SPIInitConf_t conf) {
     LOG_INFO ("Initializing SPI bus %u", busId);
 
     vSPIBus_t* pBus = SPIGetBusById (busId);
+    if (pOutBus != NULL) {
+        pBus = pOutBus;
+    }
     RETURN_IF_NULL (pBus, eSTATUS_FAILURE, "Failed to get SPI bus by ID");
 
     /* Let the first device to initialize the spi bus setup all of the given nss GPIO pins. */
@@ -281,11 +279,10 @@ error:
 }
 
 eSTATUS_t
-SPIRead_Blocking (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size) {
+SPIRead_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size) {
 
     eSTATUS_t status = eSTATUS_SUCCESS;
-    vSPIBus_t* pBus  = NULL;
-    if (SPIBeginTransaction (busId, deviceId, &pBus) == false) {
+    if (SPIBeginTransaction (pBus, deviceId) == false) {
         return eSTATUS_FAILURE;
     }
 
@@ -299,11 +296,10 @@ SPIRead_Blocking (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t* pData, size_t
 }
 
 eSTATUS_t
-SPIWrite_Blocking (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pData, size_t size) {
+SPIWrite_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t const* pData, size_t size) {
 
     eSTATUS_t status = eSTATUS_SUCCESS;
-    vSPIBus_t* pBus  = NULL;
-    if (SPIBeginTransaction (busId, deviceId, &pBus) == false) {
+    if (SPIBeginTransaction (pBus, deviceId) == false) {
         return eSTATUS_FAILURE;
     }
 
@@ -317,11 +313,10 @@ SPIWrite_Blocking (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pData,
 }
 
 eSTATUS_t
-SPIWriteRead_Blocking (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pTxData, uint8_t* pRxData, size_t size) {
+SPIWriteRead_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t const* pTxData, uint8_t* pRxData, size_t size) {
 
     eSTATUS_t status = eSTATUS_SUCCESS;
-    vSPIBus_t* pBus  = NULL;
-    if (SPIBeginTransaction (busId, deviceId, &pBus) == false) {
+    if (SPIBeginTransaction (pBus, deviceId) == false) {
         return eSTATUS_FAILURE;
     }
 
@@ -335,16 +330,16 @@ SPIWriteRead_Blocking (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pT
     return status;
 }
 
-// eSTATUS_t SPIRead (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t* pData, uint16_t size) {
-//     // TODO implement non-blocking version
-//     return SPIRead_Blocking (busId, deviceId, pData, size);
-// }
+eSTATUS_t SPI_READ_BLOCKING (void* pCtx, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size) {
+    return SPIRead_Blocking ((vSPIBus_t*)pCtx, deviceId, pData, size);
+}
 
-// eSTATUS_t SPIWrite (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pData, uint16_t size) {
-//     return SPIWrite_Blocking (busId, deviceId, pData, size);
-// }
+eSTATUS_t
+SPI_WRITE_BLOCKING (void* pCtx, eDEVICE_ID_t deviceId, uint8_t const* pData, size_t size) {
+    return SPIWrite_Blocking ((vSPIBus_t*)pCtx, deviceId, pData, size);
+}
 
-// eSTATUS_t
-// SPIWriteRead (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pTxData, uint8_t* pRxData, uint16_t size) {
-//     return SPIWriteRead_Blocking (busId, deviceId, pTxData, pRxData, size);
-// }
+eSTATUS_t
+SPI_WRITE_READ_BLOCKING (void* pCtx, eDEVICE_ID_t deviceId, uint8_t const* pTxData, uint8_t* pRxData, size_t size) {
+    return SPIWriteRead_Blocking ((vSPIBus_t*)pCtx, deviceId, pTxData, pRxData, size);
+}

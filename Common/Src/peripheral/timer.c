@@ -284,10 +284,10 @@ eSTATUS_t TimerInitGPIO (vTimer_t* pTimer, TimerChannel_t* pChannel, TimerInitCo
         return eSTATUS_FAILURE;
     }
 
-    eSTATUS_t status                = eSTATUS_SUCCESS;
-    TimerBoardConf_t boardConf      = conf.timerBoardConf;
-    eTIMER_ID_t timerId             = boardConf.timerId;
-    GPIOBoardConf_t* pGPIOBoardConf = boardConf.pGPIOBoardConf;
+    eSTATUS_t status                      = eSTATUS_SUCCESS;
+    TimerBoardConf_t boardConf            = conf.timerBoardConf;
+    eTIMER_ID_t timerId                   = boardConf.timerId;
+    GPIOBoardConf_t const* pGPIOBoardConf = boardConf.pGPIOBoardConf;
     GPIO_INIT (&status, timerId, *pGPIOBoardConf);
     RETURN_IF (STATUS_FAIL (status), status, "Failed to initialize timer GPIO");
 

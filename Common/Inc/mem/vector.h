@@ -5,7 +5,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-
 typedef struct {
     uint32_t processID; // If 0 then vector is not shared
     void* pData;
@@ -29,7 +28,6 @@ eSTATUS_t Vector_Insert (Vector_t* pVector, uint16_t index, void const* pElement
 eSTATUS_t Vector_Erase (Vector_t* pVector, uint16_t index, void* pOutElement);
 void Vector_Clear (Vector_t* pVector);
 eSTATUS_t Vector_Resize (Vector_t* pVector, uint16_t newSize, void const* pFillValue);
-void Vector_Reverse (Vector_t* pVector);
 void* Vector_Data (Vector_t const* pVector);
 
 #define VECTOR_FOR_EACH(pVECTOR, TYPE, FN, ...)                  \
@@ -72,9 +70,6 @@ void* Vector_Data (Vector_t const* pVector);
     }                                                                                                       \
     static inline eSTATUS_t NAME##Vector_Resize (uint16_t newSize, TYPE const* pFillValue) {                \
         return Vector_Resize (&g_##NAME##_vector, newSize, pFillValue);                                     \
-    }                                                                                                       \
-    static inline void NAME##Vector_Reverse (void) {                                                        \
-        Vector_Reverse (&g_##NAME##_vector);                                                                \
     }                                                                                                       \
     static inline bool NAME##Vector_IsFull (void) {                                                         \
         return Vector_IsFull (&g_##NAME##_vector);                                                          \

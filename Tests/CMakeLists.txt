@@ -1,100 +1,101 @@
 cmake_minimum_required(VERSION 3.15)
-project(IMU_Tests C)
+
+set (CMAKE_SYSTEM_PROCESSOR "arm" CACHE STRING "")
+set (CMAKE_SYSTEM_NAME "Generic" CACHE STRING "")
+# Skip link step during toolchain validation.
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+set(TOOLCHAIN_PREFIX   "arm-none-eabi-")
+set(CMAKE_C_COMPILER   "${TOOLCHAIN_PREFIX}gcc")
+set(CMAKE_ASM_COMPILER "${TOOLCHAIN_PREFIX}gcc")
+set(CMAKE_CXX_COMPILER "${TOOLCHAIN_PREFIX}g++")
+set(CMAKE_AR           "${TOOLCHAIN_PREFIX}ar")
+set(CMAKE_LINKER       "{TOOLCHAIN_PREFIX}ld")
+set(CMAKE_OBJCOPY      "${TOOLCHAIN_PREFIX}objcopy")
+set(CMAKE_RANLIB       "${TOOLCHAIN_PREFIX}ranlib")
+set(CMAKE_SIZE         "${TOOLCHAIN_PREFIX}size")
+set(CMAKE_STRIP        "${TOOLCHAIN_PREFIX}ld")
+
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+
+project(DroneTests C)
 
 include(CTest)
 enable_testing()
 
 include(FetchContent)
-FetchContent_Declare(
-    unity
-    GIT_REPOSITORY https://github.com/ThrowTheSwitch/Unity.git
-    GIT_TAG        v2.5.2
-)
+FetchContent_Declare(unity GIT_REPOSITORY https://github.com/ThrowTheSwitch/Unity.git GIT_TAG v2.5.2)
 FetchContent_MakeAvailable(unity)
 
-# Add IMU API include directories
-include_directories(
-    ${CMAKE_SOURCE_DIR}/../Common/Inc
+set(COMMON_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../Common/Src")
+set(COMMON_INC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../Common/Inc")
+set(STM32_HAL_INC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../Drivers/STM32H7xx_HAL_Driver/Inc")
+set(STM32_CMSIS_INC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../Drivers/CMSIS/Device/ST/STM32H7xx/Include")
+set(STM32_CMSIS_CORE_INC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../Drivers/CMSIS/Include")
+
+add_library(drone_common_obj OBJECT
+    ${COMMON_SRC_DIR}/common.c
+    stubs/hal_stub.c
 )
 
-# Find Python3 for running the test registration generator
-
-# # Custom command to generate registered_tests.c from test files
-# add_custom_command(
-#     OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/registered_tests.c
-#     COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/register_tests.py
-#     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-#     DEPENDS 
-#         ${CMAKE_CURRENT_SOURCE_DIR}/register_tests.py
-#     COMMENT "Auto-generating test registrations from test files..."
-#     VERBATIM
-# )
-
-# # Create a custom target that depends on the generated file
-# add_custom_target(register_tests 
-#     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/registered_tests.c
-# )
-find_package(Python3 COMPONENTS Interpreter REQUIRED)
-
-# Generate the file during configure time if it doesn't exist
-# if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/registered_tests.c")
-message(STATUS "Generating initial registered_tests.c...")
-execute_process(
-    COMMAND ${Python3_EXECUTABLE} "register_tests.py"
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    RESULT_VARIABLE SCRIPT_RESULT
-    OUTPUT_VARIABLE SCRIPT_OUTPUT
-    ERROR_VARIABLE SCRIPT_ERROR
-)
-if(NOT SCRIPT_RESULT EQUAL 0)
-    message(WARNING "Failed to generate registered_tests.c: ${SCRIPT_ERROR}")
-    message(STATUS "Creating empty registered_tests.c as fallback...")
-    file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/registered_tests.c" 
-        "// Auto-generated fallback file\n"
-        "#include \"test_runner.h\"\n"
-        "void RegisterAllTests(void) {\n"
-        "    // No tests registered - please run the Python script manually\n"
-        "}\n"
-    )
-else()
-    message(STATUS "Successfully generated registered_tests.c")
-endif()
-# endif()
-
-
-
-# add_custom_target(regenerate_tests
-#     COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/register_tests.py
-#     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-#     COMMENT "Manually regenerating test registrations..."
-#     VERBATIM
-# )
-
-# Combined test sources including all test files and their dependencies
-set(ALL_TEST_SOURCES
-    test_runner.c
-    test_imu.c
-    test_filter.c
-    test_queue.c
-    test_actuators.c
-    registered_tests.c
-    ./stubs/hal_stub.c
-    ../Common/Src/sensors/imu/imu.c
-    ../Common/Src/mc/filter.c
-    ../Common/Src/mem/queue.c
-    ../Common/Src/common.c
-    # ../Common/Src/log/format.c
+add_library(drone_mem_obj OBJECT
+    ${COMMON_SRC_DIR}/mem/vector.c
+    ${COMMON_SRC_DIR}/mem/queue.c
+    ${COMMON_SRC_DIR}/mem/umap.c
+    ${COMMON_SRC_DIR}/mem/ring_buff.c
 )
 
-# Build single test executable that includes all tests
-add_executable(test_runner ${ALL_TEST_SOURCES})
-target_compile_definitions(test_runner PRIVATE UNIT_TEST)
-target_include_directories(test_runner PRIVATE ${unity_SOURCE_DIR}/src)
-target_sources(test_runner PRIVATE ${unity_SOURCE_DIR}/src/unity.c)
+add_library(drone_base_peripherals OBJECT
+    ${COMMON_SRC_DIR}/peripheral/dma.c
+    #${COMMON_SRC_DIR}/peripheral/gpio.c
+    #${COMMON_SRC_DIR}/peripheral/timer.c
+)
 
-# Make sure the test executable depends on the generated registrations
-# add_dependencies(test_runner register_tests)
-# add_dependencies(test_runner regenerate_tests)
+# add_library(drone_device_obj OBJECT
+#     ${COMMON_SRC_DIR}/device/imu/imu.c
+#     ${COMMON_SRC_DIR}/device/mag/mag.c
+# )
 
-# Add single test that runs all tests
-add_test(NAME All_Tests COMMAND test_runner)
+# add_library(drone_mc_obj OBJECT
+#     ${COMMON_SRC_DIR}/mc/filter.c
+#     ${COMMON_SRC_DIR}/mc/actuators.c
+# )
+
+# foreach(lib drone_common_obj drone_mem_obj drone_device_obj drone_mc_obj)
+foreach(lib drone_common_obj drone_mem_obj drone_base_peripherals)
+    target_include_directories( ${lib} PRIVATE 
+                                ${COMMON_INC_DIR} 
+                                stubs
+                                ${STM32_HAL_INC_DIR} 
+                                ${STM32_CMSIS_INC_DIR}
+                                ${STM32_CMSIS_CORE_INC_DIR}
+                                )
+    target_compile_definitions(${lib} PRIVATE UNIT_TEST STM32H747xx CORE_CM7 USE_HAL_DRIVER)
+endforeach()
+
+function(add_test_exe test_name)
+    cmake_parse_arguments(TEST "" "" "OBJECTS" ${ARGN})
+    
+    add_executable(${test_name} ${test_name}.c)
+    target_sources(${test_name} PRIVATE ${unity_SOURCE_DIR}/src/unity.c)
+    target_include_directories( ${test_name} PRIVATE 
+                                ${unity_SOURCE_DIR}/src 
+                                ${COMMON_INC_DIR} 
+                                stubs 
+                                ${STM32_HAL_INC_DIR} 
+                                ${STM32_CMSIS_INC_DIR}
+                                ${STM32_CMSIS_CORE_INC_DIR}
+                                )
+    target_compile_definitions(${test_name} PRIVATE UNIT_TEST STM32H747xx CORE_CM7 USE_HAL_DRIVER __GNUC__)
+    target_link_libraries(${test_name} PRIVATE drone_common_obj ${TEST_OBJECTS})
+    
+    add_test(NAME ${test_name} COMMAND ${test_name})
+endfunction()
+
+add_test_exe(test_queue OBJECTS drone_common_obj drone_mem_obj)
+
+# add_test_exe(test_queue OBJECTS drone_mem_obj drone_device_obj)
+# add_test_exe(test_imu OBJECTS drone_device_obj drone_mem_obj)
+# add_test_exe(test_filter OBJECTS drone_mc_obj drone_mem_obj)
+# add_test_exe(test_actuators OBJECTS drone_mc_obj drone_mem_obj)

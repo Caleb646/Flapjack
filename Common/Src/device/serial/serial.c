@@ -17,7 +17,7 @@ static SHARED_MEM_SECTION SerialDebug_t g_SerialDebug = { 0 };
 static void SerialDebugSink (uint8_t const* pData, uint32_t len) {
 
     if (g_SerialDebug.isInitialized == true) {
-        g_SerialDebug.bus.write (g_SerialDebug.busId, g_SerialDebug.deviceId, pData, len);
+        BUS_WRITE (g_SerialDebug.bus, pData, len);
     }
 }
 

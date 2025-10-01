@@ -12,9 +12,11 @@
 #ifdef UNIT_TEST
 #define STATIC_TESTABLE_DECL
 #define INLINE
+#define UNUSED_FN_DECL
 #else
 #define INLINE               inline
 #define STATIC_TESTABLE_DECL static
+#define UNUSED_FN_DECL       __attribute__ ((unused))
 #endif
 
 #define MICRO_DELAY_USE_SYSTICK  0
@@ -103,7 +105,6 @@ typedef struct {
 } Vec4f;
 
 void CriticalErrorHandler (void);
-
 int32_t clipi32 (int32_t v, int32_t lower, int32_t upper);
 float clipf32 (float v, float lower, float upper);
 float mapf32 (float v, float fromMin, float fromMax, float toMin, float toMax);

@@ -37,13 +37,12 @@ typedef struct {
 // typedef SPIBus_t volatile vSPIBus_t;
 typedef SPIBus_t vSPIBus_t;
 
-eSTATUS_t SPIInit (SPIInitConf_t conf);
-eSTATUS_t
-SPIRead_Blocking (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size);
-eSTATUS_t
-SPIWrite_Blocking (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pData, size_t size);
-eSTATUS_t
-SPIWriteRead_Blocking (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pTxData, uint8_t* pRxData, size_t size);
+// clang-format off
+vSPIBus_t* SPIGetBusById (eBUS_ID_t busId);
+eSTATUS_t SPIInit (SPIInitConf_t conf, vSPIBus_t* pOutBus);
+eSTATUS_t SPIRead_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size);
+eSTATUS_t SPIWrite_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t const* pData, size_t size);
+eSTATUS_t SPIWriteRead_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t const* pTxData, uint8_t* pRxData, size_t size);
 
 // eSTATUS_t SPIRead (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t* pData, uint16_t size);
 // eSTATUS_t SPIWrite (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pData, uint16_t size);
@@ -55,8 +54,14 @@ SPIWriteRead_Blocking (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pT
         SPIInitConf_t conf   = { 0 };                        \
         conf.deviceBoardConf = (DEVICE_BOARD_CONF);          \
         conf.busBoardConf    = (BUS_BOARD_CONF);             \
-        *(pSTATUS)           = SPIInit (conf);               \
+        *(pSTATUS)           = SPIInit (conf, NULL);         \
     } while (0)
 
+eSTATUS_t SPI_READ_BLOCKING(void* pCtx, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size);
+eSTATUS_t SPI_WRITE_BLOCKING(void* pCtx, eDEVICE_ID_t deviceId, uint8_t const* pData, size_t size);
+eSTATUS_t SPI_WRITE_READ_BLOCKING(void* pCtx, eDEVICE_ID_t deviceId, uint8_t const* pTxData, uint8_t* pRxData, size_t size);
+
+
+// clang-format on
 
 #endif /* PERIPHS_SPI_H */

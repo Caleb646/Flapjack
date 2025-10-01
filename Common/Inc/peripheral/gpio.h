@@ -186,7 +186,10 @@ eSTATUS_t GPIOInitI2C (GPIOI2CInitConf_t conf);
 eSTATUS_t GPIOInitUART (GPIOUARTInitConf_t conf);
 eSTATUS_t GPIOInitIO (GPIOIOInitConf_t conf);
 
-#define GPIO_INIT(pSTATUS, OWNER_ID, GPIO_BOARD_CONF)
+#define GPIO_INIT(pSTATUS, OWNER_ID, GPIO_BOARD_CONF)          \
+    do {                                                       \
+        *(pSTATUS) = GPIOInit ((OWNER_ID), (GPIO_BOARD_CONF)); \
+    } while (0)
 
 #define GPIO_INIT_SPI(pSTATUS, BUS_ID, SCK_ID, MISO_ID, MOSI_ID, NSS_ID, ALTERNATE) \
     do {                                                                            \

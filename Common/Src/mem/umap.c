@@ -221,54 +221,6 @@ bool UMap_Contains (UMap_t const* pUMap, void const* pKey) {
            pUMap->equalFunc (pUMap->pEntries[index].pKey, pKey, pUMap->keySize);
 }
 
-bool UMap_Erase (UMap_t* pUMap, void const* pKey) {
-
-    if (pUMap == NULL || pKey == NULL) {
-        return false;
-    }
-
-    uint32_t hash  = pUMap->hashFunc (pKey, pUMap->keySize);
-    uint16_t index = UMap_FindIndex (pUMap, pKey, hash);
-
-    if (!pUMap->pEntries[index].occupied || pUMap->pEntries[index].hash != hash ||
-        !pUMap->equalFunc (pUMap->pEntries[index].pKey, pKey, pUMap->keySize)) {
-        return false; // Key not found
-    }
-
-    // Mark as unoccupied
-    pUMap->pEntries[index].occupied = false;
-    pUMap->pEntries[index].hash     = 0;
-    pUMap->size--;
-
-    // Rehash entries that might have been displaced by linear probing
-    uint16_t nextIndex = (index + 1) % pUMap->capacity;
-    while (pUMap->pEntries[nextIndex].occupied) {
-        // Store entry data temporarily
-        UMapEntry_t tempEntry = pUMap->pEntries[nextIndex];
-        uint8_t tempKey[pUMap->keySize];
-        uint8_t tempValue[pUMap->valueSize];
-        memcpy (tempKey, tempEntry.pKey, pUMap->keySize);
-        memcpy (tempValue, tempEntry.pValue, pUMap->valueSize);
-
-        // Remove the entry
-        pUMap->pEntries[nextIndex].occupied = false;
-        pUMap->pEntries[nextIndex].hash     = 0;
-        pUMap->size--;
-
-        // Reinsert the entry (it might find a better position now)
-        UMap_Insert (pUMap, tempKey, tempValue);
-
-        nextIndex = (nextIndex + 1) % pUMap->capacity;
-
-        // Prevent infinite loop
-        if (nextIndex == index) {
-            break;
-        }
-    }
-
-    return true;
-}
-
 void UMap_Clear (UMap_t* pUMap) {
 
     if (pUMap == NULL) {

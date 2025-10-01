@@ -135,7 +135,7 @@ static eSTATUS_t DShotInitBitbang (vDShot_t* pDShot, DShotInitConf_t conf) {
     MotorDeviceConf_t motorConf       = conf.motorBoardConf;
     TimerBoardConf_t* pTimerBoardConf = motorConf.pTimerBoardConf;
     GPIOBoardConf_t const* pGPIOBoardConf = pTimerBoardConf->pGPIOBoardConf;
-    eTIMER_ID_t timerId     = pTimerBoardConf->timerId;
+    // eTIMER_ID_t timerId     = pTimerBoardConf->timerId;
     eGPIO_ID_t timerGpioId  = pTimerBoardConf->pGPIOBoardConf->id;
     eDSHOT_TYPE_t dshotType = pDShot->dshotType;
 

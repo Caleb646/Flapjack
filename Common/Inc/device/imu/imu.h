@@ -247,7 +247,7 @@ IMUConvertRaw (IMU_ACC_RANGE aRange, Vec3i ra, IMU_GYRO_RANGE gRange, Vec3i rg, 
 
 #endif
 
-eSTATUS_t IMUInit (IMUInitConf_t conf, IMU_t* pOutIMU);
+eSTATUS_t IMUInit (IMUInitConf_t conf, IMU_t* pOutIMU, BusInterface_t* pBusOverride);
 eSTATUS_t IMUStart (vIMU_t* pIMU);
 eSTATUS_t IMUStop (vIMU_t* pIMU);
 eSTATUS_t IMUHandleErr (vIMU_t* pIMU);
@@ -288,7 +288,7 @@ void IMU2CPUInterruptHandler (vIMU_t* pIMU);
         conf.gconf         = gconf;                          \
         conf.axesRemapConf = axesRemap;                      \
         conf.boardConf     = (DEVICE_BOARD_CONF);            \
-        *(pSTATUS)         = IMUInit (conf, NULL);           \
+        *(pSTATUS)         = IMUInit (conf, NULL, NULL);     \
     } while (0)
 
 

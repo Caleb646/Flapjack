@@ -1,9 +1,9 @@
 #include "common.h"
+#include "device/imu/imu.h"
 #include "hal.h"
-#include "sensors/imu/bmixxx.h"
-#include "sensors/imu/imu.h"
 #include "unity/unity.h"
 #include <math.h>
+#include <stdbool.h>
 #include <stdio.h>
 
 #ifndef UNIT_TEST
@@ -15,6 +15,7 @@ uint16_t gIMURegs[256] = { 0 };
 
 HAL_StatusTypeDef
 SPITransmitCB (SPI_HandleTypeDef* hspi, uint8_t* pData, uint16_t size, uint32_t timeout) {
+
     uint8_t reg = pData[0U] & 0x7FU;
     // printf ("pData[0U] = 0x%02X\n", pData[0U]);
     // printf ("reg = 0x%02X\n", reg);
@@ -57,7 +58,7 @@ SPITransmitReceiveCB (SPI_HandleTypeDef* hspi, uint8_t* pTxData, uint8_t* pRxDat
     if (reg == BMI3_REG_FEATURE_IO1 && gIMURegs[BMI3_REG_FEATURE_IO1] & (1U << 11U)) {
         // The self calibration finished flag has been read so we can set
         // the system state back to normal the error condition to no error.
-        if ((gIMURegs[BMI3_REG_INT_STATUS_INT1] & (1U << 10U)) == FALSE) {
+        if ((gIMURegs[BMI3_REG_INT_STATUS_INT1] & (1U << 10U)) == false) {
             gIMURegs[BMI3_REG_FEATURE_IO1] |= (1U << 5U) | (1U << 4U) | (5U << 0U);
             gIMURegs[BMI3_REG_FEATURE_IO1] &= ~(3U << 11U);
         }
