@@ -86,8 +86,8 @@ eSTATUS_t Vector_PopBack (Vector_t* pVector, void* pOutElement) {
 
     if (pOutElement != NULL) {
         // Calculate the address of the element to pop
-        uint8_t* pSrc =
-        ((uint8_t*)pVector->pData) + (pVector->size * pVector->elementSize);
+        uint8_t* pSrc = ((uint8_t*)pVector->pData) +
+                        ((pVector->size - 1U) * pVector->elementSize);
         memcpy (pOutElement, pSrc, pVector->elementSize);
     }
     pVector->size--;

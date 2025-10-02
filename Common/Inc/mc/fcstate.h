@@ -18,7 +18,7 @@ enum {
 };
 
 typedef struct {
-
+    uint8_t unused;
 } FCStateInitConf_t;
 
 typedef struct {

@@ -10,10 +10,12 @@
 
 // Test visibility macros
 #ifdef UNIT_TEST
+#define OVERRIDE_DURING_TESTING static
 #define STATIC_TESTABLE_DECL
 #define INLINE
 #define UNUSED_FN_DECL
 #else
+#define OVERRIDE_DURING_TESTING
 #define INLINE               inline
 #define STATIC_TESTABLE_DECL static
 #define UNUSED_FN_DECL       __attribute__ ((unused))
@@ -137,6 +139,8 @@ enum {
     eNVIC_PRIO_LVL_15
 };
 
+#ifndef UNIT_TEST
+
 // clang-format off
 // NOTE: Be careful using this with Delay functions as 
 // they may use SysTick which may be disabled by this macro.
@@ -144,6 +148,12 @@ enum {
     for (uint8_t __basepri_save __attribute__ ((__cleanup__ (BasePriRestoreMem), __unused__)) =  __get_BASEPRI (), __ToDo = BasePriSetMemRetVal ((NVIC_PRIO)); \
     __ToDo; __ToDo = 0); \
     // clang-format on
+
+#else
+
+#define ATOMIC_BLOCK_LOCAL(NVIC_PRIO) if (1)
+
+#endif
 
 
 #endif // COMMON_H

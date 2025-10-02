@@ -3,8 +3,9 @@
 #include "hal.h"
 #include "log/logger.h"
 #include "mem/mem.h"
+#include <stdbool.h>
 #include <stdint.h>
-
+#include <string.h>
 
 static SHARED_MEM_SECTION DMAStream_t gDMAStreams[eDMA_STREAM_MAX] = { 0 };
 

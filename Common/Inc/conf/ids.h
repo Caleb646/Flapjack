@@ -84,16 +84,17 @@ enum {
     eSERVO_7_ID,
     eSERVO_8_ID,
     eSERVO_ID_END__,
-    eSERVO_ID_MAX = eSERVO_ID_END__ - eSERVO_ID_BEGIN__,
 
     eMOTOR_ID_BEGIN__,
     eMOTOR_1_ID = eMOTOR_ID_BEGIN__,
     eMOTOR_2_ID,
     eMOTOR_ID_END__,
-    eMOTOR_ID_MAX = eMOTOR_ID_END__ - eMOTOR_ID_BEGIN__,
 
     eDEVICE_ID_MAX
 };
+
+#define eSERVO_ID_MAX    (eSERVO_ID_END__ - eSERVO_ID_BEGIN__)
+#define eMOTOR_ID_MAX    (eMOTOR_ID_END__ - eMOTOR_ID_BEGIN__)
 
 #define SERVO_ID2IDX(id) ((id) - eSERVO_ID_BEGIN__)
 #define DEVICE_ID_IS_SERVO(id) \
@@ -111,7 +112,6 @@ enum {
     eI2C_1_BUS_ID = eI2C_BUS_ID_BEGIN__,
     eI2C_2_BUS_ID,
     eI2C_BUS_ID_END__,
-    eI2C_BUS_ID_MAX = eI2C_BUS_ID_END__ - eI2C_BUS_ID_BEGIN__,
 
     eSPI_BUS_ID_BEGIN__,
     eSPI_1_BUS_ID = eSPI_BUS_ID_BEGIN__,
@@ -120,7 +120,6 @@ enum {
     eSPI_4_BUS_ID,
     eSPI_5_BUS_ID,
     eSPI_BUS_ID_END__,
-    eSPI_BUS_ID_MAX = eSPI_BUS_ID_END__ - eSPI_BUS_ID_BEGIN__,
 
     eUART_BUS_ID_BEGIN__,
     eUART_1_BUS_ID = eUART_BUS_ID_BEGIN__,
@@ -130,10 +129,13 @@ enum {
     eUART_5_BUS_ID,
     eUART_6_BUS_ID,
     eUART_BUS_ID_END__,
-    eUART_BUS_ID_MAX = eUART_BUS_ID_END__ - eUART_BUS_ID_BEGIN__,
 
     eBUS_ID_MAX
 };
+
+#define eSPI_BUS_ID_MAX  (eSPI_BUS_ID_END__ - eSPI_BUS_ID_BEGIN__)
+#define eUART_BUS_ID_MAX (eUART_BUS_ID_END__ - eUART_BUS_ID_BEGIN__)
+#define eI2C_BUS_ID_MAX  (eI2C_BUS_ID_END__ - eI2C_BUS_ID_BEGIN__)
 
 #define BUS_ID_IS_I2C(id) \
     ((id) >= eI2C_BUS_ID_BEGIN__ && (id) < eI2C_BUS_ID_END__)

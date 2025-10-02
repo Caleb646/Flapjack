@@ -60,9 +60,9 @@ typedef struct {
     bool isInitialized;
 } DMAStream_t;
 
+DMAStream_t* DMAGetStreamById (eDMA_STREAM_ID_t id);
 eSTATUS_t DMAInit (DMAInitConf_t conf, eDMA_STREAM_ID_t* pOutStreamId);
 eSTATUS_t DMAEnableInterrupts (eDMA_STREAM_ID_t streamId, uint32_t priority);
-DMAStream_t* DMAGetStreamById (eDMA_STREAM_ID_t id);
 
 #define DMA_INIT_TIMER_PWM(pSTATUS, DMA_REQUEST_ID, pOUT_DMASTREAM_ID) \
     do {                                                               \

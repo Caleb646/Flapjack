@@ -48,8 +48,7 @@ eSTATUS_t SyncMailBoxWrite (uint32_t mbID, uint8_t const* pBuffer, uint32_t len)
 eSTATUS_t SyncMailBoxWriteNotify (uint32_t mbID, uint8_t const* pBuffer, uint32_t len);
 eSTATUS_t SyncMailBoxRead (uint32_t mbID, uint8_t* pBuffer, uint32_t len);
 uint16_t SyncGetOtherCoresMailBoxID (void);
-uint8_t SyncTaskIsValid (DefaultTask const* pTask);
-task_handler_fn_t SyncGetTaskHandler (uint32_t taskID);
+task_handler_fn_t SyncGetTaskHandler (eSYNC_TASKID_t taskID);
 void SyncIRQHandler (uint16_t myCPUMailBoxId);
 
 #endif

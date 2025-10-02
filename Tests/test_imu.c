@@ -1,4 +1,6 @@
 #include "common.h"
+#include "conf/board.h"
+#include "conf/ids.h"
 #include "device/imu/imu.h"
 #include "hal.h"
 #include "unity/unity.h"
@@ -10,8 +12,51 @@
 #error "UNIT_TEST should be defined in this file"
 #endif
 
+static GPIOBoardConf_t NssBoardConf = { GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_0), NULL };
+static GPIOBoardConf_t SckBoardConf = { GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_1), NULL };
+static GPIOBoardConf_t MisoBoardConf = { GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_2), NULL };
+static GPIOBoardConf_t MosiBoardConf = { GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_3), NULL };
+static SPIDeviceMapping_t ConnectedDevices = { .deviceId = eIMU_DEVICE_ID,
+                                               .pNssBoardConf = &NssBoardConf };
 
-uint16_t gIMURegs[256] = { 0 };
+static BusBoardConf_t testBusConf = { .busId        = eSPI_1_BUS_ID,
+                                      .SPIBoardConf = {
+                                      .pSckBoardConf  = &SckBoardConf,
+                                      .pMisoBoardConf = &MisoBoardConf,
+                                      .pMosiBoardConf = &MosiBoardConf,
+                                      .pConnectedDevices = &ConnectedDevices,
+                                      .numConnectedDevices = 1U,
+                                      .speedKHz            = 1000U } };
+
+#define IMU_TEST_INIT(pIMU, ACC_CONF, GYRO_CONF, EXPECTED_STATUS)          \
+    do {                                                                   \
+        IMUInitConf_t conf                   = { 0 };                      \
+        conf.aconf                           = (ACC_CONF);                 \
+        conf.gconf                           = (GYRO_CONF);                \
+        conf.boardConf.deviceId              = eIMU_DEVICE_ID;             \
+        conf.boardConf.generic.pBusBoardConf = &testBusConf;               \
+        eSTATUS_t status                     = IMUInit (conf, pIMU, NULL); \
+        TEST_ASSERT_EQUAL (EXPECTED_STATUS, status);                       \
+    } while (0)
+
+#define IMU_TEST_DEF_INIT(pIMU, EXPECTED_STATUS)                   \
+    do {                                                           \
+        IMUAccConf aIMUConf  = { 0 };                              \
+        aIMUConf.odr         = eIMU_ACC_ODR_50;                    \
+        aIMUConf.range       = eIMU_ACC_RANGE_4G;                  \
+        aIMUConf.avg         = eIMU_ACC_AVG_8;                     \
+        aIMUConf.bw          = eIMU_GYRO_BW_QUARTER;               \
+        aIMUConf.mode        = eIMU_ACC_MODE_HIGH_PERF;            \
+        IMUGyroConf gIMUConf = { 0 };                              \
+        gIMUConf.odr         = eIMU_GYRO_ODR_50;                   \
+        gIMUConf.range       = eIMU_GYRO_RANGE_250;                \
+        gIMUConf.avg         = eIMU_GYRO_AVG_8;                    \
+        gIMUConf.bw          = eIMU_GYRO_BW_QUARTER;               \
+        gIMUConf.mode        = eIMU_GYRO_MODE_HIGH_PERF;           \
+        IMU_TEST_INIT (pIMU, aIMUConf, gIMUConf, EXPECTED_STATUS); \
+    } while (0)
+
+static uint16_t gIMURegs[256] = { 0 };
 
 HAL_StatusTypeDef
 SPITransmitCB (SPI_HandleTypeDef* hspi, uint8_t* pData, uint16_t size, uint32_t timeout) {
@@ -91,15 +136,15 @@ SPITransmitReceiveCB (SPI_HandleTypeDef* hspi, uint8_t* pTxData, uint8_t* pRxDat
 
 void setUpIMU (void) {
     memset (gIMURegs, 0, sizeof (gIMURegs));
-    gIMURegs[BMI3_REG_CHIP_ID]  = BMI323_CHIP_ID;
-    gHAL_SPI_Transmit_CB        = SPITransmitCB;
-    gHAL_SPI_TransmitReceive_CB = SPITransmitReceiveCB;
+    gIMURegs[BMI3_REG_CHIP_ID]   = BMI323_CHIP_ID;
+    HAL_SPI_Transmit_Mock        = SPITransmitCB;
+    HAL_SPI_TransmitReceive_Mock = SPITransmitReceiveCB;
 }
 
 void test_IMUInit (void) {
     setUpIMU ();
 
-    IMU imu;
+    IMU_t imu;
     SPI_HandleTypeDef spi;
     IMUAccConf aconf  = { 0 };
     aconf.odr         = eIMU_ACC_ODR_200;
@@ -114,10 +159,8 @@ void test_IMUInit (void) {
     gconf.bw          = eIMU_GYRO_BW_HALF;
     gconf.mode        = eIMU_GYRO_MODE_HIGH_PERF;
 
-    eSTATUS_t status = IMUInit (&imu, &spi, NULL);
-    TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
-    TEST_ASSERT_EQUAL_PTR (&spi, imu.pSPI);
-    TEST_ASSERT_EQUAL (1U, imu.nDummyBytes);
+    IMU_TEST_INIT (&imu, aconf, gconf, eSTATUS_SUCCESS);
+    TEST_ASSERT_EQUAL (1U, imu.nBusDummyBytes);
 
     // BMI3_CMD_SELF_CALIB_TRIGGER should have self calibration value
     TEST_ASSERT_EQUAL_HEX16 (BMI3_CMD_SELF_CALIB_TRIGGER, gIMURegs[BMI3_REG_CMD]);
@@ -129,7 +172,7 @@ void test_IMUInit (void) {
     // Check accel/gyro config (IMUSetConf)
     IMUAccConf expectedAccConf;
     IMUGyroConf expectedGyroConf;
-    status = IMUGetConf (&imu, &expectedAccConf, &expectedGyroConf);
+    eSTATUS_t status = IMUGetConf (&imu, &expectedAccConf, &expectedGyroConf);
     TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
     TEST_ASSERT_EQUAL_CHAR_ARRAY (&expectedAccConf, &aconf, sizeof (IMUAccConf));
     TEST_ASSERT_EQUAL_CHAR_ARRAY (&expectedAccConf, &imu.aconf, sizeof (IMUAccConf));
@@ -155,7 +198,7 @@ void test_IMUConf (void) {
     setUpIMU ();
 
     eSTATUS_t status = eSTATUS_SUCCESS;
-    IMU imu          = { .nDummyBytes = 1U };
+    IMU_t imu        = { .nBusDummyBytes = 1U };
     {
         IMUAccConf aconf  = { 0 };
         aconf.odr         = eIMU_ACC_ODR_100;
@@ -235,10 +278,10 @@ void test_IMUUpdate (void) {
     setUpIMU ();
 
     eSTATUS_t status = eSTATUS_SUCCESS;
-    IMU imu;
+    IMU_t imu;
     SPI_HandleTypeDef spi;
 
-    status = IMUInit (&imu, &spi, NULL);
+    IMU_TEST_DEF_INIT (&imu, eSTATUS_SUCCESS);
     TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
 
     // Set up test data in simulated registers
@@ -253,7 +296,7 @@ void test_IMUUpdate (void) {
     gIMURegs[BMI3_REG_GYR_DATA_Z] = 0x2468; // Z-axis gyro data
 
     // Test IMUUpdateAccel
-    status = IMUUpdateAccel (&imu);
+    status = IMUUpdateRawAccel (&imu);
     TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
 
     // Verify accelerometer data was read correctly
@@ -263,7 +306,7 @@ void test_IMUUpdate (void) {
     TEST_ASSERT_EQUAL_HEX16 (0x9ABC, imu.rawAccel.z);
 
     // Test IMUUpdateGyro
-    status = IMUUpdateGyro (&imu);
+    status = IMUUpdateRawGyro (&imu);
     TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
 
     // Verify gyroscope data was read correctly
@@ -280,7 +323,7 @@ void test_IMUUpdate (void) {
     int32_t prevAY = imu.rawAccel.y;
     int32_t prevAZ = imu.rawAccel.z;
 
-    status = IMUUpdateAccel (&imu);
+    status = IMUUpdateRawAccel (&imu);
     TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
 
     // Verify the values changed (assuming the conversion produces different results)
@@ -298,7 +341,7 @@ void test_IMUUpdate (void) {
     int32_t prevGY = imu.rawGyro.y;
     int32_t prevGZ = imu.rawGyro.z;
 
-    status = IMUUpdateGyro (&imu);
+    status = IMUUpdateRawGyro (&imu);
     TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
 
     // Verify the gyro values changed
@@ -308,8 +351,8 @@ void test_IMUUpdate (void) {
 
     // Test IMUConvertRaw function
     // Set up known raw values for conversion testing
-    Vec3 testRawAccel    = { .x = 1000, .y = -2000, .z = 3000 };
-    Vec3 testRawGyro     = { .x = 500, .y = -1000, .z = 1500 };
+    Vec3i testRawAccel   = { .x = 1000, .y = -2000, .z = 3000 };
+    Vec3i testRawGyro    = { .x = 500, .y = -1000, .z = 1500 };
     Vec3f convertedAccel = { 0 };
     Vec3f convertedGyro  = { 0 };
 
@@ -348,7 +391,7 @@ void test_IMUUpdate (void) {
     TEST_ASSERT_TRUE (fabsf (convertedGyro125.z) < fabsf (convertedGyro.z));
 
     // Test with zero raw values
-    Vec3 zeroRaw    = { .x = 0, .y = 0, .z = 0 };
+    Vec3i zeroRaw   = { .x = 0, .y = 0, .z = 0 };
     Vec3f zeroAccel = { 0 };
     Vec3f zeroGyro  = { 0 };
 
@@ -365,7 +408,7 @@ void test_IMUUpdate (void) {
     TEST_ASSERT_TRUE (fabsf (zeroGyro.z) < 0.1F);
 
     // Test with maximum positive and negative values
-    Vec3 maxRaw    = { .x = 32767, .y = -32768, .z = 32767 };
+    Vec3i maxRaw   = { .x = 32767, .y = -32768, .z = 32767 };
     Vec3f maxAccel = { 0 };
     Vec3f maxGyro  = { 0 };
 
@@ -386,7 +429,7 @@ void test_IMUUpdate (void) {
     // Testing with known raw values to verify exact conversion math
 
     // Test 1: Simple positive values with 2G accel range and 125 dps gyro range
-    Vec3 exactRaw1 = { .x = 16384, .y = 8192, .z = -16384 }; // Half-scale values
+    Vec3i exactRaw1 = { .x = 16384, .y = 8192, .z = -16384 }; // Half-scale values
     Vec3f exactAccel1 = { 0 };
     Vec3f exactGyro1  = { 0 };
 
@@ -406,7 +449,7 @@ void test_IMUUpdate (void) {
     TEST_ASSERT_FLOAT_WITHIN (5.0F, -62.5F, exactGyro1.z); // Negative
 
     // Test 2: Quarter-scale values with 4G accel and 250 dps gyro
-    Vec3 exactRaw2 = { .x = 8192, .y = -8192, .z = 4096 }; // Quarter and eighth scale
+    Vec3i exactRaw2 = { .x = 8192, .y = -8192, .z = 4096 }; // Quarter and eighth scale
     Vec3f exactAccel2 = { 0 };
     Vec3f exactGyro2  = { 0 };
 
@@ -426,9 +469,9 @@ void test_IMUUpdate (void) {
     TEST_ASSERT_FLOAT_WITHIN (2.5F, 31.25F, exactGyro2.z);
 
     // Test 3: Full-scale values to verify maximum conversion
-    Vec3 fullScaleRaw = { .x = 32767, .y = -32768, .z = 16384 };
-    Vec3f fullAccel   = { 0 };
-    Vec3f fullGyro    = { 0 };
+    Vec3i fullScaleRaw = { .x = 32767, .y = -32768, .z = 16384 };
+    Vec3f fullAccel    = { 0 };
+    Vec3f fullGyro     = { 0 };
 
     status =
     IMUConvertRaw (eIMU_ACC_RANGE_8G, fullScaleRaw, eIMU_GYRO_RANGE_500, fullScaleRaw, &fullAccel, &fullGyro);
@@ -446,7 +489,7 @@ void test_IMUUpdate (void) {
     TEST_ASSERT_FLOAT_WITHIN (5.0F, 250.0F, fullGyro.z); // Half scale
 
     // Test 4: Small values to test precision
-    Vec3 smallRaw    = { .x = 100, .y = -200, .z = 50 };
+    Vec3i smallRaw   = { .x = 100, .y = -200, .z = 50 };
     Vec3f smallAccel = { 0 };
     Vec3f smallGyro  = { 0 };
 
@@ -466,7 +509,7 @@ void test_IMUUpdate (void) {
     TEST_ASSERT_FLOAT_WITHIN (0.025F, 0.191F, smallGyro.z); // Half
 
     // Test 5: Edge case - single LSB values
-    Vec3 lsbRaw    = { .x = 1, .y = -1, .z = 2 };
+    Vec3i lsbRaw   = { .x = 1, .y = -1, .z = 2 };
     Vec3f lsbAccel = { 0 };
     Vec3f lsbGyro  = { 0 };
 
@@ -488,19 +531,39 @@ void test_IMUUpdate (void) {
 void test_IMUSelfCalibrate (void) {
     setUpIMU ();
 
-    IMU imu;
+    IMU_t imu;
     SPI_HandleTypeDef spi;
 
-    eSTATUS_t status = IMUInit (&imu, &spi, NULL);
-    TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+    IMU_TEST_DEF_INIT (&imu, eSTATUS_SUCCESS);
 
     // Test successful self-calibration
     IMUSelfCalibResult calibResult = { 0 };
 
-    status =
+    eSTATUS_t status =
     IMUCalibrate (&imu, BMI3_SC_SENSITIVITY_EN | BMI3_SC_OFFSET_EN, BMI3_SC_APPLY_CORR_EN, &calibResult);
 
     TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
     TEST_ASSERT_TRUE (calibResult.result);
     TEST_ASSERT_EQUAL_INT (0, calibResult.error);
+}
+
+void setUp (void) {
+    // Unity setUp function - called before each test
+    setUpIMU ();
+}
+
+void tearDown (void) {
+    // Unity tearDown function - called after each test
+    // Clean up any resources if needed
+}
+
+int main (void) {
+    UNITY_BEGIN ();
+
+    RUN_TEST (test_IMUInit);
+    RUN_TEST (test_IMUConf);
+    RUN_TEST (test_IMUUpdate);
+    RUN_TEST (test_IMUSelfCalibrate);
+
+    return UNITY_END ();
 }

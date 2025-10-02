@@ -3,6 +3,7 @@
 #include "hal.h"
 #include "mem/mem.h"
 #include "mem/queue.h"
+#include <stdbool.h>
 #include <string.h>
 
 #define TASK_MAGIC                 0xBEEFU
@@ -19,15 +20,18 @@ static SHARED_MEM_SECTION MailBox_t ga_MailBoxes[MAILBOX_COUNT] = { 0 };
 static task_handler_fn_t ga_Handlers[eSYNC_TASKID_MAX]          = { 0 };
 QUEUE_DEFINE_STATIC (SyncTask, DefaultTask, TASK_QUEUE_CAPACITY, true);
 
+// clang-format off
+
 #ifndef UNIT_TEST
 static eSTATUS_t SyncMailBoxWrite (uint32_t mbID, uint8_t const* pBuffer, uint32_t len);
-static eSTATUS_t
-SyncMailBoxWriteNotify (uint32_t mbID, uint8_t const* pBuffer, uint32_t len);
+static eSTATUS_t SyncMailBoxWriteNotify (uint32_t mbID, uint8_t const* pBuffer, uint32_t len);
 static eSTATUS_t SyncMailBoxRead (uint32_t mbID, uint8_t* pBuffer, uint32_t len);
 static uint16_t SyncGetOtherCoresMailBoxID (void);
 static task_handler_fn_t SyncGetTaskHandler (eSYNC_TASKID_t taskID);
 static void SyncIRQHandler (uint16_t myCPUMailBoxId);
 #endif
+
+// clang-format on
 
 /*
  * \brief A SEV instruction was executed by CM7
@@ -83,8 +87,13 @@ SyncMailBoxWriteNotify (uint32_t mbID, uint8_t const* pBuffer, uint32_t len) {
     if (status != eSTATUS_SUCCESS) {
         return eSTATUS_FAILURE;
     }
+
+#ifndef UNIT_TEST
+
     asm volatile ("dsb");
     asm volatile ("sev");
+
+#endif
     return eSTATUS_SUCCESS;
 }
 
