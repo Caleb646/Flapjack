@@ -93,10 +93,14 @@ uint32_t GetMicroseconds (void) {
 
 void DelayMicroseconds (uint32_t us) {
 
+#ifndef UNIT_TEST
+
     uint32_t usStart = GetMicroseconds ();
     while ((GetMicroseconds () - usStart) < us) {
         __NOP ();
     }
+
+#endif // UNIT_TEST
 }
 
 void fDelayMicroseconds (float us) {

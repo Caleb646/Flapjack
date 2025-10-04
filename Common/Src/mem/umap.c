@@ -4,30 +4,35 @@
 #include <stdint.h>
 #include <string.h>
 
+
+static inline void* UMap_GetKey (UMap_t const* pUMap, uint16_t index) {
+    return ((uint8_t*)pUMap->pKeys) + (index * pUMap->keySize);
+}
+
+static inline void* UMap_GetValue (UMap_t const* pUMap, uint16_t index) {
+    return ((uint8_t*)pUMap->pValues) + (index * pUMap->valueSize);
+}
+
 static uint16_t UMap_FindIndex (UMap_t const* pUMap, void const* pKey, uint32_t hash) {
 
     uint16_t index         = hash % pUMap->capacity;
     uint16_t originalIndex = index;
 
-    // Linear probing
     while (pUMap->pEntries[index].occupied) {
         if (pUMap->pEntries[index].hash == hash &&
-            pUMap->equalFunc (pUMap->pEntries[index].pKey, pKey, pUMap->keySize)) {
-            return index; // Found existing key
+            pUMap->equalFunc (UMap_GetKey (pUMap, index), pKey, pUMap->keySize)) {
+            return index;
         }
-
         index = (index + 1) % pUMap->capacity;
-
-        // If we've wrapped around, the table is full
         if (index == originalIndex) {
             break;
         }
     }
 
-    return index; // Return empty slot or wrapped-around position
+    return index;
 }
 
-uint32_t UMap_DefaultHash (void const* pKey, size_t keySize) {
+uint32_t UMap_DefaultHash (void const* pKey, uint16_t keySize) {
 
     if (pKey == NULL || keySize == 0) {
         return 0;
@@ -36,106 +41,70 @@ uint32_t UMap_DefaultHash (void const* pKey, size_t keySize) {
     uint32_t hash         = 5381;
     uint8_t const* pBytes = (uint8_t const*)pKey;
 
-    for (uint32_t i = 0; i < keySize; ++i) {
-        hash = ((hash << 5U) + hash) + pBytes[i]; // hash * 33 + c
+    for (uint16_t i = 0; i < keySize; ++i) {
+        hash = ((hash << 5U) + hash) + pBytes[i];
     }
 
     return hash;
 }
 
-bool UMap_DefaultEqual (void const* pKey1, void const* pKey2, size_t keySize) {
+bool UMap_DefaultEqual (void const* pKey1, void const* pKey2, uint16_t keySize) {
 
     if (pKey1 == NULL || pKey2 == NULL) {
         return false;
     }
 
-    return memcmp (pKey1, pKey2, keySize);
+    return memcmp (pKey1, pKey2, keySize) == 0U;
 }
 
 bool UMap_Init (
 UMap_t* pUMap,
 UMapEntry_t* pEntries,
-void* pKeyBuffer,
-void* pValueBuffer,
+void* pKeys,
+void* pValues,
 uint16_t capacity,
 uint16_t keySize,
 uint16_t valueSize,
 bool isShared
 ) {
-
-    return UMap_InitWithFunctions (pUMap, pEntries, pKeyBuffer, pValueBuffer, capacity, keySize, valueSize, isShared, UMap_DefaultHash, UMap_DefaultEqual);
+    return UMap_InitWithFunctions (pUMap, pEntries, pKeys, pValues, capacity, keySize, valueSize, isShared, UMap_DefaultHash, UMap_DefaultEqual);
 }
 
 bool UMap_InitWithFunctions (
 UMap_t* pUMap,
 UMapEntry_t* pEntries,
-void* pKeyBuffer,
-void* pValueBuffer,
+void* pKeys,
+void* pValues,
 uint16_t capacity,
 uint16_t keySize,
 uint16_t valueSize,
 bool isShared,
-UMapHashFn_t hashFunc,
-UMapEqualFn_t equalFunc
+uint32_t (*hashFunc) (void const*, uint16_t),
+bool (*equalFunc) (void const*, void const*, uint16_t)
 ) {
-
-    if (pUMap == NULL || pEntries == NULL || pKeyBuffer == NULL ||
-        pValueBuffer == NULL || capacity == 0 || keySize == 0 ||
+    if (pUMap == NULL || pKeys == NULL || pValues == NULL ||
+        pEntries == NULL || capacity == 0 || keySize == 0 ||
         valueSize == 0 || hashFunc == NULL || equalFunc == NULL) {
         return false;
     }
 
-    memset ((void*)pUMap, 0, sizeof (UMap_t));
-    memset ((void*)pEntries, 0, sizeof (UMapEntry_t) * (size_t)capacity);
+    memset (pUMap, 0, sizeof (UMap_t));
+    memset (pEntries, 0, sizeof (UMapEntry_t) * capacity);
+    memset (pKeys, 0, (size_t)keySize * capacity);
+    memset (pValues, 0, (size_t)valueSize * capacity);
+
     pUMap->processID = isShared ? 1 : 0;
+    pUMap->pKeys     = pKeys;
+    pUMap->pValues   = pValues;
     pUMap->pEntries  = pEntries;
     pUMap->capacity  = capacity;
+    pUMap->size      = 0;
     pUMap->keySize   = keySize;
     pUMap->valueSize = valueSize;
-    pUMap->size      = 0;
     pUMap->hashFunc  = hashFunc;
     pUMap->equalFunc = equalFunc;
+
     return true;
-}
-
-bool UMap_IsEmpty (UMap_t const* pUMap) {
-
-    if (pUMap == NULL) {
-        return true;
-    }
-    return pUMap->size == 0;
-}
-
-bool UMap_IsFull (UMap_t const* pUMap) {
-
-    if (pUMap == NULL) {
-        return true;
-    }
-    return pUMap->size >= pUMap->capacity;
-}
-
-uint16_t UMap_Size (UMap_t const* pUMap) {
-
-    if (pUMap == NULL) {
-        return 0;
-    }
-    return pUMap->size;
-}
-
-uint16_t UMap_Capacity (UMap_t const* pUMap) {
-
-    if (pUMap == NULL) {
-        return 0;
-    }
-    return pUMap->capacity;
-}
-
-float UMap_LoadFactor (UMap_t const* pUMap) {
-
-    if (pUMap == NULL || pUMap->capacity == 0) {
-        return 1.0F;
-    }
-    return (float)pUMap->size / (float)pUMap->capacity;
 }
 
 bool UMap_Insert (UMap_t* pUMap, void const* pKey, void const* pValue) {
@@ -151,24 +120,15 @@ bool UMap_Insert (UMap_t* pUMap, void const* pKey, void const* pValue) {
     uint32_t hash  = pUMap->hashFunc (pKey, pUMap->keySize);
     uint16_t index = UMap_FindIndex (pUMap, pKey, hash);
 
-    // If slot is occupied and it's the same key, update the value
-    if (pUMap->pEntries[index].occupied) {
-        if (pUMap->pEntries[index].hash == hash &&
-            pUMap->equalFunc (pUMap->pEntries[index].pKey, pKey, pUMap->keySize)) {
-            // Update existing value
-            memcpy (pUMap->pEntries[index].pValue, pValue, pUMap->valueSize);
-            return true;
-        }
-        // Table is full (no empty slots found)
-        return false;
+    if (pUMap->pEntries[index].occupied == false) {
+        ++pUMap->size;
     }
 
-    // Insert new key-value pair
-    memcpy (pUMap->pEntries[index].pKey, pKey, pUMap->keySize);
-    memcpy (pUMap->pEntries[index].pValue, pValue, pUMap->valueSize);
-    pUMap->pEntries[index].hash     = hash;
+    memcpy (UMap_GetKey (pUMap, index), pKey, pUMap->keySize);
+    memcpy (UMap_GetValue (pUMap, index), pValue, pUMap->valueSize);
+
     pUMap->pEntries[index].occupied = true;
-    pUMap->size++;
+    pUMap->pEntries[index].hash     = hash;
 
     return true;
 }
@@ -183,8 +143,8 @@ bool UMap_Find (UMap_t const* pUMap, void const* pKey, void* pOutValue) {
     uint16_t index = UMap_FindIndex (pUMap, pKey, hash);
 
     if (pUMap->pEntries[index].occupied && pUMap->pEntries[index].hash == hash &&
-        pUMap->equalFunc (pUMap->pEntries[index].pKey, pKey, pUMap->keySize)) {
-        memcpy (pOutValue, pUMap->pEntries[index].pValue, pUMap->valueSize);
+        pUMap->equalFunc (UMap_GetKey (pUMap, index), pKey, pUMap->keySize)) {
+        memcpy (pOutValue, UMap_GetValue (pUMap, index), pUMap->valueSize);
         return true;
     }
 
@@ -201,24 +161,15 @@ void* UMap_FindPtr (UMap_t const* pUMap, void const* pKey) {
     uint16_t index = UMap_FindIndex (pUMap, pKey, hash);
 
     if (pUMap->pEntries[index].occupied && pUMap->pEntries[index].hash == hash &&
-        pUMap->equalFunc (pUMap->pEntries[index].pKey, pKey, pUMap->keySize)) {
-        return pUMap->pEntries[index].pValue;
+        pUMap->equalFunc (UMap_GetKey (pUMap, index), pKey, pUMap->keySize)) {
+        return UMap_GetValue (pUMap, index);
     }
 
     return NULL;
 }
 
 bool UMap_Contains (UMap_t const* pUMap, void const* pKey) {
-
-    if (pUMap == NULL || pKey == NULL) {
-        return false;
-    }
-
-    uint32_t hash  = pUMap->hashFunc (pKey, pUMap->keySize);
-    uint16_t index = UMap_FindIndex (pUMap, pKey, hash);
-
-    return pUMap->pEntries[index].occupied && pUMap->pEntries[index].hash == hash &&
-           pUMap->equalFunc (pUMap->pEntries[index].pKey, pKey, pUMap->keySize);
+    return UMap_FindPtr (pUMap, pKey) != NULL;
 }
 
 void UMap_Clear (UMap_t* pUMap) {
@@ -227,10 +178,32 @@ void UMap_Clear (UMap_t* pUMap) {
         return;
     }
 
-    for (uint16_t i = 0; i < pUMap->capacity; ++i) {
-        pUMap->pEntries[i].occupied = false;
-        pUMap->pEntries[i].hash     = 0;
-    }
-
+    memset (pUMap->pEntries, 0, sizeof (UMapEntry_t) * pUMap->capacity);
+    memset (pUMap->pKeys, 0, (size_t)pUMap->keySize * pUMap->capacity);
+    memset (pUMap->pValues, 0, (size_t)pUMap->valueSize * pUMap->capacity);
     pUMap->size = 0;
+}
+
+bool UMap_IsEmpty (UMap_t const* pUMap) {
+    return pUMap == NULL ? true : pUMap->size == 0U;
+}
+
+bool UMap_IsFull (UMap_t const* pUMap) {
+    return pUMap == NULL ? true : pUMap->size >= pUMap->capacity;
+}
+
+uint16_t UMap_Size (UMap_t const* pUMap) {
+    return pUMap == NULL ? 0 : pUMap->size;
+}
+
+uint16_t UMap_Capacity (UMap_t const* pUMap) {
+    return pUMap == NULL ? 0 : pUMap->capacity;
+}
+
+float UMap_LoadFactor (UMap_t const* pUMap) {
+
+    if (pUMap == NULL || pUMap->capacity == 0) {
+        return 1.0F;
+    }
+    return (float)pUMap->size / (float)pUMap->capacity;
 }

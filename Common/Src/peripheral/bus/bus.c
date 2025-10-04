@@ -36,11 +36,12 @@ eSTATUS_t BusInit (BusInitConf_t conf, BusInterface_t* pOutBusInterface) {
             return eSTATUS_FAILURE;
         }
 
-        pOutBusInterface->read      = SPI_READ_BLOCKING;
-        pOutBusInterface->write     = SPI_WRITE_BLOCKING;
-        pOutBusInterface->writeRead = SPI_WRITE_READ_BLOCKING;
-        pOutBusInterface->deviceId  = deviceId;
-        pOutBusInterface->pCtx      = SPIGetBusById (busId);
+        pOutBusInterface->read         = SPI_READ_BLOCKING;
+        pOutBusInterface->write        = SPI_WRITE_BLOCKING;
+        pOutBusInterface->writeRead    = SPI_WRITE_READ_BLOCKING;
+        pOutBusInterface->transactions = SPI_TRANSACTIONS_BLOCKING;
+        pOutBusInterface->deviceId     = deviceId;
+        pOutBusInterface->pCtx         = SPIGetBusById (busId);
         return eSTATUS_SUCCESS;
     }
 

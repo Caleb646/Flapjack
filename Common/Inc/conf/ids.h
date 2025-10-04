@@ -57,7 +57,7 @@ enum {
 
 // #define GPIO_ID2PORTIDX(id) (((id) >> 15U) > 0U ? __builtin_ctz ((id) >> 15U) : 0U)
 #define GPIO_ID2PORTIDX(id)     (((id) >> GPIO_CHANNELID_NBITS) - 1U)
-#define GPIO_ID2PINIDX(id)      ((id) & (~(eGPIO_PINID_MAX - 1U)))
+#define GPIO_ID2PINIDX(id)      ((id) & (eGPIO_PINID_MAX - 1U))
 #define GPIO_ID_MAKE(port, pin) ((eGPIO_ID_t)(port) | (eGPIO_ID_t)(pin))
 #define GPIO_ID_IS_GPIO(id) \
     ((id) != eGPIO_ID_NULL && (GPIO_ID2PORTIDX ((id)) < eGPIO_PORTID_MAX))

@@ -5,6 +5,7 @@
 #include "hal.h"
 #include "log/logger.h"
 #include "mem/mem.h"
+#include "peripheral/bus/bus_core.h"
 #include "peripheral/gpio.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -330,6 +331,74 @@ SPIWriteRead_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t const* pT
     return status;
 }
 
+eSTATUS_t
+SPITransactions_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, BusTransaction_t* pTransactions, size_t nTransactions) {
+
+    eSTATUS_t status            = eSTATUS_SUCCESS;
+    HAL_StatusTypeDef halStatus = HAL_OK;
+
+    if (SPIBeginTransaction (pBus, deviceId) == false) {
+        return eSTATUS_FAILURE;
+    }
+
+    for (size_t i = 0; i < nTransactions; ++i) {
+
+        BusTransaction_t* pTrans = &pTransactions[i];
+        uint8_t const* pTxData   = pTrans->pTxData;
+        uint8_t* pRxData         = pTrans->pRxData;
+        size_t txSize            = pTrans->txSize;
+        size_t rxSize            = pTrans->rxSize;
+
+        if (pTxData == NULL && pRxData == NULL) {
+            LOG_ERROR ("Invalid SPI transaction segment, both pTxData and pRxData are NULL");
+            status = eSTATUS_FAILURE;
+            break;
+        }
+
+        if (txSize == 0U && rxSize == 0U) {
+            LOG_ERROR ("Invalid SPI transaction segment, both txSize and rxSize are 0");
+            status = eSTATUS_FAILURE;
+            break;
+        }
+
+        if (pRxData != NULL && pTxData != NULL) {
+
+            if (rxSize != txSize) {
+                status = eSTATUS_FAILURE;
+                break;
+            }
+
+            halStatus =
+            HAL_SPI_TransmitReceive (&pBus->handle, pTxData, pRxData, rxSize, HAL_MAX_DELAY);
+            if (halStatus != HAL_OK) {
+                LOG_ERROR ("Failed to write/read data to/from SPI bus");
+                status = eSTATUS_FAILURE;
+                break;
+            }
+        } else if (pRxData != NULL) {
+
+            halStatus = HAL_SPI_Receive (&pBus->handle, pRxData, rxSize, HAL_MAX_DELAY);
+            if (halStatus != HAL_OK) {
+                LOG_ERROR ("Failed to read data from SPI bus");
+                status = eSTATUS_FAILURE;
+                break;
+            }
+        } else if (pTxData != NULL) {
+
+            halStatus =
+            HAL_SPI_Transmit (&pBus->handle, (uint8_t*)pTxData, txSize, HAL_MAX_DELAY);
+            if (halStatus != HAL_OK) {
+                LOG_ERROR ("Failed to write data to SPI bus");
+                status = eSTATUS_FAILURE;
+                break;
+            }
+        }
+    }
+
+    SPIEndTransaction (pBus);
+    return status;
+}
+
 eSTATUS_t SPI_READ_BLOCKING (void* pCtx, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size) {
     return SPIRead_Blocking ((vSPIBus_t*)pCtx, deviceId, pData, size);
 }
@@ -342,4 +411,9 @@ SPI_WRITE_BLOCKING (void* pCtx, eDEVICE_ID_t deviceId, uint8_t const* pData, siz
 eSTATUS_t
 SPI_WRITE_READ_BLOCKING (void* pCtx, eDEVICE_ID_t deviceId, uint8_t const* pTxData, uint8_t* pRxData, size_t size) {
     return SPIWriteRead_Blocking ((vSPIBus_t*)pCtx, deviceId, pTxData, pRxData, size);
+}
+
+eSTATUS_t
+SPI_TRANSACTIONS_BLOCKING (void* pCtx, eDEVICE_ID_t deviceId, BusTransaction_t* pTransactions, size_t nTransactions) {
+    return SPITransactions_Blocking ((vSPIBus_t*)pCtx, deviceId, pTransactions, nTransactions);
 }

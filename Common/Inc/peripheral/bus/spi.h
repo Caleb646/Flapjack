@@ -5,6 +5,7 @@
 #include "conf/board.h"
 #include "conf/conf.h"
 #include "hal.h"
+#include "peripheral/bus/bus_core.h"
 #include "peripheral/gpio.h"
 #include <stdint.h>
 #include <string.h>
@@ -43,6 +44,7 @@ eSTATUS_t SPIInit (SPIInitConf_t conf, vSPIBus_t* pOutBus);
 eSTATUS_t SPIRead_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size);
 eSTATUS_t SPIWrite_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t const* pData, size_t size);
 eSTATUS_t SPIWriteRead_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t const* pTxData, uint8_t* pRxData, size_t size);
+eSTATUS_t SPITransactions_Blocking(vSPIBus_t* pBus, eDEVICE_ID_t deviceId, BusTransaction_t* pTransactions, size_t nTransactions);
 
 // eSTATUS_t SPIRead (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t* pData, uint16_t size);
 // eSTATUS_t SPIWrite (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pData, uint16_t size);
@@ -60,6 +62,7 @@ eSTATUS_t SPIWriteRead_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t
 eSTATUS_t SPI_READ_BLOCKING(void* pCtx, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size);
 eSTATUS_t SPI_WRITE_BLOCKING(void* pCtx, eDEVICE_ID_t deviceId, uint8_t const* pData, size_t size);
 eSTATUS_t SPI_WRITE_READ_BLOCKING(void* pCtx, eDEVICE_ID_t deviceId, uint8_t const* pTxData, uint8_t* pRxData, size_t size);
+eSTATUS_t SPI_TRANSACTIONS_BLOCKING (void* pCtx, eDEVICE_ID_t deviceId, BusTransaction_t* pTransactions, size_t nTransactions);
 
 
 // clang-format on

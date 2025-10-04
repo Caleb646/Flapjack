@@ -16,6 +16,15 @@
 static bool isSystemInitialized                               = false;
 static SHARED_MEM_SECTION IO_t gIOs[GPIO_NPORTS * GPIO_NPINS] = { 0 };
 
+#ifdef UNIT_TEST
+
+void GPIOGetIOs (IO_t** ppIOs, uint32_t* pCount) {
+    *ppIOs  = gIOs;
+    *pCount = GPIO_NPORTS * GPIO_NPINS;
+}
+
+#endif // UNIT_TEST
+
 static void GPIOEnablePortClock (eGPIO_ID_t gpioId) {
 
     vIO_t* pIO = GPIOGetIOfromId (gpioId);
@@ -49,7 +58,7 @@ static void GPIOEnablePortClock (eGPIO_ID_t gpioId) {
     }
 }
 
-static void GPIOSystemInit (void) {
+void GPIOSystemInit (void) {
 
     if (isSystemInitialized == true) {
         return;

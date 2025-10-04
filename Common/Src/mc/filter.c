@@ -16,9 +16,10 @@ static SHARED_MEM_SECTION Filter_t gFilter = { 0 };
 // clang-format off
 #ifndef UNIT_TEST
 
-static eSTATUS_t FilterMadgwickUpdate (FilterMadgwick_t* pFilter,Vec3f const* pAccel,Vec3f const* pGyro,Vec3f const* pMag,float dt,Vec3f* pOutAttitude);
+static bool FilterMadgwickUpdate (FilterMadgwick_t* pFilter,Vec3f const* pAccel,Vec3f const* pGyro,Vec3f const* pMag,float dt,Vec3f* pOutAttitude);
 static bool FilterMadgwickUpdate_6DOF (FilterMadgwick_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyroDegs, float dt);
 static bool FilterMadgwickUpdate_9DOF (FilterMadgwick_t* pFilter,Vec3f const* pAccel,Vec3f const* pGyro,Vec3f const* pMag,float dt);
+static bool FilterMadgwickInit (FilterMadgwickInitConf_t conf, FilterMadgwick_t* pOut);
 
 #endif
 // clang-format on
@@ -31,8 +32,8 @@ static bool FilterMadgwickUpdate_9DOF (FilterMadgwick_t* pFilter,Vec3f const* pA
  * 1g, 0) then the returned attitude will move towards (0, -90, 0).
  * Which is incorrect so the IMU data needs to be in FRD frame.
  */
-STATIC_TESTABLE_DECL bool
-FilterMadgwickUpdate_6DOF (FilterMadgwick_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyroDegs, float dt) {
+STATIC_TESTABLE_DECL
+bool FilterMadgwickUpdate_6DOF (FilterMadgwick_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyroDegs, float dt) {
     // Source: https://courses.cs.washington.edu/courses/cse474/17wi/labs/l4/madgwick_internal_report.pdf
 
     // convert degrees per second to radians per second
@@ -378,17 +379,18 @@ FilterMadgwickWarmUp (FilterMadgwick_t* pFilter, vIMU_t* pIMU, vMag_t* pMag, uin
         }
         msStartTime = (float)GetMilliseconds ();
 
+        bool success = true;
         if (pMag != NULL) {
-            status = FilterMadgwickUpdate (pFilter, &accel, &gyro, &mag, dt, pOutAttitude);
+            success = FilterMadgwickUpdate (pFilter, &accel, &gyro, &mag, dt, pOutAttitude);
         } else {
-            status = FilterMadgwickUpdate (pFilter, &accel, &gyro, NULL, dt, pOutAttitude);
+            success = FilterMadgwickUpdate (pFilter, &accel, &gyro, NULL, dt, pOutAttitude);
         }
-        RETURN_IF (status != eSTATUS_SUCCESS, false, "Madgwick update failed");
+        RETURN_IF (success == false, false, "Madgwick update failed");
     }
     return true;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t
+STATIC_TESTABLE_DECL bool
 FilterMadgwickInit (FilterMadgwickInitConf_t conf, FilterMadgwick_t* pOut) {
 
     float gyroMeasureErrorDegs = conf.gyroMeasureErrorDegs;
@@ -401,10 +403,10 @@ FilterMadgwickInit (FilterMadgwickInitConf_t conf, FilterMadgwick_t* pOut) {
     pOut->qEst.q2 = 0.0F;
     pOut->qEst.q3 = 0.0F;
     pOut->qEst.q4 = 0.0F;
-    return eSTATUS_SUCCESS;
+    return true;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t FilterMadgwickUpdate (
+STATIC_TESTABLE_DECL bool FilterMadgwickUpdate (
 FilterMadgwick_t* pFilter,
 Vec3f const* pAccel,
 Vec3f const* pGyro,
@@ -415,11 +417,11 @@ Vec3f* pOutAttitude
 
     if (pMag == NULL) {
         if (FilterMadgwickUpdate_6DOF (pFilter, pAccel, pGyro, dt) == false) {
-            return eSTATUS_FAILURE;
+            return false;
         }
     } else {
         if (FilterMadgwickUpdate_9DOF (pFilter, pAccel, pGyro, pMag, dt) == false) {
-            return eSTATUS_FAILURE;
+            return false;
         }
     }
 
@@ -447,7 +449,7 @@ Vec3f* pOutAttitude
     atan2f (2.0F * q3 * q4 - 2.0F * q1 * q2, 2.0F * q1 * q1 + 2.0F * q4 * q4 - 1.0F)
     );
 
-    return eSTATUS_SUCCESS;
+    return true;
 }
 
 eSTATUS_t FilterInit (FilterInitConf_t conf, Filter_t* pOut) {
@@ -501,12 +503,12 @@ FilterUpdate (vFilter_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyro, Vec3f
     }
 
     float dt = ((float)GetMilliseconds () - (float)pFilter->msLastUpdateTime) / 1000.0F;
-    eSTATUS_t status =
+    bool success =
     FilterMadgwickUpdate (&pFilter->madgwick, pAccel, pGyro, pMag, dt, pOutput);
-    if (status == eSTATUS_SUCCESS) {
+    if (success == true) {
         pFilter->msLastUpdateTime = GetMilliseconds ();
     }
-    return status;
+    return success ? eSTATUS_SUCCESS : eSTATUS_FAILURE;
 }
 
 vFilter_t* FilterGetActiveFilter (void) {

@@ -5,12 +5,12 @@
             "name": "Debug Unit Tests",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/Tests/build/Debug/test_runner.exe",
+            "program": "${workspaceFolder}/Tests/build/Debug/test_umap.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/Tests/build",
             "environment": [],
-            "preLaunchTask": "build test_runner"
+            "preLaunchTask": "build tests"
         }
     ]
 }
