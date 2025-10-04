@@ -54,7 +54,6 @@ add_library(drone_movement_obj OBJECT
     ${COMMON_SRC_DIR}/mc/actuators.c
 )
 
-
 add_library(drone_mc_obj OBJECT
     ${COMMON_SRC_DIR}/mc/dshot.c
     ${COMMON_SRC_DIR}/mc/fcstate.c
@@ -94,9 +93,14 @@ endfunction()
 
 add_test_exe(test_queue OBJECTS drone_common_obj)
 add_test_exe(test_vector OBJECTS drone_common_obj)
+add_test_exe(test_umap OBJECTS drone_common_obj)
+
+add_test_exe(test_gpio OBJECTS drone_common_obj drone_base_peripherals_obj)
 
 add_test_exe(test_spi OBJECTS drone_common_obj drone_base_peripherals_obj drone_bus_peripherals_obj)
 add_test_exe(test_uart OBJECTS drone_common_obj drone_base_peripherals_obj drone_bus_peripherals_obj)
+
+add_test_exe(test_filter OBJECTS drone_common_obj drone_mc_obj drone_device_obj drone_base_peripherals_obj drone_bus_peripherals_obj)
 
 add_test_exe(test_imu OBJECTS drone_common_obj drone_mc_obj drone_device_obj drone_base_peripherals_obj drone_bus_peripherals_obj)
 

@@ -16,8 +16,12 @@ static GPIOBoardConf_t NssBoardConf = { GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINI
 static GPIOBoardConf_t SckBoardConf = { GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_1), NULL };
 static GPIOBoardConf_t MisoBoardConf = { GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_2), NULL };
 static GPIOBoardConf_t MosiBoardConf = { GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_3), NULL };
+static GPIOBoardConf_t EXTIGpioConf = { GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_4), NULL };
 static SPIDeviceMapping_t ConnectedDevices = { .deviceId = eIMU_DEVICE_ID,
                                                .pNssBoardConf = &NssBoardConf };
+
+static EXTIBoardConf_t IMUExtiConf = { .extiId         = eEXTI_5_ID,
+                                       .pGPIOBoardConf = &EXTIGpioConf };
 
 static BusBoardConf_t testBusConf = { .busId        = eSPI_1_BUS_ID,
                                       .SPIBoardConf = {
@@ -28,35 +32,55 @@ static BusBoardConf_t testBusConf = { .busId        = eSPI_1_BUS_ID,
                                       .numConnectedDevices = 1U,
                                       .speedKHz            = 1000U } };
 
-#define IMU_TEST_INIT(pIMU, ACC_CONF, GYRO_CONF, EXPECTED_STATUS)          \
-    do {                                                                   \
-        IMUInitConf_t conf                   = { 0 };                      \
-        conf.aconf                           = (ACC_CONF);                 \
-        conf.gconf                           = (GYRO_CONF);                \
-        conf.boardConf.deviceId              = eIMU_DEVICE_ID;             \
-        conf.boardConf.generic.pBusBoardConf = &testBusConf;               \
-        eSTATUS_t status                     = IMUInit (conf, pIMU, NULL); \
-        TEST_ASSERT_EQUAL (EXPECTED_STATUS, status);                       \
+#define FREE_GPIO()                      \
+    do {                                 \
+        GPIOFreeById (NssBoardConf.id);  \
+        GPIOFreeById (SckBoardConf.id);  \
+        GPIOFreeById (MisoBoardConf.id); \
+        GPIOFreeById (MosiBoardConf.id); \
     } while (0)
 
-#define IMU_TEST_DEF_INIT(pIMU, EXPECTED_STATUS)                   \
-    do {                                                           \
-        IMUAccConf aIMUConf  = { 0 };                              \
-        aIMUConf.odr         = eIMU_ACC_ODR_50;                    \
-        aIMUConf.range       = eIMU_ACC_RANGE_4G;                  \
-        aIMUConf.avg         = eIMU_ACC_AVG_8;                     \
-        aIMUConf.bw          = eIMU_GYRO_BW_QUARTER;               \
-        aIMUConf.mode        = eIMU_ACC_MODE_HIGH_PERF;            \
-        IMUGyroConf gIMUConf = { 0 };                              \
-        gIMUConf.odr         = eIMU_GYRO_ODR_50;                   \
-        gIMUConf.range       = eIMU_GYRO_RANGE_250;                \
-        gIMUConf.avg         = eIMU_GYRO_AVG_8;                    \
-        gIMUConf.bw          = eIMU_GYRO_BW_QUARTER;               \
-        gIMUConf.mode        = eIMU_GYRO_MODE_HIGH_PERF;           \
-        IMU_TEST_INIT (pIMU, aIMUConf, gIMUConf, EXPECTED_STATUS); \
+#define IMU_TEST_INIT(pSTATUS, pIMU, ACC_CONF, GYRO_CONF)                   \
+    do {                                                                    \
+        FREE_GPIO ();                                                       \
+        IMUInitConf_t conf                    = { 0 };                      \
+        conf.aconf                            = (ACC_CONF);                 \
+        conf.gconf                            = (GYRO_CONF);                \
+        conf.boardConf.deviceId               = eIMU_DEVICE_ID;             \
+        conf.boardConf.generic.pBusBoardConf  = &testBusConf;               \
+        conf.boardConf.generic.pExtiBoardConf = &IMUExtiConf;               \
+        *(pSTATUS)                            = IMUInit (conf, pIMU, NULL); \
+    } while (0)
+
+#define IMU_TEST_DEF_INIT(pSTATUS, pIMU)                   \
+    do {                                                   \
+        IMUAccConf aIMUConf  = { 0 };                      \
+        aIMUConf.odr         = eIMU_ACC_ODR_50;            \
+        aIMUConf.range       = eIMU_ACC_RANGE_4G;          \
+        aIMUConf.avg         = eIMU_ACC_AVG_8;             \
+        aIMUConf.bw          = eIMU_GYRO_BW_QUARTER;       \
+        aIMUConf.mode        = eIMU_ACC_MODE_HIGH_PERF;    \
+        IMUGyroConf gIMUConf = { 0 };                      \
+        gIMUConf.odr         = eIMU_GYRO_ODR_50;           \
+        gIMUConf.range       = eIMU_GYRO_RANGE_250;        \
+        gIMUConf.avg         = eIMU_GYRO_AVG_8;            \
+        gIMUConf.bw          = eIMU_GYRO_BW_QUARTER;       \
+        gIMUConf.mode        = eIMU_GYRO_MODE_HIGH_PERF;   \
+        IMU_TEST_INIT (pSTATUS, pIMU, aIMUConf, gIMUConf); \
     } while (0)
 
 static uint16_t gIMURegs[256] = { 0 };
+
+// static eSTATUS_t IMUTestInit (IMU_t* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf) {
+
+//     eSTATUS_t status = eSTATUS_SUCCESS;
+//     if (pAConf != NULL && pGConf != NULL) {
+//         IMU_TEST_INIT (&status, pIMU, *pAConf, *pGConf);
+//     } else {
+//         IMU_TEST_DEF_INIT (&status, pIMU);
+//     }
+//     return status;
+// }
 
 HAL_StatusTypeDef
 SPITransmitCB (SPI_HandleTypeDef* hspi, uint8_t* pData, uint16_t size, uint32_t timeout) {
@@ -159,7 +183,9 @@ void test_IMUInit (void) {
     gconf.bw          = eIMU_GYRO_BW_HALF;
     gconf.mode        = eIMU_GYRO_MODE_HIGH_PERF;
 
-    IMU_TEST_INIT (&imu, aconf, gconf, eSTATUS_SUCCESS);
+    eSTATUS_t status = eSTATUS_SUCCESS;
+    IMU_TEST_INIT (&status, &imu, aconf, gconf);
+    TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
     TEST_ASSERT_EQUAL (1U, imu.nBusDummyBytes);
 
     // BMI3_CMD_SELF_CALIB_TRIGGER should have self calibration value
@@ -172,7 +198,7 @@ void test_IMUInit (void) {
     // Check accel/gyro config (IMUSetConf)
     IMUAccConf expectedAccConf;
     IMUGyroConf expectedGyroConf;
-    eSTATUS_t status = IMUGetConf (&imu, &expectedAccConf, &expectedGyroConf);
+    status = IMUGetConf (&imu, &expectedAccConf, &expectedGyroConf);
     TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
     TEST_ASSERT_EQUAL_CHAR_ARRAY (&expectedAccConf, &aconf, sizeof (IMUAccConf));
     TEST_ASSERT_EQUAL_CHAR_ARRAY (&expectedAccConf, &imu.aconf, sizeof (IMUAccConf));
@@ -199,6 +225,8 @@ void test_IMUConf (void) {
 
     eSTATUS_t status = eSTATUS_SUCCESS;
     IMU_t imu        = { .nBusDummyBytes = 1U };
+    IMU_TEST_DEF_INIT (&status, &imu);
+    TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
     {
         IMUAccConf aconf  = { 0 };
         aconf.odr         = eIMU_ACC_ODR_100;
@@ -281,7 +309,7 @@ void test_IMUUpdate (void) {
     IMU_t imu;
     SPI_HandleTypeDef spi;
 
-    IMU_TEST_DEF_INIT (&imu, eSTATUS_SUCCESS);
+    IMU_TEST_DEF_INIT (&status, &imu);
     TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
 
     // Set up test data in simulated registers
@@ -532,14 +560,15 @@ void test_IMUSelfCalibrate (void) {
     setUpIMU ();
 
     IMU_t imu;
-    SPI_HandleTypeDef spi;
+    eSTATUS_t status = eSTATUS_SUCCESS;
 
-    IMU_TEST_DEF_INIT (&imu, eSTATUS_SUCCESS);
+    IMU_TEST_DEF_INIT (&status, &imu);
+    TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
 
     // Test successful self-calibration
     IMUSelfCalibResult calibResult = { 0 };
 
-    eSTATUS_t status =
+    status =
     IMUCalibrate (&imu, BMI3_SC_SENSITIVITY_EN | BMI3_SC_OFFSET_EN, BMI3_SC_APPLY_CORR_EN, &calibResult);
 
     TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
