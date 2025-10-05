@@ -1,6 +1,9 @@
 
 #include "device/flash/flash.h"
 #include "common.h"
+#include "conf/board.h"
+#include "conf/conf.h"
+#include "conf/ids.h"
 #include "device/flash/W25N01GW.h"
 #include "log/logger.h"
 #include "mem/mem.h"
@@ -9,21 +12,27 @@
 #include <stdint.h>
 #include <string.h>
 
+#define FLASH_VALID(pFLASH)                                                                       \
+    (                                                                                             \
+    (pFLASH) != NULL && (pFLASH)->isInitialized == true && (pFLASH)->bus.WriteBlocking != NULL && \
+    (pFLASH)->bus.ReadBlocking != NULL && (pFLASH)->bus.WriteReadBlocking != NULL &&              \
+    (pFLASH)->bus.TransactionsBlocking != NULL                                                    \
+    )
 
 static SHARED_MEM_SECTION Flash_t g_Flash = { 0 };
 
 STATIC_TESTABLE_DECL INLINE eSTATUS_t FlashRead_ (vFlash_t* pFlash, uint8_t* pRx, uint32_t size) {
-    return BUS_READ (pFlash->bus, pRx, size);
+    return BUS_READ_BLOCK (pFlash->bus, pRx, size);
 }
 
 // clang-format off
 STATIC_TESTABLE_DECL INLINE eSTATUS_t FlashWrite_ (vFlash_t* pFlash, uint8_t const* pTx, uint32_t size) {
-    return BUS_WRITE (pFlash->bus, pTx, size);
+    return BUS_WRITE_BLOCK (pFlash->bus, pTx, size);
 }
 
 STATIC_TESTABLE_DECL INLINE eSTATUS_t FlashWriteRead (vFlash_t* pFlash, uint8_t const* pTx, uint8_t* pRx, uint32_t size) {
     // clang-format on
-    return BUS_WRITE_READ (pFlash->bus, pTx, pRx, size);
+    return BUS_WRITE_READ_BLOCK (pFlash->bus, pTx, pRx, size);
 }
 
 STATIC_TESTABLE_DECL uint8_t FlashReadStatusReg (vFlash_t* pFlash, uint8_t regAddr) {
@@ -48,7 +57,7 @@ STATIC_TESTABLE_DECL eSTATUS_t FlashReadJEDECID (vFlash_t* pFlash, uint8_t* pMan
 
     if (STATUS_OK (status)) {
         *pManufacturerID = rx[2U];
-        *pDeviceId = (uint16_t)((uint16_t)rx[3U] << 8U) | (uint16_t)rx[4U];
+        *pDeviceId       = (uint16_t)((uint16_t)rx[3U] << 8U) | (uint16_t)rx[4U];
         return eSTATUS_SUCCESS;
     }
     return status;
@@ -89,7 +98,7 @@ STATIC_TESTABLE_DECL eSTATUS_t FlashReset (vFlash_t* pFlash) {
 STATIC_TESTABLE_DECL eSTATUS_t FlashStartProgram (vFlash_t* pFlash, uint16_t columnAddr, uint8_t const* pData, uint32_t size) {
     // clang-format on
 
-    if (size > W25NO1GW_PAGE_SIZE) {
+    if (size > W25NO1GW_PAGE_WRITABLE_SIZE) {
         return eSTATUS_FAILURE;
     }
 
@@ -103,7 +112,7 @@ STATIC_TESTABLE_DECL eSTATUS_t FlashStartProgram (vFlash_t* pFlash, uint16_t col
     eSTATUS_t status     = eSTATUS_SUCCESS;
     uint8_t upperColAddr = (uint8_t)((columnAddr >> 8U) & 0xFFU);
     uint8_t lowerColAddr = (uint8_t)(columnAddr & 0xFFU);
-    uint8_t startCmd[] = { W25NO1GW_INSTR_PROGRAM_DATA_LOAD, upperColAddr, lowerColAddr };
+    uint8_t startCmd[]   = { W25NO1GW_INSTR_PROGRAM_DATA_LOAD, upperColAddr, lowerColAddr };
     BUS_TRANSACTIONS_2WRITES (&status, pFlash->bus, startCmd, sizeof (startCmd), pData, size);
     return status;
 }
@@ -112,14 +121,14 @@ STATIC_TESTABLE_DECL eSTATUS_t FlashExecuteProgram (vFlash_t* pFlash, uint16_t p
 
     uint8_t upperPageAddr = (uint8_t)((pageAddr >> 8U) & 0xFFU);
     uint8_t lowerPageAddr = (uint8_t)(pageAddr & 0xFFU);
-    uint8_t execCmd[] = { W25NO1GW_INSTR_PROGRAM_EXECUTE, 0x00, upperPageAddr, lowerPageAddr };
+    uint8_t execCmd[]     = { W25NO1GW_INSTR_PROGRAM_EXECUTE, 0x00, upperPageAddr, lowerPageAddr };
     return FlashWrite_ (pFlash, execCmd, sizeof (execCmd));
 }
 
 static void FlashDebugSink (uint8_t const* pData, uint32_t len) {
 
     // TODO: decide where to start writing debug messages
-    static uint32_t addr = W25NO1GW_PAGE_SIZE * 20U;
+    static uint32_t addr = W25NO1GW_TOTAL_PAGE_SIZE * 20U;
     if (g_Flash.isInitialized == true) {
         uint32_t bytesWritten = 0U;
         FlashWrite (&g_Flash, addr, pData, len, &bytesWritten);
@@ -156,12 +165,8 @@ eSTATUS_t FlashInit (FlashInitConf_t conf, Flash_t* pOutFlash) {
 
     BUS_INIT (&status, deviceConf, *pBusConf, &pFlash->bus);
 
-    if (pFlash->bus.write == NULL || pFlash->bus.read == NULL ||
-        pFlash->bus.writeRead == NULL || pFlash->bus.transactions == NULL) {
-        goto error;
-    }
-
-    if (LoggerAddSink (FlashDebugSink) != eSTATUS_SUCCESS) {
+    if (pFlash->bus.WriteBlocking == NULL || pFlash->bus.ReadBlocking == NULL ||
+        pFlash->bus.WriteReadBlocking == NULL || pFlash->bus.TransactionsBlocking == NULL) {
         goto error;
     }
 
@@ -170,14 +175,16 @@ eSTATUS_t FlashInit (FlashInitConf_t conf, Flash_t* pOutFlash) {
 
     uint8_t manufacturerId = 0U;
     uint16_t flashDeviceId = 0U;
-    status = FlashReadJEDECID (pOutFlash, &manufacturerId, &flashDeviceId);
-    success = manufacturerId == W25NO1GW_MANUFACTURER_ID &&
-              flashDeviceId == W25NO1GW_DEVICE_ID;
+    status                 = FlashReadJEDECID (pOutFlash, &manufacturerId, &flashDeviceId);
+    success = manufacturerId == W25NO1GW_MANUFACTURER_ID && flashDeviceId == W25NO1GW_DEVICE_ID;
     if (STATUS_FAIL (status) || success == false) {
         LOG_ERROR ("Flash Manufacturer ID: 0x%02X", manufacturerId);
         LOG_ERROR ("Flash Device ID: 0x%04X", flashDeviceId);
         goto error;
     }
+
+    pFlash->isInitialized = true;
+    LoggerAddSink (FlashDebugSink);
     return status;
 
 error:
@@ -185,27 +192,29 @@ error:
     return status;
 }
 
-eSTATUS_t
-FlashWrite (vFlash_t* pFlash, uint32_t addr, uint8_t const* pData, uint32_t size, uint32_t* pBytesWritten) {
+eSTATUS_t FlashWrite (vFlash_t* pFlash, uint32_t addr, uint8_t const* pData, uint32_t size, uint32_t* pBytesWritten) {
 
-    if (pFlash == NULL || pData == NULL || size == 0U) {
+    if (FLASH_VALID (pFlash) == false) {
         return eSTATUS_FAILURE;
     }
 
-    if (size > W25NO1GW_PAGE_SIZE * W25NO1GW_PAGES_PER_BLOCK * W25NO1GW_NUM_BLOCKS) {
+    if (pData == NULL || size == 0U) {
+        return eSTATUS_FAILURE;
+    }
+
+    if (size > W25NO1GW_PAGE_WRITABLE_SIZE * W25NO1GW_PAGES_PER_BLOCK * W25NO1GW_NUM_BLOCKS) {
         return eSTATUS_FAILURE;
     }
 
     uint32_t bytesWritten = 0U;
     while (bytesWritten < size) {
-        uint32_t currentAddr = addr + bytesWritten;
-        uint16_t pageAddr   = (uint16_t)(currentAddr / W25NO1GW_PAGE_SIZE);
-        uint16_t columnAddr = (uint16_t)(currentAddr % W25NO1GW_PAGE_SIZE);
-        uint32_t bytesToWrite = W25NO1GW_PAGE_SIZE - columnAddr;
-        bytesToWrite =
-        bytesToWrite > (size - bytesWritten) ? (size - bytesWritten) : bytesToWrite;
-        eSTATUS_t status =
-        FlashStartProgram (pFlash, columnAddr, &pData[bytesWritten], bytesToWrite);
+
+        uint32_t currentAddr  = addr + bytesWritten;
+        uint16_t pageAddr     = currentAddr / W25NO1GW_PAGE_WRITABLE_SIZE;
+        uint16_t columnAddr   = currentAddr & (W25NO1GW_PAGE_WRITABLE_SIZE - 1U);
+        uint32_t bytesToWrite = W25NO1GW_PAGE_WRITABLE_SIZE - columnAddr;
+        bytesToWrite = bytesToWrite > (size - bytesWritten) ? (size - bytesWritten) : bytesToWrite;
+        eSTATUS_t status = FlashStartProgram (pFlash, columnAddr, &pData[bytesWritten], bytesToWrite);
         RETURN_IF (STATUS_FAIL (status), status, "Failed to start flash program");
 
         status = FlashExecuteProgram (pFlash, pageAddr);

@@ -19,7 +19,7 @@ typedef struct {
 typedef struct {
     eBUS_ID_t busId;
     eDEVICE_ID_t deviceId;
-    BusInterface_t bus;
+    BusVTable_t bus;
     bool isInitialized;
 } SerialDebug_t;
 

@@ -4,7 +4,8 @@
 #define W25NO1GW_MANUFACTURER_ID         0xEFU
 #define W25NO1GW_DEVICE_ID               0xBA21U
 
-#define W25NO1GW_PAGE_SIZE               (2048U + 64U) // 2KB + 64B spare (for ECC)
+#define W25NO1GW_TOTAL_PAGE_SIZE         (2048U + 64U) // 2KB + 64B spare (for ECC)
+#define W25NO1GW_PAGE_WRITABLE_SIZE      2048U
 #define W25NO1GW_PAGES_PER_BLOCK         64U
 #define W25NO1GW_NUM_BLOCKS              1024U
 

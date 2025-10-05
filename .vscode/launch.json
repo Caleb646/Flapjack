@@ -5,7 +5,7 @@
             "name": "Debug Unit Tests",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/Tests/build/Debug/test_umap.exe",
+            "program": "${workspaceFolder}/Tests/build/Debug/test_common.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/Tests/build",

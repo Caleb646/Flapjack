@@ -36,29 +36,45 @@
 #define ABS_F32(x)               (((float)(x) < 0.0F) ? -((float)(x)) : (float)(x))
 
 #define DEG2RAD(x)               (((float)(x)) * 0.017453292519943295F) // (π / 180)
-#define RAD2DEG(x)               (((float)(x)) * 57.29577951308232F) // (180 / π)
+#define RAD2DEG(x)               (((float)(x)) * 57.29577951308232F)    // (180 / π)
 
-#define FOR_EACH(pARRAY, SIZE, FN, ...)         \
-    do {                                        \
-        for (uint32_t i = 0; i < (SIZE); ++i) { \
-            FN ((pARRAY) + i, ##__VA_ARGS__);   \
-        }                                       \
-    } while (0)
+#define ARRAY_SIZE(ARRAY)        (sizeof (ARRAY) / sizeof ((ARRAY)[0]))
+
+#define FOR_EACH(TYPE, ARRAY) \
+    for (TYPE* pElement = &((ARRAY)[0]); pElement <= &((ARRAY)[ARRAY_SIZE (ARRAY) - 1U]); ++pElement)
+
+// #define FOR_EACH(TYPE, ARRAY) \
+//     for ( struct { size_t i; TYPE* pElement; } loop = { 0, &((ARRAY)[0]) }; loop.i < ARRAY_SIZE (ARRAY); ++loop.pElement, ++loop.i)
+
+#define FOR_EACH_CONST(TYPE, ARRAY) FOR_EACH (TYPE const, ARRAY)
 
 typedef int8_t eSTATUS_t;
 enum {
+    eSTATUS_FAILURE       = -126,
+    eSTATUS_BUSY          = -124,
+    eSTATUS_TIMEOUT       = -123,
+    eSTATUS_NULL_ARG      = -122,
+    eSTATUS_INVALID_ARG   = -121,
+    eSTATUS_BUS_ERROR     = -120,
+    eSTATUS_MEM_ERROR     = -119,
+    eSTATUS_HW_ERROR      = -118,
+    eSTATUS_DEV_ERROR     = -117,
+    eSTATUS_EXT_DEV_ERROR = -115,
+    eSTATUS_NOT_FOUND     = -116,
+    eSTATUS_UNSUPPORTED   = -115,
 
-    eSTATUS_FAILURE = -126,
-    eSTATUS_BUSY    = -124,
-    eSTATUS_TIMEOUT = -123,
-
-    eSTATUS_SUB_STATUS_START,
+    eSTATUS_SUB_STATUS_START__,
 
     eSTATUS_SUCCESS = 0,
 };
 
+// clang-format off
+
 #define STATUS_OK(STATUS)   ((STATUS) == eSTATUS_SUCCESS)
+#define STATUS_OK_BUSY(STATUS) ((STATUS) == eSTATUS_SUCCESS || (STATUS) == eSTATUS_BUSY)
 #define STATUS_FAIL(STATUS) ((STATUS) != eSTATUS_SUCCESS)
+
+// clang-format on
 
 typedef struct {
     int32_t x, y, z;

@@ -12,12 +12,14 @@
 #include <stdio.h>
 #include <string.h>
 
+#define SERIAL_VALID(pSERIAL) \
+    ((pSERIAL) != NULL && (pSERIAL)->isInitialized == true && (pSERIAL)->bus.WriteBlocking != NULL)
 static SHARED_MEM_SECTION SerialDebug_t g_SerialDebug = { 0 };
 
 static void SerialDebugSink (uint8_t const* pData, uint32_t len) {
 
-    if (g_SerialDebug.isInitialized == true) {
-        BUS_WRITE (g_SerialDebug.bus, pData, len);
+    if (SERIAL_VALID (&g_SerialDebug)) {
+        BUS_WRITE_BLOCK (g_SerialDebug.bus, pData, len);
     }
 }
 
@@ -48,15 +50,12 @@ eSTATUS_t SerialDebugInit (SerialDebugInitConf_t conf, SerialDebug_t* pOutSerial
 
     BUS_INIT (&status, deviceConf, *pBusConf, &pSerial->bus);
 
-    if (pSerial->bus.write == NULL) {
-        goto error;
-    }
-
-    if (LoggerAddSink (SerialDebugSink) != eSTATUS_SUCCESS) {
+    if (pSerial->bus.WriteBlocking == NULL) {
         goto error;
     }
 
     pSerial->isInitialized = true;
+    LoggerAddSink (SerialDebugSink);
     return eSTATUS_SUCCESS;
 error:
     memset (pSerial, 0, sizeof (SerialDebug_t));

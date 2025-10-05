@@ -20,7 +20,7 @@
 #define MAG_SIGNED_POS_MAX   (1U << 17U)
 #define MAG_VALID(pMAG)      ((pMAG) != NULL && (pMAG)->isInitialized == true)
 
-static SHARED_MEM_SECTION Mag_t gMag = { 0 };
+static SHARED_MEM_SECTION Mag_t gMag                                    = { 0 };
 static SHARED_MEM_SECTION uint8_t gControlRegisters[NCONTROL_REGISTERS] = { 0 };
 
 STATIC_TESTABLE_DECL eMAG_STATUS_t MagRead (vMag_t* pMag, uint8_t reg, uint8_t* pData, uint16_t size) {
@@ -37,7 +37,7 @@ STATIC_TESTABLE_DECL eMAG_STATUS_t MagRead (vMag_t* pMag, uint8_t reg, uint8_t* 
     uint8_t txData[MAX_BUFFER_SIZE] = { reg | 0x80U }; // Set MSB for read operation
     uint8_t rxData[MAX_BUFFER_SIZE] = { 0 };
 
-    eSTATUS_t status = BUS_WRITE_READ (pMag->bus, txData, rxData, totalSize);
+    eSTATUS_t status = BUS_WRITE_READ_BLOCK (pMag->bus, txData, rxData, totalSize);
     if (status != eSTATUS_SUCCESS) {
         return eMAG_BUS_ERROR;
     }
@@ -59,10 +59,10 @@ STATIC_TESTABLE_DECL eMAG_STATUS_t MagWrite (vMag_t* pMag, uint8_t reg, uint8_t*
     }
 
     uint8_t txData[MAX_BUFFER_SIZE] = { 0 };
-    txData[0] = reg & 0x7FU; // Clear MSB for write operation
+    txData[0]                       = reg & 0x7FU; // Clear MSB for write operation
     memcpy (&(txData[1]), pData, size);
 
-    eSTATUS_t status = BUS_WRITE (pMag->bus, txData, totalSize);
+    eSTATUS_t status = BUS_WRITE_BLOCK (pMag->bus, txData, totalSize);
     if (status != eSTATUS_SUCCESS) {
         return eMAG_BUS_ERROR;
     }
@@ -71,8 +71,7 @@ STATIC_TESTABLE_DECL eMAG_STATUS_t MagWrite (vMag_t* pMag, uint8_t reg, uint8_t*
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL bool
-MagControlRegWrite (vMag_t* pMag, uint8_t reg, uint8_t bitMask, bool doWrite) {
+STATIC_TESTABLE_DECL bool MagControlRegWrite (vMag_t* pMag, uint8_t reg, uint8_t bitMask, bool doWrite) {
 
     uint8_t* pValue = &gControlRegisters[CONTROL_REG2IDX (reg)];
     *pValue |= bitMask;
@@ -106,8 +105,7 @@ STATIC_TESTABLE_DECL eMAG_STATUS_t MagSoftReset (vMag_t* pMag) {
     // eMAG_STATUS_t status = eSTATUS_SUCCESS;
     memset (gControlRegisters, 0, sizeof (gControlRegisters));
 
-    bool success =
-    MagControlRegWrite (pMag, MMC5983_INT_CTRL_1_REG, MMC5983_SW_RST, true);
+    bool success = MagControlRegWrite (pMag, MMC5983_INT_CTRL_1_REG, MMC5983_SW_RST, true);
     // 10 ms reset time + 5 ms margin
     DelayMicroseconds (15000);
     // Clear the software reset bit on our registers
@@ -130,11 +128,11 @@ STATIC_TESTABLE_DECL bool MagUpdateRawData (vMag_t* pMag) {
     x1 = pXYZ[0], x2 = pXYZ[1];
     y1 = pXYZ[2], y2 = pXYZ[3];
     z1 = pXYZ[4], z2 = pXYZ[5];
-    xyz               = pXYZ[6];
-    pMag->rawData.x   = (((x1 << 8U) | x2) << 2U) | (xyz >> 6U);
-    pMag->rawData.y   = (((y1 << 8U) | y2) << 2U) | ((xyz >> 4U) & 0x3U);
-    pMag->rawData.z   = (((z1 << 8U) | z2) << 2U) | ((xyz >> 2U) & 0x3U);
-    pMag->dataUpdated = true;
+    xyz                    = pXYZ[6];
+    pMag->rawData.x        = (((x1 << 8U) | x2) << 2U) | (xyz >> 6U);
+    pMag->rawData.y        = (((y1 << 8U) | y2) << 2U) | ((xyz >> 4U) & 0x3U);
+    pMag->rawData.z        = (((z1 << 8U) | z2) << 2U) | ((xyz >> 2U) & 0x3U);
+    pMag->dataUpdated      = true;
     pMag->msLastUpdateTime = GetMilliseconds ();
     return true;
 }
@@ -191,7 +189,7 @@ error:
     return false;
 }
 
-eMAG_STATUS_t MagInit (MagInitConf_t conf, Mag_t* pOutMag, BusInterface_t* pBusOverride) {
+eMAG_STATUS_t MagInit (MagInitConf_t conf, Mag_t* pOutMag, BusVTable_t* pBusOverride) {
 
     eSTATUS_t status         = eSTATUS_SUCCESS;
     DeviceBoardConf_t device = conf.boardConf;
@@ -232,7 +230,7 @@ eMAG_STATUS_t MagInit (MagInitConf_t conf, Mag_t* pOutMag, BusInterface_t* pBusO
     success = MagControlRegWrite (pMag, MMC5983_INT_CTRL_0_REG, flags, true);
     GOTO_IF (success == false, error, "Failed to configure MAG INT_CTRL_0 register");
 
-    flags = MMC5983_BW0 | MMC5983_BW1; // Set bandwidth to 800Hz
+    flags   = MMC5983_BW0 | MMC5983_BW1; // Set bandwidth to 800Hz
     success = MagControlRegWrite (pMag, MMC5983_INT_CTRL_1_REG, flags, true);
     GOTO_IF (success == false, error, "Failed to configure MAG INT_CTRL_1 register");
 
@@ -276,7 +274,7 @@ eMAG_STATUS_t MagStart (vMag_t* pMag) {
     if (pMag->usingEXTIInterrupt == true) {
         // Enable interrupts on the MAG
         uint8_t flags = MMC5983_INT_MEAS_DONE_EN;
-        success = MagControlRegWrite (pMag, MMC5983_INT_CTRL_0_REG, flags, true);
+        success       = MagControlRegWrite (pMag, MMC5983_INT_CTRL_0_REG, flags, true);
         RETURN_IF (success == false, eMAG_BUS_ERROR, "Failed to configure MAG INT_CTRL_0 register");
     }
     return status;
@@ -291,7 +289,7 @@ eMAG_STATUS_t MagStop (vMag_t* pMag) {
     if (pMag->usingEXTIInterrupt == true) {
         // Disable interrupts on the MAG
         uint8_t flags = (uint8_t)~MMC5983_INT_MEAS_DONE_EN;
-        success = MagControlRegWrite (pMag, MMC5983_INT_CTRL_0_REG, flags, true);
+        success       = MagControlRegWrite (pMag, MMC5983_INT_CTRL_0_REG, flags, true);
         RETURN_IF (success == false, eMAG_BUS_ERROR, "Failed to configure MAG INT_CTRL_0 register");
     }
     return status;
@@ -302,7 +300,7 @@ eMAG_STATUS_t MagUpdate (vMag_t* pMag, bool forcePolling, Vec3f* pOutput) {
     RETURN_IF (MAG_VALID (pMag) == false, eMAG_INVALID_DEVICE, "MAG device is not initialized");
     RETURN_IF_NULL (pOutput, eMAG_INVALID_DEVICE, "Output pointer is NULL");
 
-    bool success = true;
+    bool success    = true;
     bool usePolling = pMag->usingEXTIInterrupt == false || forcePolling == true;
     // If using interrupts, the interrupt handler should have already updated the data
     if (usePolling == true) {

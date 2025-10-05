@@ -38,14 +38,14 @@ static INLINE vIO_t* SPIGetGPIOByDeviceId (vSPIBus_t* pBus, eDEVICE_ID_t deviceI
     return NULL;
 }
 
-static INLINE bool SPIBeginTransaction (vSPIBus_t* pBus, eDEVICE_ID_t deviceId) {
+static INLINE bool SPIBeginOperation (vSPIBus_t* pBus, eDEVICE_ID_t deviceId) {
 
     if (SPI_VALID (pBus) == false) {
         LOG_ERROR ("Failed to get SPI bus by ID");
         return false;
     }
 
-    if (pBus->activeTransaction.pNss != NULL) {
+    if (pBus->activeOperation.pNss != NULL) {
         LOG_ERROR ("SPI bus is already in a transaction");
         return false;
     }
@@ -55,26 +55,26 @@ static INLINE bool SPIBeginTransaction (vSPIBus_t* pBus, eDEVICE_ID_t deviceId) 
         LOG_ERROR ("Failed to get GPIO for SPI device ID");
         return false;
     }
-    pBus->activeTransaction.pNss     = pGPIO;
-    pBus->activeTransaction.deviceId = deviceId;
+    pBus->activeOperation.pNss     = pGPIO;
+    pBus->activeOperation.deviceId = deviceId;
     HAL_GPIO_WritePin (pGPIO->pPort, pGPIO->pin, GPIO_PIN_RESET);
     return true;
 }
 
-static INLINE void SPIEndTransaction (vSPIBus_t* pBus) {
+static INLINE void SPIEndOperation (vSPIBus_t* pBus) {
 
-    if (pBus->activeTransaction.pNss == NULL) {
+    if (pBus->activeOperation.pNss == NULL) {
         LOG_ERROR ("SPI bus is not in a transaction");
         return;
     }
 
     HAL_GPIO_WritePin (
-    pBus->activeTransaction.pNss->pPort,
-    pBus->activeTransaction.pNss->pin,
+    pBus->activeOperation.pNss->pPort,
+    pBus->activeOperation.pNss->pin,
     GPIO_PIN_SET
     );
-    pBus->activeTransaction.pNss     = NULL;
-    pBus->activeTransaction.deviceId = 0;
+    pBus->activeOperation.pNss     = NULL;
+    pBus->activeOperation.deviceId = 0;
 }
 
 #define SPI_INIT_CLOCK(pSTATUS, BUS_ID, RCC_PERIPH_CLK_SELECTION, RCC_SPI_CLK_SELECTION) \
@@ -283,7 +283,7 @@ eSTATUS_t
 SPIRead_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size) {
 
     eSTATUS_t status = eSTATUS_SUCCESS;
-    if (SPIBeginTransaction (pBus, deviceId) == false) {
+    if (SPIBeginOperation (pBus, deviceId) == false) {
         return eSTATUS_FAILURE;
     }
 
@@ -292,7 +292,7 @@ SPIRead_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t* pData, size_t
         status = eSTATUS_FAILURE;
     }
 
-    SPIEndTransaction (pBus);
+    SPIEndOperation (pBus);
     return status;
 }
 
@@ -300,7 +300,7 @@ eSTATUS_t
 SPIWrite_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t const* pData, size_t size) {
 
     eSTATUS_t status = eSTATUS_SUCCESS;
-    if (SPIBeginTransaction (pBus, deviceId) == false) {
+    if (SPIBeginOperation (pBus, deviceId) == false) {
         return eSTATUS_FAILURE;
     }
 
@@ -309,7 +309,7 @@ SPIWrite_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t const* pData,
         status = eSTATUS_FAILURE;
     }
 
-    SPIEndTransaction (pBus);
+    SPIEndOperation (pBus);
     return status;
 }
 
@@ -317,7 +317,7 @@ eSTATUS_t
 SPIWriteRead_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t const* pTxData, uint8_t* pRxData, size_t size) {
 
     eSTATUS_t status = eSTATUS_SUCCESS;
-    if (SPIBeginTransaction (pBus, deviceId) == false) {
+    if (SPIBeginOperation (pBus, deviceId) == false) {
         return eSTATUS_FAILURE;
     }
 
@@ -327,7 +327,7 @@ SPIWriteRead_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t const* pT
         status = eSTATUS_FAILURE;
     }
 
-    SPIEndTransaction (pBus);
+    SPIEndOperation (pBus);
     return status;
 }
 
@@ -337,7 +337,7 @@ SPITransactions_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, BusTransaction
     eSTATUS_t status            = eSTATUS_SUCCESS;
     HAL_StatusTypeDef halStatus = HAL_OK;
 
-    if (SPIBeginTransaction (pBus, deviceId) == false) {
+    if (SPIBeginOperation (pBus, deviceId) == false) {
         return eSTATUS_FAILURE;
     }
 
@@ -395,7 +395,7 @@ SPITransactions_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, BusTransaction
         }
     }
 
-    SPIEndTransaction (pBus);
+    SPIEndOperation (pBus);
     return status;
 }
 

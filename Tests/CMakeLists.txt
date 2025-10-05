@@ -91,6 +91,7 @@ function(add_test_exe test_name)
     add_test(NAME ${test_name} COMMAND ${test_name})
 endfunction()
 
+add_test_exe(test_common OBJECTS drone_common_obj)
 add_test_exe(test_queue OBJECTS drone_common_obj)
 add_test_exe(test_vector OBJECTS drone_common_obj)
 add_test_exe(test_umap OBJECTS drone_common_obj)

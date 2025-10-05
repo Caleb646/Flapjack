@@ -769,10 +769,26 @@ HAL_StatusTypeDef HAL_RCCEx_PeriphCLKConfig(RCC_PeriphCLKInitTypeDef *PeriphClkI
 #define UART_RXFIFO_THRESHOLD_FULL      0x00000005U
 
 // UART Interrupt definitions
-#define UART_IT_RXNE                    0x00000020U
-#define UART_IT_TC                      0x00000040U
-#define UART_IT_TXE                     0x00000080U
-#define UART_IT_ERR                     0x00000001U
+#define UART_IT_PE                          0x0028U              /*!< UART parity error interruption                 */
+#define UART_IT_TXE                         0x0727U              /*!< UART transmit data register empty interruption */
+#define UART_IT_TXFNF                       0x0727U              /*!< UART TX FIFO not full interruption             */
+#define UART_IT_TC                          0x0626U              /*!< UART transmission complete interruption        */
+#define UART_IT_RXNE                        0x0525U              /*!< UART read data register not empty interruption */
+#define UART_IT_RXFNE                       0x0525U              /*!< UART RXFIFO not empty interruption             */
+#define UART_IT_IDLE                        0x0424U              /*!< UART idle interruption                         */
+#define UART_IT_LBD                         0x0846U              /*!< UART LIN break detection interruption          */
+#define UART_IT_CTS                         0x096AU              /*!< UART CTS interruption                          */
+#define UART_IT_CM                          0x112EU              /*!< UART character match interruption              */
+#define UART_IT_WUF                         0x1476U              /*!< UART wake-up from stop mode interruption       */
+#define UART_IT_RXFF                        0x183FU              /*!< UART RXFIFO full interruption                  */
+#define UART_IT_TXFE                        0x173EU              /*!< UART TXFIFO empty interruption                 */
+#define UART_IT_RXFT                        0x1A7CU              /*!< UART RXFIFO threshold reached interruption     */
+#define UART_IT_TXFT                        0x1B77U              /*!< UART TXFIFO threshold reached interruption     */
+#define UART_IT_RTO                         0x0B3AU              /*!< UART receiver timeout interruption             */
+#define UART_IT_ERR                         0x0060U              /*!< UART error interruption                        */
+#define UART_IT_ORE                         0x0300U              /*!< UART overrun error interruption                */
+#define UART_IT_NE                          0x0200U              /*!< UART noise error interruption                  */
+#define UART_IT_FE                          0x0100U              /*!< UART frame error interruption                  */
 
 // RCC UART/USART Clock Source definitions
 #define RCC_PERIPHCLK_USART1            0x00000001U

@@ -202,7 +202,7 @@ typedef struct {
     eSTATUS_t status;
     uint32_t msLastAccUpdateTime;
     uint32_t msLastGyroUpdateTime;
-    BusInterface_t bus;
+    BusVTable_t bus;
     uint8_t nBusDummyBytes;
     bool usingEXTIInterrupt;
     bool isInitialized;
@@ -247,7 +247,7 @@ IMUConvertRaw (IMU_ACC_RANGE aRange, Vec3i ra, IMU_GYRO_RANGE gRange, Vec3i rg, 
 
 #endif
 
-eSTATUS_t IMUInit (IMUInitConf_t conf, IMU_t* pOutIMU, BusInterface_t* pBusOverride);
+eSTATUS_t IMUInit (IMUInitConf_t conf, IMU_t* pOutIMU, BusVTable_t* pBusOverride);
 eSTATUS_t IMUStart (vIMU_t* pIMU);
 eSTATUS_t IMUStop (vIMU_t* pIMU);
 eSTATUS_t IMUHandleErr (vIMU_t* pIMU);

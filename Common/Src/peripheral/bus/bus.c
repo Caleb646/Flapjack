@@ -9,9 +9,9 @@
 #include <stdint.h>
 
 
-eSTATUS_t BusInit (BusInitConf_t conf, BusInterface_t* pOutBusInterface) {
+eSTATUS_t BusInit (BusInitConf_t conf, BusVTable_t* pOutBusVTable) {
 
-    if (pOutBusInterface == NULL) {
+    if (pOutBusVTable == NULL) {
         return eSTATUS_FAILURE;
     }
 
@@ -36,12 +36,19 @@ eSTATUS_t BusInit (BusInitConf_t conf, BusInterface_t* pOutBusInterface) {
             return eSTATUS_FAILURE;
         }
 
-        pOutBusInterface->read         = SPI_READ_BLOCKING;
-        pOutBusInterface->write        = SPI_WRITE_BLOCKING;
-        pOutBusInterface->writeRead    = SPI_WRITE_READ_BLOCKING;
-        pOutBusInterface->transactions = SPI_TRANSACTIONS_BLOCKING;
-        pOutBusInterface->deviceId     = deviceId;
-        pOutBusInterface->pCtx         = SPIGetBusById (busId);
+        pOutBusVTable->ReadBlocking = SPI_READ_BLOCKING;
+        pOutBusVTable->ReadIT       = NULL;
+
+        pOutBusVTable->WriteBlocking = SPI_WRITE_BLOCKING;
+
+        pOutBusVTable->WriteReadBlocking = SPI_WRITE_READ_BLOCKING;
+
+        pOutBusVTable->TransactionsBlocking = SPI_TRANSACTIONS_BLOCKING;
+
+        pOutBusVTable->RegisterCallback = NULL;
+
+        pOutBusVTable->deviceId = deviceId;
+        pOutBusVTable->pCtx     = SPIGetBusById (busId);
         return eSTATUS_SUCCESS;
     }
 
@@ -52,11 +59,19 @@ eSTATUS_t BusInit (BusInitConf_t conf, BusInterface_t* pOutBusInterface) {
             return eSTATUS_FAILURE;
         }
 
-        pOutBusInterface->read      = UART_READ_BLOCKING;
-        pOutBusInterface->write     = UART_WRITE_BLOCKING;
-        pOutBusInterface->writeRead = NULL;
-        pOutBusInterface->deviceId  = deviceId;
-        pOutBusInterface->pCtx      = UARTGetBusById (busId);
+        pOutBusVTable->ReadBlocking = UART_READ_BLOCKING;
+        pOutBusVTable->ReadIT       = UART_READ_IT;
+
+        pOutBusVTable->WriteBlocking = UART_WRITE_BLOCKING;
+
+        pOutBusVTable->WriteReadBlocking = NULL;
+
+        pOutBusVTable->TransactionsBlocking = NULL;
+
+        pOutBusVTable->RegisterCallback = UART_REGISTER_CALLBACK;
+
+        pOutBusVTable->deviceId = deviceId;
+        pOutBusVTable->pCtx     = UARTGetBusById (busId);
         return eSTATUS_SUCCESS;
     }
     // invalid bus type

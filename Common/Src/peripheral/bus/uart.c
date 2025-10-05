@@ -9,6 +9,49 @@
 
 #define UART_VALID(pBUS) ((pBUS) != NULL && (pBUS)->isInitialized == true)
 
+// clang-format off
+// #define UART_IT_PE                          0x0028U              /*!< UART parity error interruption                 */
+// #define UART_IT_TXE                         0x0727U              /*!< UART transmit data register empty interruption */
+// #define UART_IT_TXFNF                       0x0727U              /*!< UART TX FIFO not full interruption             */
+// #define UART_IT_TC                          0x0626U              /*!< UART transmission complete interruption        */
+// #define UART_IT_RXNE                        0x0525U              /*!< UART read data register not empty interruption */
+// #define UART_IT_RXFNE                       0x0525U              /*!< UART RXFIFO not empty interruption             */
+// #define UART_IT_IDLE                        0x0424U              /*!< UART idle interruption                         */
+// #define UART_IT_LBD                         0x0846U              /*!< UART LIN break detection interruption          */
+// #define UART_IT_CTS                         0x096AU              /*!< UART CTS interruption                          */
+// #define UART_IT_CM                          0x112EU              /*!< UART character match interruption              */
+// #define UART_IT_WUF                         0x1476U              /*!< UART wake-up from stop mode interruption       */
+// #define UART_IT_RXFF                        0x183FU              /*!< UART RXFIFO full interruption                  */
+// #define UART_IT_TXFE                        0x173EU              /*!< UART TXFIFO empty interruption                 */
+// #define UART_IT_RXFT                        0x1A7CU              /*!< UART RXFIFO threshold reached interruption     */
+// #define UART_IT_TXFT                        0x1B77U              /*!< UART TXFIFO threshold reached interruption     */
+// #define UART_IT_RTO                         0x0B3AU              /*!< UART receiver timeout interruption             */
+// #define UART_IT_ERR                         0x0060U              /*!< UART error interruption                        */
+// #define UART_IT_ORE                         0x0300U              /*!< UART overrun error interruption                */
+// #define UART_IT_NE                          0x0200U              /*!< UART noise error interruption                  */
+// #define UART_IT_FE                          0x0100U              /*!< UART frame error interruption                  */
+// clang-format on
+typedef struct {
+    uint32_t hwId;
+    eBUS_CALLBACK_ID_t cbId;
+} UARTInterruptMapping_t;
+
+static UARTInterruptMapping_t const gUartInterruptMappings[] = {
+    { .hwId = UART_IT_TXE, .cbId = eBUS_CALLBACK_ID_TX },             // TXE: Data register empty
+    { .hwId = UART_IT_TXFE, .cbId = eBUS_CALLBACK_ID_TX_FIFO_EMPTY }, // TXFE: TX FIFO empty
+    { .hwId = UART_IT_TC, .cbId = eBUS_CALLBACK_ID_TX_COMPLETE },     // TC: Transmission complete
+
+    { .hwId = UART_IT_RXNE, .cbId = eBUS_CALLBACK_ID_RX }, // RXNE: Data register not empty
+    { .hwId = UART_IT_RXFF, .cbId = eBUS_CALLBACK_ID_RX_FIFO_FULL }, // RXFF: RX FIFO full
+    { .hwId = UART_IT_IDLE, .cbId = eBUS_CALLBACK_ID_RX_COMPLETE },  // IDLE: Idle line detected
+
+    { .hwId = UART_IT_RTO, .cbId = eBUS_CALLBACK_ID_ERROR }, // UART receiver timeout interruption
+    { .hwId = UART_IT_ERR, .cbId = eBUS_CALLBACK_ID_ERROR }, // UART error interruption
+    { .hwId = UART_IT_ORE, .cbId = eBUS_CALLBACK_ID_ERROR }, // UART overrun error interruption
+    { .hwId = UART_IT_NE, .cbId = eBUS_CALLBACK_ID_ERROR },  // UART noise error interruption
+    { .hwId = UART_IT_FE, .cbId = eBUS_CALLBACK_ID_ERROR },  // UART frame error interruption
+};
+
 static SHARED_MEM_SECTION UARTBus_t gBuses[eUART_BUS_ID_MAX] = { 0 };
 
 static USART_TypeDef* UARTGetInstanceById (eBUS_ID_t busId) {
@@ -29,6 +72,14 @@ static vUARTBus_t* UARTGetBusByInstance (USART_TypeDef* instance) {
         }
     }
     return NULL;
+}
+
+static void UARTHandleCallback (vUARTBus_t* pBus, eBUS_CALLBACK_ID_t cbId) {
+
+    BusCallback_t* pCB = &pBus->callbacks[cbId];
+    if (pCB->Callback != NULL) {
+        pCB->Callback (pCB->data);
+    }
 }
 
 /*
@@ -53,9 +104,7 @@ void HAL_UART_TxCpltCallback (UART_HandleTypeDef* huart) {
     if (UART_VALID (pBus) == false) {
         return;
     }
-    if (pBus->txCallback != NULL) {
-        pBus->txCallback (pBus->busId);
-    }
+    UARTHandleCallback (pBus, eBUS_CALLBACK_ID_TX_COMPLETE);
 }
 
 void HAL_UART_RxCpltCallback (UART_HandleTypeDef* huart) {
@@ -64,9 +113,7 @@ void HAL_UART_RxCpltCallback (UART_HandleTypeDef* huart) {
     if (UART_VALID (pBus) == false) {
         return;
     }
-    if (pBus->rxCallback != NULL) {
-        pBus->rxCallback (pBus->busId);
-    }
+    UARTHandleCallback (pBus, eBUS_CALLBACK_ID_RX_COMPLETE);
 }
 
 void HAL_UART_ErrorCallback (UART_HandleTypeDef* huart) {
@@ -75,9 +122,7 @@ void HAL_UART_ErrorCallback (UART_HandleTypeDef* huart) {
     if (UART_VALID (pBus) == false) {
         return;
     }
-    if (pBus->errorCallback != NULL) {
-        pBus->errorCallback (pBus->busId);
-    }
+    UARTHandleCallback (pBus, eBUS_CALLBACK_ID_ERROR);
 }
 
 #define UART_CLOCK_INIT(pSTATUS, BUS_ID, PERIPHCLK, CLKSELECTION)         \
@@ -208,9 +253,9 @@ eSTATUS_t UARTInit (UARTInitConf_t conf, vUARTBus_t* pOutBus) {
         goto error;
     }
 
-    if (HAL_UARTEx_DisableFifoMode (&pBus->handle) != HAL_OK) {
-        goto error;
-    }
+    // if (HAL_UARTEx_DisableFifoMode (&pBus->handle) != HAL_OK) {
+    //     goto error;
+    // }
 
     pBus->isInitialized = true;
     return eSTATUS_SUCCESS;
@@ -219,8 +264,7 @@ error:
     return eSTATUS_FAILURE;
 }
 
-eSTATUS_t
-UARTRead_Blocking (vUARTBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size) {
+eSTATUS_t UARTRead_Blocking (vUARTBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size) {
 
     if (UART_VALID (pBus) == false || pData == NULL || size == 0) {
         return eSTATUS_FAILURE;
@@ -233,8 +277,7 @@ UARTRead_Blocking (vUARTBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t* pData, size
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t
-UARTWrite_Blocking (vUARTBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t const* pData, size_t size) {
+eSTATUS_t UARTWrite_Blocking (vUARTBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t const* pData, size_t size) {
 
     if (UART_VALID (pBus) == false || pData == NULL || size == 0) {
         return eSTATUS_FAILURE;
@@ -260,23 +303,15 @@ eSTATUS_t UARTRead_IT (vUARTBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t* pData, 
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t UARTRegisterCallback (vUARTBus_t* pBus, eUART_CALLBACK_ID_t cbId, UART_Callback_t callback) {
+eSTATUS_t UARTRegisterCallback (vUARTBus_t* pBus, eDEVICE_ID_t deviceId, BusCallback_t callback) {
 
-    if (UART_VALID (pBus) == false || callback == NULL) {
+    if (UART_VALID (pBus) == false || callback.Callback == NULL ||
+        BUS_CALLBACK_ID_VALID (callback.data.cbId) == false) {
         return eSTATUS_FAILURE;
     }
 
-    if (cbId == eUART_CALLBACK_ID_RX) {
-        pBus->rxCallback = callback;
-    } else if (cbId == eUART_CALLBACK_ID_TX) {
-        pBus->txCallback = callback;
-    } else if (cbId == eUART_CALLBACK_ID_ERROR) {
-        pBus->errorCallback = callback;
-    } else {
-        return eSTATUS_FAILURE;
-    }
-
-    return eSTATUS_SUCCESS;
+    pBus->callbacks[callback.data.cbId] = callback;
+    return UARTEnableInterrupts (pBus, 5);
 }
 
 eSTATUS_t UARTEnableInterrupts (vUARTBus_t* pBus, uint32_t priority) {
@@ -285,10 +320,13 @@ eSTATUS_t UARTEnableInterrupts (vUARTBus_t* pBus, uint32_t priority) {
         return eSTATUS_FAILURE;
     }
 
-    // UART read data register not empty interrupt
-    __HAL_UART_ENABLE_IT (&pBus->handle, UART_IT_RXNE);
-    // UART error interrupt
-    __HAL_UART_ENABLE_IT (&pBus->handle, UART_IT_ERR);
+    FOR_EACH_CONST (UARTInterruptMapping_t, gUartInterruptMappings) {
+        if (pBus->callbacks[pElement->cbId].Callback != NULL) {
+            __HAL_UART_ENABLE_IT (&pBus->handle, pElement->hwId);
+        } else {
+            __HAL_UART_DISABLE_IT (&pBus->handle, pElement->hwId);
+        }
+    }
 
     switch (pBus->busId) {
     case eUART_1_BUS_ID:
@@ -320,11 +358,14 @@ eSTATUS_t UART_READ_BLOCKING (void* pCtx, eDEVICE_ID_t deviceId, uint8_t* pData,
     return UARTRead_Blocking ((vUARTBus_t*)pCtx, deviceId, pData, size);
 }
 
-eSTATUS_t
-UART_WRITE_BLOCKING (void* pCtx, eDEVICE_ID_t deviceId, uint8_t const* pData, size_t size) {
+eSTATUS_t UART_WRITE_BLOCKING (void* pCtx, eDEVICE_ID_t deviceId, uint8_t const* pData, size_t size) {
     return UARTWrite_Blocking ((vUARTBus_t*)pCtx, deviceId, pData, size);
 }
 
 eSTATUS_t UART_READ_IT (void* pCtx, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size) {
     return UARTRead_IT ((vUARTBus_t*)pCtx, deviceId, pData, size);
+}
+
+eSTATUS_t UART_REGISTER_CALLBACK (void* pCtx, eDEVICE_ID_t deviceId, BusCallback_t callback) {
+    return UARTRegisterCallback ((vUARTBus_t*)pCtx, deviceId, callback);
 }

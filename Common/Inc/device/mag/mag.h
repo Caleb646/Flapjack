@@ -14,7 +14,7 @@
 
 typedef int8_t eMAG_STATUS_t;
 enum {
-    eMAG_I2C_INITIALIZATION_ERROR = eSTATUS_SUB_STATUS_START,
+    eMAG_I2C_INITIALIZATION_ERROR = eSTATUS_SUB_STATUS_START__,
     eMAG_SPI_INITIALIZATION_ERROR,
     eMAG_INVALID_DEVICE,
     eMAG_BUS_ERROR,
@@ -33,7 +33,7 @@ typedef struct Mag_s {
     eBUS_ID_t busId;
     Vec3u rawData;
     uint32_t msLastUpdateTime;
-    BusInterface_t bus;
+    BusVTable_t bus;
     uint8_t nBusDummyBytes;
     bool isInitialized;
     bool usingEXTIInterrupt;
@@ -42,7 +42,7 @@ typedef struct Mag_s {
 
 typedef Mag_t vMag_t;
 
-eMAG_STATUS_t MagInit (MagInitConf_t conf, Mag_t* pOutMag, BusInterface_t* pBusOverride);
+eMAG_STATUS_t MagInit (MagInitConf_t conf, Mag_t* pOutMag, BusVTable_t* pBusOverride);
 eMAG_STATUS_t MagStart (vMag_t* pMag);
 eMAG_STATUS_t MagStop (vMag_t* pMag);
 eMAG_STATUS_t MagUpdate (vMag_t* pMag, bool forcePolling, Vec3f* pOutput);

@@ -20,7 +20,7 @@ typedef struct {
 typedef struct {
     vIO_t* pNss;
     eDEVICE_ID_t deviceId;
-} SPITransaction_t;
+} SPIActiveOperation_t;
 
 typedef struct {
     eBUS_ID_t busId;
@@ -31,7 +31,7 @@ typedef struct {
         eDEVICE_ID_t ids[SPI_MAX_DEVICES_PER_BUS];
     } connectedDevices;
     uint8_t nDevices;
-    SPITransaction_t activeTransaction;
+    SPIActiveOperation_t activeOperation;
     bool isInitialized;
 } SPIBus_t;
 
@@ -45,11 +45,6 @@ eSTATUS_t SPIRead_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t* pDa
 eSTATUS_t SPIWrite_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t const* pData, size_t size);
 eSTATUS_t SPIWriteRead_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t const* pTxData, uint8_t* pRxData, size_t size);
 eSTATUS_t SPITransactions_Blocking(vSPIBus_t* pBus, eDEVICE_ID_t deviceId, BusTransaction_t* pTransactions, size_t nTransactions);
-
-// eSTATUS_t SPIRead (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t* pData, uint16_t size);
-// eSTATUS_t SPIWrite (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pData, uint16_t size);
-// eSTATUS_t
-// SPIWriteRead (eBUS_ID_t busId, eDEVICE_ID_t deviceId, uint8_t const* pTxData, uint8_t* pRxData, uint16_t size);
 
 #define SPI_INIT(pSTATUS, DEVICE_BOARD_CONF, BUS_BOARD_CONF) \
     do {                                                     \
