@@ -136,6 +136,14 @@ static void FlashDebugSink (uint8_t const* pData, uint32_t len) {
     }
 }
 
+vFlash_t* FlashGetActiveDevice (void) {
+
+    if (FLASH_VALID (&g_Flash)) {
+        return &g_Flash;
+    }
+    return NULL;
+}
+
 eSTATUS_t FlashInit (FlashInitConf_t conf, Flash_t* pOutFlash) {
 
     bool success     = true;

@@ -14,6 +14,7 @@
 
 static SHARED_MEM_SECTION GPS_t gGPS                       = { 0 };
 static uint8_t volatile gSentence[GPS_SENTENCE_MAX_LENGTH] = { 0 };
+static uint8_t gSentenceCopy[GPS_SENTENCE_MAX_LENGTH]      = { 0 };
 static uint32_t volatile gSentenceIndex                    = 0;
 static bool volatile gSentenceReady                        = false;
 static uint8_t volatile gStartByte                         = 0;
@@ -94,10 +95,10 @@ eSTATUS_t GPSInit (GPSInitConf_t conf, GPS_t* pOutGPS) {
         goto error;
     }
 
-    BUS_REG_CALLBACK (&status, pGPS->bus, NULL, eBUS_CALLBACK_ID_RX, GPSCallback);
+    BUS_REG_CALLBACK (&status, pGPS->bus, NULL, GPSCallback, eBUS_CALLBACK_ID_RX, 0);
     GOTO_IF (STATUS_FAIL (status), error, "Failed to register GPS RX callback");
 
-    BUS_REG_CALLBACK (&status, pGPS->bus, NULL, eBUS_CALLBACK_ID_ERROR, GPSCallback);
+    BUS_REG_CALLBACK (&status, pGPS->bus, NULL, GPSCallback, eBUS_CALLBACK_ID_ERROR, 0);
     GOTO_IF (STATUS_FAIL (status), error, "Failed to register GPS ERROR callback");
 
     pGPS->isInitialized = true;
@@ -116,17 +117,21 @@ eSTATUS_t GPSStart (vGPS_t* pGPS) {
     return BUS_READ_IT (pGPS->bus, (uint8_t*)&gStartByte, 1U);
 }
 
-eSTATUS_t GPSUpdate (vGPS_t* pGPS) {
+eSTATUS_t GPSUpdate (vGPS_t* pGPS, GPSData_t* pOutData) {
 
     if (gSentenceReady == false) {
         return eSTATUS_BUSY;
     }
 
-    enum minmea_sentence_id sentenceId = minmea_sentence_id ((char const*)gSentence, false);
+    ATOMIC_BLOCK_LOCAL (eNVIC_PRIO_LVL_MAX) {
+        memcpy (gSentenceCopy, (void*)gSentence, GPS_SENTENCE_MAX_LENGTH);
+    }
+
+    enum minmea_sentence_id sentenceId = minmea_sentence_id ((char const*)gSentenceCopy, false);
     switch (sentenceId) {
     case MINMEA_SENTENCE_RMC: {
         struct minmea_sentence_rmc rmc;
-        if (minmea_parse_rmc (&rmc, (char const*)gSentence)) {
+        if (minmea_parse_rmc (&rmc, (char const*)gSentenceCopy)) {
 
         } else {
             return eSTATUS_FAILURE;
@@ -135,7 +140,7 @@ eSTATUS_t GPSUpdate (vGPS_t* pGPS) {
     }
     case MINMEA_SENTENCE_GGA: {
         struct minmea_sentence_gga gga;
-        if (minmea_parse_gga (&gga, (char const*)gSentence)) {
+        if (minmea_parse_gga (&gga, (char const*)gSentenceCopy)) {
 
         } else {
             return eSTATUS_FAILURE;
@@ -144,14 +149,14 @@ eSTATUS_t GPSUpdate (vGPS_t* pGPS) {
     }
     case MINMEA_SENTENCE_GSV: {
         struct minmea_sentence_gsv frame;
-        if (minmea_parse_gsv (&frame, (char const*)gSentence)) {
+        if (minmea_parse_gsv (&frame, (char const*)gSentenceCopy)) {
         } else {
             return eSTATUS_FAILURE;
         }
     } break;
     case MINMEA_SENTENCE_GST: {
         struct minmea_sentence_gst frame;
-        if (minmea_parse_gst (&frame, (char const*)gSentence)) {
+        if (minmea_parse_gst (&frame, (char const*)gSentenceCopy)) {
         } else {
             return eSTATUS_FAILURE;
         }

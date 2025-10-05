@@ -47,7 +47,8 @@
         "stdio.h": "c",
         "flash.h": "c",
         "i2c.h": "c",
-        "bus_core.h": "c"
+        "bus_core.h": "c",
+        "random": "c"
     },
     "C_Cpp.codeAnalysis.clangTidy.enabled": true,
     // "C_Cpp.codeAnalysis.clangTidy.path": "${Env:CLANG_TIDY_PATH}",

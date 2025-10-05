@@ -6,24 +6,37 @@
 
 typedef uint8_t eBUS_CALLBACK_ID_t;
 enum {
-    eBUS_CALLBACK_ID_RX = 0, // data register NOT empty
-    eBUS_CALLBACK_ID_RX_COMPLETE,
-    eBUS_CALLBACK_ID_RX_FIFO_FULL,
-    eBUS_CALLBACK_ID_TX, // data register empty
-    eBUS_CALLBACK_ID_TX_COMPLETE,
-    eBUS_CALLBACK_ID_TX_FIFO_EMPTY,
+    // if sub type is 0 then data register not empty interrupt
+    eBUS_CALLBACK_ID_RX = 0,
+    // if sub type is 0 then data register empty interrupt
+    eBUS_CALLBACK_ID_TX,
     eBUS_CALLBACK_ID_ERROR,
     eBUS_NUMBER_OF_CALLBACK_IDS
 };
 
+typedef uint8_t eBUS_CALLBACK_SUB_ID_t;
+enum {
+    eBUS_CALLBACK_SUB_ID_RX_COMPLETE   = (1 << 0U),
+    eBUS_CALLBACK_SUB_ID_RX_FIFO_FULL  = (1 << 1U),
+    eBUS_CALLBACK_SUB_ID_TX_COMPLETE   = (1 << 2U),
+    eBUS_CALLBACK_SUB_ID_TX_FIFO_EMPTY = (1 << 3U),
+};
+
+#define BUS_MAKE_SUB_CB_ID(...)   VALUES (OR_, __VA_ARGS__)
 #define BUS_CALLBACK_ID_VALID(ID) ((ID) < eBUS_NUMBER_OF_CALLBACK_IDS)
 
 // clang-format off
 
 typedef struct BusCallbackData_s {
     eBUS_CALLBACK_ID_t cbId;
+    eBUS_CALLBACK_SUB_ID_t cbActiveSubIds;
+    eBUS_CALLBACK_SUB_ID_t currentlyActiveSubId;
     void* pUserCtx;
 } BusCallbackData_t;
+
+// a sub id of 0 means no sub id, just the main id so mark it is as valid
+#define BUS_SUB_ID_IS_ACTIVE(CB_DATA, SUB_ID) (((CB_DATA).cbActiveSubIds & (SUB_ID)) != 0U || (SUB_ID) == 0U)
+#define BUS_GET_ACTIVE_SUB_ID(CB_DATA) ((CB_DATA).currentlyActiveSubId)
 
 typedef void (*BusCallbackFn_t) (BusCallbackData_t data);
 
@@ -31,6 +44,14 @@ typedef struct {
     BusCallbackData_t data;
     BusCallbackFn_t Callback;
 } BusCallback_t;
+
+#define BUS_DO_CALLBACK(pCALLBACK_STRUCT, ACTIVE_SUB_ID) \
+    do {                                      \
+        if ((pCALLBACK_STRUCT) != NULL && (pCALLBACK_STRUCT)->Callback != NULL) { \
+            (pCALLBACK_STRUCT)->data.currentlyActiveSubId = (ACTIVE_SUB_ID); \
+            (pCALLBACK_STRUCT)->Callback ((pCALLBACK_STRUCT)->data); \
+        }                                     \
+    } while (0)
 
 typedef struct {
     uint8_t const* pTxData;

@@ -5,9 +5,9 @@
 #include "conf/board.h"
 #include "conf/ids.h"
 #include "peripheral/bus/bus_core.h"
-// #include "peripheral/bus/i2c.h"
-// #include "peripheral/bus/spi.h"
-// #include "peripheral/bus/uart.h"
+#include "peripheral/bus/i2c.h"
+#include "peripheral/bus/spi.h"
+#include "peripheral/bus/uart.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -74,7 +74,8 @@ eSTATUS_t BusInit (BusInitConf_t conf, BusVTable_t* pOutBusVTable);
         (BUS_VTABLE).TransactionsBlocking ((BUS_VTABLE).pCtx, (BUS_VTABLE).deviceId, &trans[0U], 2U); \
     } while (0)
 
-#define BUS_REG_CALLBACK(pSTATUS, BUS_VTABLE, pUSER_DATA, CALLBACK_ID, CALLBACK)                   \
+// Takes in a variable amount of sub callback ids
+#define BUS_REG_CALLBACK(pSTATUS, BUS_VTABLE, pUSER_DATA, CALLBACK, CALLBACK_ID, ...)              \
     do {                                                                                           \
         if ((BUS_VTABLE).RegisterCallback == NULL) {                                               \
             *(pSTATUS) = eSTATUS_NULL_ARG;                                                         \
@@ -84,10 +85,11 @@ eSTATUS_t BusInit (BusInitConf_t conf, BusVTable_t* pOutBusVTable);
             *(pSTATUS) = eSTATUS_INVALID_ARG;                                                      \
             break;                                                                                 \
         }                                                                                          \
-        BusCallback_t cb = { 0 };                                                                  \
-        cb.data.cbId     = (CALLBACK_ID);                                                          \
-        cb.data.pUserCtx = (pUSER_DATA);                                                           \
-        cb.Callback      = (CALLBACK);                                                             \
+        BusCallback_t cb       = { 0 };                                                            \
+        cb.data.cbId           = (CALLBACK_ID);                                                    \
+        cb.data.cbActiveSubIds = (BUS_MAKE_SUB_CB_ID (__VA_ARGS__));                               \
+        cb.data.pUserCtx       = (pUSER_DATA);                                                     \
+        cb.Callback            = (CALLBACK);                                                       \
         *(pSTATUS) = (BUS_VTABLE).RegisterCallback ((BUS_VTABLE).pCtx, (BUS_VTABLE).deviceId, cb); \
     } while (0)
 

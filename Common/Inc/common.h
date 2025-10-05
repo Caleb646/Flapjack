@@ -42,11 +42,23 @@
 
 #define FOR_EACH(TYPE, ARRAY) \
     for (TYPE* pElement = &((ARRAY)[0]); pElement <= &((ARRAY)[ARRAY_SIZE (ARRAY) - 1U]); ++pElement)
+#define FOR_EACH_CONST(TYPE, ARRAY)                   FOR_EACH (TYPE const, ARRAY)
 
-// #define FOR_EACH(TYPE, ARRAY) \
-//     for ( struct { size_t i; TYPE* pElement; } loop = { 0, &((ARRAY)[0]) }; loop.i < ARRAY_SIZE (ARRAY); ++loop.pElement, ++loop.i)
 
-#define FOR_EACH_CONST(TYPE, ARRAY) FOR_EACH (TYPE const, ARRAY)
+#define OR_0()                                        0U
+#define OR_1(a)                                       (a)
+#define OR_2(a, b)                                    ((a) | (b))
+#define OR_3(a, b, c)                                 ((a) | (b) | (c))
+#define OR_4(a, b, c, d)                              ((a) | (b) | (c) | (d))
+#define OR_5(a, b, c, d, e)                           ((a) | (b) | (c) | (d) | (e))
+#define OR_6(a, b, c, d, e, f)                        ((a) | (b) | (c) | (d) | (e) | (f))
+#define OR_7(a, b, c, d, e, f, g)                     ((a) | (b) | (c) | (d) | (e) | (f) | (g))
+#define OR_8(a, b, c, d, e, f, g, h)                  ((a) | (b) | (c) | (d) | (e) | (f) | (g) | (h))
+#define NARG_(a1, a2, a3, a4, a5, a6, a7, a8, N, ...) N
+#define NARG(...)                                     NARG_ (__VA_ARGS__, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+#define CONCAT_(a, b)                                 a##b
+#define CONCAT(a, b)                                  CONCAT_ (a, b)
+#define VALUES(NAME, ...)                             CONCAT (NAME, NARG (__VA_ARGS__)) (__VA_ARGS__)
 
 typedef int8_t eSTATUS_t;
 enum {

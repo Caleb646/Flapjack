@@ -34,16 +34,17 @@
 typedef struct {
     uint32_t hwId;
     eBUS_CALLBACK_ID_t cbId;
+    eBUS_CALLBACK_SUB_ID_t cbSubId;
 } UARTInterruptMapping_t;
 
 static UARTInterruptMapping_t const gUartInterruptMappings[] = {
-    { .hwId = UART_IT_TXE, .cbId = eBUS_CALLBACK_ID_TX },             // TXE: Data register empty
-    { .hwId = UART_IT_TXFE, .cbId = eBUS_CALLBACK_ID_TX_FIFO_EMPTY }, // TXFE: TX FIFO empty
-    { .hwId = UART_IT_TC, .cbId = eBUS_CALLBACK_ID_TX_COMPLETE },     // TC: Transmission complete
+    { .hwId = UART_IT_TXE, .cbId = eBUS_CALLBACK_ID_TX }, // TXE: Data register empty
+    { .hwId = UART_IT_TXFE, .cbId = eBUS_CALLBACK_ID_TX, .cbSubId = eBUS_CALLBACK_SUB_ID_TX_FIFO_EMPTY }, // TXFE: TX FIFO empty
+    { .hwId = UART_IT_TC, .cbId = eBUS_CALLBACK_ID_TX, .cbSubId = eBUS_CALLBACK_SUB_ID_TX_COMPLETE }, // TC: Transmission complete
 
     { .hwId = UART_IT_RXNE, .cbId = eBUS_CALLBACK_ID_RX }, // RXNE: Data register not empty
-    { .hwId = UART_IT_RXFF, .cbId = eBUS_CALLBACK_ID_RX_FIFO_FULL }, // RXFF: RX FIFO full
-    { .hwId = UART_IT_IDLE, .cbId = eBUS_CALLBACK_ID_RX_COMPLETE },  // IDLE: Idle line detected
+    { .hwId = UART_IT_RXFF, .cbId = eBUS_CALLBACK_ID_RX, .cbSubId = eBUS_CALLBACK_SUB_ID_RX_FIFO_FULL }, // RXFF: RX FIFO full
+    { .hwId = UART_IT_IDLE, .cbId = eBUS_CALLBACK_ID_RX, .cbSubId = eBUS_CALLBACK_SUB_ID_RX_COMPLETE }, // IDLE: Idle line detected
 
     { .hwId = UART_IT_RTO, .cbId = eBUS_CALLBACK_ID_ERROR }, // UART receiver timeout interruption
     { .hwId = UART_IT_ERR, .cbId = eBUS_CALLBACK_ID_ERROR }, // UART error interruption
@@ -74,12 +75,8 @@ static vUARTBus_t* UARTGetBusByInstance (USART_TypeDef* instance) {
     return NULL;
 }
 
-static void UARTHandleCallback (vUARTBus_t* pBus, eBUS_CALLBACK_ID_t cbId) {
-
-    BusCallback_t* pCB = &pBus->callbacks[cbId];
-    if (pCB->Callback != NULL) {
-        pCB->Callback (pCB->data);
-    }
+static void UARTHandleCallback (vUARTBus_t* pBus, eBUS_CALLBACK_ID_t cbId, eBUS_CALLBACK_SUB_ID_t subId) {
+    BUS_DO_CALLBACK (&pBus->callbacks[cbId], subId);
 }
 
 /*
@@ -104,7 +101,7 @@ void HAL_UART_TxCpltCallback (UART_HandleTypeDef* huart) {
     if (UART_VALID (pBus) == false) {
         return;
     }
-    UARTHandleCallback (pBus, eBUS_CALLBACK_ID_TX_COMPLETE);
+    BUS_DO_CALLBACK (&pBus->callbacks[eBUS_CALLBACK_ID_TX], eBUS_CALLBACK_SUB_ID_TX_COMPLETE);
 }
 
 void HAL_UART_RxCpltCallback (UART_HandleTypeDef* huart) {
@@ -113,7 +110,7 @@ void HAL_UART_RxCpltCallback (UART_HandleTypeDef* huart) {
     if (UART_VALID (pBus) == false) {
         return;
     }
-    UARTHandleCallback (pBus, eBUS_CALLBACK_ID_RX_COMPLETE);
+    BUS_DO_CALLBACK (&pBus->callbacks[eBUS_CALLBACK_ID_RX], eBUS_CALLBACK_SUB_ID_RX_COMPLETE);
 }
 
 void HAL_UART_ErrorCallback (UART_HandleTypeDef* huart) {
@@ -122,7 +119,7 @@ void HAL_UART_ErrorCallback (UART_HandleTypeDef* huart) {
     if (UART_VALID (pBus) == false) {
         return;
     }
-    UARTHandleCallback (pBus, eBUS_CALLBACK_ID_ERROR);
+    BUS_DO_CALLBACK (&pBus->callbacks[eBUS_CALLBACK_ID_ERROR], 0U);
 }
 
 #define UART_CLOCK_INIT(pSTATUS, BUS_ID, PERIPHCLK, CLKSELECTION)         \
@@ -321,7 +318,9 @@ eSTATUS_t UARTEnableInterrupts (vUARTBus_t* pBus, uint32_t priority) {
     }
 
     FOR_EACH_CONST (UARTInterruptMapping_t, gUartInterruptMappings) {
-        if (pBus->callbacks[pElement->cbId].Callback != NULL) {
+
+        BusCallback_t* pCb = &pBus->callbacks[pElement->cbId];
+        if (pCb->Callback != NULL && BUS_SUB_ID_IS_ACTIVE (pCb->data, pElement->cbSubId)) {
             __HAL_UART_ENABLE_IT (&pBus->handle, pElement->hwId);
         } else {
             __HAL_UART_DISABLE_IT (&pBus->handle, pElement->hwId);
