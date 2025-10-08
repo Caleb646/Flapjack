@@ -1,0 +1,102 @@
+(kicad_sch
+	(version 20250114)
+	(generator "eeschema")
+	(generator_version "9.0")
+	(uuid "b150e79a-000e-446c-9119-0865a2de86ff")
+	(paper "C")
+	(lib_symbols)
+	(sheet
+		(at 24.13 17.78)
+		(size 110.49 60.96)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "6cb67ea1-97ef-457f-b0c4-e4559d0cc048")
+		(property "Sheetname" "Power"
+			(at 24.13 17.0684 0)
+			(show_name yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "power.kicad_sch"
+			(at 24.13 79.3246 0)
+			(show_name yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "fc"
+				(path "/b150e79a-000e-446c-9119-0865a2de86ff"
+					(page "2")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 142.24 17.78)
+		(size 121.92 60.96)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "ef3444a3-41e3-41ea-8a4e-a671b048941e")
+		(property "Sheetname" "Flight Controller"
+			(at 142.24 17.0684 0)
+			(show_name yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "flight_controller.kicad_sch"
+			(at 142.24 79.3246 0)
+			(show_name yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "fc"
+				(path "/b150e79a-000e-446c-9119-0865a2de86ff"
+					(page "3")
+				)
+			)
+		)
+	)
+	(sheet_instances
+		(path "/"
+			(page "1")
+		)
+	)
+	(embedded_fonts no)
+)
