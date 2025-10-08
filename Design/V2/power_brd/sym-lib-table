@@ -1,0 +1,5 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "TPS5430DDAR")(type "KiCad")(uri "${KIPRJMOD}/Lib/Regulators/TPS5430DDAR.kicad_sym")(options "")(descr ""))
+  (lib (name "XT60PW")(type "KiCad")(uri "${KIPRJMOD}/Lib/XT60PW-M.kicad_sym")(options "")(descr ""))
+)
