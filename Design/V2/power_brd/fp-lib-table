@@ -3,4 +3,6 @@
   (lib (name "Library")(type "KiCad")(uri "${KIPRJMOD}/Lib/Library.pretty")(options "")(descr ""))
   (lib (name "Capacitors")(type "KiCad")(uri "${KIPRJMOD}/Lib/Capacitors")(options "")(descr ""))
   (lib (name "Diodes")(type "KiCad")(uri "${KIPRJMOD}/Lib/Diodes")(options "")(descr ""))
+  (lib (name "Regulators")(type "KiCad")(uri "${KIPRJMOD}/Lib/Regulators")(options "")(descr ""))
+  (lib (name "Lib")(type "KiCad")(uri "${KIPRJMOD}/Lib")(options "")(descr ""))
 )

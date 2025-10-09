@@ -1,11 +1,11 @@
 
-(footprint DIOM7959X265N (layer F.Cu) (tedit 68E6D699)
+(footprint SS34_DO214AB (layer F.Cu) (tedit 68E6D699)
   (descr "")
   (attr smd)
   (fp_text reference REF** (at -0.555 -4.889 0) (layer F.SilkS)
     (effects (font (size 1.4 1.4) (thickness 0.15)))
   )
-  (fp_text value DIOM7959X265N (at 6.557 5.111 0) (layer F.Fab)
+  (fp_text value SS34_DO214AB (at 6.557 5.111 0) (layer F.Fab)
     (effects (font (size 1.4 1.4) (thickness 0.15)))
   )
   (pad C smd rect (at -3.455 0.0) (size 2.25 3.18) (layers F.Cu F.Mask F.Paste) (solder_mask_margin 0.102))

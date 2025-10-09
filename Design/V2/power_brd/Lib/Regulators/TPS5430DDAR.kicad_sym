@@ -6,7 +6,7 @@
     (property "Value" "TPS5430DDAR" (id 1) (at 0 0 0)
       (effects (font (size 1.524 1.524)))
     )
-    (property "Footprint" "DDA0008J" (id 2) (at 0 0 0)
+    (property "Footprint" "TPS5430DDAR" (id 2) (at 0 0 0)
       (effects (font (size 1.27 1.27) italic) hide)
     )
     (property "Datasheet" "https://www.ti.com/lit/gpn/tps5430" (id 3) (at 0 0 0)
@@ -18,7 +18,7 @@
     (property "ki_locked" "" (id 5) (at 0 0 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "ki_fp_filters" "DDA0008J DDA0008J_NV" (id 6) (at 0 0 0)
+    (property "ki_fp_filters" "TPS5430DDAR DDA0008J_NV" (id 6) (at 0 0 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (symbol "TPS5430DDAR_0_1"
