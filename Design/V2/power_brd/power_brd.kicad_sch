@@ -2611,12 +2611,6 @@
 		(uuid "15e7863a-a65e-45cf-9670-d03d57a63da4")
 	)
 	(junction
-		(at 245.11 138.43)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "15f27ffc-a56b-4020-9f95-5197ce44eb30")
-	)
-	(junction
 		(at 387.35 77.47)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -2657,12 +2651,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "3f4984f4-64d5-4d13-be23-315f6a4515f4")
-	)
-	(junction
-		(at 419.1 138.43)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "4070ba45-d5ca-4941-b1f3-7ca93275e3fe")
 	)
 	(junction
 		(at 205.74 262.89)
@@ -2926,16 +2914,6 @@
 	)
 	(wire
 		(pts
-			(xy 419.1 143.51) (xy 419.1 138.43)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "05536f5b-f09e-4493-a6a4-f33da3fc9981")
-	)
-	(wire
-		(pts
 			(xy 223.52 181.61) (xy 223.52 182.88)
 		)
 		(stroke
@@ -2946,7 +2924,7 @@
 	)
 	(wire
 		(pts
-			(xy 419.1 138.43) (xy 410.21 138.43)
+			(xy 410.21 138.43) (xy 420.37 138.43)
 		)
 		(stroke
 			(width 0)
@@ -3073,16 +3051,6 @@
 			(type default)
 		)
 		(uuid "1424e538-c2a0-451c-917b-2f958877db7d")
-	)
-	(wire
-		(pts
-			(xy 245.11 138.43) (xy 245.11 133.35)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "174ecc0a-1c7c-4ebd-bdb1-2745a0daf130")
 	)
 	(wire
 		(pts
@@ -3306,16 +3274,6 @@
 	)
 	(wire
 		(pts
-			(xy 245.11 143.51) (xy 252.73 143.51)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "348cde5c-046e-40ff-a514-e4dfeea4bd29")
-	)
-	(wire
-		(pts
 			(xy 213.36 77.47) (xy 228.6 77.47)
 		)
 		(stroke
@@ -3383,16 +3341,6 @@
 			(type default)
 		)
 		(uuid "3f704ece-2570-4e25-bd7c-8afbe744b595")
-	)
-	(wire
-		(pts
-			(xy 245.11 133.35) (xy 252.73 133.35)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "408052f2-d7b1-4214-ad03-259b1e69e073")
 	)
 	(wire
 		(pts
@@ -3556,16 +3504,6 @@
 	)
 	(wire
 		(pts
-			(xy 419.1 143.51) (xy 426.72 143.51)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "5d0b7fcd-56ff-4eff-8214-babf3e5bb599")
-	)
-	(wire
-		(pts
 			(xy 396.24 62.23) (xy 396.24 63.5)
 		)
 		(stroke
@@ -3623,16 +3561,6 @@
 			(type default)
 		)
 		(uuid "678e0909-bfc1-459b-b563-079b90232077")
-	)
-	(wire
-		(pts
-			(xy 419.1 138.43) (xy 419.1 133.35)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "6a1cafaf-0836-477a-9580-527fa22d6fc8")
 	)
 	(wire
 		(pts
@@ -4246,16 +4174,6 @@
 	)
 	(wire
 		(pts
-			(xy 245.11 143.51) (xy 245.11 138.43)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "ee72386e-cd3b-4344-b698-066ec7cd9067")
-	)
-	(wire
-		(pts
 			(xy 173.99 214.63) (xy 173.99 205.74)
 		)
 		(stroke
@@ -4313,16 +4231,6 @@
 			(type default)
 		)
 		(uuid "f80d3a67-8d06-4763-8d13-711594f682f1")
-	)
-	(wire
-		(pts
-			(xy 419.1 133.35) (xy 426.72 133.35)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "f93cafae-0533-4eb7-989c-fee2b2788a80")
 	)
 	(wire
 		(pts
@@ -4394,6 +4302,28 @@
 		)
 		(uuid "eab4c03c-da49-4d8b-8b82-6bd008dfa2c4")
 	)
+	(global_label "VDD_SERVO_5_6"
+		(shape input)
+		(at 193.04 257.81 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "0ebd444f-e4c4-4bf5-97ce-a66f164db927")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 175.0568 257.81 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+				(hide yes)
+			)
+		)
+	)
 	(global_label "VDD_FC"
 		(shape input)
 		(at 119.38 256.54 180)
@@ -4407,28 +4337,6 @@
 		(uuid "25259638-1e43-43b0-b3a8-5ad52984fa7b")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 109.44 256.54 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-				(hide yes)
-			)
-		)
-	)
-	(global_label "VDD_SERVO_8"
-		(shape input)
-		(at 193.04 262.89 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "2ab54127-264b-4e1c-bb1b-f1522a76c393")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 177.2339 262.89 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4482,9 +4390,9 @@
 			)
 		)
 	)
-	(global_label "VDD_SERVO_5"
+	(global_label "VDD_SERVO_5_6"
 		(shape input)
-		(at 252.73 133.35 0)
+		(at 245.11 138.43 0)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -4494,12 +4402,56 @@
 		)
 		(uuid "4f3bfc0e-df7a-441f-a0cc-af0e1aff28c5")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 268.5361 133.35 0)
+			(at 263.0932 138.43 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left)
+				(hide yes)
+			)
+		)
+	)
+	(global_label "VDD_SERVO_7_8"
+		(shape input)
+		(at 193.04 260.35 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "57ffb046-2b93-4d24-b570-5b50c2e05485")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 175.0568 260.35 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+				(hide yes)
+			)
+		)
+	)
+	(global_label "VDD_SERVO_5_6"
+		(shape input)
+		(at 193.04 255.27 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "60c03e2c-8c2c-4f83-9b3b-b7b9f295db7d")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 175.0568 255.27 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
 				(hide yes)
 			)
 		)
@@ -4570,50 +4522,6 @@
 			)
 		)
 	)
-	(global_label "VDD_SERVO_6"
-		(shape input)
-		(at 193.04 257.81 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "8794b515-382a-480d-8198-743122a19f26")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 177.2339 257.81 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-				(hide yes)
-			)
-		)
-	)
-	(global_label "VDD_SERVO_8"
-		(shape input)
-		(at 426.72 143.51 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "8857daf6-9c31-4a77-951c-a50446eefc9a")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 442.5261 143.51 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-	)
 	(global_label "VDD_SERVO_1_2"
 		(shape input)
 		(at 243.84 77.47 0)
@@ -4627,28 +4535,6 @@
 		(uuid "95f386de-3b6a-484b-ac59-2181bd3012fa")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 261.8232 77.47 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-	)
-	(global_label "VDD_SERVO_6"
-		(shape input)
-		(at 252.73 143.51 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "9be12fcc-9f6a-49b6-a4a6-f998c664c8d4")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 268.5361 143.51 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4702,31 +4588,9 @@
 			)
 		)
 	)
-	(global_label "VDD_SERVO_5"
+	(global_label "VDD_SERVO_7_8"
 		(shape input)
-		(at 193.04 255.27 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "c8afe885-4722-4dca-bae1-f2b9c9733842")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 177.2339 255.27 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-				(hide yes)
-			)
-		)
-	)
-	(global_label "VDD_SERVO_7"
-		(shape input)
-		(at 426.72 133.35 0)
+		(at 420.37 138.43 0)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -4736,7 +4600,7 @@
 		)
 		(uuid "c9d1dd32-36a5-44da-9998-27c58557ee67")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 442.5261 133.35 0)
+			(at 438.3532 138.43 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4768,9 +4632,9 @@
 			)
 		)
 	)
-	(global_label "VDD_SERVO_7"
+	(global_label "VDD_SERVO_7_8"
 		(shape input)
-		(at 193.04 260.35 180)
+		(at 193.04 262.89 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -4778,9 +4642,9 @@
 			)
 			(justify right)
 		)
-		(uuid "f1c4af8c-50bd-4b5e-bb2d-0716cf1b3274")
+		(uuid "fc66af70-d709-4e72-82e0-34515bee2ca1")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 177.2339 260.35 0)
+			(at 175.0568 262.89 0)
 			(effects
 				(font
 					(size 1.27 1.27)
