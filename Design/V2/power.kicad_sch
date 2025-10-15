@@ -9418,6 +9418,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" ""
+			(at 67.31 248.92 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 67.31 248.92 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "876359bb-4f33-4a71-9f6c-601e04f40c87")
 		)
@@ -9618,6 +9636,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" ""
+			(at 194.31 31.75 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 194.31 31.75 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "aa5e5016-d389-440e-9aa5-4c629b504961")
 		)
@@ -9676,7 +9712,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "CAP CER 1UF 10V X5R 0603"
+		(property "Description" ""
 			(at 222.25 191.77 0)
 			(effects
 				(font
@@ -9685,7 +9721,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "Murata Electronics"
+		(property "Manufacturer_Name" "Samsung Electro-Mechanics"
 			(at 222.25 191.77 0)
 			(effects
 				(font
@@ -9694,7 +9730,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "GRM188R61A105KA61D"
+		(property "Manufacturer_Part_Number" "CL10A105KB8NNNC"
 			(at 222.25 191.77 0)
 			(effects
 				(font
@@ -9704,6 +9740,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 222.25 191.77 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C2907032"
+			(at 222.25 191.77 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 222.25 191.77 0)
 			(effects
 				(font
@@ -9773,7 +9827,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Low ESR CAP CER 2.2UF 25V X5R 0603"
+		(property "Description" ""
 			(at 67.31 257.81 0)
 			(effects
 				(font
@@ -9782,7 +9836,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "Taiyo Yuden"
+		(property "Manufacturer_Name" "Samsung Electro-Mechanics"
 			(at 67.31 257.81 0)
 			(effects
 				(font
@@ -9791,7 +9845,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "TMK107ABJ225KA-T"
+		(property "Manufacturer_Part_Number" "CL10A225KO8NNNC"
 			(at 67.31 257.81 0)
 			(effects
 				(font
@@ -9801,6 +9855,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 67.31 257.81 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C23630"
+			(at 67.31 257.81 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 67.31 257.81 0)
 			(effects
 				(font
@@ -9898,6 +9970,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 378.46 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C14663"
+			(at 378.46 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 378.46 168.91 0)
 			(effects
 				(font
@@ -10032,7 +10122,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Low ESR CAP CER 2.2UF 25V X5R 0603"
+		(property "Description" ""
 			(at 48.26 245.11 0)
 			(effects
 				(font
@@ -10041,7 +10131,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "Taiyo Yuden"
+		(property "Manufacturer_Name" "Samsung Electro-Mechanics"
 			(at 48.26 245.11 0)
 			(effects
 				(font
@@ -10050,7 +10140,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "TMK107ABJ225KA-T"
+		(property "Manufacturer_Part_Number" "CL10A225KO8NNNC"
 			(at 48.26 245.11 0)
 			(effects
 				(font
@@ -10060,6 +10150,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 48.26 245.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C23630"
+			(at 48.26 245.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 48.26 245.11 0)
 			(effects
 				(font
@@ -10130,6 +10238,24 @@
 			)
 		)
 		(property "Description" "Mounting Hole with connection"
+			(at 194.31 43.18 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" ""
+			(at 194.31 43.18 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 194.31 43.18 0)
 			(effects
 				(font
@@ -10224,6 +10350,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 393.7 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C14663"
+			(at 393.7 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 393.7 168.91 0)
 			(effects
 				(font
@@ -10329,6 +10473,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C14663"
+			(at 232.41 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 232.41 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "5e76f528-06dc-4618-b6db-fe417f782fdd")
 		)
@@ -10389,6 +10551,24 @@
 			)
 		)
 		(property "Description" "Generic connector, double row, 02x04, odd/even pin numbering scheme (row 1 odd numbers, row 2 even numbers), script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 132.08 36.83 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" ""
+			(at 132.08 36.83 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 132.08 36.83 0)
 			(effects
 				(font
@@ -10512,6 +10692,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C14663"
+			(at 234.95 191.77 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 234.95 191.77 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "2a879e40-7383-4deb-938d-97b4998bc2db")
 		)
@@ -10601,6 +10799,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 364.49 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C14663"
+			(at 364.49 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 364.49 168.91 0)
 			(effects
 				(font
@@ -10745,6 +10961,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" ""
+			(at 184.15 259.08 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 184.15 259.08 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "25a6269e-ddde-4734-b17b-f5e74a0d320a")
 		)
@@ -10834,6 +11068,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 335.28 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C14663"
+			(at 335.28 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 335.28 168.91 0)
 			(effects
 				(font
@@ -10939,6 +11191,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C14663"
+			(at 349.25 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 349.25 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "1f588bab-59e6-45c2-b7e7-4a3cf9f2a602")
 		)
@@ -11036,6 +11306,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C14663"
+			(at 436.88 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 436.88 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "5f890fc3-5f22-4c7c-96a6-2c8bb13352e9")
 		)
@@ -11125,6 +11413,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 168.91 267.97 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C14663"
+			(at 168.91 267.97 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 168.91 267.97 0)
 			(effects
 				(font
@@ -11484,6 +11790,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "208LQFP"
+			(at 85.09 167.64 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C730197"
+			(at 85.09 167.64 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 85.09 167.64 0)
 			(effects
 				(font
@@ -12180,6 +12504,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" ""
+			(at 208.28 236.22 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 208.28 236.22 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "2d25e063-4e83-4a85-87b1-c20036483dcf")
 		)
@@ -12232,7 +12574,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GRM188R61E475KE11D"
+		(property "Datasheet" ""
 			(at 203.2 168.91 0)
 			(effects
 				(font
@@ -12241,7 +12583,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Low ESR CAP CER 4.7UF 25V X5R 0603"
+		(property "Description" ""
 			(at 203.2 168.91 0)
 			(effects
 				(font
@@ -12250,7 +12592,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" " Murata Electronics"
+		(property "Manufacturer_Name" "Samsung Electro-Mechanics"
 			(at 203.2 168.91 0)
 			(effects
 				(font
@@ -12259,7 +12601,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "GRM188R61E475KE11D"
+		(property "Manufacturer_Part_Number" "CL10A475KO8NNNC"
 			(at 203.2 168.91 0)
 			(effects
 				(font
@@ -12269,6 +12611,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 203.2 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C19666"
+			(at 203.2 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 203.2 168.91 0)
 			(effects
 				(font
@@ -12347,6 +12707,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" ""
+			(at 175.26 31.75 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 175.26 31.75 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "b05135e7-5509-4961-96fc-fdb5f38115b3")
 		)
@@ -12395,7 +12773,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "LD39200PU33R"
+		(property "Datasheet" ""
 			(at 69.85 97.79 0)
 			(effects
 				(font
@@ -12413,427 +12791,16 @@
 				(hide yes)
 			)
 		)
-		(property "L1_NOM" ""
+		(property "LCSC Part #" "C222192"
 			(at 69.85 97.79 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "SNAPEDA_PACKAGE_ID" ""
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "B_NOM" "0.34"
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "EMAX" ""
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "VACANCIES" ""
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "BALL_COLUMNS" ""
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "D1_NOM" ""
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "A_MAX" "1.0"
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "THERMAL_PAD" ""
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "DMAX" ""
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "L1_MIN" ""
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "B_MAX" "0.45"
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "EMIN" ""
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "JEDEC" ""
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "ENOM" "0.95"
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "D_NOM" "3.0"
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "D_MAX" "3.1"
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "L_MAX" "0.5"
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
 				(hide yes)
 			)
 		)
 		(property "PACKAGE_TYPE" "6-DFN"
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "D1_MAX" ""
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "L1_MAX" ""
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "D1_MIN" ""
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "E2_NOM" "1.625"
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "STANDARD" "IPC 7351B"
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "PARTREV" "3"
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "DNOM" ""
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "DMIN" ""
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "E_NOM" "3.0"
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "BALL_ROWS" ""
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "B_MIN" "0.23"
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "D2_NOM" "2.365"
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "PIN_COUNT" "6.0"
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "L_NOM" "0.4"
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "MANUFACTURER" "ST Microelectronics"
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "IPC" ""
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "PIN_COLUMNS" ""
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "MAXIMUM_PACKAGE_HEIGHT" "1.0mm"
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "BODY_DIAMETER" ""
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "E_MIN" "2.9"
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "D_MIN" "2.9"
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "PINS" ""
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "L_MIN" "0.3"
-			(at 69.85 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "E_MAX" "3.1"
 			(at 69.85 97.79 0)
 			(effects
 				(font
@@ -12853,6 +12820,15 @@
 			)
 		)
 		(property "Manufacturer_Part_Number" "LD39200PU33R"
+			(at 69.85 97.79 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 69.85 97.79 0)
 			(effects
 				(font
@@ -12973,6 +12949,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C14663"
+			(at 306.07 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 306.07 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "b036643b-a48d-43ed-812d-e155d9bce0ee")
 		)
@@ -13062,6 +13056,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 208.28 245.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C14663"
+			(at 208.28 245.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 208.28 245.11 0)
 			(effects
 				(font
@@ -13186,7 +13198,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GRM188R61E106KA73D"
+		(property "Datasheet" ""
 			(at 39.37 93.98 0)
 			(effects
 				(font
@@ -13195,7 +13207,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "CAP CER 10UF 25V X5R 0603"
+		(property "Description" ""
 			(at 39.37 93.98 0)
 			(effects
 				(font
@@ -13204,7 +13216,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "Murata Electronics"
+		(property "Manufacturer_Name" "Samsung Electro-Mechanics"
 			(at 39.37 93.98 0)
 			(effects
 				(font
@@ -13213,7 +13225,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "GRM188R61E106KA73D"
+		(property "Manufacturer_Part_Number" "CL10A106KP8NNNC"
 			(at 39.37 93.98 0)
 			(effects
 				(font
@@ -13223,6 +13235,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 39.37 93.98 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C19702"
+			(at 39.37 93.98 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 39.37 93.98 0)
 			(effects
 				(font
@@ -13292,7 +13322,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "CAP CER 1UF 10V X5R 0603"
+		(property "Description" ""
 			(at 184.15 267.97 0)
 			(effects
 				(font
@@ -13301,7 +13331,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "Murata Electronics"
+		(property "Manufacturer_Name" "Samsung Electro-Mechanics"
 			(at 184.15 267.97 0)
 			(effects
 				(font
@@ -13310,7 +13340,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "GRM188R61A105KA61D"
+		(property "Manufacturer_Part_Number" "CL10A105KB8NNNC"
 			(at 184.15 267.97 0)
 			(effects
 				(font
@@ -13320,6 +13350,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 184.15 267.97 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C2907032"
+			(at 184.15 267.97 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 184.15 267.97 0)
 			(effects
 				(font
@@ -13658,6 +13706,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" ""
+			(at 151.13 264.16 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 151.13 264.16 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "6e752474-746d-4b52-8b93-ab3d942edf15")
 		)
@@ -13718,6 +13784,24 @@
 			)
 		)
 		(property "Description" "Generic connector, double row, 02x04, odd/even pin numbering scheme (row 1 odd numbers, row 2 even numbers), script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 88.9 38.1 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" ""
+			(at 88.9 38.1 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 88.9 38.1 0)
 			(effects
 				(font
@@ -13806,6 +13890,24 @@
 			)
 		)
 		(property "Description" "Mounting Hole with connection"
+			(at 175.26 43.18 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" ""
+			(at 175.26 43.18 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 175.26 43.18 0)
 			(effects
 				(font
@@ -13975,6 +14077,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C14663"
+			(at 290.83 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 290.83 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "d9386dab-24d9-4a32-a7bb-767ebc8ed4e5")
 		)
@@ -14045,6 +14165,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" ""
+			(at 168.91 213.36 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 168.91 213.36 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "5e07515e-43bb-4a32-b7d8-c8ac438a5fd9")
 		)
@@ -14079,7 +14217,7 @@
 				(justify right)
 			)
 		)
-		(property "Value" "G"
+		(property "Value" "Red"
 			(at 121.92 96.8374 90)
 			(effects
 				(font
@@ -14097,7 +14235,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "LTW-C190DA5"
+		(property "Datasheet" ""
 			(at 118.11 93.98 0)
 			(effects
 				(font
@@ -14106,7 +14244,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "White LED Indication - Discrete 2.85V 0603"
+		(property "Description" ""
 			(at 118.11 93.98 0)
 			(effects
 				(font
@@ -14115,16 +14253,7 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Pins" "1=K 2=A"
-			(at 118.11 93.98 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Manufacturer_Name" "Lite-On Inc."
+		(property "Manufacturer_Name" "Hubei KENTO Elec"
 			(at 118.11 93.98 90)
 			(effects
 				(font
@@ -14133,7 +14262,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "LTW-C190DA5"
+		(property "Manufacturer_Part_Number" "KT-0603R"
 			(at 118.11 93.98 90)
 			(effects
 				(font
@@ -14143,6 +14272,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 118.11 93.98 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C2286"
+			(at 118.11 93.98 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 118.11 93.98 90)
 			(effects
 				(font
@@ -14240,6 +14387,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 247.65 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C14663"
+			(at 247.65 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 247.65 168.91 0)
 			(effects
 				(font
@@ -14449,6 +14614,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" ""
+			(at 48.26 238.76 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 48.26 238.76 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "27da7d5d-7ccd-47f1-b8e1-317ae4964891")
 		)
@@ -14538,6 +14721,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 276.86 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C14663"
+			(at 276.86 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 276.86 168.91 0)
 			(effects
 				(font
@@ -14672,7 +14873,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Low ESR CAP CER 4.7UF 25V X5R 0603"
+		(property "Description" ""
 			(at 168.91 222.25 0)
 			(effects
 				(font
@@ -14681,7 +14882,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" " Murata Electronics"
+		(property "Manufacturer_Name" "Samsung Electro-Mechanics"
 			(at 168.91 222.25 0)
 			(effects
 				(font
@@ -14690,7 +14891,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "GRM188R61E475KE11D"
+		(property "Manufacturer_Part_Number" "CL10A475KO8NNNC"
 			(at 168.91 222.25 0)
 			(effects
 				(font
@@ -14700,6 +14901,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 168.91 222.25 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C19666"
+			(at 168.91 222.25 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 168.91 222.25 0)
 			(effects
 				(font
@@ -14760,7 +14979,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "GRM188R61E106KA73D"
+		(property "Datasheet" ""
 			(at 101.6 93.98 0)
 			(effects
 				(font
@@ -14769,7 +14988,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "CAP CER 10UF 25V X5R 0603"
+		(property "Description" ""
 			(at 101.6 93.98 0)
 			(effects
 				(font
@@ -14778,7 +14997,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "Murata Electronics"
+		(property "Manufacturer_Name" "Samsung Electro-Mechanics"
 			(at 101.6 93.98 0)
 			(effects
 				(font
@@ -14787,7 +15006,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "GRM188R61E106KA73D"
+		(property "Manufacturer_Part_Number" "CL10A106KP8NNNC"
 			(at 101.6 93.98 0)
 			(effects
 				(font
@@ -14797,6 +15016,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 101.6 93.98 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C19702"
+			(at 101.6 93.98 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 101.6 93.98 0)
 			(effects
 				(font
@@ -14967,6 +15204,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C14663"
+			(at 407.67 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 407.67 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "84624ecd-4b21-403d-a309-2a9b74f3cae8")
 		)
@@ -15064,6 +15319,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C14663"
+			(at 452.12 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 452.12 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "40d869db-21b6-42c4-a250-fdc1bb313cef")
 		)
@@ -15098,7 +15371,7 @@
 				(justify right)
 			)
 		)
-		(property "Value" "240"
+		(property "Value" "39"
 			(at 120.65 102.8699 0)
 			(effects
 				(font
@@ -15116,7 +15389,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "ERJ-PA3F5600V"
+		(property "Datasheet" ""
 			(at 118.11 101.6 0)
 			(effects
 				(font
@@ -15125,7 +15398,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "560 Ohms ±1% 0.333W, 1/3W Chip Resistor 0603 (1608 Metric) Automotive AEC-Q200, Pulse Withstanding Thick Film"
+		(property "Description" ""
 			(at 118.11 101.6 0)
 			(effects
 				(font
@@ -15134,7 +15407,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "Panasonic Electronic Components"
+		(property "Manufacturer_Name" "FOJAN"
 			(at 118.11 101.6 0)
 			(effects
 				(font
@@ -15143,7 +15416,16 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "ERJ-PA3F5600V"
+		(property "Manufacturer_Part_Number" "FRC0603F39R0TS"
+			(at 118.11 101.6 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C2907032"
 			(at 118.11 101.6 0)
 			(effects
 				(font
@@ -15153,6 +15435,15 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 118.11 101.6 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 118.11 101.6 0)
 			(effects
 				(font
@@ -15352,7 +15643,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Low ESR CAP CER 2.2UF 25V X5R 0603"
+		(property "Description" ""
 			(at 80.01 257.81 0)
 			(effects
 				(font
@@ -15361,7 +15652,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "Taiyo Yuden"
+		(property "Manufacturer_Name" "Samsung Electro-Mechanics"
 			(at 80.01 257.81 0)
 			(effects
 				(font
@@ -15370,7 +15661,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "TMK107ABJ225KA-T"
+		(property "Manufacturer_Part_Number" "CL10A225KO8NNNC"
 			(at 80.01 257.81 0)
 			(effects
 				(font
@@ -15380,6 +15671,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 80.01 257.81 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C23630"
+			(at 80.01 257.81 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 80.01 257.81 0)
 			(effects
 				(font
@@ -15448,6 +15757,24 @@
 			)
 		)
 		(property "Description" "Generic connector, double row, 02x03, odd/even pin numbering scheme (row 1 odd numbers, row 2 even numbers), script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 49.53 39.37 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" ""
+			(at 49.53 39.37 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 49.53 39.37 0)
 			(effects
 				(font
@@ -15565,6 +15892,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C14663"
+			(at 193.04 245.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 193.04 245.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "a9a8954e-f43a-48ef-bdb8-ab5b37aea5b8")
 		)
@@ -15654,6 +15999,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 261.62 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C14663"
+			(at 261.62 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 261.62 168.91 0)
 			(effects
 				(font
@@ -15825,6 +16188,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C14663"
+			(at 422.91 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 422.91 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "f57ee9d6-e4e4-48f9-a8b8-1dc4d52cefe7")
 		)
@@ -15987,6 +16368,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C14663"
+			(at 320.04 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 320.04 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "b4631e6c-9c46-4f75-8d96-b815ca570261")
 		)
@@ -16085,7 +16484,7 @@
 				)
 			)
 		)
-		(property "Value" "FerriteBead_Small"
+		(property "Value" "Ferrite Bead"
 			(at 215.8619 184.15 90)
 			(effects
 				(font
@@ -16120,7 +16519,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "TDK Corporation"
+		(property "Manufacturer_Name" "Murata Electronics"
 			(at 215.9 187.96 90)
 			(effects
 				(font
@@ -16129,7 +16528,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "MPZ1005S121HT000"
+		(property "Manufacturer_Part_Number" "BLM18PG121SN1D"
 			(at 215.9 187.96 90)
 			(effects
 				(font
@@ -16139,6 +16538,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0402"
+			(at 215.9 187.96 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C14709"
+			(at 215.9 187.96 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 215.9 187.96 90)
 			(effects
 				(font
@@ -16570,6 +16987,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C14663"
+			(at 218.44 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 218.44 168.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "69d6438b-77b3-4e2a-bd80-3da4ebae9e76")
 		)
@@ -16723,6 +17158,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 151.13 271.78 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C14663"
+			(at 151.13 271.78 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 151.13 271.78 0)
 			(effects
 				(font

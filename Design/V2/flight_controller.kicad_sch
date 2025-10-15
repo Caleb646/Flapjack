@@ -14888,7 +14888,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "330"
+		(property "Value" "39"
 			(at 243.84 308.6099 0)
 			(effects
 				(font
@@ -14924,7 +14924,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "TE Connectivity Passive Product"
+		(property "Manufacturer_Name" "FOJAN"
 			(at 241.3 307.34 0)
 			(effects
 				(font
@@ -14933,7 +14933,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "CRGP0603F330R"
+		(property "Manufacturer_Part_Number" "FRC0603F39R0TS"
 			(at 241.3 307.34 0)
 			(effects
 				(font
@@ -14943,6 +14943,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 241.3 307.34 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C2907032"
+			(at 241.3 307.34 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 241.3 307.34 0)
 			(effects
 				(font
@@ -15040,6 +15058,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "TH 2.50mm"
+			(at 171.45 184.15 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" ""
+			(at 171.45 184.15 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 171.45 184.15 90)
 			(effects
 				(font
@@ -15146,6 +15182,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" ""
+			(at 226.06 63.5 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 226.06 63.5 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "6"
 			(uuid "2b8bf63a-e016-41e6-9b00-5cf90371cd91")
 		)
@@ -15204,7 +15258,7 @@
 				(justify right)
 			)
 		)
-		(property "Value" "R"
+		(property "Value" "Red"
 			(at 257.81 301.3074 90)
 			(effects
 				(font
@@ -15231,7 +15285,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Red 631nm LED Indication - Discrete 2V 0603"
+		(property "Description" ""
 			(at 254 298.45 0)
 			(effects
 				(font
@@ -15240,16 +15294,7 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Pins" "1=K 2=A"
-			(at 254 298.45 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Manufacturer_Name" "Lite-On Inc."
+		(property "Manufacturer_Name" "Hubei KENTO Elec"
 			(at 254 298.45 90)
 			(effects
 				(font
@@ -15258,7 +15303,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "LTST-C191KRKT"
+		(property "Manufacturer_Part_Number" "KT-0603R"
 			(at 254 298.45 90)
 			(effects
 				(font
@@ -15268,6 +15313,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 254 298.45 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C2286"
+			(at 254 298.45 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 254 298.45 90)
 			(effects
 				(font
@@ -15335,6 +15398,24 @@
 			)
 		)
 		(property "Description" "Net tie, 2 pins"
+			(at 116.84 382.27 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" ""
+			(at 116.84 382.27 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 116.84 382.27 0)
 			(effects
 				(font
@@ -15440,6 +15521,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" ""
+			(at 195.58 184.15 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 195.58 184.15 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "12ef592e-7886-4c81-b3dc-8b36965c30c6")
 		)
@@ -15501,7 +15600,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "10 kOhms ±1% 0.25W, 1/4W Chip Resistor 0603 (1608 Metric) Automotive AEC-Q200, Pulse Withstanding Thick Film"
+		(property "Description" ""
 			(at 298.45 251.46 0)
 			(effects
 				(font
@@ -15510,7 +15609,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "TE Connectivity Passive Product"
+		(property "Manufacturer_Name" "UNI-ROYAL(Uniroyal Elec)"
 			(at 298.45 251.46 0)
 			(effects
 				(font
@@ -15519,7 +15618,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "CRGP0603F10K"
+		(property "Manufacturer_Part_Number" "0603WAF1002T5E"
 			(at 298.45 251.46 0)
 			(effects
 				(font
@@ -15529,6 +15628,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 298.45 251.46 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C25804"
+			(at 298.45 251.46 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 298.45 251.46 0)
 			(effects
 				(font
@@ -15626,6 +15743,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "TH 2.50mm"
+			(at 259.08 184.15 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" ""
+			(at 259.08 184.15 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 259.08 184.15 90)
 			(effects
 				(font
@@ -15799,6 +15934,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" ""
+			(at 180.34 238.76 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 180.34 238.76 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "1fedcd9e-8ccc-4d60-857b-0744897819f3")
 		)
@@ -15953,6 +16106,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "208LQFP"
+			(at 55.88 130.81 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C730197"
+			(at 55.88 130.81 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 55.88 130.81 0)
 			(effects
 				(font
@@ -16741,6 +16912,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" ""
+			(at 195.58 212.09 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 195.58 212.09 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "cec7c1ee-7d3a-4629-8ac0-d0c5968c6971")
 		)
@@ -16778,7 +16967,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "330"
+		(property "Value" "39"
 			(at 281.94 308.6099 0)
 			(effects
 				(font
@@ -16814,7 +17003,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "TE Connectivity Passive Product"
+		(property "Manufacturer_Name" "FOJAN"
 			(at 279.4 307.34 0)
 			(effects
 				(font
@@ -16823,7 +17012,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "CRGP0603F330R"
+		(property "Manufacturer_Part_Number" "FRC0603F39R0TS"
 			(at 279.4 307.34 0)
 			(effects
 				(font
@@ -16833,6 +17022,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 279.4 307.34 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C2907032"
+			(at 279.4 307.34 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 279.4 307.34 0)
 			(effects
 				(font
@@ -16875,7 +17082,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "330"
+		(property "Value" "39"
 			(at 269.24 308.6099 0)
 			(effects
 				(font
@@ -16911,7 +17118,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "TE Connectivity Passive Product"
+		(property "Manufacturer_Name" "FOJAN"
 			(at 266.7 307.34 0)
 			(effects
 				(font
@@ -16920,7 +17127,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "CRGP0603F330R"
+		(property "Manufacturer_Part_Number" "FRC0603F39R0TS"
 			(at 266.7 307.34 0)
 			(effects
 				(font
@@ -16930,6 +17137,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 266.7 307.34 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C2907032"
+			(at 266.7 307.34 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 266.7 307.34 0)
 			(effects
 				(font
@@ -17027,6 +17252,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "208LQFP"
+			(at 57.15 377.19 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C730197"
+			(at 57.15 377.19 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 57.15 377.19 0)
 			(effects
 				(font
@@ -18205,6 +18448,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C730197"
+			(at 55.88 246.38 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 55.88 246.38 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "54"
 			(uuid "3121c8f7-efba-49fe-b1cd-c9fbd7b59d3e")
 		)
@@ -19088,36 +19349,6 @@
 				(hide yes)
 			)
 		)
-		(property "Height" "0.8"
-			(at 344.17 637.49 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left top)
-				(hide yes)
-			)
-		)
-		(property "Mouser Part Number" "454-W25N01GWZEIG"
-			(at 344.17 737.49 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left top)
-				(hide yes)
-			)
-		)
-		(property "Mouser Price/Stock" "https://www.mouser.co.uk/ProductDetail/Winbond/W25N01GWZEIG?qs=qSfuJ%252Bfl%2Fd4FQnyXQOqTYQ%3D%3D"
-			(at 344.17 837.49 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left top)
-				(hide yes)
-			)
-		)
 		(property "Manufacturer_Name" "Winbond"
 			(at 344.17 937.49 0)
 			(effects
@@ -19139,6 +19370,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "8WSON"
+			(at 302.26 242.57 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" ""
+			(at 302.26 242.57 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 302.26 242.57 0)
 			(effects
 				(font
@@ -19257,6 +19506,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 168.91 149.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C14663"
+			(at 168.91 149.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 168.91 149.86 0)
 			(effects
 				(font
@@ -19593,6 +19860,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" ""
+			(at 332.74 199.39 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 332.74 199.39 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "4"
 			(uuid "44be1ce7-182e-4b27-9542-000a46c0b7c1")
 		)
@@ -19727,6 +20012,24 @@
 		)
 		(property "Description" "Net tie, 2 pins"
 			(at 180.34 52.07 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" ""
+			(at 180.34 52.07 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 180.34 52.07 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19888,6 +20191,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "14LGA"
+			(at 187.96 127 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C5368700"
+			(at 187.96 127 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 187.96 127 0)
 			(effects
 				(font
@@ -20094,6 +20415,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C14663"
+			(at 369.57 259.08 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 369.57 259.08 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "2"
 			(uuid "25ccf550-6e1b-4994-ae3a-06db6194a9c5")
 		)
@@ -20191,6 +20530,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" ""
+			(at 172.72 81.28 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 172.72 81.28 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "2"
 			(uuid "c563e028-15d4-4f72-8783-02e72ab0b1d3")
 		)
@@ -20255,7 +20612,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Low ESR 10 µF ±10% 10V Ceramic Capacitor X7R 0805 (2012 Metric)"
+		(property "Description" ""
 			(at 355.6 149.86 0)
 			(effects
 				(font
@@ -20264,7 +20621,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "KEMET"
+		(property "Manufacturer_Name" "Samsung Electro-Mechanics"
 			(at 355.6 149.86 0)
 			(effects
 				(font
@@ -20273,7 +20630,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "C0805C106K8RACTU"
+		(property "Manufacturer_Part_Number" "CL21A106KAYNNNE"
 			(at 355.6 149.86 0)
 			(effects
 				(font
@@ -20283,6 +20640,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0805"
+			(at 355.6 149.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C15850"
+			(at 355.6 149.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 355.6 149.86 0)
 			(effects
 				(font
@@ -20417,7 +20792,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "1 µF ±10% 16V Ceramic Capacitor X7R 0603"
+		(property "Description" ""
 			(at 304.8 160.02 0)
 			(effects
 				(font
@@ -20435,7 +20810,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "CL10B105KO8NNNC"
+		(property "Manufacturer_Part_Number" "CL10A105KB8NNNC"
 			(at 304.8 160.02 0)
 			(effects
 				(font
@@ -20445,6 +20820,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 304.8 160.02 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C15849"
+			(at 304.8 160.02 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 304.8 160.02 0)
 			(effects
 				(font
@@ -20615,6 +21008,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C5124834"
+			(at 302.26 83.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 302.26 83.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "10"
 			(uuid "ec23c3e8-27d2-4a47-9229-1c63412cb635")
 		)
@@ -20736,6 +21147,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C14663"
+			(at 367.03 85.09 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 367.03 85.09 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "2"
 			(uuid "b9941179-42b6-4f20-914c-cc165190a283")
 		)
@@ -20770,7 +21199,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "330"
+		(property "Value" "39"
 			(at 294.64 308.6099 0)
 			(effects
 				(font
@@ -20806,7 +21235,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "TE Connectivity Passive Product"
+		(property "Manufacturer_Name" "FOJAN"
 			(at 292.1 307.34 0)
 			(effects
 				(font
@@ -20815,7 +21244,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "CRGP0603F330R"
+		(property "Manufacturer_Part_Number" "FRC0603F39R0TS"
 			(at 292.1 307.34 0)
 			(effects
 				(font
@@ -20825,6 +21254,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 292.1 307.34 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C2907032"
+			(at 292.1 307.34 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 292.1 307.34 0)
 			(effects
 				(font
@@ -20922,6 +21369,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "16-LGA (3x3)"
+			(at 276.86 130.81 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C404329"
+			(at 276.86 130.81 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 276.86 130.81 0)
 			(effects
 				(font
@@ -21071,7 +21536,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "330"
+		(property "Value" "39"
 			(at 256.54 308.6099 0)
 			(effects
 				(font
@@ -21107,7 +21572,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "TE Connectivity Passive Product"
+		(property "Manufacturer_Name" "FOJAN"
 			(at 254 307.34 0)
 			(effects
 				(font
@@ -21116,7 +21581,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "CRGP0603F330R"
+		(property "Manufacturer_Part_Number" "FRC0603F39R0TS"
 			(at 254 307.34 0)
 			(effects
 				(font
@@ -21126,6 +21591,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 254 307.34 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C2907032"
+			(at 254 307.34 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 254 307.34 0)
 			(effects
 				(font
@@ -21361,6 +21844,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" ""
+			(at 234.95 184.15 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 234.95 184.15 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "63b368b3-2457-4682-a930-2c391b9df1ca")
 		)
@@ -21463,7 +21964,7 @@
 				(justify right)
 			)
 		)
-		(property "Value" "B"
+		(property "Value" "Red"
 			(at 295.91 301.3074 90)
 			(effects
 				(font
@@ -21490,7 +21991,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Blue 470nm LED Indication - Discrete 2.8V 0603 (1608 Metric)"
+		(property "Description" ""
 			(at 292.1 298.45 0)
 			(effects
 				(font
@@ -21499,16 +22000,7 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Pins" "1=K 2=A"
-			(at 292.1 298.45 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Manufacturer_Name" "Lite-On Inc."
+		(property "Manufacturer_Name" "Hubei KENTO Elec"
 			(at 292.1 298.45 90)
 			(effects
 				(font
@@ -21517,7 +22009,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "LTST-C193TBKT-5A"
+		(property "Manufacturer_Part_Number" "KT-0603R"
 			(at 292.1 298.45 90)
 			(effects
 				(font
@@ -21527,6 +22019,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 292.1 298.45 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C2286"
+			(at 292.1 298.45 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 292.1 298.45 90)
 			(effects
 				(font
@@ -21632,6 +22142,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C14663"
+			(at 180.34 59.69 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 180.34 59.69 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "2"
 			(uuid "1de5e5b7-fbad-48b1-a4d6-fe58b2ca9d09")
 		)
@@ -21690,7 +22218,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "10 kOhms ±1% 0.25W, 1/4W Chip Resistor 0603 (1608 Metric) Automotive AEC-Q200, Pulse Withstanding Thick Film"
+		(property "Description" ""
 			(at 351.79 245.11 0)
 			(effects
 				(font
@@ -21699,7 +22227,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "TE Connectivity Passive Product"
+		(property "Manufacturer_Name" "UNI-ROYAL(Uniroyal Elec)"
 			(at 351.79 245.11 90)
 			(effects
 				(font
@@ -21708,7 +22236,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "CRGP0603F10K"
+		(property "Manufacturer_Part_Number" "0603WAF1002T5E"
 			(at 351.79 245.11 90)
 			(effects
 				(font
@@ -21718,6 +22246,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 351.79 245.11 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C25804"
+			(at 351.79 245.11 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 351.79 245.11 90)
 			(effects
 				(font
@@ -21887,6 +22433,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" ""
+			(at 233.68 214.63 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 233.68 214.63 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "ad4399c6-797c-4e07-ad4e-6b2888309164")
 		)
@@ -21979,6 +22543,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 276.86 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C14663"
+			(at 276.86 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 276.86 87.63 0)
 			(effects
 				(font
@@ -22212,6 +22794,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" ""
+			(at 294.64 194.31 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 294.64 194.31 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "4"
 			(uuid "0d7b8d5c-504a-4533-b96b-96f99f8dd574")
 		)
@@ -22388,7 +22988,7 @@
 				(justify right)
 			)
 		)
-		(property "Value" "Y"
+		(property "Value" "Red"
 			(at 270.51 301.3074 90)
 			(effects
 				(font
@@ -22415,7 +23015,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Yellow 591nm LED Indication - Discrete 2.1V 0603)"
+		(property "Description" ""
 			(at 266.7 298.45 0)
 			(effects
 				(font
@@ -22424,16 +23024,7 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Pins" "1=K 2=A"
-			(at 266.7 298.45 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Manufacturer_Name" "Lite-On Inc."
+		(property "Manufacturer_Name" "Hubei KENTO Elec"
 			(at 266.7 298.45 90)
 			(effects
 				(font
@@ -22442,7 +23033,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "LTST-C191KSKT"
+		(property "Manufacturer_Part_Number" "KT-0603R"
 			(at 266.7 298.45 90)
 			(effects
 				(font
@@ -22452,6 +23043,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 266.7 298.45 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C2286"
+			(at 266.7 298.45 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 266.7 298.45 90)
 			(effects
 				(font
@@ -22549,6 +23158,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "TH 2.50mm"
+			(at 257.81 214.63 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" ""
+			(at 257.81 214.63 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 257.81 214.63 90)
 			(effects
 				(font
@@ -22725,7 +23352,7 @@
 				(justify right)
 			)
 		)
-		(property "Value" "B"
+		(property "Value" "Red"
 			(at 283.21 301.3074 90)
 			(effects
 				(font
@@ -22752,7 +23379,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Blue 470nm LED Indication - Discrete 2.8V 0603 (1608 Metric)"
+		(property "Description" ""
 			(at 279.4 298.45 0)
 			(effects
 				(font
@@ -22761,16 +23388,7 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Pins" "1=K 2=A"
-			(at 279.4 298.45 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Manufacturer_Name" "Lite-On Inc."
+		(property "Manufacturer_Name" "Hubei KENTO Elec"
 			(at 279.4 298.45 90)
 			(effects
 				(font
@@ -22779,7 +23397,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "LTST-C193TBKT-5A"
+		(property "Manufacturer_Part_Number" "KT-0603R"
 			(at 279.4 298.45 90)
 			(effects
 				(font
@@ -22789,6 +23407,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 279.4 298.45 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C2286"
+			(at 279.4 298.45 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 279.4 298.45 90)
 			(effects
 				(font
@@ -22886,6 +23522,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 208.28 156.21 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C14663"
+			(at 208.28 156.21 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 208.28 156.21 0)
 			(effects
 				(font
@@ -23055,6 +23709,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" ""
+			(at 171.45 212.09 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 171.45 212.09 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "5588b35b-c01b-4e06-a855-f0fa8d06fafb")
 		)
@@ -23147,6 +23819,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "TH 2.50mm"
+			(at 241.3 238.76 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" ""
+			(at 241.3 238.76 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 241.3 238.76 90)
 			(effects
 				(font
@@ -23579,7 +24269,7 @@
 				(justify right)
 			)
 		)
-		(property "Value" "R"
+		(property "Value" "Red"
 			(at 245.11 301.3074 90)
 			(effects
 				(font
@@ -23606,7 +24296,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Red 631nm LED Indication - Discrete 2V 0603"
+		(property "Description" ""
 			(at 241.3 298.45 0)
 			(effects
 				(font
@@ -23615,16 +24305,7 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Pins" "1=K 2=A"
-			(at 241.3 298.45 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Manufacturer_Name" "Lite-On Inc."
+		(property "Manufacturer_Name" "Hubei KENTO Elec"
 			(at 241.3 298.45 90)
 			(effects
 				(font
@@ -23633,7 +24314,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "LTST-C191KRKT"
+		(property "Manufacturer_Part_Number" "KT-0603R"
 			(at 241.3 298.45 90)
 			(effects
 				(font
@@ -23643,6 +24324,24 @@
 			)
 		)
 		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 241.3 298.45 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C2286"
+			(at 241.3 298.45 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
 			(at 241.3 298.45 90)
 			(effects
 				(font
