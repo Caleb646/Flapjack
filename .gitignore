@@ -5,6 +5,9 @@ CM7/Release/**
 *.cyclo
 
 # Kicad Ignores
+*.lnk
+*.kicad_pcb.lck
+*.kicad_sch.lck
 *.gbr
 *.gbrjob
 *.000
@@ -20,7 +23,11 @@ _autosave-*
 *.dsn
 *.ses
 *.cmp
-**/Design/FC/Build/**
+**/Design/**/Build/**
+**/Design/**/production/**
+**/Design/**/*-backups/**
+**/Design/**/V1/**/Lib/**
+**/Design/**/V2/**/Lib/**
 
 # !Debug/**/
 # !Debug/Makefile
