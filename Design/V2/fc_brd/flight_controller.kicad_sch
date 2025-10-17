@@ -7831,10 +7831,22 @@
 		(uuid "d5e4d855-b983-4148-bb51-33ce76176543")
 	)
 	(junction
+		(at 369.57 236.22)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "de883ead-2251-4541-a75a-c0530427934d")
+	)
+	(junction
 		(at 276.86 91.44)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "e2acb931-d9a5-4b23-813f-d7a1315cb2c4")
+	)
+	(junction
+		(at 368.3 264.16)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "e506dfee-4410-4f73-a236-37ad6f95af5b")
 	)
 	(no_connect
 		(at 220.98 66.04)
@@ -8432,16 +8444,6 @@
 	)
 	(wire
 		(pts
-			(xy 255.27 226.06) (xy 257.81 226.06)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "14d935d0-905b-43ea-95cc-530e00c79048")
-	)
-	(wire
-		(pts
 			(xy 256.54 133.35) (xy 256.54 156.21)
 		)
 		(stroke
@@ -8529,16 +8531,6 @@
 			(type default)
 		)
 		(uuid "27f70e6c-b4b6-46c0-bb94-05a32d5524ce")
-	)
-	(wire
-		(pts
-			(xy 168.91 223.52) (xy 171.45 223.52)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "2b22838b-e771-4987-812b-b697b0ca580c")
 	)
 	(wire
 		(pts
@@ -8662,26 +8654,6 @@
 	)
 	(wire
 		(pts
-			(xy 232.41 195.58) (xy 234.95 195.58)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "3b52e740-7750-4a23-83f6-f10d5a41ee99")
-	)
-	(wire
-		(pts
-			(xy 231.14 226.06) (xy 233.68 226.06)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "3edc3703-e1dc-490c-9e25-2bb1b979ea01")
-	)
-	(wire
-		(pts
 			(xy 227.33 189.23) (xy 232.41 189.23)
 		)
 		(stroke
@@ -8689,16 +8661,6 @@
 			(type default)
 		)
 		(uuid "41005bc1-5525-4a98-a8ad-2323b4f29476")
-	)
-	(wire
-		(pts
-			(xy 256.54 195.58) (xy 259.08 195.58)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "43142f6c-b78a-4a3e-9d67-42197189ed52")
 	)
 	(wire
 		(pts
@@ -8752,6 +8714,16 @@
 	)
 	(wire
 		(pts
+			(xy 369.57 236.22) (xy 372.11 236.22)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4db0bbb0-19e9-4d35-aba6-aa61db308757")
+	)
+	(wire
+		(pts
 			(xy 307.34 265.43) (xy 307.34 259.08)
 		)
 		(stroke
@@ -8799,6 +8771,16 @@
 			(type default)
 		)
 		(uuid "5201b391-ed4c-4626-a7cb-79c7b404646a")
+	)
+	(wire
+		(pts
+			(xy 369.57 264.16) (xy 368.3 264.16)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "52d23e98-cd41-45ce-a495-3719a5615fce")
 	)
 	(wire
 		(pts
@@ -8862,16 +8844,6 @@
 	)
 	(wire
 		(pts
-			(xy 171.45 195.58) (xy 171.45 189.23)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "6846e6b6-e0fc-4fe5-9788-1460df1d6943")
-	)
-	(wire
-		(pts
 			(xy 49.53 189.23) (xy 55.88 189.23)
 		)
 		(stroke
@@ -8929,26 +8901,6 @@
 			(type default)
 		)
 		(uuid "732a5b5f-0e1e-4386-b84d-0b64c0b9011d")
-	)
-	(wire
-		(pts
-			(xy 257.81 226.06) (xy 257.81 219.71)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "738aafc4-f0e2-483d-bc70-e622e9d3ab82")
-	)
-	(wire
-		(pts
-			(xy 193.04 195.58) (xy 195.58 195.58)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "78349016-6a13-4cc6-9e03-4372c619a03b")
 	)
 	(wire
 		(pts
@@ -9159,6 +9111,16 @@
 			(type default)
 		)
 		(uuid "9761536a-0520-486d-b17a-666c7b2531fd")
+	)
+	(wire
+		(pts
+			(xy 369.57 243.84) (xy 369.57 264.16)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "976dd5ca-8718-46ec-9900-dc57872cd2a6")
 	)
 	(wire
 		(pts
@@ -9502,26 +9464,6 @@
 	)
 	(wire
 		(pts
-			(xy 193.04 223.52) (xy 195.58 223.52)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c42542f5-60c9-4ad8-973a-1d3cc8df61d6")
-	)
-	(wire
-		(pts
-			(xy 195.58 195.58) (xy 195.58 189.23)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c48948f3-0ab0-4bcd-8c3a-5cb2f2dfe83d")
-	)
-	(wire
-		(pts
 			(xy 342.9 83.82) (xy 359.41 83.82)
 		)
 		(stroke
@@ -9552,7 +9494,7 @@
 	)
 	(wire
 		(pts
-			(xy 368.3 236.22) (xy 372.11 236.22)
+			(xy 368.3 236.22) (xy 369.57 236.22)
 		)
 		(stroke
 			(width 0)
@@ -9632,16 +9574,6 @@
 	)
 	(wire
 		(pts
-			(xy 259.08 195.58) (xy 259.08 189.23)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d10b193c-1150-4e28-9d79-76866b8e0894")
-	)
-	(wire
-		(pts
 			(xy 82.55 29.21) (xy 90.17 29.21)
 		)
 		(stroke
@@ -9692,16 +9624,6 @@
 	)
 	(wire
 		(pts
-			(xy 168.91 195.58) (xy 171.45 195.58)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d5220659-8e15-400d-9c35-4b0062c77a61")
-	)
-	(wire
-		(pts
 			(xy 218.44 68.58) (xy 218.44 63.5)
 		)
 		(stroke
@@ -9709,16 +9631,6 @@
 			(type default)
 		)
 		(uuid "d9ecf2bc-90f0-4716-ad35-ef6965b9fa5b")
-	)
-	(wire
-		(pts
-			(xy 195.58 223.52) (xy 195.58 217.17)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "de88ae82-d6c0-47fa-ab8e-0543c3d63d74")
 	)
 	(wire
 		(pts
@@ -9742,16 +9654,6 @@
 	)
 	(wire
 		(pts
-			(xy 233.68 226.06) (xy 233.68 219.71)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "e5eb8367-2d8e-40e4-9175-6ceff96276a8")
-	)
-	(wire
-		(pts
 			(xy 180.34 139.7) (xy 180.34 153.67)
 		)
 		(stroke
@@ -9769,16 +9671,6 @@
 			(type default)
 		)
 		(uuid "e904d8c5-8826-422c-a8df-777981e70f44")
-	)
-	(wire
-		(pts
-			(xy 171.45 223.52) (xy 171.45 217.17)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "e99228de-3a36-43d7-9158-f05a8ddc30b8")
 	)
 	(wire
 		(pts
@@ -9839,16 +9731,6 @@
 			(type default)
 		)
 		(uuid "efd12140-0bb6-4d24-8d63-df51242f8de2")
-	)
-	(wire
-		(pts
-			(xy 234.95 195.58) (xy 234.95 189.23)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "f768c097-587c-466a-8c88-16b1a3dc2fcf")
 	)
 	(wire
 		(pts
@@ -10859,6 +10741,28 @@
 		(uuid "1b95bf1c-23cc-4d22-bc80-f2c27a8ab4b1")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 43.9444 251.46 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+				(hide yes)
+			)
+		)
+	)
+	(global_label "SERVO_VCC_1_2"
+		(shape input)
+		(at 171.45 217.17 270)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "1ba4d64e-b735-4ae5-86a3-02f2b9418804")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 171.45 235.1532 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11968,6 +11872,28 @@
 			)
 		)
 	)
+	(global_label "SERVO_VCC_3_4"
+		(shape input)
+		(at 195.58 217.17 270)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "6c704656-1e13-4e4e-877f-bae1172dc57a")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 195.58 235.1532 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+				(hide yes)
+			)
+		)
+	)
 	(global_label "FLASH_1_NSS"
 		(shape input)
 		(at 312.42 241.3 180)
@@ -12188,6 +12114,50 @@
 			)
 		)
 	)
+	(global_label "SERVO_VCC_7_8"
+		(shape input)
+		(at 259.08 189.23 270)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "7c2e6239-86f5-44cf-88d6-14ec592bb106")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 259.08 207.2132 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+				(hide yes)
+			)
+		)
+	)
+	(global_label "SERVO_VCC_1_2"
+		(shape input)
+		(at 171.45 189.23 270)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "7d008a1c-1a02-4dfd-803a-dc854463a183")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 171.45 207.2132 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+				(hide yes)
+			)
+		)
+	)
 	(global_label "BARO_INT_1"
 		(shape input)
 		(at 342.9 91.44 0)
@@ -12355,6 +12325,28 @@
 		(uuid "8b18ab35-6609-4f07-b4ed-a60ee41d2798")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 198.12 237.8747 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+				(hide yes)
+			)
+		)
+	)
+	(global_label "SERVO_VCC_3_4"
+		(shape input)
+		(at 195.58 189.23 270)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "8d70e322-6777-45cb-8c59-74a2271df602")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 195.58 207.2132 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -13134,6 +13126,28 @@
 			)
 		)
 	)
+	(global_label "SERVO_VCC_5_6"
+		(shape input)
+		(at 233.68 219.71 270)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "c871c76f-353c-4852-b3d0-8cf313a1e239")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 233.68 237.6932 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+				(hide yes)
+			)
+		)
+	)
 	(global_label "SPI_1_NSS_IMU"
 		(shape input)
 		(at 120.65 140.97 0)
@@ -13442,6 +13456,28 @@
 			)
 		)
 	)
+	(global_label "SERVO_VCC_5_6"
+		(shape input)
+		(at 234.95 189.23 270)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "dbe46671-93b8-4975-acf8-8a689fcab8ac")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 234.95 207.2132 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+				(hide yes)
+			)
+		)
+	)
 	(global_label "GPS_SDA"
 		(shape input)
 		(at 44.45 78.74 0)
@@ -13697,6 +13733,28 @@
 		(uuid "eab8d260-87c1-4e87-9002-83ea5446e83e")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 40.7392 304.8 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+				(hide yes)
+			)
+		)
+	)
+	(global_label "SERVO_VCC_7_8"
+		(shape input)
+		(at 257.81 219.71 270)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "eacd3376-b035-489e-9c1e-0dd60e914957")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 257.81 237.6932 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -14548,7 +14606,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Connector Header Through Hole 3 position 0.098\" (2.50mm)"
+		(property "Description" ""
 			(at 171.45 184.15 0)
 			(effects
 				(font
@@ -14557,7 +14615,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "JST Sales America Inc."
+		(property "Manufacturer_Name" ""
 			(at 171.45 184.15 90)
 			(effects
 				(font
@@ -14566,7 +14624,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "B3B-XH-A"
+		(property "Manufacturer_Part_Number" ""
 			(at 171.45 184.15 90)
 			(effects
 				(font
@@ -15070,7 +15128,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Connector Header Through Hole 3 position 0.098\" (2.50mm)"
+		(property "Description" ""
 			(at 195.58 184.15 0)
 			(effects
 				(font
@@ -15079,7 +15137,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "JST Sales America Inc."
+		(property "Manufacturer_Name" ""
 			(at 195.58 184.15 90)
 			(effects
 				(font
@@ -15088,7 +15146,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "B3B-XH-A"
+		(property "Manufacturer_Part_Number" ""
 			(at 195.58 184.15 90)
 			(effects
 				(font
@@ -15143,6 +15201,121 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:C")
+		(at 369.57 240.03 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "097cb068-9c2b-43d7-a9ab-04d7abb55ac8")
+		(property "Reference" "C1"
+			(at 373.38 238.7599 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "100nF"
+			(at 373.38 241.2999 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder"
+			(at 370.5352 243.84 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "CC0603KRX7R7BB104"
+			(at 369.57 240.03 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "CAP CER 0.1UF 16V X7R 0603"
+			(at 369.57 240.03 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "YAGEO"
+			(at 369.57 240.03 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "CC0603KRX7R7BB104"
+			(at 369.57 240.03 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "PACKAGE_TYPE" "SMD 0603"
+			(at 369.57 240.03 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C14663"
+			(at 369.57 240.03 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Package" ""
+			(at 369.57 240.03 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "9d0ca332-9762-4ed9-8b4b-3f55a1d7c23e")
+		)
+		(pin "1"
+			(uuid "4aef3c93-32a1-42a8-92ce-155f45861b82")
+		)
+		(instances
+			(project "fc"
+				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
+					(reference "C1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Connector_Generic:Conn_01x03")
 		(at 259.08 184.15 90)
 		(unit 1)
@@ -15188,7 +15361,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Connector Header Through Hole 3 position 0.098\" (2.50mm)"
+		(property "Description" ""
 			(at 259.08 184.15 0)
 			(effects
 				(font
@@ -15197,7 +15370,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "JST Sales America Inc."
+		(property "Manufacturer_Name" ""
 			(at 259.08 184.15 90)
 			(effects
 				(font
@@ -15206,7 +15379,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "B3B-XH-A"
+		(property "Manufacturer_Part_Number" ""
 			(at 259.08 184.15 90)
 			(effects
 				(font
@@ -15571,7 +15744,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Connector Header Through Hole 2 position 0.098\" (2.50mm)"
+		(property "Description" ""
 			(at 180.34 238.76 0)
 			(effects
 				(font
@@ -15580,7 +15753,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "JST Sales America Inc."
+		(property "Manufacturer_Name" ""
 			(at 180.34 238.76 90)
 			(effects
 				(font
@@ -15589,7 +15762,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "B2B-XH-A"
+		(property "Manufacturer_Part_Number" ""
 			(at 180.34 238.76 90)
 			(effects
 				(font
@@ -15635,71 +15808,6 @@
 			(project ""
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
 					(reference "LM1")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:+5V")
-		(at 193.04 195.58 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "12bc71ba-11ec-4d74-bec8-57ecb8b7c317")
-		(property "Reference" "#PWR068"
-			(at 193.04 199.39 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "+5V"
-			(at 192.786 191.008 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 193.04 195.58 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 193.04 195.58 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"+5V\""
-			(at 193.04 195.58 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "22a2be4d-0b20-4f49-9f8f-a1e545217370")
-		)
-		(instances
-			(project "fc"
-				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "#PWR068")
 					(unit 1)
 				)
 			)
@@ -16794,7 +16902,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Connector Header Through Hole 3 position 0.098\" (2.50mm)"
+		(property "Description" ""
 			(at 195.58 212.09 0)
 			(effects
 				(font
@@ -16803,7 +16911,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "JST Sales America Inc."
+		(property "Manufacturer_Name" ""
 			(at 195.58 212.09 90)
 			(effects
 				(font
@@ -16812,7 +16920,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "B3B-XH-A"
+		(property "Manufacturer_Part_Number" ""
 			(at 195.58 212.09 90)
 			(effects
 				(font
@@ -18025,71 +18133,6 @@
 		)
 	)
 	(symbol
-		(lib_id "power:+5V")
-		(at 256.54 195.58 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "3303469c-c4c9-4caf-8a02-f10dec251512")
-		(property "Reference" "#PWR077"
-			(at 256.54 199.39 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "+5V"
-			(at 256.286 191.008 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 256.54 195.58 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 256.54 195.58 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"+5V\""
-			(at 256.54 195.58 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "23530043-0558-402f-872b-dda19f54d72b")
-		)
-		(instances
-			(project "fc"
-				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "#PWR077")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "power:GND")
 		(at 208.28 160.02 0)
 		(unit 1)
@@ -18954,201 +18997,6 @@
 		)
 	)
 	(symbol
-		(lib_id "power:+5V")
-		(at 232.41 195.58 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "3ff926aa-1140-4548-9a12-0af33619d24d")
-		(property "Reference" "#PWR073"
-			(at 232.41 199.39 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "+5V"
-			(at 232.156 191.008 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 232.41 195.58 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 232.41 195.58 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"+5V\""
-			(at 232.41 195.58 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "8e16d495-f04b-4926-b88c-dfbc2b854ca4")
-		)
-		(instances
-			(project "fc"
-				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "#PWR073")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:+5V")
-		(at 255.27 226.06 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "43dc9995-7259-41cc-949c-53f690c87532")
-		(property "Reference" "#PWR078"
-			(at 255.27 229.87 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "+5V"
-			(at 255.016 221.488 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 255.27 226.06 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 255.27 226.06 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"+5V\""
-			(at 255.27 226.06 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "db156376-4c95-4fdd-9486-8c3b911d92da")
-		)
-		(instances
-			(project "fc"
-				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "#PWR078")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:+5V")
-		(at 168.91 195.58 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "4426f784-c765-43f7-a940-0838511b6e9a")
-		(property "Reference" "#PWR062"
-			(at 168.91 199.39 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "+5V"
-			(at 168.656 191.008 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 168.91 195.58 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 168.91 195.58 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"+5V\""
-			(at 168.91 195.58 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "64c06b13-17e2-435d-98c1-0bfe5776fab9")
-		)
-		(instances
-			(project ""
-				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "#PWR062")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Connector:TestPoint")
 		(at 331.47 194.31 0)
 		(unit 1)
@@ -19807,71 +19655,6 @@
 			(project "fc"
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
 					(reference "TP2")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:+5V")
-		(at 193.04 223.52 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "643de935-14f1-4f73-8320-283bea908b7b")
-		(property "Reference" "#PWR066"
-			(at 193.04 227.33 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "+5V"
-			(at 192.786 218.948 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 193.04 223.52 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 193.04 223.52 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"+5V\""
-			(at 193.04 223.52 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "3e5e6d6f-545a-4dba-bac0-702fae46c44e")
-		)
-		(instances
-			(project "fc"
-				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "#PWR066")
 					(unit 1)
 				)
 			)
@@ -21469,7 +21252,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Connector Header Through Hole 3 position 0.098\" (2.50mm)"
+		(property "Description" ""
 			(at 234.95 184.15 0)
 			(effects
 				(font
@@ -21478,7 +21261,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "JST Sales America Inc."
+		(property "Manufacturer_Name" ""
 			(at 234.95 184.15 90)
 			(effects
 				(font
@@ -21487,7 +21270,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "B3B-XH-A"
+		(property "Manufacturer_Part_Number" ""
 			(at 234.95 184.15 90)
 			(effects
 				(font
@@ -22011,7 +21794,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Connector Header Through Hole 3 position 0.098\" (2.50mm)"
+		(property "Description" ""
 			(at 233.68 214.63 0)
 			(effects
 				(font
@@ -22020,7 +21803,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "JST Sales America Inc."
+		(property "Manufacturer_Name" ""
 			(at 233.68 214.63 90)
 			(effects
 				(font
@@ -22029,7 +21812,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "B3B-XH-A"
+		(property "Manufacturer_Part_Number" ""
 			(at 233.68 214.63 90)
 			(effects
 				(font
@@ -22666,7 +22449,7 @@
 				)
 			)
 		)
-		(property "Footprint" "W25Q128JVSIQ:SOIC127P790X216-8N"
+		(property "Footprint" "EXT_Storage:SOIC127P790X216-8N"
 			(at 340.36 248.92 0)
 			(effects
 				(font
@@ -22685,7 +22468,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "128Mbit NOR Flash"
 			(at 340.36 248.92 0)
 			(effects
 				(font
@@ -22731,6 +22514,33 @@
 					(size 1.27 1.27)
 				)
 				(justify bottom)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C97521"
+			(at 340.36 248.92 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Name" "Winbond Elec"
+			(at 340.36 248.92 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer_Part_Number" "W25Q128JVSIQ"
+			(at 340.36 248.92 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 				(hide yes)
 			)
 		)
@@ -22813,7 +22623,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Connector Header Through Hole 3 position 0.098\" (2.50mm)"
+		(property "Description" ""
 			(at 257.81 214.63 0)
 			(effects
 				(font
@@ -22822,7 +22632,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "JST Sales America Inc."
+		(property "Manufacturer_Name" ""
 			(at 257.81 214.63 90)
 			(effects
 				(font
@@ -22831,7 +22641,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "B3B-XH-A"
+		(property "Manufacturer_Part_Number" ""
 			(at 257.81 214.63 90)
 			(effects
 				(font
@@ -23248,71 +23058,6 @@
 		)
 	)
 	(symbol
-		(lib_id "power:+5V")
-		(at 168.91 223.52 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "e81c6fb1-045a-4866-8f69-edd6297e9e80")
-		(property "Reference" "#PWR064"
-			(at 168.91 227.33 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "+5V"
-			(at 168.656 218.948 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 168.91 223.52 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 168.91 223.52 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"+5V\""
-			(at 168.91 223.52 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "3f76b0d0-89f3-4fff-b375-9883c51f285d")
-		)
-		(instances
-			(project "fc"
-				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "#PWR064")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Connector_Generic:Conn_01x03")
 		(at 171.45 212.09 90)
 		(unit 1)
@@ -23357,7 +23102,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Connector Header Through Hole 3 position 0.098\" (2.50mm)"
+		(property "Description" ""
 			(at 171.45 212.09 0)
 			(effects
 				(font
@@ -23366,7 +23111,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "JST Sales America Inc."
+		(property "Manufacturer_Name" ""
 			(at 171.45 212.09 90)
 			(effects
 				(font
@@ -23375,7 +23120,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "B3B-XH-A"
+		(property "Manufacturer_Part_Number" ""
 			(at 171.45 212.09 90)
 			(effects
 				(font
@@ -23475,7 +23220,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Connector Header Through Hole 2 position 0.098\" (2.50mm)"
+		(property "Description" ""
 			(at 241.3 238.76 0)
 			(effects
 				(font
@@ -23484,7 +23229,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "JST Sales America Inc."
+		(property "Manufacturer_Name" ""
 			(at 241.3 238.76 90)
 			(effects
 				(font
@@ -23493,7 +23238,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "B2B-XH-A"
+		(property "Manufacturer_Part_Number" ""
 			(at 241.3 238.76 90)
 			(effects
 				(font
@@ -23914,71 +23659,6 @@
 			(project "fc"
 				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
 					(reference "#PWR010")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:+5V")
-		(at 231.14 226.06 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "ee5133ac-a2bb-42cf-8bf2-3e1cc71e18c0")
-		(property "Reference" "#PWR074"
-			(at 231.14 229.87 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "+5V"
-			(at 230.886 221.488 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 231.14 226.06 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 231.14 226.06 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"+5V\""
-			(at 231.14 226.06 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "db5f3baa-573b-49da-9190-c87f425a7d48")
-		)
-		(instances
-			(project "fc"
-				(path "/b150e79a-000e-446c-9119-0865a2de86ff/ef3444a3-41e3-41ea-8a4e-a671b048941e"
-					(reference "#PWR074")
 					(unit 1)
 				)
 			)

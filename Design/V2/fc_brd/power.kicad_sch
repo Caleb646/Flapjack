@@ -8993,7 +8993,7 @@
 	)
 	(global_label "SERVO_VCC_1_2"
 		(shape input)
-		(at 83.82 38.1 180)
+		(at 83.82 43.18 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -9003,7 +9003,7 @@
 		)
 		(uuid "476d3292-f082-4874-ad0f-b04e874828a8")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 65.8368 38.1 0)
+			(at 65.8368 43.18 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -9015,7 +9015,7 @@
 	)
 	(global_label "SERVO_VCC_1_2"
 		(shape input)
-		(at 83.82 35.56 180)
+		(at 83.82 40.64 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -9025,7 +9025,7 @@
 		)
 		(uuid "4b0a089b-44cf-4d96-9889-4c15dc79256f")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 65.8368 35.56 0)
+			(at 65.8368 40.64 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -9059,7 +9059,7 @@
 	)
 	(global_label "SERVO_VCC_3_4"
 		(shape input)
-		(at 83.82 40.64 180)
+		(at 83.82 35.56 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -9069,7 +9069,7 @@
 		)
 		(uuid "5bd855be-8658-436a-aba0-18779ea54981")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 65.8368 40.64 0)
+			(at 65.8368 35.56 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -9213,7 +9213,7 @@
 	)
 	(global_label "SERVO_VCC_3_4"
 		(shape input)
-		(at 83.82 43.18 180)
+		(at 83.82 38.1 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -9223,7 +9223,7 @@
 		)
 		(uuid "fb6b4e07-88c7-46f6-871f-e7583f6d77ca")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 65.8368 43.18 0)
+			(at 65.8368 38.1 0)
 			(effects
 				(font
 					(size 1.27 1.27)
