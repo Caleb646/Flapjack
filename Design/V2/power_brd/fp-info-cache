@@ -1,4 +1,4 @@
-26685649390652215
+26685652814991266
 Audio_Module
 Reverb_BTDR-1H
 Digital Reverberation Unit, http://www.belton.co.kr/inc/downfile.php?seq=17&file=pdf (footprint from http://www.uk-electronic.de/PDF/BTDR-1.pdf)
@@ -60690,6 +60690,13 @@ Vishay KBU rectifier diode bridge
 4
 4
 Diodes
+SMA_L4.3-W2.6-LS5.2-RD
+
+
+0
+2
+2
+Diodes
 SS34_DO214AB
 
 
@@ -70720,13 +70727,6 @@ STM32H747BIT6
 0
 208
 208
-Lib
-W25N01GWZEIG
-8-Pad WSON 8x6-mm (Package Code ZE)
-Integrated Circuit
-0
-9
-9
 Lib
 XT60PW-M
 

@@ -4828,8 +4828,26 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Pins" "1=K 2=A"
-			(at 403.86 134.62 0)
+		(property "LCSC Part #" "C84256"
+			(at 403.86 134.62 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "Foshan NationStar Optoelectronics"
+			(at 403.86 134.62 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "NCD0805R1"
+			(at 403.86 134.62 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5039,6 +5057,33 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C9864"
+			(at 152.4 144.78 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "Texas Instruments"
+			(at 152.4 144.78 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "TPS5430DDAR"
+			(at 152.4 144.78 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "3"
 			(uuid "66d54fb3-cfaa-4ab2-aef3-52346b2a7474")
 		)
@@ -5146,7 +5191,7 @@
 		(at 161.29 256.54 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -5186,6 +5231,24 @@
 			)
 		)
 		(property "Description" "Generic connector, double row, 02x04, odd/even pin numbering scheme (row 1 odd numbers, row 2 even numbers), script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 161.29 256.54 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" ""
+			(at 161.29 256.54 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" ""
 			(at 161.29 256.54 0)
 			(effects
 				(font
@@ -5544,6 +5607,33 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C22463824"
+			(at 378.46 77.47 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "TECHFUSE"
+			(at 378.46 77.47 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "SL0630-150M"
+			(at 378.46 77.47 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "9a901a8e-2257-493c-a2b1-6adddc9a30aa")
 		)
@@ -5680,6 +5770,33 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C13585"
+			(at 293.37 77.47 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "Samsung Electro-Mechanics"
+			(at 293.37 77.47 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "CL31A106KBHNNNE"
+			(at 293.37 77.47 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "035011c9-ca0a-4838-b25f-1ab0265df9be")
 		)
@@ -5750,8 +5867,26 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Pins" "1=K 2=A"
-			(at 228.6 73.66 0)
+		(property "LCSC Part #" "C84256"
+			(at 228.6 73.66 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "Foshan NationStar Optoelectronics"
+			(at 228.6 73.66 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "NCD0805R1"
+			(at 228.6 73.66 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5895,6 +6030,33 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C17414"
+			(at 236.22 142.24 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "UNI-ROYAL(Uniroyal Elec)"
+			(at 236.22 142.24 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "0805W8F1002T5E"
+			(at 236.22 142.24 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "cc130236-4fc8-429a-8fd9-b493292b5aca")
 		)
@@ -5965,6 +6127,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" ""
+			(at 107.95 26.67 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" ""
+			(at 107.95 26.67 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "a6b22432-a21b-469a-81b6-531cd839e664")
 		)
@@ -6024,6 +6204,33 @@
 			)
 		)
 		(property "Description" "Resistor"
+			(at 410.21 81.28 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C17414"
+			(at 410.21 81.28 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "UNI-ROYAL(Uniroyal Elec)"
+			(at 410.21 81.28 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "0805W8F1002T5E"
 			(at 410.21 81.28 0)
 			(effects
 				(font
@@ -6168,6 +6375,33 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C17408"
+			(at 228.6 66.04 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "UNI-ROYAL(Uniroyal Elec)"
+			(at 228.6 66.04 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "0805W8F1000T5E"
+			(at 228.6 66.04 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "2164c109-0f4f-4128-a113-98e0982afc08")
 		)
@@ -6188,7 +6422,7 @@
 		(at 198.12 257.81 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -6228,6 +6462,24 @@
 			)
 		)
 		(property "Description" "Generic connector, double row, 02x04, odd/even pin numbering scheme (row 1 odd numbers, row 2 even numbers), script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 198.12 257.81 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" ""
+			(at 198.12 257.81 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" ""
 			(at 198.12 257.81 0)
 			(effects
 				(font
@@ -6522,6 +6774,33 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C13585"
+			(at 119.38 77.47 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "Samsung Electro-Mechanics"
+			(at 119.38 77.47 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "CL31A106KBHNNNE"
+			(at 119.38 77.47 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "4837be3e-81cc-459e-b7a6-be4557dbf8a4")
 		)
@@ -6608,7 +6887,7 @@
 		(at 41.91 40.64 180)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -6657,77 +6936,7 @@
 				(hide yes)
 			)
 		)
-		(property "MF" "AMASS"
-			(at 41.91 40.64 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "MAXIMUM_PACKAGE_HEIGHT" "8.4 mm"
-			(at 41.91 40.64 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
 		(property "Package" "Package"
-			(at 41.91 40.64 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "Price" "None"
-			(at 41.91 40.64 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "Check_prices" "https://www.snapeda.com/parts/XT60PW-M/AMASS/view-part/?ref=eda"
-			(at 41.91 40.64 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "STANDARD" "Manufacturer recommendations"
-			(at 41.91 40.64 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "PARTREV" "V1.2"
-			(at 41.91 40.64 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "SnapEDA_Link" "https://www.snapeda.com/parts/XT60PW-M/AMASS/view-part/?ref=snap"
 			(at 41.91 40.64 0)
 			(effects
 				(font
@@ -6747,33 +6956,21 @@
 				(hide yes)
 			)
 		)
-		(property "Description_1" "Socket, DC supply, male, PIN: 2"
+		(property "LCSC Part #" ""
 			(at 41.91 40.64 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(justify bottom)
 				(hide yes)
 			)
 		)
-		(property "Availability" "Not in stock"
+		(property "Manufacturer ID" ""
 			(at 41.91 40.64 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "MANUFACTURER" "AMASS"
-			(at 41.91 40.64 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
 				(hide yes)
 			)
 		)
@@ -6839,6 +7036,33 @@
 			)
 		)
 		(property "Description" ""
+			(at 326.39 83.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C9864"
+			(at 326.39 83.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "Texas Instruments"
+			(at 326.39 83.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "TPS5430DDAR"
 			(at 326.39 83.82 0)
 			(effects
 				(font
@@ -6938,8 +7162,26 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Pins" "1=K 2=A"
-			(at 229.87 193.04 0)
+		(property "LCSC Part #" "C84256"
+			(at 229.87 193.04 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "Foshan NationStar Optoelectronics"
+			(at 229.87 193.04 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "NCD0805R1"
+			(at 229.87 193.04 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7009,6 +7251,33 @@
 			)
 		)
 		(property "Description" "Polarized capacitor"
+			(at 387.35 142.24 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C147767"
+			(at 387.35 142.24 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "PANASONIC"
+			(at 387.35 142.24 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "10TPE220ML"
 			(at 387.35 142.24 0)
 			(effects
 				(font
@@ -7087,6 +7356,33 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C17609"
+			(at 237.49 213.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "UNI-ROYAL(Uniroyal Elec)"
+			(at 237.49 213.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "0805W8F3241T5E"
+			(at 237.49 213.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "bc97dbab-a34c-41c9-a046-9a1e3371f621")
 		)
@@ -7149,6 +7445,33 @@
 			)
 		)
 		(property "Description" ""
+			(at 152.4 83.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C9864"
+			(at 152.4 83.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "Texas Instruments"
+			(at 152.4 83.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "TPS5430DDAR"
 			(at 152.4 83.82 0)
 			(effects
 				(font
@@ -7248,6 +7571,33 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C13585"
+			(at 119.38 138.43 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "Samsung Electro-Mechanics"
+			(at 119.38 138.43 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "CL31A106KBHNNNE"
+			(at 119.38 138.43 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "ba43ddf1-d4db-45df-a858-d090e616834d")
 		)
@@ -7309,6 +7659,33 @@
 		)
 		(property "Description" "Inductor"
 			(at 204.47 138.43 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C22463824"
+			(at 204.47 138.43 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "TECHFUSE"
+			(at 204.47 138.43 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "SL0630-150M"
+			(at 204.47 138.43 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7378,6 +7755,24 @@
 			)
 		)
 		(property "Description" "Mounting Hole with connection"
+			(at 133.35 26.67 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" ""
+			(at 133.35 26.67 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" ""
 			(at 133.35 26.67 0)
 			(effects
 				(font
@@ -7648,6 +8043,33 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C1710"
+			(at 177.8 81.28 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "Samsung Electro-Mechanics"
+			(at 177.8 81.28 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "CL21B103KBANNNC"
+			(at 177.8 81.28 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "027571d3-d6bf-4d3a-8cda-c0f0dab2a6fa")
 		)
@@ -7784,6 +8206,33 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C17609"
+			(at 410.21 93.98 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "UNI-ROYAL(Uniroyal Elec)"
+			(at 410.21 93.98 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "0805W8F3241T5E"
+			(at 410.21 93.98 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "643a6bb0-fce9-410d-93e5-a968741a2c59")
 		)
@@ -7828,7 +8277,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Diodes:SS34_DO214AB"
+		(property "Footprint" "Diodes:SMA_L4.3-W2.6-LS5.2-RD"
 			(at 191.77 82.55 0)
 			(effects
 				(font
@@ -7855,8 +8304,8 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Device" "D"
-			(at 191.77 82.55 0)
+		(property "LCSC Part #" "C8678"
+			(at 191.77 82.55 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7864,8 +8313,17 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Pins" "1=C 2=A"
-			(at 191.77 82.55 0)
+		(property "Manufacturer" "MDD(Microdiode Semiconductor)"
+			(at 191.77 82.55 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "SS34"
+			(at 191.77 82.55 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7934,6 +8392,33 @@
 		)
 		(property "Description" "Inductor"
 			(at 204.47 77.47 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C22463824"
+			(at 204.47 77.47 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "TECHFUSE"
+			(at 204.47 77.47 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "SL0630-150M"
+			(at 204.47 77.47 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8143,6 +8628,33 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C17609"
+			(at 236.22 93.98 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "UNI-ROYAL(Uniroyal Elec)"
+			(at 236.22 93.98 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "0805W8F3241T5E"
+			(at 236.22 93.98 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "d0a21bcc-a667-42b3-8190-64655b7c8e11")
 		)
@@ -8279,6 +8791,33 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C17609"
+			(at 410.21 154.94 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "UNI-ROYAL(Uniroyal Elec)"
+			(at 410.21 154.94 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "0805W8F3241T5E"
+			(at 410.21 154.94 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "496d0e41-476a-4e7e-9fff-813014a8a74d")
 		)
@@ -8346,6 +8885,33 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C1710"
+			(at 177.8 142.24 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "Samsung Electro-Mechanics"
+			(at 177.8 142.24 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "CL21B103KBANNNC"
+			(at 177.8 142.24 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "d5266be9-7389-44ba-a152-ab2aa1fc9d43")
 		)
@@ -8406,6 +8972,33 @@
 		)
 		(property "Description" "Unpolarized capacitor"
 			(at 351.79 142.24 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C1710"
+			(at 351.79 142.24 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "Samsung Electro-Mechanics"
+			(at 351.79 142.24 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "CL21B103KBANNNC"
+			(at 351.79 142.24 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8541,6 +9134,33 @@
 			)
 		)
 		(property "Description" "Resistor"
+			(at 410.21 142.24 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C17414"
+			(at 410.21 142.24 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "UNI-ROYAL(Uniroyal Elec)"
+			(at 410.21 142.24 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "0805W8F1002T5E"
 			(at 410.21 142.24 0)
 			(effects
 				(font
@@ -8685,6 +9305,33 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C17414"
+			(at 237.49 200.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "UNI-ROYAL(Uniroyal Elec)"
+			(at 237.49 200.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "0805W8F1002T5E"
+			(at 237.49 200.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "f50d0477-2c3d-4aa5-aa4a-3f2ae039d092")
 		)
@@ -8821,6 +9468,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" ""
+			(at 107.95 41.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" ""
+			(at 107.95 41.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "5262aa8b-d134-4ae0-a8fc-9fdb73063ad9")
 		)
@@ -8880,6 +9545,33 @@
 			)
 		)
 		(property "Description" "Resistor"
+			(at 236.22 154.94 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C17609"
+			(at 236.22 154.94 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "UNI-ROYAL(Uniroyal Elec)"
+			(at 236.22 154.94 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "0805W8F3241T5E"
 			(at 236.22 154.94 0)
 			(effects
 				(font
@@ -8958,6 +9650,33 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C13585"
+			(at 293.37 138.43 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "Samsung Electro-Mechanics"
+			(at 293.37 138.43 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "CL31A106KBHNNNE"
+			(at 293.37 138.43 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "a737f92a-38f7-4b2a-b43e-a6ccabba1369")
 		)
@@ -9028,6 +9747,33 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C147767"
+			(at 213.36 142.24 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "PANASONIC"
+			(at 213.36 142.24 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "10TPE220ML"
+			(at 213.36 142.24 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "2"
 			(uuid "f2875711-5505-45ab-aadc-d3b8c7d15fd0")
 		)
@@ -9090,6 +9836,33 @@
 			)
 		)
 		(property "Description" "Resistor"
+			(at 229.87 185.42 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C17408"
+			(at 229.87 185.42 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "UNI-ROYAL(Uniroyal Elec)"
+			(at 229.87 185.42 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "0805W8F1000T5E"
 			(at 229.87 185.42 0)
 			(effects
 				(font
@@ -9226,6 +9999,33 @@
 			)
 		)
 		(property "Description" ""
+			(at 326.39 144.78 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C9864"
+			(at 326.39 144.78 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "Texas Instruments"
+			(at 326.39 144.78 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "TPS5430DDAR"
 			(at 326.39 144.78 0)
 			(effects
 				(font
@@ -9455,6 +10255,33 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C22463824"
+			(at 205.74 196.85 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "TECHFUSE"
+			(at 205.74 196.85 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "SL0630-150M"
+			(at 205.74 196.85 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "510d174c-94be-4179-b0e8-bbedf2a61675")
 		)
@@ -9591,6 +10418,33 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C17408"
+			(at 402.59 66.04 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "UNI-ROYAL(Uniroyal Elec)"
+			(at 402.59 66.04 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "0805W8F1000T5E"
+			(at 402.59 66.04 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "b4537986-ff9e-4cfe-ac41-b5ab5823613b")
 		)
@@ -9651,6 +10505,33 @@
 		)
 		(property "Description" "Unpolarized capacitor"
 			(at 179.07 200.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C1710"
+			(at 179.07 200.66 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "Samsung Electro-Mechanics"
+			(at 179.07 200.66 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "CL21B103KBANNNC"
+			(at 179.07 200.66 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -9861,6 +10742,33 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C9864"
+			(at 153.67 203.2 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "Texas Instruments"
+			(at 153.67 203.2 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "TPS5430DDAR"
+			(at 153.67 203.2 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "3"
 			(uuid "1194f7fc-756e-47d8-86cd-bcdaaa030adc")
 		)
@@ -9991,7 +10899,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Diodes:SS34_DO214AB"
+		(property "Footprint" "Diodes:SMA_L4.3-W2.6-LS5.2-RD"
 			(at 365.76 143.51 0)
 			(effects
 				(font
@@ -10018,8 +10926,8 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Device" "D"
-			(at 365.76 143.51 0)
+		(property "LCSC Part #" "C8678"
+			(at 365.76 143.51 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10027,8 +10935,17 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Pins" "1=K 2=A"
-			(at 365.76 143.51 0)
+		(property "Manufacturer" "MDD(Microdiode Semiconductor)"
+			(at 365.76 143.51 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "SS34"
+			(at 365.76 143.51 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10238,6 +11155,33 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C13585"
+			(at 120.65 196.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "Samsung Electro-Mechanics"
+			(at 120.65 196.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "CL31A106KBHNNNE"
+			(at 120.65 196.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "29183edd-4935-4805-9ebd-0dde7f2f9c25")
 		)
@@ -10300,6 +11244,33 @@
 			)
 		)
 		(property "Description" "Resistor"
+			(at 403.86 127 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C17408"
+			(at 403.86 127 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "UNI-ROYAL(Uniroyal Elec)"
+			(at 403.86 127 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "0805W8F1000T5E"
 			(at 403.86 127 0)
 			(effects
 				(font
@@ -10483,7 +11454,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Diodes:SS34_DO214AB"
+		(property "Footprint" "Diodes:SMA_L4.3-W2.6-LS5.2-RD"
 			(at 365.76 82.55 0)
 			(effects
 				(font
@@ -10510,8 +11481,8 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Device" "D"
-			(at 365.76 82.55 0)
+		(property "LCSC Part #" "C8678"
+			(at 365.76 82.55 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10519,8 +11490,17 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Pins" "1=K 2=A"
-			(at 365.76 82.55 0)
+		(property "Manufacturer" "MDD(Microdiode Semiconductor)"
+			(at 365.76 82.55 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "SS34"
+			(at 365.76 82.55 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10588,6 +11568,33 @@
 		)
 		(property "Description" "Unpolarized capacitor"
 			(at 351.79 81.28 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C1710"
+			(at 351.79 81.28 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "Samsung Electro-Mechanics"
+			(at 351.79 81.28 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "CL21B103KBANNNC"
+			(at 351.79 81.28 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10665,6 +11672,33 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C147767"
+			(at 387.35 81.28 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "PANASONIC"
+			(at 387.35 81.28 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "10TPE220ML"
+			(at 387.35 81.28 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "2"
 			(uuid "a8a4f2a3-a9d9-44ce-b87c-4fea3738db60")
 		)
@@ -10685,7 +11719,7 @@
 		(at 124.46 259.08 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -10725,6 +11759,24 @@
 			)
 		)
 		(property "Description" "Generic connector, double row, 02x03, odd/even pin numbering scheme (row 1 odd numbers, row 2 even numbers), script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 124.46 259.08 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" ""
+			(at 124.46 259.08 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" ""
 			(at 124.46 259.08 0)
 			(effects
 				(font
@@ -10788,7 +11840,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Diodes:SS34_DO214AB"
+		(property "Footprint" "Diodes:SMA_L4.3-W2.6-LS5.2-RD"
 			(at 193.04 201.93 0)
 			(effects
 				(font
@@ -10815,8 +11867,8 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Device" "D"
-			(at 193.04 201.93 0)
+		(property "LCSC Part #" "C8678"
+			(at 193.04 201.93 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10824,8 +11876,17 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Pins" "1=K 2=A"
-			(at 193.04 201.93 0)
+		(property "Manufacturer" "MDD(Microdiode Semiconductor)"
+			(at 193.04 201.93 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "SS34"
+			(at 193.04 201.93 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10961,6 +12022,33 @@
 			)
 		)
 		(property "Description" "Resistor"
+			(at 231.14 127 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C17408"
+			(at 231.14 127 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "UNI-ROYAL(Uniroyal Elec)"
+			(at 231.14 127 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "0805W8F1000T5E"
 			(at 231.14 127 0)
 			(effects
 				(font
@@ -11105,6 +12193,33 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C17414"
+			(at 236.22 81.28 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "UNI-ROYAL(Uniroyal Elec)"
+			(at 236.22 81.28 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "0805W8F1002T5E"
+			(at 236.22 81.28 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "e6e2e505-8d0c-464f-beee-e1665c78e55b")
 		)
@@ -11241,8 +12356,26 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Pins" "1=K 2=A"
-			(at 231.14 134.62 0)
+		(property "LCSC Part #" "C84256"
+			(at 231.14 134.62 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "Foshan NationStar Optoelectronics"
+			(at 231.14 134.62 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "NCD0805R1"
+			(at 231.14 134.62 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11320,6 +12453,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" ""
+			(at 133.35 41.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" ""
+			(at 133.35 41.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "4be55e03-ae20-4e7d-b2ff-02517299df68")
 		)
@@ -11379,6 +12530,33 @@
 			)
 		)
 		(property "Description" "Polarized capacitor"
+			(at 214.63 200.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C147767"
+			(at 214.63 200.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "PANASONIC"
+			(at 214.63 200.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "10TPE220ML"
 			(at 214.63 200.66 0)
 			(effects
 				(font
@@ -11448,6 +12626,33 @@
 		)
 		(property "Description" "Inductor"
 			(at 378.46 138.43 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C22463824"
+			(at 378.46 138.43 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "TECHFUSE"
+			(at 378.46 138.43 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "SL0630-150M"
+			(at 378.46 138.43 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11723,8 +12928,26 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Pins" "1=K 2=A"
-			(at 402.59 73.66 0)
+		(property "LCSC Part #" "C84256"
+			(at 402.59 73.66 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "Foshan NationStar Optoelectronics"
+			(at 402.59 73.66 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "NCD0805R1"
+			(at 402.59 73.66 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11775,7 +12998,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Diodes:SS34_DO214AB"
+		(property "Footprint" "Diodes:SMA_L4.3-W2.6-LS5.2-RD"
 			(at 191.77 143.51 0)
 			(effects
 				(font
@@ -11802,8 +13025,8 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Device" "D"
-			(at 191.77 143.51 0)
+		(property "LCSC Part #" "C8678"
+			(at 191.77 143.51 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11811,8 +13034,17 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Pins" "1=K 2=A"
-			(at 191.77 143.51 0)
+		(property "Manufacturer" "MDD(Microdiode Semiconductor)"
+			(at 191.77 143.51 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "SS34"
+			(at 191.77 143.51 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12014,6 +13246,33 @@
 			)
 		)
 		(property "Description" "Polarized capacitor"
+			(at 213.36 81.28 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C147767"
+			(at 213.36 81.28 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "PANASONIC"
+			(at 213.36 81.28 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer ID" "10TPE220ML"
 			(at 213.36 81.28 0)
 			(effects
 				(font
