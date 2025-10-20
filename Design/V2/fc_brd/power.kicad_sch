@@ -9748,7 +9748,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC Part #" "C2907032"
+		(property "LCSC Part #" "C15849"
 			(at 222.25 191.77 0)
 			(effects
 				(font
@@ -10511,7 +10511,7 @@
 		(at 132.08 36.83 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -13358,7 +13358,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC Part #" "C2907032"
+		(property "LCSC Part #" "C15849"
 			(at 184.15 267.97 0)
 			(effects
 				(font
@@ -13744,7 +13744,7 @@
 		(at 88.9 38.1 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -15717,7 +15717,7 @@
 		(at 49.53 39.37 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
@@ -16492,7 +16492,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Lib:MPZ1005S121HT000"
+		(property "Footprint" "Inductor_SMD:L_0603_1608Metric_Pad1.05x0.95mm_HandSolder"
 			(at 215.9 189.738 90)
 			(effects
 				(font
@@ -16501,7 +16501,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "MPZ1005S121HT000"
+		(property "Datasheet" "BLM18PG121SN1D"
 			(at 215.9 187.96 0)
 			(effects
 				(font
@@ -16510,7 +16510,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "120 Ohms @ 100 MHz 1 Power Line Ferrite Bead 0402 2A 55mOhm"
+		(property "Description" "120Ω@100MHz 2A 50mΩ"
 			(at 215.9 187.96 0)
 			(effects
 				(font
@@ -16537,7 +16537,7 @@
 				(hide yes)
 			)
 		)
-		(property "PACKAGE_TYPE" "SMD 0402"
+		(property "PACKAGE_TYPE" "SMD 0603"
 			(at 215.9 187.96 90)
 			(effects
 				(font
