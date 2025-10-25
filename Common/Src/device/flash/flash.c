@@ -87,8 +87,8 @@ STATIC_TESTABLE_DECL eSTATUS_t FlashReset (vFlash_t* pFlash) {
     bool success = FlashWaitWriteInProgress (pFlash, 1000U);
     RETURN_IF (success == false, eSTATUS_TIMEOUT, "timeout waiting for flash not busy");
 
-    uint8_t cmd      = W25NO1GW_INSTR_DEV_RESET;
-    eSTATUS_t status = FlashWrite_ (pFlash, &cmd, 1);
+    // uint8_t cmd = W25NO1GW_INSTR_DEV_RESET;
+    // eSTATUS_t status = FlashWrite_ (pFlash, &cmd, 1);
     DelayMicroseconds (1000U); // Wait for 1ms after reset command
 
     return eSTATUS_SUCCESS;
@@ -110,7 +110,7 @@ STATIC_TESTABLE_DECL eSTATUS_t FlashStartProgram (vFlash_t* pFlash, uint16_t col
         return eSTATUS_FAILURE;
     }
     eSTATUS_t status     = eSTATUS_SUCCESS;
-    uint8_t upperColAddr = (uint8_t)((columnAddr >> 8U) & 0xFFU);
+    uint8_t upperColAddr = (uint8_t)(((uint32_t)columnAddr >> 8U) & 0xFFU);
     uint8_t lowerColAddr = (uint8_t)(columnAddr & 0xFFU);
     uint8_t startCmd[]   = { W25NO1GW_INSTR_PROGRAM_DATA_LOAD, upperColAddr, lowerColAddr };
     BUS_TRANSACTIONS_2WRITES (&status, pFlash->bus, startCmd, sizeof (startCmd), pData, size);
@@ -119,7 +119,7 @@ STATIC_TESTABLE_DECL eSTATUS_t FlashStartProgram (vFlash_t* pFlash, uint16_t col
 
 STATIC_TESTABLE_DECL eSTATUS_t FlashExecuteProgram (vFlash_t* pFlash, uint16_t pageAddr) {
 
-    uint8_t upperPageAddr = (uint8_t)((pageAddr >> 8U) & 0xFFU);
+    uint8_t upperPageAddr = (uint8_t)(((uint32_t)pageAddr >> 8U) & 0xFFU);
     uint8_t lowerPageAddr = (uint8_t)(pageAddr & 0xFFU);
     uint8_t execCmd[]     = { W25NO1GW_INSTR_PROGRAM_EXECUTE, 0x00, upperPageAddr, lowerPageAddr };
     return FlashWrite_ (pFlash, execCmd, sizeof (execCmd));

@@ -1,6 +1,8 @@
 #ifndef PERIPHERAL_BUS_BUS_CORE_H
 #define PERIPHERAL_BUS_BUS_CORE_H
 
+#include "common.h"
+#include "conf/conf.h"
 #include <stdint.h>
 #include <string.h>
 
@@ -16,10 +18,10 @@ enum {
 
 typedef uint8_t eBUS_CALLBACK_SUB_ID_t;
 enum {
-    eBUS_CALLBACK_SUB_ID_RX_COMPLETE   = (1 << 0U),
-    eBUS_CALLBACK_SUB_ID_RX_FIFO_FULL  = (1 << 1U),
-    eBUS_CALLBACK_SUB_ID_TX_COMPLETE   = (1 << 2U),
-    eBUS_CALLBACK_SUB_ID_TX_FIFO_EMPTY = (1 << 3U),
+    eBUS_CALLBACK_SUB_ID_RX_COMPLETE   = (1U << 0U),
+    eBUS_CALLBACK_SUB_ID_RX_FIFO_FULL  = (1U << 1U),
+    eBUS_CALLBACK_SUB_ID_TX_COMPLETE   = (1U << 2U),
+    eBUS_CALLBACK_SUB_ID_TX_FIFO_EMPTY = (1U << 3U),
 };
 
 #define BUS_MAKE_SUB_CB_ID(...)   VALUES (OR_, __VA_ARGS__)

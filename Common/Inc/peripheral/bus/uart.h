@@ -17,8 +17,6 @@ enum {
     eUART_BAUD_230400,
 };
 
-// typedef struct UARTBus_t UARTBus_t;
-
 typedef struct {
     DeviceBoardConf_t deviceBoardConf;
     BusBoardConf_t busBoardConf;
@@ -56,12 +54,6 @@ eSTATUS_t UART_READ_BLOCKING(void* pCtx, eDEVICE_ID_t deviceId, uint8_t* pData, 
 eSTATUS_t UART_WRITE_BLOCKING(void* pCtx, eDEVICE_ID_t deviceId, uint8_t const* pData, size_t size);
 eSTATUS_t UART_READ_IT(void* pCtx, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size);
 eSTATUS_t UART_REGISTER_CALLBACK(void* pCtx, eDEVICE_ID_t deviceId, BusCallback_t callback);
-
-// #define UART_REGISTER_CALLBACK(BUS_ID, CB_ID, CALLBACK) \
-//     UARTRegisterCallback (UARTGetBusById (BUS_ID), (CB_ID), (CALLBACK))
-
-// #define UART_ENABLE_INTERRUPTS(BUS_ID, PRIORITY) \
-//     UARTEnableInterrupts (UARTGetBusById (BUS_ID), (PRIORITY))
 
 // clang-format on
 

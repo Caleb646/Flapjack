@@ -12,8 +12,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#define CMD_TYPE_VALID(CMD_TYPE) \
-    ((CMD_TYPE) != eCMD_NULL && (CMD_TYPE) < eNUMBER_OF_CMD_TYPES)
+#define CMD_TYPE_VALID(CMD_TYPE) ((CMD_TYPE) != eCMD_NULL && (CMD_TYPE) < eNUMBER_OF_CMD_TYPES)
 #define OP_CMD2KEY(CMD_TYPE, cSTATE, nSTATE) \
     ((((CMD_TYPE) * 31U) + (uint32_t)(cSTATE)) * 31U + (uint32_t)(nSTATE))
 #define PRODUCER_ID            CM4_CPUID
@@ -30,7 +29,7 @@ QUEUE_DEFINE_STATIC (RawCommand, DefaultCommand, COMMAND_QUEUE_CAPACITY, true);
 
 /* Shared global variables */
 QUEUE_DEFINE_STATIC_SHARED (SharedCommand, DefaultCommand, COMMAND_QUEUE_CAPACITY);
-UMAP_DEFINE_STATIC_SHARED (CmdHandlers, eCMD_t, CmdHandlerFn_t, eNUMBER_OF_CMD_TYPES * 5U);
+// UMAP_DEFINE_STATIC_SHARED (CmdHandlers, eCMD_t, CmdHandlerFn_t, eNUMBER_OF_CMD_TYPES * 5U);
 
 #ifndef UNIT_TEST
 
@@ -55,23 +54,23 @@ static bool ControlGetNewCmd (DefaultCommand* pOutCmd);
 //     UARTRead_IT (busId, ga_UartInterruptBuffer, sizeof (DefaultCommand));
 // }
 
-STATIC_TESTABLE_DECL CmdHandlerFn_t ControlGetHandler (DefaultCommand defCmd) {
+// STATIC_TESTABLE_DECL CmdHandlerFn_t ControlGetHandler (DefaultCommand defCmd) {
 
-    eCMD_t cmdType = defCmd.header.commandType;
-    if (cmdType == eCMD_CHANGE_OP_STATE) {
+//     eCMD_t cmdType = defCmd.header.commandType;
+//     if (cmdType == eCMD_CHANGE_OP_STATE) {
 
-        vFCState_t const* pState = FCStateGetActiveState ();
-        ChangeOpStateCmd cmd     = *(ChangeOpStateCmd*)&defCmd;
-        uint16_t cState          = pState->opState;
-        uint16_t nState          = cmd.requestedState;
-        uint32_t key             = OP_CMD2KEY (cmdType, cState, nState);
-        CmdHandlerFn_t* pHandler = CmdHandlersUMap_FindPtr (&key);
-        return pHandler ? *pHandler : NULL;
-    }
+//         vFCState_t const* pState = FCStateGetActiveState ();
+//         ChangeOpStateCmd cmd     = *(ChangeOpStateCmd*)&defCmd;
+//         uint16_t cState          = pState->opState;
+//         uint16_t nState          = cmd.requestedState;
+//         uint32_t key             = OP_CMD2KEY (cmdType, cState, nState);
+//         CmdHandlerFn_t* pHandler = CmdHandlersUMap_FindPtr (&key);
+//         return pHandler ? *pHandler : NULL;
+//     }
 
-    CmdHandlerFn_t* pHandler = CmdHandlersUMap_FindPtr (&cmdType);
-    return pHandler ? *pHandler : NULL;
-}
+//     CmdHandlerFn_t* pHandler = CmdHandlersUMap_FindPtr (&cmdType);
+//     return pHandler ? *pHandler : NULL;
+// }
 
 STATIC_TESTABLE_DECL eSTATUS_t ControlInit_Producer (void) {
 
@@ -84,10 +83,10 @@ STATIC_TESTABLE_DECL eSTATUS_t ControlInit_Producer (void) {
 
 STATIC_TESTABLE_DECL eSTATUS_t ControlInit_Shared (void) {
 
-    if (CmdHandlersUMap_Init () == false) {
-        LOG_ERROR ("Failed to initialize command handlers map");
-        return eSTATUS_FAILURE;
-    }
+    // if (CmdHandlersUMap_Init () == false) {
+    //     LOG_ERROR ("Failed to initialize command handlers map");
+    //     return eSTATUS_FAILURE;
+    // }
 
     if (SharedCommandQueue_Init () != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize shared command queue");
@@ -232,27 +231,34 @@ eSTATUS_t ControlProcess_Cmds (void) {
     eCMD_t cmdType = cmd.header.commandType;
     RETURN_IF (CMD_TYPE_VALID (cmdType) == false, eSTATUS_FAILURE, "Invalid command type: %d", cmdType);
 
-    CmdHandlerFn_t handler = ControlGetHandler (cmd);
-    RETURN_IF_NULL (handler, eSTATUS_FAILURE, "No handler registered for command type: %d", cmdType);
+    // CmdHandlerFn_t handler = ControlGetHandler (cmd);
+    // RETURN_IF_NULL (handler, eSTATUS_FAILURE, "No handler registered for command type: %d", cmdType);
+    // RETURN_IF (handler (cmd) != eSTATUS_SUCCESS, eSTATUS_FAILURE, "Failed to process command");
 
-    RETURN_IF (handler (cmd) != eSTATUS_SUCCESS, eSTATUS_FAILURE, "Failed to process command");
     return eSTATUS_SUCCESS;
 }
 
 bool ControlRegisterHandler (eCMD_t cmdType, SubCommand_t subCmd, CmdHandlerFn_t handler) {
 
-    RETURN_IF (CMD_TYPE_VALID (cmdType) == false, false, "Invalid command type: %d", cmdType);
-    RETURN_IF (handler == NULL, false, "Invalid handler for command type: %d", cmdType);
+    FJ_UNUSED (cmdType);
+    FJ_UNUSED (subCmd);
+    FJ_UNUSED (handler);
 
-    uint32_t key = 0;
-    if (cmdType == eCMD_CHANGE_OP_STATE) {
-        uint16_t cState = subCmd.opstate.cState;
-        uint16_t nState = subCmd.opstate.nState;
-        key             = OP_CMD2KEY (cmdType, cState, nState);
-    } else {
-        key = cmdType;
-    }
-    return CmdHandlersUMap_InsertByValue (key, handler);
+    return true;
+
+    // TODO: re-implement. UMAP doesnt support function pointers
+    // RETURN_IF (CMD_TYPE_VALID (cmdType) == false, false, "Invalid command type: %d", cmdType);
+    // RETURN_IF (handler == NULL, false, "Invalid handler for command type: %d", cmdType);
+
+    // uint32_t key = 0;
+    // if (cmdType == eCMD_CHANGE_OP_STATE) {
+    //     uint16_t cState = subCmd.opstate.cState;
+    //     uint16_t nState = subCmd.opstate.nState;
+    //     key             = OP_CMD2KEY (cmdType, cState, nState);
+    // } else {
+    //     key = cmdType;
+    // }
+    // return CmdHandlersUMap_InsertByValue (key, handler);
 }
 
 char const* ControlCmdType2Char (eCMD_t commandType) {

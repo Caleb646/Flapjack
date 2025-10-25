@@ -58,9 +58,11 @@ static SHARED_MEM_SECTION UARTBus_t gBuses[eUART_BUS_ID_MAX] = { 0 };
 static USART_TypeDef* UARTGetInstanceById (eBUS_ID_t busId) {
 
     switch (busId) {
+    // NOLINTBEGIN(performance-no-int-to-ptr)
     case eUART_1_BUS_ID: return USART1;
     case eUART_2_BUS_ID: return USART2;
     case eUART_3_BUS_ID: return USART3;
+    // NOLINTEND(performance-no-int-to-ptr)
     default: return NULL;
     }
 }
@@ -73,10 +75,6 @@ static vUARTBus_t* UARTGetBusByInstance (USART_TypeDef* instance) {
         }
     }
     return NULL;
-}
-
-static void UARTHandleCallback (vUARTBus_t* pBus, eBUS_CALLBACK_ID_t cbId, eBUS_CALLBACK_SUB_ID_t subId) {
-    BUS_DO_CALLBACK (&pBus->callbacks[cbId], subId);
 }
 
 /*
@@ -127,7 +125,7 @@ void HAL_UART_ErrorCallback (UART_HandleTypeDef* huart) {
         RCC_PeriphCLKInitTypeDef PeriphClkInitStruct  = { 0 };            \
         PeriphClkInitStruct.PeriphClockSelection      = PERIPHCLK;        \
         PeriphClkInitStruct.Usart234578ClockSelection = CLKSELECTION;     \
-        if (BUS_ID == eUART_1_BUS_ID || BUS_ID == eUART_6_BUS_ID) {       \
+        if ((BUS_ID) == eUART_1_BUS_ID || (BUS_ID) == eUART_6_BUS_ID) {   \
             PeriphClkInitStruct.Usart234578ClockSelection = 0;            \
             PeriphClkInitStruct.Usart16ClockSelection     = CLKSELECTION; \
         }                                                                 \
@@ -139,6 +137,7 @@ void HAL_UART_ErrorCallback (UART_HandleTypeDef* huart) {
 static eSTATUS_t UARTClockInit (eBUS_ID_t busId) {
 
     eSTATUS_t status = eSTATUS_SUCCESS;
+    // NOLINTBEGIN(performance-no-int-to-ptr)
     if (busId == eUART_1_BUS_ID) {
         __HAL_RCC_USART1_CLK_ENABLE ();
         UART_CLOCK_INIT (&status, busId, RCC_PERIPHCLK_USART1, RCC_USART16CLKSOURCE_D2PCLK2);
@@ -154,11 +153,13 @@ static eSTATUS_t UARTClockInit (eBUS_ID_t busId) {
         UART_CLOCK_INIT (&status, busId, RCC_PERIPHCLK_USART3, RCC_USART234578CLKSOURCE_D2PCLK1);
         return status;
     }
+    // NOLINTEND(performance-no-int-to-ptr)
     return eSTATUS_FAILURE;
 }
 
 static eSTATUS_t UARTInitGPIO (vUARTBus_t* pBus, UARTInitConf_t conf) {
 
+    FJ_UNUSED (pBus);
     eSTATUS_t status = eSTATUS_SUCCESS;
 
     eDEVICE_ID_t deviceId               = conf.deviceBoardConf.deviceId;
@@ -263,6 +264,7 @@ error:
 
 eSTATUS_t UARTRead_Blocking (vUARTBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size) {
 
+    FJ_UNUSED (deviceId);
     if (UART_VALID (pBus) == false || pData == NULL || size == 0) {
         return eSTATUS_FAILURE;
     }
@@ -276,6 +278,7 @@ eSTATUS_t UARTRead_Blocking (vUARTBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t* p
 
 eSTATUS_t UARTWrite_Blocking (vUARTBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t const* pData, size_t size) {
 
+    FJ_UNUSED (deviceId);
     if (UART_VALID (pBus) == false || pData == NULL || size == 0) {
         return eSTATUS_FAILURE;
     }
@@ -289,6 +292,7 @@ eSTATUS_t UARTWrite_Blocking (vUARTBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t c
 
 eSTATUS_t UARTRead_IT (vUARTBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size) {
 
+    FJ_UNUSED (deviceId);
     if (UART_VALID (pBus) == false || pData == NULL || size == 0) {
         return eSTATUS_FAILURE;
     }
@@ -302,6 +306,7 @@ eSTATUS_t UARTRead_IT (vUARTBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t* pData, 
 
 eSTATUS_t UARTRegisterCallback (vUARTBus_t* pBus, eDEVICE_ID_t deviceId, BusCallback_t callback) {
 
+    FJ_UNUSED (deviceId);
     if (UART_VALID (pBus) == false || callback.Callback == NULL ||
         BUS_CALLBACK_ID_VALID (callback.data.cbId) == false) {
         return eSTATUS_FAILURE;

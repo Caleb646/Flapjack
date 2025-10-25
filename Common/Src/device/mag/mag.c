@@ -25,8 +25,8 @@ static SHARED_MEM_SECTION uint8_t gControlRegisters[NCONTROL_REGISTERS] = { 0 };
 
 STATIC_TESTABLE_DECL eMAG_STATUS_t MagRead (vMag_t* pMag, uint8_t reg, uint8_t* pData, uint16_t size) {
 
-    eBUS_ID_t busId       = pMag->busId;
-    eDEVICE_ID_t deviceId = pMag->deviceId;
+    // eBUS_ID_t busId       = pMag->busId;
+    // eDEVICE_ID_t deviceId = pMag->deviceId;
 
     size_t totalSize = size + pMag->nBusDummyBytes + 1U;
     if (totalSize > MAX_BUFFER_SIZE) {
@@ -47,11 +47,11 @@ STATIC_TESTABLE_DECL eMAG_STATUS_t MagRead (vMag_t* pMag, uint8_t reg, uint8_t* 
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL eMAG_STATUS_t MagWrite (vMag_t* pMag, uint8_t reg, uint8_t* pData, uint16_t size) {
+STATIC_TESTABLE_DECL eMAG_STATUS_t MagWrite (vMag_t* pMag, uint8_t reg, uint8_t const* pData, uint16_t size) {
 
-    eBUS_ID_t busId       = pMag->busId;
-    eDEVICE_ID_t deviceId = pMag->deviceId;
-    uint16_t totalSize    = size + 1U;
+    // eBUS_ID_t busId       = pMag->busId;
+    // eDEVICE_ID_t deviceId = pMag->deviceId;
+    uint16_t totalSize = size + 1U;
 
     if (totalSize > MAX_BUFFER_SIZE) {
         LOG_ERROR ("Write size exceeds max buffer size");
@@ -77,7 +77,7 @@ STATIC_TESTABLE_DECL bool MagControlRegWrite (vMag_t* pMag, uint8_t reg, uint8_t
     *pValue |= bitMask;
     if (doWrite == true) {
         if (MagWrite (pMag, reg, pValue, 1U) != eSTATUS_SUCCESS) {
-            *pValue &= ~bitMask; // unset the bit on failure
+            *pValue &= ~(uint32_t)bitMask; // unset the bit on failure
             LOG_ERROR ("Failed to write MAG control register");
             return false;
         }
@@ -124,7 +124,7 @@ STATIC_TESTABLE_DECL bool MagUpdateRawData (vMag_t* pMag) {
         return false;
     }
 
-    uint32_t x1, x2, y1, y2, z1, z2, xyz;
+    uint32_t x1 = 0, x2 = 0, y1 = 0, y2 = 0, z1 = 0, z2 = 0, xyz = 0;
     x1 = pXYZ[0], x2 = pXYZ[1];
     y1 = pXYZ[2], y2 = pXYZ[3];
     z1 = pXYZ[4], z2 = pXYZ[5];
@@ -139,6 +139,7 @@ STATIC_TESTABLE_DECL bool MagUpdateRawData (vMag_t* pMag) {
 
 STATIC_TESTABLE_DECL Vec3f MagRaw2NormedGauss (vMag_t const* pMag, Vec3u raw, bool doNormalization) {
 
+    FJ_UNUSED (pMag);
     Vec3f output = { 0 };
     output.x     = ((float)raw.x) - (float)MAG_SIGNED_POS_MAX;
     output.y     = ((float)raw.y) - (float)MAG_SIGNED_POS_MAX;

@@ -11,7 +11,11 @@ Checks:          "*,
                   -altera-struct-pack-align,
                   -cppcoreguidelines-avoid-non-const-global-variables,
                   -cppcoreguidelines-macro-to-enum,
-                  -modernize-macro-to-enum
+                  -modernize-macro-to-enum,
+                  -llvmlibc-restrict-system-libc-headers,
+                  -google-readability-todo,
+                  -bugprone-easily-swappable-parameters,
+                  -readability-isolate-declaration
             "
 # WarningsAsErrors: true
 # HeaderFilterRegex: ''

@@ -23,6 +23,7 @@
 
 #define MICRO_DELAY_USE_SYSTICK  0
 
+#define FJ_UNUSED(x)             (void)(x)
 #define STATIC_ASSERT(expr, msg) static_assert ((expr), msg)
 #define ASSERT(expr)             assert ((expr))
 #define MASSERT(expr, __VARGS__) assert ((expr))

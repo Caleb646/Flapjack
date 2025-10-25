@@ -35,7 +35,7 @@ void GPSCallback (BusCallbackData_t data) {
         gSentenceReady              = false;
         gSentence[gSentenceIndex++] = gStartByte;
 
-        eSTATUS_t status = eSTATUS_SUCCESS;
+        // eSTATUS_t status = eSTATUS_SUCCESS;
         uint32_t timeout = 1000U;
         uint8_t byte     = 0;
         while (timeout-- > 0) {
@@ -64,7 +64,7 @@ error:
 
 eSTATUS_t GPSInit (GPSInitConf_t conf, GPS_t* pOutGPS) {
 
-    bool success     = true;
+    // bool success     = true;
     eSTATUS_t status = eSTATUS_SUCCESS;
 
     DeviceBoardConf_t deviceConf = conf.boardConf;
