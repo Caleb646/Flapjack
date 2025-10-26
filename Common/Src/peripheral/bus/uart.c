@@ -139,18 +139,18 @@ static eSTATUS_t UARTClockInit (eBUS_ID_t busId) {
     eSTATUS_t status = eSTATUS_SUCCESS;
     // NOLINTBEGIN(performance-no-int-to-ptr)
     if (busId == eUART_1_BUS_ID) {
-        __HAL_RCC_USART1_CLK_ENABLE ();
         UART_CLOCK_INIT (&status, busId, RCC_PERIPHCLK_USART1, RCC_USART16CLKSOURCE_D2PCLK2);
+        __HAL_RCC_USART1_CLK_ENABLE ();
         return status;
     }
     if (busId == eUART_2_BUS_ID) {
-        __HAL_RCC_USART2_CLK_ENABLE ();
         UART_CLOCK_INIT (&status, busId, RCC_PERIPHCLK_USART2, RCC_USART234578CLKSOURCE_D2PCLK1);
+        __HAL_RCC_USART2_CLK_ENABLE ();
         return status;
     }
     if (busId == eUART_3_BUS_ID) {
-        __HAL_RCC_USART3_CLK_ENABLE ();
         UART_CLOCK_INIT (&status, busId, RCC_PERIPHCLK_USART3, RCC_USART234578CLKSOURCE_D2PCLK1);
+        __HAL_RCC_USART3_CLK_ENABLE ();
         return status;
     }
     // NOLINTEND(performance-no-int-to-ptr)

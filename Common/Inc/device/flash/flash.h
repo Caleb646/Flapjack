@@ -22,9 +22,12 @@ typedef Flash_t vFlash_t;
 
 // clang-format off
 
-vFlash_t* FlashGetActiveDevice(void);
 eSTATUS_t FlashInit (FlashInitConf_t conf, Flash_t* pOutFlash);
+eSTATUS_t FlashStart (vFlash_t* pFlash);
 eSTATUS_t FlashWrite (vFlash_t* pFlash, uint32_t addr, uint8_t const* pData, uint32_t size, uint32_t* pBytesWritten);
+
+vFlash_t const* FlashGetActiveDevice(void);
+vFlash_t* FlashGetMutableActiveDevice(void);
 
 // clang-format on
 

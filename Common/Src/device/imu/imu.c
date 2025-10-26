@@ -894,6 +894,7 @@ eSTATUS_t IMUInit (IMUInitConf_t conf, IMU_t* pOutIMU, BusVTable_t* pBusOverride
         pIMU->usingEXTIInterrupt = true;
     }
 
+    pIMU->isInitialized = true;
     return eSTATUS_SUCCESS;
 error:
     memset (pIMU, 0, sizeof (vIMU_t));
@@ -938,28 +939,26 @@ STATIC_TESTABLE_DECL UNUSED_FN_DECL bool IMUUpdatefromINT (vIMU_t* pIMU) {
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t IMUUpdatefromPolling (vIMU_t* pIMU) {
+STATIC_TESTABLE_DECL bool IMUUpdatefromPolling (vIMU_t* pIMU) {
 
-    RETURN_IF (IMU_VALID (pIMU) == false, (eSTATUS_t)eIMU_NULL_PTR, "invalid imu pointer");
-    eSTATUS_t status = eSTATUS_SUCCESS;
-    bool accelRdy    = false;
-    bool gyroRdy     = false;
-    int32_t timeout  = 1000; // 1000ms
+    bool accelRdy   = false;
+    bool gyroRdy    = false;
+    int32_t timeout = 1000; // 1000ms
     while (timeout-- > 0) {
 
         uint16_t intStatus = 0; // BMI3_REG_STATUS
-        status             = IMUGetStatusReg (pIMU, &intStatus);
-        RETURN_IF (STATUS_FAIL (status), eSTATUS_FAILURE, "Failed to read vIMU_t status register");
+        eSTATUS_t status   = IMUGetStatusReg (pIMU, &intStatus);
+        RETURN_IF (STATUS_FAIL (status), false, "Failed to read vIMU_t status register");
 
         if (BIT_ISSET (intStatus, STATUS_ACCEL_DATA_RDY_BIT) == true && accelRdy == false) {
             status = IMUUpdateRawAccel (pIMU);
-            RETURN_IF (STATUS_FAIL (status), eSTATUS_FAILURE, "Failed to update accelerometer data");
+            RETURN_IF (STATUS_FAIL (status), false, "Failed to update accelerometer data");
             accelRdy = true;
         }
 
         if (BIT_ISSET (intStatus, STATUS_GYRO_DATA_RDY_BIT) == true && gyroRdy == false) {
             status = IMUUpdateRawGyro (pIMU);
-            RETURN_IF (STATUS_FAIL (status), eSTATUS_FAILURE, "Failed to update gyroscope data");
+            RETURN_IF (STATUS_FAIL (status), false, "Failed to update gyroscope data");
             gyroRdy = true;
         }
         if (accelRdy && gyroRdy) {
@@ -968,7 +967,7 @@ STATIC_TESTABLE_DECL eSTATUS_t IMUUpdatefromPolling (vIMU_t* pIMU) {
         DelayMicroseconds (10);
     }
 
-    return eSTATUS_SUCCESS;
+    return true;
 }
 
 eSTATUS_t IMUUpdate (vIMU_t* pIMU, bool forcePolling, Vec3f* pOutputAccel, Vec3f* pOutputGyro) {
@@ -1100,7 +1099,16 @@ eSTATUS_t IMUCompareConfs (IMUAccConf aconf, IMUGyroConf gconf, IMUAccConf aconf
     return eSTATUS_SUCCESS;
 }
 
-vIMU_t* IMUGetActiveDevice (void) {
+vIMU_t const* IMUGetActiveDevice (void) {
+
+    if (IMU_VALID (&gIMU) == false) {
+        LOG_ERROR ("No active valid IMU device");
+        return NULL;
+    }
+    return &gIMU;
+}
+
+vIMU_t* IMUGetMutableActiveDevice (void) {
 
     if (IMU_VALID (&gIMU) == false) {
         LOG_ERROR ("No active valid IMU device");

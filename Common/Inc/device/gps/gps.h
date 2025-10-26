@@ -36,6 +36,8 @@ typedef GPS_t vGPS_t;
 eSTATUS_t GPSInit (GPSInitConf_t conf, GPS_t* pOutGPS);
 eSTATUS_t GPSStart (vGPS_t* pGPS);
 eSTATUS_t GPSUpdate (vGPS_t* pGPS, GPSData_t* pOutData);
+vGPS_t const* GPSGetActiveDevice (void);
+vGPS_t* GPSGetMutableActiveDevice (void);
 
 
 #endif // DEVICE_GPS_GPS_H

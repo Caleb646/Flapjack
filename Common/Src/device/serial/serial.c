@@ -61,3 +61,31 @@ error:
     memset (pSerial, 0, sizeof (SerialDebug_t));
     return eSTATUS_FAILURE;
 }
+
+eSTATUS_t SerialDebugStart (vSerialDebug_t* pSerial) {
+
+    if (SERIAL_VALID (pSerial) == false) {
+        return eSTATUS_FAILURE;
+    }
+    return eSTATUS_SUCCESS;
+}
+
+vSerialDebug_t const* SerialDebugGetActiveDevice (void) {
+
+    if (SERIAL_VALID (&g_SerialDebug) == false) {
+        return NULL;
+    }
+    return &g_SerialDebug;
+}
+
+vSerialDebug_t* SerialDebugGetMutableActiveDevice (void) {
+
+    if (SERIAL_VALID (&g_SerialDebug) == false) {
+        return NULL;
+    }
+    return &g_SerialDebug;
+}
+
+vSerialDebug_t SerialDebugCopyOfActiveDevice (void) {
+    return g_SerialDebug;
+}

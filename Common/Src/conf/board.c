@@ -1,34 +1,25 @@
 #include "conf/board.h"
 
-// DeviceBoardConf_t* BoardConfGetDeviceById (eDEVICE_ID_t deviceId) {
+bool ge_isBoardConfInitialized = false;
+BoardConf_t ge_BoardConf       = { 0 };
 
-//     BoardConf_t const* pBoardConf = BoardConfGet ();
-//     for (uint32_t i = 0; i < pBoardConf->numDevices; ++i) {
-//         if (pBoardConf->pDeviceBoardConfs[i].deviceId == deviceId) {
-//             return &pBoardConf->pDeviceBoardConfs[i];
-//         }
-//     }
-//     return 0;
-// }
+BoardConf_t* BoardConfGet (void) {
 
-// ServoBoardConf_t* BoardConfGetServoById (eDEVICE_ID_t servoId) {
+    if (ge_isBoardConfInitialized == false) {
+        return 0;
+    }
+    return &ge_BoardConf;
+}
 
-//     BoardConf_t const* pBoardConf = BoardConfGet ();
-//     for (uint32_t i = 0; i < pBoardConf->numServos; ++i) {
-//         if (pBoardConf->pServoBoardConfs[i].servoId == servoId) {
-//             return &pBoardConf->pServoBoardConfs[i];
-//         }
-//     }
-//     return 0;
-// }
+DeviceBoardConf_t* BoardConfGetDeviceById (eDEVICE_ID_t deviceId) {
 
-// MotorBoardConf_t* BoardConfGetMotorById (eDEVICE_ID_t motorId) {
-
-//     BoardConf_t const* pBoardConf = BoardConfGet ();
-//     for (uint32_t i = 0; i < pBoardConf->numMotors; ++i) {
-//         if (pBoardConf->pMotorBoardConfs[i].motorId == motorId) {
-//             return &pBoardConf->pMotorBoardConfs[i];
-//         }
-//     }
-//     return 0;
-// }
+    if (ge_isBoardConfInitialized == false) {
+        return 0;
+    }
+    for (uint32_t i = 0; i < ge_BoardConf.numDevices; ++i) {
+        if (ge_BoardConf.ppDeviceBoardConfs[i]->deviceId == deviceId) {
+            return ge_BoardConf.ppDeviceBoardConfs[i];
+        }
+    }
+    return 0;
+}

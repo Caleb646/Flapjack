@@ -34,16 +34,17 @@
  */
 #include "mem/ring_buff.h"
 #include "common.h"
+#include <stdint.h>
 #include <string.h>
 
 /* Memory set and copy functions */
 #define BUF_MEMSET memset
 #define BUF_MEMCPY memcpy
 
-#define BUF_IS_VALID(b)                                              \
-    (                                                                \
-    (b) != NULL && (b)->magic1 == 0xDEADBEEF &&                      \
-    (b)->magic2 == ~0xDEADBEEF && (b)->buff != NULL && (b)->size > 0 \
+#define BUF_IS_VALID(b)                                                                            \
+    (                                                                                              \
+    (b) != NULL && (b)->magic1 == 0xDEADBEEF && (b)->magic2 == ~0xDEADBEEF && (b)->buff != NULL && \
+    (b)->size > 0                                                                                  \
     )
 #define BUF_MIN(x, y) ((x) < (y) ? (x) : (y))
 #define BUF_MAX(x, y) ((x) > (y) ? (x) : (y))
@@ -83,18 +84,18 @@ RINGBUFF_VOLATILE RingBuff* RingBuffCreate (void* pBuff, size_t size) {
     return pRingBuf;
 }
 
-uint8_t RingBuffInit (RINGBUFF_VOLATILE RingBuff* pBuff, void* pData, size_t size) {
+uint8_t RingBuffInit (void* pData, size_t size, RINGBUFF_VOLATILE RingBuff* pOutBuff) {
 
-    if (!BUF_IS_VALID (pBuff) || pData == NULL || size == 0) {
+    if (pOutBuff == NULL || pData == NULL || size == 0) {
         return 0;
     }
 
-    BUF_MEMSET ((void*)pBuff, 0, sizeof (RingBuff));
-    BUF_MEMSET ((void*)pData, 0, size);
-    pBuff->size   = size - sizeof (RingBuff);
-    pBuff->buff   = pData;
-    pBuff->magic1 = 0xDEADBEEF;
-    pBuff->magic2 = ~0xDEADBEEF;
+    BUF_MEMSET ((void*)pOutBuff, 0, sizeof (RingBuff));
+    BUF_MEMSET (pData, 0, size);
+    pOutBuff->size   = sizeof (RingBuff);
+    pOutBuff->buff   = (uint8_t*)pData;
+    pOutBuff->magic1 = 0xDEADBEEF;
+    pOutBuff->magic2 = ~0xDEADBEEF;
     return 1;
 }
 

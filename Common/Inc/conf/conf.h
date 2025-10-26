@@ -4,15 +4,16 @@
 #include "conf/ids.h"
 #include "hal.h"
 
-#define CONF_USE_MY_BOARD
+// #define CONF_USE_MY_BOARD
 
 #ifdef CONF_USE_MY_BOARD
-#include "conf/boards/my_board.h"
+#define BOARD_CONF_INIT() BoardConfInit_MyBoard ()
 #else
-#include "conf/boards/dev_board.h"
+#define BOARD_CONF_INIT() BoardConfInit_DevBoard ()
 #endif
 
 #define PRIMARY_LOGGER_ROLE                CM4_CPUID
+// #define PRIMARY_LOGGER_ROLE                CM7_CPUID
 #define LOGGER_SHOULD_BLOCK_ON_OVERWRITE   1U
 #define MS_PER_LOG_DATA_UPDATE             250U // 250 ms data update interval
 #define LOG_DATA_TYPE_ATTITUDE             "attitude"

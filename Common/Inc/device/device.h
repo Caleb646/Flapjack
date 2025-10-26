@@ -10,10 +10,6 @@
 #include <string.h>
 
 eSTATUS_t DeviceInitAll (BoardConf_t* pBoardConf);
-
-#define DEVICE_INIT_ALL(pSTATUS, pBOARD_CONF)     \
-    do {                                          \
-        *(pSTATUS) = DeviceInitAll (pBOARD_CONF); \
-    } while (0)
+eSTATUS_t DeviceStartAll (void);
 
 #endif // DEVICE_DEVICE_H

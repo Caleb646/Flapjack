@@ -35,10 +35,7 @@ enum {
 };
 
 typedef uint8_t IMU_ACC_BW;
-enum {
-    eIMU_ACC_BW_HALF    = BMI3_ACC_BW_ODR_HALF,
-    eIMU_ACC_BW_QUARTER = BMI3_ACC_BW_ODR_QUARTER
-};
+enum { eIMU_ACC_BW_HALF = BMI3_ACC_BW_ODR_HALF, eIMU_ACC_BW_QUARTER = BMI3_ACC_BW_ODR_QUARTER };
 
 typedef uint8_t IMU_ACC_AVG;
 enum {
@@ -81,10 +78,7 @@ enum {
 };
 
 typedef uint8_t IMU_GYRO_BW;
-enum {
-    eIMU_GYRO_BW_HALF    = BMI3_GYR_BW_ODR_HALF,
-    eIMU_GYRO_BW_QUARTER = BMI3_GYR_BW_ODR_HALF
-};
+enum { eIMU_GYRO_BW_HALF = BMI3_GYR_BW_ODR_HALF, eIMU_GYRO_BW_QUARTER = BMI3_GYR_BW_ODR_HALF };
 
 typedef uint8_t IMU_GYRO_AVG;
 enum {
@@ -235,10 +229,8 @@ eSTATUS_t IMUUpdateRawAccel (vIMU_t* pIMU);
 eSTATUS_t IMUSetAxesRemap (vIMU_t* pIMU, IMUAxesRemapConf remap);
 eSTATUS_t IMUSoftReset (vIMU_t* pIMU);
 eSTATUS_t IMUGetConf_ (vIMU_t* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf, uint8_t altConfFlag);
-eSTATUS_t
-IMUSetConf_ (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf, uint8_t altConfFlag);
-eSTATUS_t
-IMUCalibrate (vIMU_t* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSelfCalibResult* pResultOut);
+eSTATUS_t IMUSetConf_ (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf, uint8_t altConfFlag);
+eSTATUS_t IMUCalibrate (vIMU_t* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSelfCalibResult* pResultOut);
 eSTATUS_t IMUSetupInterrupts (vIMU_t const* pIMU);
 eSTATUS_t IMUEnableInterrupts (vIMU_t const* pIMU);
 eSTATUS_t IMUDisableInterrupts (vIMU_t const* pIMU);
@@ -257,7 +249,8 @@ eSTATUS_t IMUGetAltConf (vIMU_t* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf);
 eSTATUS_t IMUSetConf (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf);
 eSTATUS_t IMUSetAltConf (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf);
 eSTATUS_t IMUCompareConfs (IMUAccConf aconf, IMUGyroConf gconf, IMUAccConf aconf2, IMUGyroConf gconf2);
-vIMU_t* IMUGetActiveDevice (void);
+vIMU_t const* IMUGetActiveDevice (void);
+vIMU_t* IMUGetMutableActiveDevice (void);
 void IMU2CPUInterruptHandler (vIMU_t* pIMU);
 
 #define IMU_INIT(pSTATUS, DEVICE_BOARD_CONF)                 \

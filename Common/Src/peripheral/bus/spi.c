@@ -68,11 +68,7 @@ static INLINE void SPIEndOperation (vSPIBus_t* pBus) {
         return;
     }
 
-    HAL_GPIO_WritePin (
-    pBus->activeOperation.pNss->pPort,
-    pBus->activeOperation.pNss->pin,
-    GPIO_PIN_SET
-    );
+    HAL_GPIO_WritePin (pBus->activeOperation.pNss->pPort, pBus->activeOperation.pNss->pin, GPIO_PIN_SET);
     pBus->activeOperation.pNss     = NULL;
     pBus->activeOperation.deviceId = 0;
 }
@@ -80,11 +76,11 @@ static INLINE void SPIEndOperation (vSPIBus_t* pBus) {
 #define SPI_INIT_CLOCK(pSTATUS, BUS_ID, RCC_PERIPH_CLK_SELECTION, RCC_SPI_CLK_SELECTION) \
     do {                                                                                 \
         RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = { 0 };                            \
-        PeriphClkInitStruct.PeriphClockSelection = (RCC_PERIPH_CLK_SELECTION);           \
-        PeriphClkInitStruct.Spi123ClockSelection = (RCC_SPI_CLK_SELECTION);              \
+        PeriphClkInitStruct.PeriphClockSelection     = (RCC_PERIPH_CLK_SELECTION);       \
+        PeriphClkInitStruct.Spi123ClockSelection     = (RCC_SPI_CLK_SELECTION);          \
         if ((BUS_ID) > eSPI_3_BUS_ID) {                                                  \
             PeriphClkInitStruct.Spi123ClockSelection = 0;                                \
-            PeriphClkInitStruct.Spi45ClockSelection = (RCC_SPI_CLK_SELECTION);           \
+            PeriphClkInitStruct.Spi45ClockSelection  = (RCC_SPI_CLK_SELECTION);          \
         }                                                                                \
         if (HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct) != HAL_OK) {                \
             LOG_ERROR ("Failed to configure SPI [%u] clock", (BUS_ID));                  \
@@ -213,7 +209,7 @@ eSTATUS_t SPIInit (SPIInitConf_t conf, vSPIBus_t* pOutBus) {
     SPIBoardConf_t spi = bus.SPIBoardConf;
     uint16_t speedKHz  = spi.speedKHz;
     (void)speedKHz;
-    LOG_INFO ("Initializing SPI bus %u", busId);
+    LOG_INFO ("Initializing SPI bus");
 
     vSPIBus_t* pBus = SPIGetBusById (busId);
     if (pOutBus != NULL) {
@@ -245,16 +241,16 @@ eSTATUS_t SPIInit (SPIInitConf_t conf, vSPIBus_t* pOutBus) {
     pBus->handle.Init.CRCCalculation    = SPI_CRCCALCULATION_DISABLE;
     pBus->handle.Init.CRCPolynomial     = 0x0;
     // Manage NSS manually
-    pBus->handle.Init.NSSPMode      = SPI_NSS_PULSE_DISABLE;
-    pBus->handle.Init.NSSPolarity   = SPI_NSS_POLARITY_LOW;
-    pBus->handle.Init.FifoThreshold = SPI_FIFO_THRESHOLD_01DATA;
+    pBus->handle.Init.NSSPMode                   = SPI_NSS_PULSE_DISABLE;
+    pBus->handle.Init.NSSPolarity                = SPI_NSS_POLARITY_LOW;
+    pBus->handle.Init.FifoThreshold              = SPI_FIFO_THRESHOLD_01DATA;
     pBus->handle.Init.TxCRCInitializationPattern = SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
     pBus->handle.Init.RxCRCInitializationPattern = SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
-    pBus->handle.Init.MasterSSIdleness = SPI_MASTER_SS_IDLENESS_00CYCLE;
-    pBus->handle.Init.MasterInterDataIdleness = SPI_MASTER_INTERDATA_IDLENESS_00CYCLE;
-    pBus->handle.Init.MasterReceiverAutoSusp = SPI_MASTER_RX_AUTOSUSP_DISABLE;
-    pBus->handle.Init.MasterKeepIOState = SPI_MASTER_KEEP_IO_STATE_DISABLE;
-    pBus->handle.Init.IOSwap            = SPI_IO_SWAP_DISABLE;
+    pBus->handle.Init.MasterSSIdleness           = SPI_MASTER_SS_IDLENESS_00CYCLE;
+    pBus->handle.Init.MasterInterDataIdleness    = SPI_MASTER_INTERDATA_IDLENESS_00CYCLE;
+    pBus->handle.Init.MasterReceiverAutoSusp     = SPI_MASTER_RX_AUTOSUSP_DISABLE;
+    pBus->handle.Init.MasterKeepIOState          = SPI_MASTER_KEEP_IO_STATE_DISABLE;
+    pBus->handle.Init.IOSwap                     = SPI_IO_SWAP_DISABLE;
 
     if (SPIClockInit (pBus, conf) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize SPI clock");
@@ -279,8 +275,7 @@ error:
     return eSTATUS_FAILURE;
 }
 
-eSTATUS_t
-SPIRead_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size) {
+eSTATUS_t SPIRead_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size) {
 
     eSTATUS_t status = eSTATUS_SUCCESS;
     if (SPIBeginOperation (pBus, deviceId) == false) {
@@ -296,8 +291,7 @@ SPIRead_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t* pData, size_t
     return status;
 }
 
-eSTATUS_t
-SPIWrite_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t const* pData, size_t size) {
+eSTATUS_t SPIWrite_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t const* pData, size_t size) {
 
     eSTATUS_t status = eSTATUS_SUCCESS;
     if (SPIBeginOperation (pBus, deviceId) == false) {
@@ -321,8 +315,7 @@ SPIWriteRead_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t const* pT
         return eSTATUS_FAILURE;
     }
 
-    if (HAL_SPI_TransmitReceive (&pBus->handle, (uint8_t*)pTxData, pRxData, size, HAL_MAX_DELAY) !=
-        HAL_OK) {
+    if (HAL_SPI_TransmitReceive (&pBus->handle, (uint8_t*)pTxData, pRxData, size, HAL_MAX_DELAY) != HAL_OK) {
         LOG_ERROR ("Failed to write/read data to/from SPI bus");
         status = eSTATUS_FAILURE;
     }
@@ -331,8 +324,7 @@ SPIWriteRead_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t const* pT
     return status;
 }
 
-eSTATUS_t
-SPITransactions_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, BusTransaction_t* pTransactions, size_t nTransactions) {
+eSTATUS_t SPITransactions_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, BusTransaction_t* pTransactions, size_t nTransactions) {
 
     eSTATUS_t status            = eSTATUS_SUCCESS;
     HAL_StatusTypeDef halStatus = HAL_OK;
@@ -368,8 +360,7 @@ SPITransactions_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, BusTransaction
                 break;
             }
 
-            halStatus =
-            HAL_SPI_TransmitReceive (&pBus->handle, pTxData, pRxData, rxSize, HAL_MAX_DELAY);
+            halStatus = HAL_SPI_TransmitReceive (&pBus->handle, pTxData, pRxData, rxSize, HAL_MAX_DELAY);
             if (halStatus != HAL_OK) {
                 LOG_ERROR ("Failed to write/read data to/from SPI bus");
                 status = eSTATUS_FAILURE;
@@ -385,8 +376,7 @@ SPITransactions_Blocking (vSPIBus_t* pBus, eDEVICE_ID_t deviceId, BusTransaction
             }
         } else if (pTxData != NULL) {
 
-            halStatus =
-            HAL_SPI_Transmit (&pBus->handle, (uint8_t*)pTxData, txSize, HAL_MAX_DELAY);
+            halStatus = HAL_SPI_Transmit (&pBus->handle, (uint8_t*)pTxData, txSize, HAL_MAX_DELAY);
             if (halStatus != HAL_OK) {
                 LOG_ERROR ("Failed to write data to SPI bus");
                 status = eSTATUS_FAILURE;
@@ -403,8 +393,7 @@ eSTATUS_t SPI_READ_BLOCKING (void* pCtx, eDEVICE_ID_t deviceId, uint8_t* pData, 
     return SPIRead_Blocking ((vSPIBus_t*)pCtx, deviceId, pData, size);
 }
 
-eSTATUS_t
-SPI_WRITE_BLOCKING (void* pCtx, eDEVICE_ID_t deviceId, uint8_t const* pData, size_t size) {
+eSTATUS_t SPI_WRITE_BLOCKING (void* pCtx, eDEVICE_ID_t deviceId, uint8_t const* pData, size_t size) {
     return SPIWrite_Blocking ((vSPIBus_t*)pCtx, deviceId, pData, size);
 }
 
@@ -413,7 +402,6 @@ SPI_WRITE_READ_BLOCKING (void* pCtx, eDEVICE_ID_t deviceId, uint8_t const* pTxDa
     return SPIWriteRead_Blocking ((vSPIBus_t*)pCtx, deviceId, pTxData, pRxData, size);
 }
 
-eSTATUS_t
-SPI_TRANSACTIONS_BLOCKING (void* pCtx, eDEVICE_ID_t deviceId, BusTransaction_t* pTransactions, size_t nTransactions) {
+eSTATUS_t SPI_TRANSACTIONS_BLOCKING (void* pCtx, eDEVICE_ID_t deviceId, BusTransaction_t* pTransactions, size_t nTransactions) {
     return SPITransactions_Blocking ((vSPIBus_t*)pCtx, deviceId, pTransactions, nTransactions);
 }

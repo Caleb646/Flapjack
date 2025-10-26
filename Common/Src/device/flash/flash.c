@@ -136,14 +136,6 @@ static void FlashDebugSink (uint8_t const* pData, uint32_t len) {
     }
 }
 
-vFlash_t* FlashGetActiveDevice (void) {
-
-    if (FLASH_VALID (&g_Flash)) {
-        return &g_Flash;
-    }
-    return NULL;
-}
-
 eSTATUS_t FlashInit (FlashInitConf_t conf, Flash_t* pOutFlash) {
 
     bool success     = true;
@@ -200,6 +192,15 @@ error:
     return status;
 }
 
+eSTATUS_t FlashStart (vFlash_t* pFlash) {
+
+    if (FLASH_VALID (pFlash) == false) {
+        return eSTATUS_FAILURE;
+    }
+
+    return eSTATUS_SUCCESS;
+}
+
 eSTATUS_t FlashWrite (vFlash_t* pFlash, uint32_t addr, uint8_t const* pData, uint32_t size, uint32_t* pBytesWritten) {
 
     if (FLASH_VALID (pFlash) == false) {
@@ -234,4 +235,20 @@ eSTATUS_t FlashWrite (vFlash_t* pFlash, uint32_t addr, uint8_t const* pData, uin
         *pBytesWritten = bytesWritten;
     }
     return eSTATUS_SUCCESS;
+}
+
+vFlash_t const* FlashGetActiveDevice (void) {
+
+    if (FLASH_VALID (&g_Flash) == false) {
+        return NULL;
+    }
+    return &g_Flash;
+}
+
+vFlash_t* FlashGetMutableActiveDevice (void) {
+
+    if (FLASH_VALID (&g_Flash) == false) {
+        return NULL;
+    }
+    return &g_Flash;
 }

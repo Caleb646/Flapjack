@@ -3,6 +3,8 @@
 #include "conf/board.h"
 #include "conf/conf.h"
 #include "conf/ids.h"
+#include "device/flash/flash.h"
+#include "device/gps/gps.h"
 #include "device/imu/imu.h"
 #include "device/mag/mag.h"
 #include "device/motor/motor.h"
@@ -23,8 +25,7 @@ eSTATUS_t DeviceInitAll (BoardConf_t* pBoardConf) {
      * TODO: flash maybe should be setup first as well. So if serial debug
      * is not available logs can be written to flash.
      */
-    DeviceBoardConf_t* pSerialDebugConf =
-    BoardConfGetDeviceById (eSERIAL_DEBUG_DEVICE_ID);
+    DeviceBoardConf_t* pSerialDebugConf = BoardConfGetDeviceById (eSERIAL_DEBUG_DEVICE_ID);
     if (pSerialDebugConf != NULL) {
         SERIAL_DEBUG_INIT (&status, *pSerialDebugConf);
         RETURN_IF (STATUS_FAIL (status), status, "Failed to init serial debug");
@@ -59,4 +60,31 @@ eSTATUS_t DeviceInitAll (BoardConf_t* pBoardConf) {
         }
     }
     return eSTATUS_SUCCESS;
+}
+
+eSTATUS_t DeviceStartAll (void) {
+
+    eSTATUS_t status = eSTATUS_SUCCESS;
+
+    // Serial Debug is allowed to fail
+    status = SerialDebugStart (SerialDebugGetMutableActiveDevice ());
+    // Flash is allowed to fail
+    status = FlashStart (FlashGetMutableActiveDevice ());
+    LOG_ERROR_IF (STATUS_FAIL (status), "Failed to start Flash");
+
+    // IMU is required
+    status = IMUStart (IMUGetMutableActiveDevice ());
+    RETURN_IF (STATUS_FAIL (status), status, "Failed to start IMU");
+
+    // Mag is allowed to fail
+    status = MagStart (MagGetMutableActiveDevice ());
+    LOG_ERROR_IF (STATUS_FAIL (status), "Failed to start Magnetometer");
+
+    // GPS is allowed to fail
+    status = GPSStart (GPSGetMutableActiveDevice ());
+    LOG_ERROR_IF (STATUS_FAIL (status), "Failed to start GPS");
+
+    // NOTE: Leave motors and servos to be started by the motion control (mc) module
+
+    return status;
 }

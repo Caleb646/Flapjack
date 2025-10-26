@@ -60,15 +60,16 @@ typedef Filter_t vFilter_t;
 bool FilterMadgwickInit (FilterMadgwickInitConf_t conf, FilterMadgwick_t* pOut);
 bool FilterMadgwickUpdate (FilterMadgwick_t* pFilter,Vec3f const* pAccel,Vec3f const* pGyro,Vec3f const* pMag,float dt,Vec3f* pOutAttitude);
 bool FilterMadgwickUpdate_6DOF (FilterMadgwick_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyroDegs, float dt);
-bool FilterMadgwickUpdate_9DOF (FilterMadgwick_t* pFilter,Vec3f const* pAccel,Vec3f const* pGyro,Vec3f const* pMag,float dt);
+bool FilterMadgwickUpdate_9DOF (FilterMadgwick_t* pFilter,Vec3f const* pAccel,Vec3f const* pGyro,Vec3f const* pMag, float dt);
 
 #endif
 
 eSTATUS_t FilterInit (FilterInitConf_t conf, Filter_t* pOut);
 eSTATUS_t FilterStart (vFilter_t* pFilter, uint32_t warmUpIterations, Vec3f* pOutAttitude);
 eSTATUS_t FilterStop (vFilter_t* pFilter);
-eSTATUS_t FilterUpdate (vFilter_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyro, Vec3f const* pMag, Vec3f* pOutput);
-vFilter_t* FilterGetActiveFilter (void);
+eSTATUS_t FilterUpdate (vFilter_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyro, Vec3f const* pMag, float dt, Vec3f* pOutput);
+vFilter_t const* FilterGetActiveFilter (void);
+vFilter_t* FilterGetMutableActiveFilter (void);
 
 // clang-format on
 

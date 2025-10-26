@@ -39,7 +39,14 @@ eSTATUS_t FCStateInit (FCStateInitConf_t conf, vFCState_t* pOut);
 eSTATUS_t FCStateStart (vFCState_t* pState);
 eSTATUS_t FCStateStop (vFCState_t* pState);
 vFCState_t const* FCStateGetActiveState (void);
+vFCState_t* FCStateGetMutableActiveState (void);
 FCState_t FCStateGetCopyOfActiveState (void);
+bool FCStateSetOpState (vFCState_t* pState, eOP_STATE_t newOpState);
+
+bool FCStateSetCurrentAttitude (vFCState_t* pState, Vec3f newAttitude);
+bool FCStateSetTargetAttitude (vFCState_t* pState, Vec3f newAttitude);
+bool FCStateSetMaxAttitude (vFCState_t* pState, Vec3f newAttitude);
+bool FCStateSetTargetThrottle (vFCState_t* pState, float newThrottle);
 
 char const* OpState2Char (eOP_STATE_t opState);
 
@@ -49,5 +56,12 @@ char const* OpState2Char (eOP_STATE_t opState);
         *(pSTATUS)             = FCStateInit (conf, 0); \
     } while (0)
 
+// clang-format off
+
+#define FC_SET_STOPPED_OP_STATE() FCStateSetOpState (FCStateGetMutableActiveState (), eOP_STATE_STOPPED)
+#define FC_SET_RUNNING_OP_STATE() FCStateSetOpState (FCStateGetMutableActiveState (), eOP_STATE_RUNNING)
+#define FC_SET_ERROR_OP_STATE() FCStateSetOpState (FCStateGetMutableActiveState (), eOP_STATE_ERROR)
+
+// clang-format on
 
 #endif // MC_FCSTATE_H

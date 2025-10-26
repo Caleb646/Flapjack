@@ -165,3 +165,19 @@ eSTATUS_t GPSUpdate (vGPS_t* pGPS, GPSData_t* pOutData) {
     }
     return eSTATUS_SUCCESS;
 }
+
+vGPS_t const* GPSGetActiveDevice (void) {
+
+    if (GPS_VALID (&gGPS) == false) {
+        return NULL;
+    }
+    return &gGPS;
+}
+
+vGPS_t* GPSGetMutableActiveDevice (void) {
+
+    if (GPS_VALID (&gGPS) == false) {
+        return NULL;
+    }
+    return &gGPS;
+}

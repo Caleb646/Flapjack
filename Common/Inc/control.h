@@ -2,11 +2,12 @@
 #define CONTROL_H
 
 #include "common.h"
+#include "fcstate.h"
 #include "hal.h"
 #include "log/logger.h"
-#include "mc/fcstate.h"
 #include "mem/mem.h"
 #include "peripheral/bus/uart.h"
+
 
 typedef uint32_t eCMD_t;
 enum {

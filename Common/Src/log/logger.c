@@ -24,19 +24,18 @@
 #define LOGGER_WRITE_CHAR(ch) LoggerWriteChar_NonBlocking (ch)
 #endif
 
-#define PRIMARY_LOGGER_IS_ME() \
-    (HAL_GetCurrentCPUID () == PRIMARY_LOGGER_ROLE)
-#define TEMP_BUFFER_SIZE 512U
-#define MAX_NSINKS       4U
+#define PRIMARY_LOGGER_IS_ME() (HAL_GetCurrentCPUID () == PRIMARY_LOGGER_ROLE)
+#define TEMP_BUFFER_SIZE       512U
+#define MAX_NSINKS             4U
 
 // NOLINTBEGIN
 static SHARED_MEM_SECTION LoggerWriteToSink_t gLoggerSinks[MAX_NSINKS] = { 0 };
-static SHARED_MEM_SECTION uint8_t gCurrentSinkIdx          = 0U;
-static SHARED_MEM_SECTION uint8_t gCM4RingBufStorage[1024] = { 0 };
-static SHARED_MEM_SECTION uint8_t gCM7RingBufStorage[4096] = { 0 };
-static SHARED_MEM_SECTION RingBuff* gp_CM4_RingBuf         = NULL;
-static SHARED_MEM_SECTION RingBuff* gp_CM7_RingBuf         = NULL;
-static uint8_t ga_TempReadBuffer[TEMP_BUFFER_SIZE]         = { 0 };
+static SHARED_MEM_SECTION uint8_t gCurrentSinkIdx                      = 0U;
+static SHARED_MEM_SECTION uint8_t gCM4RingBufStorage[1024]             = { 0 };
+static SHARED_MEM_SECTION uint8_t gCM7RingBufStorage[4096]             = { 0 };
+static SHARED_MEM_SECTION RingBuff g_CM4_RingBuf                       = { 0 };
+static SHARED_MEM_SECTION RingBuff g_CM7_RingBuf                       = { 0 };
+static uint8_t ga_TempReadBuffer[TEMP_BUFFER_SIZE]                     = { 0 };
 
 // typedef RingBuff volatile vRingBuff_t;
 typedef RingBuff vRingBuff_t;
@@ -54,10 +53,7 @@ static eSTATUS_t LoggerSyncUARTTaskHandler (DefaultTask const* pTask) {
     // Write the other core's ring buffer out to the UART
     if (PRIMARY_LOGGER_IS_ME () == true) {
         SyncTaskUartOut const* pSyncTaskUartOut = (SyncTaskUartOut const*)pTask;
-        return LoggerWriteToSinks (
-        LoggerGetOtherRingBuf (),
-        pSyncTaskUartOut->len
-        );
+        return LoggerWriteToSinks (LoggerGetOtherRingBuf (), pSyncTaskUartOut->len);
     }
     return eSTATUS_SUCCESS;
 }
@@ -75,9 +71,8 @@ static eSTATUS_t LoggerWriteToSinks (vRingBuff_t* pRingBuf, uint32_t totalLen) {
          * Read totalLen bytes from ringbuffer and this will include bytes
          * that overflowed (wrapped around to the beginning of the buffer)
          */
-        uint32_t toWrite = MIN_U32 (nTotalBytes, TEMP_BUFFER_SIZE);
-        uint32_t bytesRead =
-        RingBuffRead (pRingBuf, (void*)ga_TempReadBuffer, toWrite);
+        uint32_t toWrite   = MIN_U32 (nTotalBytes, TEMP_BUFFER_SIZE);
+        uint32_t bytesRead = RingBuffRead (pRingBuf, (void*)ga_TempReadBuffer, toWrite);
         for (uint32_t i = 0; i < gCurrentSinkIdx; ++i) {
             if (gLoggerSinks[i] != NULL) {
                 gLoggerSinks[i](ga_TempReadBuffer, bytesRead);
@@ -93,14 +88,14 @@ static eSTATUS_t LoggerWriteToSinks (vRingBuff_t* pRingBuf, uint32_t totalLen) {
  * Returns the CURRENT core's ring buffer
  */
 static vRingBuff_t* LoggerGetMyRingBuf (void) {
-    return (HAL_GetCurrentCPUID () == CM7_CPUID) ? gp_CM7_RingBuf : gp_CM4_RingBuf;
+    return (HAL_GetCurrentCPUID () == CM7_CPUID) ? &g_CM7_RingBuf : &g_CM4_RingBuf;
 }
 
 /*
  * Returns the OTHER core's ring buffer
  */
 static vRingBuff_t* LoggerGetOtherRingBuf (void) {
-    return (HAL_GetCurrentCPUID () == CM7_CPUID) ? gp_CM4_RingBuf : gp_CM7_RingBuf;
+    return (HAL_GetCurrentCPUID () == CM7_CPUID) ? &g_CM4_RingBuf : &g_CM7_RingBuf;
 }
 
 static void LoggerWriteChar_Blocking (char ch) {
@@ -186,15 +181,14 @@ eSTATUS_t LoggerInit (void) {
     init_printf (NULL, LoggerWriteChar);
     // Let both cores register this task handler only the primary logger
     // core will actually write to the UART
-    if (SyncRegisterHandler (eSYNC_TASKID_UART_OUT, LoggerSyncUARTTaskHandler) !=
-        eSTATUS_SUCCESS) {
+    if (SyncRegisterHandler (eSYNC_TASKID_UART_OUT, LoggerSyncUARTTaskHandler) != eSTATUS_SUCCESS) {
         return eSTATUS_FAILURE;
     }
 
     if (PRIMARY_LOGGER_IS_ME () == true) {
         bool ok = true;
-        ok &= RingBuffInit (gp_CM4_RingBuf, gCM4RingBufStorage, sizeof (gCM4RingBufStorage));
-        ok &= RingBuffInit (gp_CM7_RingBuf, gCM7RingBufStorage, sizeof (gCM7RingBufStorage));
+        ok &= RingBuffInit (&gCM4RingBufStorage[0], sizeof (gCM4RingBufStorage), &g_CM4_RingBuf);
+        ok &= RingBuffInit (&gCM7RingBufStorage[0], sizeof (gCM7RingBufStorage), &g_CM7_RingBuf);
         if (ok != true) {
             return eSTATUS_FAILURE;
         }

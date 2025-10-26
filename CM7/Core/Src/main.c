@@ -39,10 +39,11 @@
 #include "device/device.h"
 #include "device/imu/imu.h"
 #include "device/mag/mag.h"
+#include "fcstate.h"
 #include "log/logger.h"
 #include "mc/actuators.h"
-#include "mc/fcstate.h"
 #include "mc/filter.h"
+#include "mc/mc.h"
 #include "mc/pid.h"
 #include "peripheral/dma.h"
 #include "peripheral/gpio.h"
@@ -114,7 +115,7 @@ TaskHandle_t gpTaskMotionControlUpdate = { 0 };
 //     return eSTATUS_SUCCESS;
 // }
 
-// bool StateTransitionFromStopped2Running (FCState curState) {
+// bool Start (FCState_t curState) {
 
 //     bool doTransition = true;
 //     if (ActuatorsStart () != eSTATUS_SUCCESS) {
@@ -164,6 +165,7 @@ void TaskMainLoop (void* pvParameters) {
     }
 
     while (1) {
+
         if (ControlProcess_Cmds () != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to process control commands");
         }
@@ -181,18 +183,28 @@ void TaskMainLoop (void* pvParameters) {
 
 void TaskMotionControlUpdate (void* pvParameters) {
 
+    FJ_UNUSED (pvParameters);
+
     uint32_t msLogStart      = GetMilliseconds ();
     uint32_t const msLogStep = MS_PER_LOG_DATA_UPDATE;
     LOG_INFO ("Motion control update task started");
 
+
+    // TODO: TEMPORARY. should be done after receiving a start command
+    if (DeviceStartAll () != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to start Device module");
+    }
+
+    if (MCStartAll () != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to start Motion Control module");
+    }
+    FC_SET_RUNNING_OP_STATE ();
+
+
     while (1) {
 
-        vFCState_t fcState    = FCStateGetCopyOfActiveState ();
-        eOP_STATE_t opState   = fcState.opState;
-        Vec3f currentAttitude = fcState.currentAttitude;
-        Vec3f targetAttitude  = fcState.targetAttitude;
-        Vec3f maxAttitude     = fcState.maxAttitude;
-        float targetThrottle  = fcState.targetThrottle;
+        FCState_t fcState   = FCStateGetCopyOfActiveState ();
+        eOP_STATE_t opState = fcState.opState;
         if (opState != eOP_STATE_RUNNING) {
             /*
              * Update msStartTime and msLogStart so dt does not get too large.
@@ -207,19 +219,23 @@ void TaskMotionControlUpdate (void* pvParameters) {
          * I am hitting this assert sometimes: configASSERT( listLIST_ITEM_CONTAINER( &( pxTCB->xEventListItem ) ) == NULL in tasks.c
          */
         // ulTaskNotifyTake (pdTRUE, pdMS_TO_TICKS (1000));
-
-        eSTATUS_t status = eSTATUS_SUCCESS;
-        Vec3f accel      = { 0.0F };
-        Vec3f gyro       = { 0.0F };
-        Vec3f mag        = { 0.0F };
-        status           = IMUUpdate (IMUGetActiveDevice (), false, &accel, &gyro);
+        eSTATUS_t status      = eSTATUS_SUCCESS;
+        Vec3f currentAttitude = fcState.currentAttitude;
+        Vec3f targetAttitude  = fcState.targetAttitude;
+        Vec3f maxAttitude     = fcState.maxAttitude;
+        float targetThrottle  = fcState.targetThrottle;
+        float dt              = ((float)GetMilliseconds () - (float)msLogStart) / 1000.0F;
+        Vec3f accel           = { 0.0F };
+        Vec3f gyro            = { 0.0F };
+        Vec3f mag             = { 0.0F };
+        status                = IMUUpdate (IMUGetMutableActiveDevice (), false, &accel, &gyro);
         if (STATUS_FAIL (status)) {
             LOG_ERROR ("Failed to get IMU data");
             continue;
         }
 
         Vec3f* pMag        = NULL;
-        vMag_t* pMagDevice = MagGetActiveDevice ();
+        vMag_t* pMagDevice = MagGetMutableActiveDevice ();
         if (pMagDevice != NULL) {
             status = MagUpdate (pMagDevice, false, &mag);
             if (STATUS_FAIL (status)) {
@@ -229,14 +245,15 @@ void TaskMotionControlUpdate (void* pvParameters) {
             pMag = &mag;
         }
 
-        status = FilterUpdate (FilterGetActiveFilter (), &accel, &gyro, pMag, &currentAttitude);
+        status = FilterUpdate (FilterGetMutableActiveFilter (), &accel, &gyro, pMag, dt, &currentAttitude);
         if (STATUS_FAIL (status)) {
             LOG_ERROR ("Failed to filter IMU data with Madgwick filter");
             continue;
         }
 
         Vec3f pidAttitude = { 0.0F };
-        status = PIDUpdate (PIDGetActivePID (), &currentAttitude, &targetAttitude, &maxAttitude, &pidAttitude);
+        status =
+        PIDUpdate (PIDGetMutableActivePID (), &currentAttitude, &targetAttitude, &maxAttitude, dt, &pidAttitude);
         if (STATUS_FAIL (status)) {
             LOG_ERROR ("Failed to update PID attitude");
             continue;
@@ -314,7 +331,7 @@ int main (void) {
         CriticalErrorHandler ();
     }
 
-    if (BoardConfInit () != true) {
+    if (BOARD_CONF_INIT () != true) {
         CriticalErrorHandler ();
     }
 
@@ -322,8 +339,13 @@ int main (void) {
         CriticalErrorHandler ();
     }
 
+    if (MCInitAll () != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to init motion control module");
+        CriticalErrorHandler ();
+    }
+
     if (ControlInit () != eSTATUS_SUCCESS) {
-        // LOG_ERROR ("Failed to init control module");
+        LOG_ERROR ("Failed to init control module");
         CriticalErrorHandler ();
     }
     // Wait for CM4 to initialize UART

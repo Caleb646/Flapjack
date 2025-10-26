@@ -1,5 +1,5 @@
 
-#include "mc/fcstate.h"
+#include "fcstate.h"
 #include "common.h"
 #include "conf/conf.h"
 #include "mem/mem.h"
@@ -7,8 +7,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#define FCSTATE_VALID(pSTATE) \
-    ((pSTATE) != NULL && (pSTATE)->isInitialized == true)
+#define FCSTATE_VALID(pSTATE) ((pSTATE) != NULL && (pSTATE)->isInitialized == true)
 
 static SHARED_MEM_SECTION FCState_t gFCState = { 0 };
 
@@ -17,6 +16,10 @@ eSTATUS_t FCStateInit (FCStateInitConf_t conf, vFCState_t* pOut) {
     vFCState_t* pState = &gFCState;
     if (pOut != NULL) {
         pState = pOut;
+    }
+
+    if (pState->isInitialized == true) {
+        return eSTATUS_ALREADY_INITED;
     }
 
     memset ((void*)pState, 0, sizeof (vFCState_t));
@@ -68,12 +71,68 @@ vFCState_t const* FCStateGetActiveState (void) {
     return &gFCState;
 }
 
+vFCState_t* FCStateGetMutableActiveState (void) {
+
+    if (FCSTATE_VALID (&gFCState) == false) {
+        return NULL;
+    }
+    return &gFCState;
+}
+
 FCState_t FCStateGetCopyOfActiveState (void) {
 
     if (FCSTATE_VALID (&gFCState) == false) {
         return (FCState_t){ 0 };
     }
     return gFCState;
+}
+
+bool FCStateSetOpState (vFCState_t* pState, eOP_STATE_t newOpState) {
+
+    if (FCSTATE_VALID (pState) == false) {
+        return false;
+    }
+    pState->opState = newOpState;
+    return true;
+}
+
+bool FCStateSetCurrentAttitude (vFCState_t* pState, Vec3f newAttitude) {
+
+    if (FCSTATE_VALID (pState) == false) {
+        return false;
+    }
+    pState->currentAttitude = newAttitude;
+    return true;
+}
+
+bool FCStateSetTargetAttitude (vFCState_t* pState, Vec3f newAttitude) {
+
+    if (FCSTATE_VALID (pState) == false) {
+        return false;
+    }
+    pState->targetAttitude = newAttitude;
+    return true;
+}
+
+bool FCStateSetMaxAttitude (vFCState_t* pState, Vec3f newAttitude) {
+
+    if (FCSTATE_VALID (pState) == false) {
+        return false;
+    }
+    pState->maxAttitude = newAttitude;
+    return true;
+}
+
+bool FCStateSetTargetThrottle (vFCState_t* pState, float newThrottle) {
+
+    if (FCSTATE_VALID (pState) == false) {
+        return false;
+    }
+    if (newThrottle < 0.0F || newThrottle > 1.0F) {
+        return false;
+    }
+    pState->targetThrottle = newThrottle;
+    return true;
 }
 
 char const* OpState2Char (eOP_STATE_t opState) {

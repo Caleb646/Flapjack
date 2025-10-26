@@ -46,7 +46,8 @@ eMAG_STATUS_t MagInit (MagInitConf_t conf, Mag_t* pOutMag, BusVTable_t* pBusOver
 eMAG_STATUS_t MagStart (vMag_t* pMag);
 eMAG_STATUS_t MagStop (vMag_t* pMag);
 eMAG_STATUS_t MagUpdate (vMag_t* pMag, bool forcePolling, Vec3f* pOutput);
-vMag_t* MagGetActiveDevice (void);
+vMag_t const* MagGetActiveDevice (void);
+vMag_t* MagGetMutableActiveDevice (void);
 
 #define MAG_INIT(pSTATUS, DEVICE_BOARD_CONF)                   \
     do {                                                       \

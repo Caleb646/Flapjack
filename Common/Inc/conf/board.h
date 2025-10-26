@@ -109,4 +109,12 @@ typedef struct {
     uint8_t numDevices;
 } BoardConf_t;
 
+extern bool ge_isBoardConfInitialized;
+extern BoardConf_t ge_BoardConf;
+
+bool BoardConfInit_DevBoard (void);
+bool BoardConfInit_MyBoard (void);
+BoardConf_t* BoardConfGet (void);
+DeviceBoardConf_t* BoardConfGetDeviceById (eDEVICE_ID_t deviceId);
+
 #endif // CONF_BASE_H

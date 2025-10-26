@@ -1,9 +1,9 @@
 #include "control.h"
 #include "common.h"
 #include "conf/conf.h"
+#include "fcstate.h"
 #include "hal.h"
 #include "log/logger.h"
-#include "mc/fcstate.h"
 #include "mem/mem.h"
 #include "mem/queue.h"
 #include "mem/umap.h"
@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+
 
 #define CMD_TYPE_VALID(CMD_TYPE) ((CMD_TYPE) != eCMD_NULL && (CMD_TYPE) < eNUMBER_OF_CMD_TYPES)
 #define OP_CMD2KEY(CMD_TYPE, cSTATE, nSTATE) \
@@ -78,6 +79,7 @@ STATIC_TESTABLE_DECL eSTATUS_t ControlInit_Producer (void) {
         LOG_ERROR ("Failed to initialize raw command queue");
         return eSTATUS_FAILURE;
     }
+
     return eSTATUS_SUCCESS;
 }
 
@@ -87,6 +89,13 @@ STATIC_TESTABLE_DECL eSTATUS_t ControlInit_Shared (void) {
     //     LOG_ERROR ("Failed to initialize command handlers map");
     //     return eSTATUS_FAILURE;
     // }
+
+    eSTATUS_t status = eSTATUS_SUCCESS;
+    FCSTATE_INIT (&status);
+    if (STATUS_OK_PREV_INITED (status) == false) {
+        LOG_ERROR ("Failed to initialize FC state module");
+        return status;
+    }
 
     if (SharedCommandQueue_Init () != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize shared command queue");
@@ -105,25 +114,25 @@ STATIC_TESTABLE_DECL eSTATUS_t ControlDefaultCmdHandler (DefaultCommand cmd) {
 
 STATIC_TESTABLE_DECL eSTATUS_t ControlInit_Consumer (void) {
 
-    eCMD_t cmds[]             = { eCMD_NULL,
-                                  // eCMD_CHANGE_OP_STATE, // op state changes can have multiple handlers based on current and next state
-                                  eCMD_CHANGE_FLIGHT_MODE,
-                                  eCMD_CHANGE_VELOCITY,
-                                  eCMD_CHANGE_PID };
-    CmdHandlerFn_t handlers[] = { ControlDefaultCmdHandler,
-                                  // ControlDefaultCmdHandler,
-                                  ControlDefaultCmdHandler,
-                                  ControlDefaultCmdHandler,
-                                  ControlDefaultCmdHandler };
+    // eCMD_t cmds[]             = { eCMD_NULL,
+    //                               // eCMD_CHANGE_OP_STATE, // op state changes can have multiple handlers based on current and next state
+    //                               eCMD_CHANGE_FLIGHT_MODE,
+    //                               eCMD_CHANGE_VELOCITY,
+    //                               eCMD_CHANGE_PID };
+    // CmdHandlerFn_t handlers[] = { ControlDefaultCmdHandler,
+    //                               // ControlDefaultCmdHandler,
+    //                               ControlDefaultCmdHandler,
+    //                               ControlDefaultCmdHandler,
+    //                               ControlDefaultCmdHandler };
 
-    for (size_t i = 0; i < sizeof (cmds) / sizeof (cmds[0]); i++) {
+    // for (size_t i = 0; i < sizeof (cmds) / sizeof (cmds[0]); i++) {
 
-        SubCommand_t subCmd = { .raw = 0 };
-        if (ControlRegisterHandler (cmds[i], subCmd, handlers[i]) != false) {
-            LOG_ERROR ("Failed to register command handler for command: %d", cmds[i]);
-            return eSTATUS_FAILURE;
-        }
-    }
+    //     SubCommand_t subCmd = { .raw = 0 };
+    //     if (ControlRegisterHandler (cmds[i], subCmd, handlers[i]) != false) {
+    //         LOG_ERROR ("Failed to register command handler for command: %d", cmds[i]);
+    //         return eSTATUS_FAILURE;
+    //     }
+    // }
     return eSTATUS_SUCCESS;
 }
 
@@ -222,6 +231,9 @@ eSTATUS_t ControlProcess_RawCmds (void) {
 }
 
 eSTATUS_t ControlProcess_Cmds (void) {
+
+    // TODO: re-implement. UMAP doesnt support function pointers
+    return eSTATUS_SUCCESS;
 
     RETURN_IF (IS_CONSUMER_ME () == false, eSTATUS_FAILURE, "Should only be called by the core that is consuming");
 
