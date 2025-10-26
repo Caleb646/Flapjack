@@ -243,110 +243,32 @@ class FlightViewer(QtWidgets.QWidget):
             self.serial.write(text.encode() + b'\n')
 
     def send_start_command(self):
-        """Send start command as 8-byte packet"""
-        if not self.serial.isOpen():
-            self.append_debug_console("Serial port not connected!", "[ERROR]")
-            return
-            
-        # Command structure based on C code:
-        # typedef struct {
-        #     CommandHeader header;
-        #     eREQUESTED_STATE_t requestedState;
-        # } ChangeOpStateCmd;
-        #
-        # CommandHeader: { uint8_t commandType; }
-        # eREQUESTED_STATE_t: uint8_t
-        
-        COMMAND_TYPE_CHANGE_OP_STATE = CONF.eCMD_TYPE_CHANGE_OP_STATE
-        REQUESTED_STATE_START = CONF.eCMD_OP_STATE_RUNNING
 
-        # Create 8-byte packet: commandType(1) + requestedState(1) + padding(6)
-        # B = uint8_t and 6x = 6 bytes of padding
-        packet = struct.pack('<BB6x', COMMAND_TYPE_CHANGE_OP_STATE, REQUESTED_STATE_START)
-        
-        try:
-            write_cmd_packet(self.serial, packet)
-            self.append_debug_console(f"Sent START command: {packet.hex()}", "[INFO]")
-        except Exception as e:
-            self.append_debug_console(f"Failed to send START command: {e}", "[ERROR]")
+        success, error = conf.write_op_state_start(self.serial, CONF)
+        if not success:
+            self.append_debug_console(f"Failed to send START command: {error}", "[ERROR]")
+            return
 
     def send_stop_command(self):
-        """Send stop command as 8-byte packet"""
-        if not self.serial.isOpen():
-            self.append_debug_console("Serial port not connected!", "[ERROR]")
+
+        success, error = conf.write_op_state_stop(self.serial, CONF)
+        if not success:
+            self.append_debug_console(f"Failed to send STOP command: {error}", "[ERROR]")
             return
-
-        COMMAND_TYPE_CHANGE_OP_STATE = CONF.eCMD_TYPE_CHANGE_OP_STATE
-        REQUESTED_STATE_STOP = CONF.eCMD_OP_STATE_STOPPED
-
-        # Create 8-byte packet: commandType(1) + requestedState(1) + padding(6)
-        packet = struct.pack('<BB6x', COMMAND_TYPE_CHANGE_OP_STATE, REQUESTED_STATE_STOP)
-        
-        try:
-            write_cmd_packet(self.serial, packet)
-            self.append_debug_console(f"Sent STOP command: {packet.hex()}", "[INFO]")
-        except Exception as e:
-            self.append_debug_console(f"Failed to send STOP command: {e}", "[ERROR]")
     
     def send_velocity_command(self, v_forward, v_right, v_throttle):
-        """Send velocity command as 8-byte packet"""
-        if not self.serial.isOpen():
-            self.append_debug_console("Serial port not connected!", "[ERROR]")
+
+        success, error = conf.write_velocity_packet(self.serial, CONF, v_forward, v_right, v_throttle)
+        if not success:
+            self.append_debug_console(f"Failed to send VELOCITY command: {error}", "[ERROR]")
             return
-
-        COMMAND_TYPE_VELOCITY = CONF.eCMD_TYPE_CHANGE_VELOCITY
-        v_min = CONF.CMD_TYPE_VELOCITY_CHANGE_MIN
-        v_max = CONF.CMD_TYPE_VELOCITY_CHANGE_MAX
-
-        v_forward = max(v_min, min(v_max, v_forward))
-        v_right = max(v_min, min(v_max, v_right))
-        v_throttle = max(v_min, min(v_max, v_throttle))
-
-        # packet = struct.pack('<B1xbbb3x', COMMAND_TYPE_VELOCITY, v_throttle, v_right, v_forward)
-        packet = struct.pack('<Bbbb4x', COMMAND_TYPE_VELOCITY, v_throttle, v_right, v_forward)
-
-        try:
-            write_cmd_packet(self.serial, packet)
-            self.append_debug_console(
-                f"Sent VELOCITY command - Forward: {v_forward}, Right: {v_right}, Throttle: {v_throttle}: {packet.hex()} {len(packet)}"
-                )
-        except Exception as e:
-            self.append_debug_console(f"Failed to send VELOCITY command: {e}", "[ERROR]")
     
     def send_pid_command(self, axis, p_value, i_value, d_value):
-        """Send PID update command as 8-byte packet"""
-        if not self.serial.isOpen():
-            self.append_debug_console("Serial port not connected!", "[ERROR]")
+        
+        success, error = conf.write_pid_packet(self.serial, CONF, axis, p_value, i_value, d_value)
+        if not success:
+            self.append_debug_console(f"Failed to send PID command: {error}", "[ERROR]")
             return
-        
-        COMMAND_TYPE_PID_UPDATE = CONF.eCMD_TYPE_CHANGE_PID
-        
-        axis_map = {
-            "roll": CONF.eCMD_PID_ROLL,
-            "pitch": CONF.eCMD_PID_PITCH,
-            "yaw": CONF.eCMD_PID_YAW
-        }
-        
-        axis_code = axis_map.get(axis, 0)
-        
-        # Convert PID values (0.0 to 5.0) to uint16_t (0 to 65535)
-        def map_range(value, in_min, in_max, out_min, out_max):
-            return int(round((value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min, 0))
-
-        p_uint16 = map_range(p_value, CONF.PID_MIN_VALUE, CONF.PID_MAX_VALUE, 0, 65535)
-        i_uint16 = map_range(i_value, CONF.PID_MIN_VALUE, CONF.PID_MAX_VALUE, 0, 65535)
-        d_uint16 = map_range(d_value, CONF.PID_MIN_VALUE, CONF.PID_MAX_VALUE, 0, 65535)
-
-        # Create 8-byte packet: commandType(1) + PID Axis(1) P(2) + I(2) + D(2)
-        # H = uint16_t (2 bytes each)
-        packet = struct.pack('<BBHHH4x', COMMAND_TYPE_PID_UPDATE, axis_code, p_uint16, i_uint16, d_uint16)
-        assert len(packet) == 8, "PID command packet must be exactly 8 bytes"
-        
-        try:
-            write_cmd_packet(self.serial, packet)
-            self.append_debug_console(f"Sent PID command - Axis: {axis}, P: {p_value:.3f}, I: {i_value:.3f}, D: {d_value:.3f}: {packet.hex()}", "[INFO]")
-        except Exception as e:
-            self.append_debug_console(f"Failed to send PID command: {e}", "[ERROR]")
 
     @QtCore.pyqtSlot(bool)
     def on_toggled(self, checked):

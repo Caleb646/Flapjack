@@ -171,8 +171,8 @@ void TaskMainLoop (void* pvParameters) {
         if ((xTaskGetTickCount () - msLogStart) >= msLogStep) {
             msLogStart = xTaskGetTickCount ();
             // portENTER_CRITICAL ();
-            // LOG_INFO ("Main loop is running, current state: %s", ControlOpState2Char (ControlGetOpState ()));
-            // portEXIT_CRITICAL ();
+            // LOG_INFO ("Main loop is running, current state: %s", ControlOpState2Char
+            // (ControlGetOpState ())); portEXIT_CRITICAL ();
         }
         // Aim for 500Hz
         vTaskDelay (pdMS_TO_TICKS (2));
@@ -212,7 +212,7 @@ void TaskMotionControlUpdate (void* pvParameters) {
         Vec3f accel      = { 0.0F };
         Vec3f gyro       = { 0.0F };
         Vec3f mag        = { 0.0F };
-        status = IMUUpdate (IMUGetActiveDevice (), false, &accel, &gyro);
+        status           = IMUUpdate (IMUGetActiveDevice (), false, &accel, &gyro);
         if (STATUS_FAIL (status)) {
             LOG_ERROR ("Failed to get IMU data");
             continue;
@@ -236,8 +236,7 @@ void TaskMotionControlUpdate (void* pvParameters) {
         }
 
         Vec3f pidAttitude = { 0.0F };
-        status =
-        PIDUpdate (PIDGetActivePID (), &currentAttitude, &targetAttitude, &maxAttitude, &pidAttitude);
+        status = PIDUpdate (PIDGetActivePID (), &currentAttitude, &targetAttitude, &maxAttitude, &pidAttitude);
         if (STATUS_FAIL (status)) {
             LOG_ERROR ("Failed to update PID attitude");
             continue;
@@ -268,11 +267,11 @@ void TaskMotionControlUpdate (void* pvParameters) {
             ActuatorsLogData ();
             // portEXIT_CRITICAL ();
         }
-        if (HZ_SENSOR_UPDATE_RATE > 1000U || HZ_SENSOR_UPDATE_RATE < 0U) {
+        if (FJ_LOOP_UPDATE_RATE_HZ > 1000U || FJ_LOOP_UPDATE_RATE_HZ < 0U) {
             LOG_ERROR ("Sensor update rate invalid");
         }
         // Limit loop to sensor update rate
-        vTaskDelay (pdMS_TO_TICKS (1000U / HZ_SENSOR_UPDATE_RATE));
+        vTaskDelay (pdMS_TO_TICKS (1000U / FJ_LOOP_UPDATE_RATE_HZ));
     }
 }
 
@@ -360,19 +359,13 @@ int main (void) {
      *
      * Setup FreeRTOS Tasks
      *
-     * NOTE: Once a FreeRTOS task is created ALL interrupts will be disabled until the scheduler is started. So functions
-     * like HAL_Delay will not work.
+     * NOTE: Once a FreeRTOS task is created ALL interrupts will be disabled until the scheduler is
+     * started. So functions like HAL_Delay will not work.
      */
     LOG_INFO ("Starting FreeRTOS");
     uint16_t taskPriority = 2;
-    BaseType_t taskStatus = xTaskCreate (
-    TaskMotionControlUpdate,
-    "Motion Control Update Task",
-    configMINIMAL_STACK_SIZE,
-    NULL,
-    taskPriority,
-    &gpTaskMotionControlUpdate
-    );
+    BaseType_t taskStatus =
+    xTaskCreate (TaskMotionControlUpdate, "Motion Control Update Task", configMINIMAL_STACK_SIZE, NULL, taskPriority, &gpTaskMotionControlUpdate);
 
     if (taskStatus != pdPASS) {
         LOG_ERROR ("Failed to create motion control update task");
@@ -418,8 +411,7 @@ void SystemClock_Config (void) {
     /** Initializes the RCC Oscillators according to the specified
      * parameters in the RCC_OscInitTypeDef structure.
      */
-    RCC_OscInitStruct.OscillatorType =
-    RCC_OSCILLATORTYPE_HSI | RCC_OSCILLATORTYPE_LSI | RCC_OSCILLATORTYPE_HSE;
+    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI | RCC_OSCILLATORTYPE_LSI | RCC_OSCILLATORTYPE_HSE;
     RCC_OscInitStruct.HSEState            = RCC_HSE_ON;
     RCC_OscInitStruct.HSIState            = RCC_HSI_DIV1;
     RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
@@ -440,9 +432,8 @@ void SystemClock_Config (void) {
 
     /** Initializes the CPU, AHB and APB buses clocks
      */
-    RCC_ClkInitStruct.ClockType =
-    RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 |
-    RCC_CLOCKTYPE_PCLK2 | RCC_CLOCKTYPE_D3PCLK1 | RCC_CLOCKTYPE_D1PCLK1;
+    RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 |
+                                  RCC_CLOCKTYPE_PCLK2 | RCC_CLOCKTYPE_D3PCLK1 | RCC_CLOCKTYPE_D1PCLK1;
     RCC_ClkInitStruct.SYSCLKSource   = RCC_SYSCLKSOURCE_HSI;
     RCC_ClkInitStruct.SYSCLKDivider  = RCC_SYSCLK_DIV1;
     RCC_ClkInitStruct.AHBCLKDivider  = RCC_HCLK_DIV1;

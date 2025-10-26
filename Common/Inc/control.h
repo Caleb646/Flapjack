@@ -17,6 +17,10 @@ enum {
     eCMD_CHANGE_PID         = (1U << 11U),
 };
 
+typedef struct {
+    eCMD_t commandType;
+} CommandHeader_t;
+
 typedef union {
     uint32_t raw;
     struct {
@@ -25,28 +29,20 @@ typedef union {
     } opstate;
 } SubCommand_t;
 
-#define COMMAND_TOTAL_SIZE   16U
-#define COMMAND_HEADER_SIZE  (sizeof (eCMD_t))
-#define COMMAND_DATA_SIZE    (COMMAND_TOTAL_SIZE - COMMAND_HEADER_SIZE)
-#define eNUMBER_OF_CMD_TYPES 5U
+#define CMD_TOTAL_SIZE_BYTES  16U
+#define CMD_HEADER_SIZE_BYTES (sizeof (CommandHeader_t))
+#define CMD_DATA_SIZE_BYTES   (CMD_TOTAL_SIZE_BYTES - CMD_HEADER_SIZE_BYTES)
+#define eNUMBER_OF_CMD_TYPES  5U
 
 typedef int8_t cmd_velocity_t;
 typedef uint16_t cmd_pid_t;
 typedef uint8_t eCMD_PID_t;
-enum {
-    eCMD_PID_ROLL = 0,
-    eCMD_PID_PITCH,
-    eCMD_PID_YAW,
-    eCMD_PID_THROTTLE
-};
+enum { eCMD_PID_ROLL = 0, eCMD_PID_PITCH, eCMD_PID_YAW, eCMD_PID_THROTTLE };
+
 
 typedef struct {
-    eCMD_t commandType;
-} CommandHeader;
-
-typedef struct {
-    CommandHeader header;
-    // uint8_t data[COMMAND_DATA_SIZE];
+    CommandHeader_t header;
+    // uint8_t data[CMD_DATA_SIZE_BYTES];
     uint8_t unused1;
     uint8_t unused2;
     uint8_t unused3;
@@ -57,17 +53,17 @@ typedef struct {
 } DefaultCommand;
 
 typedef struct {
-    CommandHeader header;
+    CommandHeader_t header;
     eOP_STATE_t requestedState;
 } ChangeOpStateCmd;
 
 typedef struct {
-    CommandHeader header;
+    CommandHeader_t header;
     eFLIGHT_MODE_t flightMode;
 } ChangeFlightModeCmd;
 
 typedef struct {
-    CommandHeader header;
+    CommandHeader_t header;
     // uint8_t padding;
     cmd_velocity_t vThrottle; // -100 to 100
     cmd_velocity_t vRight;    // -100 to 100
@@ -76,7 +72,7 @@ typedef struct {
 } ChangeVelocityCmd;
 
 typedef struct {
-    CommandHeader header;
+    CommandHeader_t header;
     eCMD_PID_t pidType;
     union {
         cmd_pid_t v;
@@ -103,7 +99,7 @@ typedef struct {
     } D; // 0 to 65,535
 } ChangePIDCmd;
 
-STATIC_ASSERT (sizeof (DefaultCommand) <= COMMAND_TOTAL_SIZE, "");
+STATIC_ASSERT (sizeof (DefaultCommand) <= CMD_TOTAL_SIZE_BYTES, "");
 STATIC_ASSERT (sizeof (ChangeOpStateCmd) <= sizeof (DefaultCommand), "");
 STATIC_ASSERT (sizeof (ChangeFlightModeCmd) <= sizeof (DefaultCommand), "");
 STATIC_ASSERT (sizeof (ChangeVelocityCmd) <= sizeof (DefaultCommand), "");

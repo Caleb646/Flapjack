@@ -2,7 +2,6 @@
 #define LOG_H
 
 #include "common.h"
-#include "conf/board.h"
 #include "conf/conf.h"
 #include "hal.h"
 #include "log/format.h"
@@ -12,11 +11,9 @@
 
 // Macro to extract filename from __FILE__ at compile time
 #ifdef _WIN32
-#define __FILENAME__ \
-    (strrchr (__FILE__, '\\') ? strrchr (__FILE__, '\\') + 1 : __FILE__)
+#define __FILENAME__ (strrchr (__FILE__, '\\') ? strrchr (__FILE__, '\\') + 1 : __FILE__)
 #else
-#define __FILENAME__ \
-    (strrchr (__FILE__, '/') ? strrchr (__FILE__, '/') + 1 : __FILE__)
+#define __FILENAME__ (strrchr (__FILE__, '/') ? strrchr (__FILE__, '/') + 1 : __FILE__)
 #endif
 
 // clang-format off
@@ -78,12 +75,6 @@
 #define GOTO_IF_NOT(cond, label, ...) GOTO_IF (!(cond), label, __VA_ARGS__)
 #define GOTO_IF_NULL(ptr, label, ...) GOTO_IF ((ptr) == NULL, label, __VA_ARGS__)
 
-#define LOG_DATA_TYPE_ATTITUDE  "attitude"
-#define LOG_DATA_TYPE_PID_ATTITUDE  "pid_attitude"
-#define LOG_DATA_TYPE_IMU_CALIB "imu_calib"
-#define LOG_DATA_TYPE_IMU_DATA  "imu_data"
-#define LOG_DATA_TYPE_RAW_IMU_DATA  "imu_raw_data"
-#define LOG_DATA_TYPE_ACTUATORS "actuators"
 // Example usage: LOG_DATA("imu", "{\"roll\":%.2f,\"pitch\":%.2f,\"yaw\":%.2f}", roll, pitch, yaw);
 #define LOG_DATA(type, fmt, ...)                      \
     do {                                              \

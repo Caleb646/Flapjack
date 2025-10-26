@@ -902,12 +902,14 @@ error:
 
 eSTATUS_t IMUStart (vIMU_t* pIMU) {
 
-    if (SENSOR_UPDATE_MODE_IS_INTERRUPT == true) {
-        if (IMUEnableInterrupts (pIMU) != eSTATUS_SUCCESS) {
-            LOG_ERROR ("Failed to enable vIMU_t interrupts");
-            return eSTATUS_FAILURE;
-        }
-    }
+    // TODO: just check if imu has a valid exti config
+    FJ_UNUSED (pIMU);
+    // if (SENSOR_UPDATE_MODE_IS_INTERRUPT == true) {
+    //     if (IMUEnableInterrupts (pIMU) != eSTATUS_SUCCESS) {
+    //         LOG_ERROR ("Failed to enable vIMU_t interrupts");
+    //         return eSTATUS_FAILURE;
+    //     }
+    // }
     return eSTATUS_SUCCESS;
 }
 

@@ -20,7 +20,7 @@
 #define IS_PRODUCER_ME()       (HAL_GetCurrentCPUID () == PRODUCER_ID)
 #define IS_CONSUMER_ME()       (HAL_GetCurrentCPUID () == CONSUMER_ID)
 #define COMMAND_QUEUE_CAPACITY 16U
-#define UART_RECV_BUFFER_SIZE  (COMMAND_TOTAL_SIZE) // + 2U)
+#define UART_RECV_BUFFER_SIZE  (CMD_TOTAL_SIZE_BYTES) // + 2U)
 
 /* Consumer global variables */
 QUEUE_DEFINE_STATIC (RawCommand, DefaultCommand, COMMAND_QUEUE_CAPACITY, true);
