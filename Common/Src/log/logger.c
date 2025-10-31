@@ -126,7 +126,7 @@ static void LoggerWriteChar_NonBlocking (char ch) {
     vRingBuff_t* pMyRingBuf = LoggerGetMyRingBuf ();
     RingBuffWrite (pMyRingBuf, (void*)&ch, 1);
 
-    if ((char)ch == '\n') {
+    if (ch == '\n') {
         if (PRIMARY_LOGGER_IS_ME () == true) {
             LoggerWriteToSinks (pMyRingBuf, RingBuffGetFull (pMyRingBuf));
         } else {
@@ -139,7 +139,10 @@ static void LoggerWriteChar_NonBlocking (char ch) {
  * Used by printf impl in format.c
  */
 static void LoggerWriteChar (void* p, char ch) {
-    LOGGER_WRITE_CHAR ((char)ch);
+
+    FJ_UNUSED (p);
+
+    LOGGER_WRITE_CHAR (ch);
 }
 
 eSTATUS_t LoggerAddSink (LoggerWriteToSink_t sink) {
@@ -170,11 +173,6 @@ eSTATUS_t LoggerRemoveSink (LoggerWriteToSink_t fpSink) {
     }
     return eSTATUS_FAILURE;
 }
-
-// PUTCHAR_PROTOTYPE {
-//     LOGGER_WRITE_CHAR ((char)ch);
-//     return ch;
-// }
 
 eSTATUS_t LoggerInit (void) {
 

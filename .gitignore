@@ -4,6 +4,8 @@ CM4/Release/**
 CM7/Release/**
 *.cyclo
 
+Scripts/build
+
 # Kicad Ignores
 *.lnk
 *.kicad_pcb.lck
