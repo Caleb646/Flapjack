@@ -80,8 +80,7 @@ STATIC_TESTABLE_DECL eSTATUS_t SyncMailBoxWrite (uint32_t mbID, uint8_t const* p
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t
-SyncMailBoxWriteNotify (uint32_t mbID, uint8_t const* pBuffer, uint32_t len) {
+STATIC_TESTABLE_DECL eSTATUS_t SyncMailBoxWriteNotify (uint32_t mbID, uint8_t const* pBuffer, uint32_t len) {
 
     eSTATUS_t status = SyncMailBoxWrite (mbID, pBuffer, len);
     if (status != eSTATUS_SUCCESS) {
@@ -118,8 +117,7 @@ STATIC_TESTABLE_DECL task_handler_fn_t SyncGetTaskHandler (eSYNC_TASKID_t taskId
 STATIC_TESTABLE_DECL void SyncIRQHandler (uint16_t myCPUMailBoxId) {
 
     DefaultTask task = { 0 };
-    eSTATUS_t status =
-    SyncMailBoxRead (myCPUMailBoxId, (uint8_t*)&task, sizeof (DefaultTask));
+    eSTATUS_t status = SyncMailBoxRead (myCPUMailBoxId, (uint8_t*)&task, sizeof (DefaultTask));
 
     if (TASK_IS_VALID (&task) == false || status != eSTATUS_SUCCESS) {
         return;
@@ -170,7 +168,7 @@ eSTATUS_t SyncProcessTasks (void) {
             continue;
         }
         SyncTaskHeader const* pHeader = (SyncTaskHeader const*)&task;
-        task_handler_fn_t fn = SyncGetTaskHandler (pHeader->taskID);
+        task_handler_fn_t fn          = SyncGetTaskHandler (pHeader->taskID);
         if (fn != NULL) {
             fn (&task);
         }
@@ -186,4 +184,19 @@ eSTATUS_t SyncNotifyTaskUartOut (uint16_t len) {
     task.len             = len;
 
     return SyncMailBoxWriteNotify (SyncGetOtherCoresMailBoxID (), (uint8_t*)&task, sizeof (SyncTaskUartOut));
+}
+
+
+#define DEFAULT_SEMAPHORE_ID 1U
+
+bool LockTake (void) {
+
+    while (HAL_HSEM_FastTake (DEFAULT_SEMAPHORE_ID) != HAL_OK) {
+    }
+    return true;
+}
+
+void LockRelease (void) {
+
+    HAL_HSEM_Release (DEFAULT_SEMAPHORE_ID, 0);
 }

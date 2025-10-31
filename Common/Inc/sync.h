@@ -40,6 +40,8 @@ typedef struct {
 
 STATIC_ASSERT (sizeof (SyncTaskHeader) == 4U, "");
 
+STATIC_ASSERT (sizeof (SyncTaskUartOut) < sizeof (MailBox_t), "");
+
 typedef eSTATUS_t (*task_handler_fn_t) (DefaultTask const* pTask);
 
 #ifdef UNIT_TEST
@@ -58,4 +60,6 @@ eSTATUS_t SyncRegisterHandler (eSYNC_TASKID_t taskID, task_handler_fn_t);
 eSTATUS_t SyncProcessTasks (void);
 eSTATUS_t SyncNotifyTaskUartOut (uint16_t len);
 
+bool LockTake (void);
+void LockRelease (void);
 #endif // SYNC_SYNC_H

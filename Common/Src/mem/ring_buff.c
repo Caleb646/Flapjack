@@ -92,7 +92,7 @@ uint8_t RingBuffInit (void* pData, size_t size, RINGBUFF_VOLATILE RingBuff* pOut
 
     BUF_MEMSET ((void*)pOutBuff, 0, sizeof (RingBuff));
     BUF_MEMSET (pData, 0, size);
-    pOutBuff->size   = sizeof (RingBuff);
+    pOutBuff->size   = size;
     pOutBuff->buff   = (uint8_t*)pData;
     pOutBuff->magic1 = 0xDEADBEEF;
     pOutBuff->magic2 = ~0xDEADBEEF;

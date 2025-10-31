@@ -35,7 +35,8 @@ static SHARED_MEM_SECTION uint8_t gCM4RingBufStorage[1024]             = { 0 };
 static SHARED_MEM_SECTION uint8_t gCM7RingBufStorage[4096]             = { 0 };
 static SHARED_MEM_SECTION RingBuff g_CM4_RingBuf                       = { 0 };
 static SHARED_MEM_SECTION RingBuff g_CM7_RingBuf                       = { 0 };
-static uint8_t ga_TempReadBuffer[TEMP_BUFFER_SIZE]                     = { 0 };
+static SHARED_MEM_SECTION bool gLoggerInitialized                      = false;
+// static uint8_t ga_TempReadBuffer[TEMP_BUFFER_SIZE]                     = { 0 };
 
 // typedef RingBuff volatile vRingBuff_t;
 typedef RingBuff vRingBuff_t;
@@ -71,13 +72,18 @@ static eSTATUS_t LoggerWriteToSinks (vRingBuff_t* pRingBuf, uint32_t totalLen) {
          * Read totalLen bytes from ringbuffer and this will include bytes
          * that overflowed (wrapped around to the beginning of the buffer)
          */
-        uint32_t toWrite   = MIN_U32 (nTotalBytes, TEMP_BUFFER_SIZE);
-        uint32_t bytesRead = RingBuffRead (pRingBuf, (void*)ga_TempReadBuffer, toWrite);
+        // uint32_t toWrite   = MIN_U32 (nTotalBytes, TEMP_BUFFER_SIZE);
+        // uint32_t bytesRead = RingBuffRead (pRingBuf, (void*)ga_TempReadBuffer, toWrite);
+
+        uint32_t bytesRead = RingBuffGetLinearBlockReadLength (pRingBuf);
+        void* pLinearRead  = RingBuffGetLinearBlockReadAddress (pRingBuf);
+
         for (uint32_t i = 0; i < gCurrentSinkIdx; ++i) {
             if (gLoggerSinks[i] != NULL) {
-                gLoggerSinks[i](ga_TempReadBuffer, bytesRead);
+                gLoggerSinks[i](pLinearRead, bytesRead);
             }
         }
+        RingBuffSkip (pRingBuf, bytesRead);
         nTotalBytes -= bytesRead;
     }
 
@@ -123,8 +129,11 @@ static void LoggerWriteChar_Blocking (char ch) {
 
 static void LoggerWriteChar_NonBlocking (char ch) {
 
+    static int tempCount = 0;
+    ++tempCount;
+
     vRingBuff_t* pMyRingBuf = LoggerGetMyRingBuf ();
-    RingBuffWrite (pMyRingBuf, (void*)&ch, 1);
+    RingBuffWrite (pMyRingBuf, (void*)&ch, 1U);
 
     if (ch == '\n') {
         if (PRIMARY_LOGGER_IS_ME () == true) {
@@ -141,6 +150,10 @@ static void LoggerWriteChar_NonBlocking (char ch) {
 static void LoggerWriteChar (void* p, char ch) {
 
     FJ_UNUSED (p);
+
+    // if (PRIMARY_LOGGER_IS_ME () == true) {
+    //     return;
+    // }
 
     LOGGER_WRITE_CHAR (ch);
 }
@@ -183,13 +196,27 @@ eSTATUS_t LoggerInit (void) {
         return eSTATUS_FAILURE;
     }
 
-    if (PRIMARY_LOGGER_IS_ME () == true) {
+    if (gLoggerInitialized == true) {
+        return eSTATUS_SUCCESS;
+    }
+
+    ATOMIC_BLOCK_LOCAL (eNVIC_PRIO_LVL_MAX) {
+
+        gLoggerInitialized = true;
+        LockTake ();
+
+        gCurrentSinkIdx = 0U;
+        memset ((void*)gLoggerSinks, 0, sizeof (gLoggerSinks));
+
         bool ok = true;
-        ok &= RingBuffInit (&gCM4RingBufStorage[0], sizeof (gCM4RingBufStorage), &g_CM4_RingBuf);
-        ok &= RingBuffInit (&gCM7RingBufStorage[0], sizeof (gCM7RingBufStorage), &g_CM7_RingBuf);
+        ok &= RingBuffInit (gCM4RingBufStorage, sizeof (gCM4RingBufStorage), &g_CM4_RingBuf);
+        ok &= RingBuffInit (gCM7RingBufStorage, sizeof (gCM7RingBufStorage), &g_CM7_RingBuf);
         if (ok != true) {
+            gLoggerInitialized = false;
             return eSTATUS_FAILURE;
         }
+        LockRelease ();
     }
+
     return eSTATUS_SUCCESS;
 }

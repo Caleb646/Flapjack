@@ -318,7 +318,7 @@ eMAG_STATUS_t MagUpdate (vMag_t* pMag, bool forcePolling, Vec3f* pOutput) {
 vMag_t const* MagGetActiveDevice (void) {
 
     if (MAG_VALID (&gMag) == false) {
-        LOG_ERROR ("No active valid MAG device");
+        // LOG_ERROR ("No active valid MAG device");
         return NULL;
     }
     return &gMag;
@@ -327,7 +327,7 @@ vMag_t const* MagGetActiveDevice (void) {
 vMag_t* MagGetMutableActiveDevice (void) {
 
     if (MAG_VALID (&gMag) == false) {
-        LOG_ERROR ("No active valid MAG device");
+        // LOG_ERROR ("No active valid MAG device");
         return NULL;
     }
     return &gMag;

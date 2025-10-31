@@ -1102,7 +1102,7 @@ eSTATUS_t IMUCompareConfs (IMUAccConf aconf, IMUGyroConf gconf, IMUAccConf aconf
 vIMU_t const* IMUGetActiveDevice (void) {
 
     if (IMU_VALID (&gIMU) == false) {
-        LOG_ERROR ("No active valid IMU device");
+        // LOG_ERROR ("No active valid IMU device");
         return NULL;
     }
     return &gIMU;
@@ -1111,7 +1111,7 @@ vIMU_t const* IMUGetActiveDevice (void) {
 vIMU_t* IMUGetMutableActiveDevice (void) {
 
     if (IMU_VALID (&gIMU) == false) {
-        LOG_ERROR ("No active valid IMU device");
+        // LOG_ERROR ("No active valid IMU device");
         return NULL;
     }
     return &gIMU;

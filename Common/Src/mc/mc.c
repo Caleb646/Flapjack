@@ -30,6 +30,7 @@ eSTATUS_t MCStartAll (void) {
     Vec3f startingAttitude = { 0.0F };
     status                 = FilterStart (FilterGetMutableActiveFilter (), 500U, &startingAttitude);
     RETURN_IF (STATUS_FAIL (status), status, "Failed to start filter");
+
     if (FCStateSetCurrentAttitude (FCStateGetMutableActiveState (), startingAttitude) == false) {
         LOG_ERROR ("Failed to set starting attitude in FC state");
         return eSTATUS_FAILURE;

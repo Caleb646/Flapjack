@@ -86,5 +86,5 @@ eSTATUS_t DeviceStartAll (void) {
 
     // NOTE: Leave motors and servos to be started by the motion control (mc) module
 
-    return status;
+    return eSTATUS_SUCCESS;
 }

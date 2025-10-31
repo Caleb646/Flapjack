@@ -15,8 +15,7 @@
 #include <string.h>
 
 
-#define MOTOR_VALID(pMOTOR) \
-    ((pMOTOR) != NULL && (pMOTOR)->isInitialized == true)
+#define MOTOR_VALID(pMOTOR) ((pMOTOR) != NULL && (pMOTOR)->isInitialized == true)
 
 VECTOR_DEFINE_STATIC_SHARED (Motor, Motor_t, MOTOR_COUNT);
 
@@ -74,9 +73,9 @@ eSTATUS_t MotorInit (MotorInitConf_t conf, Motor_t* pOutMotor) {
     eDEVICE_ID_t motorId     = device.deviceId;
     RETURN_IF (DEVICE_ID_IS_MOTOR (motorId) == false, eSTATUS_FAILURE, "Invalid motor ID: %u", motorId);
 
-    MotorDeviceConf_t motorConf       = device.motor;
-    bool usingDMA                     = motorConf.useDMA;
-    TimerBoardConf_t* pTimerBoardConf = motorConf.pTimerBoardConf;
+    MotorDeviceConf_t motorConf              = device.motor;
+    bool usingDMA                            = motorConf.useDMA;
+    TimerBoardConf_t* pTimerBoardConf        = motorConf.pTimerBoardConf;
     DeviceBoardConf_t* pLinkedServoBoardConf = motorConf.pLinkedServoBoardConf;
     // uint8_t dshotSpeed                       = motor.dshotSpeed;
     // (void)dshotSpeed;
@@ -133,6 +132,7 @@ eSTATUS_t MotorStart (Motor_t* pMotor) {
     }
     // Set initial throttle to minimum
     // return DShotWrite (&pMotor->dshot, DSHOT_MIN_THROTTLE);
+    LOG_INFO ("Started Motor ID %u", pMotor->motorId);
     return eSTATUS_SUCCESS;
 }
 
@@ -170,8 +170,7 @@ eSTATUS_t MotorWrite (Motor_t* pMotor, float targetThrottle) {
         return eSTATUS_FAILURE;
     }
 
-    float clippedThrottle =
-    clipf32 (targetThrottle, MOTOR_MIN_THROTTLE, MOTOR_MAX_THROTTLE);
+    float clippedThrottle     = clipf32 (targetThrottle, MOTOR_MIN_THROTTLE, MOTOR_MAX_THROTTLE);
     pMotor->curThrottle       = clippedThrottle;
     pMotor->curTargetThrottle = targetThrottle;
 

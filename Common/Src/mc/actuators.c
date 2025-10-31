@@ -21,8 +21,7 @@
 /*
  * \param pidAttitude roll, pitch, and yaw are between -1 and 1
  */
-STATIC_TESTABLE_DECL eSTATUS_t
-ActuatorsMixPair (Servo_t* pServo, Motor_t* pMotor, Vec3f pidAttitude, float targetThrottle) {
+STATIC_TESTABLE_DECL eSTATUS_t ActuatorsMixPair (Servo_t* pServo, Motor_t* pMotor, Vec3f pidAttitude, float targetThrottle) {
     /*
      *  Motor_t Mixing
      */
@@ -34,18 +33,18 @@ ActuatorsMixPair (Servo_t* pServo, Motor_t* pMotor, Vec3f pidAttitude, float tar
      * NOTE: A PID pitch value should always increase the throttle of both
      * motors regardless of the sign of the PID pitch value.
      */
-    mixedThrottle += mPitchMix * ABS_F32 (pidAttitude.pitch) +
-                     mRollMix * pidAttitude.roll + mYawMix * pidAttitude.yaw;
+    mixedThrottle +=
+    mPitchMix * ABS_F32 (pidAttitude.pitch) + mRollMix * pidAttitude.roll + mYawMix * pidAttitude.yaw;
     mixedThrottle = clipf32 (mixedThrottle, 0.0F, 1.0F);
 
     /*
      *  Servo_t Mixing
      */
-    float sPitchMix  = pServo->pitchMix;
-    float sYawMix    = pServo->yawMix;
-    float sRollMix   = pServo->rollMix;
-    float mixedAngle = sPitchMix * pidAttitude.pitch +
-                       sRollMix * pidAttitude.roll + sYawMix * pidAttitude.yaw;
+    float sPitchMix = pServo->pitchMix;
+    float sYawMix   = pServo->yawMix;
+    float sRollMix  = pServo->rollMix;
+    float mixedAngle =
+    sPitchMix * pidAttitude.pitch + sRollMix * pidAttitude.roll + sYawMix * pidAttitude.yaw;
     // NOTE: Maybe Roll should have a negative impact on target angle.
     // Meaning the magnitude of the target angle is closer to 0 the larger
     // pid roll is.
@@ -98,7 +97,7 @@ STATIC_TESTABLE_DECL eSTATUS_t ActuatorsArmMotor (Motor_t* pMotor) {
     //     vTaskDelay (pdMS_TO_TICKS (msDelay));
     //     i += increment;
     // }
-
+    LOG_INFO ("Armed motor ID %u", pMotor->motorId);
     return eSTATUS_SUCCESS;
 }
 
@@ -134,11 +133,7 @@ eSTATUS_t ActuatorsWrite (Vec3f pidAttitude, float targetThrottle) {
         if (pServo != NULL) {
             status = ActuatorsMixPair (pServo, pMotor, pidAttitude, targetThrottle);
             if (status != eSTATUS_SUCCESS) {
-                LOG_ERROR (
-                "Failed to mix motor ID %u and servo ID %u",
-                pMotor->motorId,
-                pServo->servoId
-                );
+                LOG_ERROR ("Failed to mix motor ID %u and servo ID %u", pMotor->motorId, pServo->servoId);
                 return eSTATUS_FAILURE;
             }
         } else {
@@ -151,8 +146,7 @@ eSTATUS_t ActuatorsWrite (Vec3f pidAttitude, float targetThrottle) {
              * NOTE: A PID pitch value should always increase the throttle of both
              * motors regardless of the sign of the PID pitch value.
              */
-            mixedThrottle += mPitchMix * ABS_F32 (pidAttitude.pitch) +
-                             mRollMix * pidAttitude.roll +
+            mixedThrottle += mPitchMix * ABS_F32 (pidAttitude.pitch) + mRollMix * pidAttitude.roll +
                              mYawMix * pidAttitude.yaw;
             mixedThrottle = clipf32 (mixedThrottle, 0.0F, 1.0F);
             status        = MotorWrite (pMotor, mixedThrottle);
@@ -176,14 +170,13 @@ eSTATUS_t ActuatorsWrite (Vec3f pidAttitude, float targetThrottle) {
         // as those servos were already written to in the motor loop above.
         if (pServo->linkedMotorId == eDEVICE_ID_NULL) {
 
-            float sPitchMix  = pServo->pitchMix;
-            float sYawMix    = pServo->yawMix;
-            float sRollMix   = pServo->rollMix;
-            float mixedAngle = sPitchMix * pidAttitude.pitch +
-                               sRollMix * pidAttitude.roll +
-                               sYawMix * pidAttitude.yaw;
+            float sPitchMix = pServo->pitchMix;
+            float sYawMix   = pServo->yawMix;
+            float sRollMix  = pServo->rollMix;
+            float mixedAngle =
+            sPitchMix * pidAttitude.pitch + sRollMix * pidAttitude.roll + sYawMix * pidAttitude.yaw;
             mixedAngle = clipf32 (mixedAngle, -pServo->maxAngle, pServo->maxAngle);
-            status = ServoWrite (pServo, mixedAngle);
+            status     = ServoWrite (pServo, mixedAngle);
             if (status != eSTATUS_SUCCESS) {
                 LOG_ERROR ("Failed to write servo ID %u", pServo->servoId);
                 return eSTATUS_FAILURE;

@@ -15,8 +15,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#define SERVO_VALID(pSERVO) \
-    ((pSERVO) != NULL && (pSERVO)->isInitialized == true)
+#define SERVO_VALID(pSERVO) ((pSERVO) != NULL && (pSERVO)->isInitialized == true)
 
 VECTOR_DEFINE_STATIC_SHARED (Servo, Servo_t, SERVO_COUNT);
 
@@ -113,7 +112,7 @@ eSTATUS_t ServoInit (ServoInitConf_t conf, Servo_t* pOutServo) {
     ServoDeviceConf_t servoConf       = deviceConf.servo;
     TimerBoardConf_t* pTimerBoardConf = servoConf.pTimerBoardConf;
     RETURN_IF_NULL (pTimerBoardConf, eSTATUS_FAILURE, "ServoInit: pTimerBoardConf is NULL");
-    eTIMER_ID_t timerId = pTimerBoardConf->timerId;
+    eTIMER_ID_t timerId                      = pTimerBoardConf->timerId;
     DeviceBoardConf_t* pLinkedMotorBoardConf = servoConf.pLinkedMotorBoardConf;
 
     uint32_t pwmFrequency = servoConf.pwmFrequency;
@@ -184,6 +183,7 @@ eSTATUS_t ServoStart (Servo_t* pServo) {
         return eSTATUS_FAILURE;
     }
 
+    LOG_INFO ("Started Servo ID %u", pServo->servoId);
     // Set initial angle to middle position
     return ServoWrite (pServo, 0.0F);
 }
@@ -211,9 +211,9 @@ eSTATUS_t ServoWrite (Servo_t* pServo, float targetAngle) {
         return eSTATUS_FAILURE;
     }
 
-    eTIMER_ID_t timerId  = pServo->timerId;
-    float usableMaxAngle = pServo->usableMaxAngle;
-    float clippedAngle = clipf32 (targetAngle, -usableMaxAngle, usableMaxAngle);
+    eTIMER_ID_t timerId    = pServo->timerId;
+    float usableMaxAngle   = pServo->usableMaxAngle;
+    float clippedAngle     = clipf32 (targetAngle, -usableMaxAngle, usableMaxAngle);
     pServo->curAngle       = clippedAngle;
     pServo->curTargetAngle = targetAngle;
 

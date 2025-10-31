@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#define SEMAPHORE_ID            1U
+// #define SEMAPHORE_ID            1U
 #define IS_QUEUE_SHARED(pQueue) ((pQueue)->processID != 0U)
 
 /*
@@ -61,8 +61,7 @@ static void Queue_ExitCritical (Queue_t const* pQueue) {
 #endif
 }
 
-eSTATUS_t
-QueueInit (Queue_t* pQueue, void* pBuffer, uint16_t capacity, uint16_t elementSize, bool isShared) {
+eSTATUS_t QueueInit (Queue_t* pQueue, void* pBuffer, uint16_t capacity, uint16_t elementSize, bool isShared) {
 
     if (pQueue == NULL || pBuffer == NULL || capacity == 0 || elementSize == 0) {
         return eSTATUS_FAILURE;
@@ -148,16 +147,14 @@ eSTATUS_t Queue_Push (Queue_t* pQueue, void const* pElement) {
     }
 
     // Calculate the memory location for the tail element
-    uint8_t* pDataBytes = (uint8_t*)pQueue->pData;
-    uint8_t* pTailLocation =
-    pDataBytes + (uint32_t)(pQueue->tail * pQueue->elementSize);
+    uint8_t* pDataBytes    = (uint8_t*)pQueue->pData;
+    uint8_t* pTailLocation = pDataBytes + (uint32_t)(pQueue->tail * pQueue->elementSize);
 
     // Copy the element to the tail position
     memcpy (pTailLocation, pElement, pQueue->elementSize);
 
     // Update tail index (circular)
-    pQueue->tail = (pQueue->tail + 1U) &
-                   (pQueue->capacity - 1U); // Use bitwise AND for circular indexing
+    pQueue->tail = (pQueue->tail + 1U) & (pQueue->capacity - 1U); // Use bitwise AND for circular indexing
 
     /*
      * NOTE: The reason for only protecting the count update is because
@@ -188,16 +185,14 @@ eSTATUS_t Queue_Pop (Queue_t* pQueue, void* pOutElement) {
     }
 
     // Calculate the memory location for the head element
-    uint8_t* pDataBytes = (uint8_t*)pQueue->pData;
-    uint8_t* pHeadLocation =
-    pDataBytes + (uint32_t)(pQueue->head * pQueue->elementSize);
+    uint8_t* pDataBytes    = (uint8_t*)pQueue->pData;
+    uint8_t* pHeadLocation = pDataBytes + (uint32_t)(pQueue->head * pQueue->elementSize);
 
     // Copy the element from the head position
     memcpy (pOutElement, pHeadLocation, pQueue->elementSize);
 
     // Update head index (circular)
-    pQueue->head = (pQueue->head + 1U) &
-                   (pQueue->capacity - 1U); // Use bitwise AND for circular indexing
+    pQueue->head = (pQueue->head + 1U) & (pQueue->capacity - 1U); // Use bitwise AND for circular indexing
 
     /*
      * NOTE: The reason for only protecting the count update is because
@@ -228,9 +223,8 @@ eSTATUS_t Queue_Peek (Queue_t const* pQueue, void* pOutElement) {
     }
 
     // Calculate the memory location for the head element
-    uint8_t const* pDataBytes = (uint8_t const*)pQueue->pData;
-    uint8_t const* pHeadLocation =
-    pDataBytes + (uint32_t)(pQueue->head * pQueue->elementSize);
+    uint8_t const* pDataBytes    = (uint8_t const*)pQueue->pData;
+    uint8_t const* pHeadLocation = pDataBytes + (uint32_t)(pQueue->head * pQueue->elementSize);
 
     // Copy the element from the head position without removing it
     memcpy (pOutElement, pHeadLocation, pQueue->elementSize);
