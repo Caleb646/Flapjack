@@ -116,7 +116,7 @@ eSTATUS_t ActuatorsStop (void) {
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t ActuatorsWrite (Vec3f pidAttitude, float targetThrottle) {
+eSTATUS_t ActuatorsUpdate (Vec3f pidAttitude, float targetThrottle) {
 
     eSTATUS_t status       = eSTATUS_SUCCESS;
     Vector_t* pMotorVector = MotorGetAll ();

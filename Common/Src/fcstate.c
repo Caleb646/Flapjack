@@ -71,7 +71,7 @@ vFCState_t const* FCStateGetActiveState (void) {
     return &gFCState;
 }
 
-vFCState_t* FCStateGetMutableActiveState (void) {
+vFCState_t* FCState_GetMutableActiveState (void) {
 
     if (FCSTATE_VALID (&gFCState) == false) {
         return NULL;

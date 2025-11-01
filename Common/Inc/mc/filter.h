@@ -69,7 +69,7 @@ eSTATUS_t FilterStart (vFilter_t* pFilter, uint32_t warmUpIterations, Vec3f* pOu
 eSTATUS_t FilterStop (vFilter_t* pFilter);
 eSTATUS_t FilterUpdate (vFilter_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyro, Vec3f const* pMag, float dt, Vec3f* pOutput);
 vFilter_t const* FilterGetActiveFilter (void);
-vFilter_t* FilterGetMutableActiveFilter (void);
+vFilter_t* Filter_GetMutableActiveFilter (void);
 
 // clang-format on
 

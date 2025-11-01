@@ -21,7 +21,7 @@ eSTATUS_t ActuatorsArm (Motor_t* pMotor);
 
 eSTATUS_t ActuatorsStart (void);
 eSTATUS_t ActuatorsStop (void);
-eSTATUS_t ActuatorsWrite (Vec3f pidAttitude, float targetThrottle);
+eSTATUS_t ActuatorsUpdate (Vec3f pidAttitude, float targetThrottle);
 void ActuatorsLogData (void);
 
 #endif // MOTION_CONTROL_ACTUATORS_H

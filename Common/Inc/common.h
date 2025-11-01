@@ -39,6 +39,8 @@
 #define DEG2RAD(x)               (((float)(x)) * 0.017453292519943295F) // (π / 180)
 #define RAD2DEG(x)               (((float)(x)) * 57.29577951308232F)    // (180 / π)
 
+#define BUF_TO_U16(BUF)          ((uint16_t)(((uint32_t)(BUF)[1] << 8U) | (uint16_t)(BUF)[0]))
+
 #define ARRAY_SIZE(ARRAY)        (sizeof (ARRAY) / sizeof ((ARRAY)[0]))
 
 #define FOR_EACH(TYPE, ARRAY) \
@@ -76,6 +78,7 @@ enum {
     eSTATUS_NOT_FOUND      = -116,
     eSTATUS_UNSUPPORTED    = -115,
     eSTATUS_ALREADY_INITED = -114,
+    eSTATUS_RETRY          = -113,
 
     eSTATUS_SUB_STATUS_START__,
 
@@ -88,6 +91,7 @@ enum {
 #define STATUS_OK_BUSY(STATUS) ((STATUS) == eSTATUS_SUCCESS || (STATUS) == eSTATUS_BUSY)
 #define STATUS_OK_PREV_INITED(STATUS) ((STATUS) == eSTATUS_SUCCESS || (STATUS) == eSTATUS_ALREADY_INITED)
 #define STATUS_FAIL(STATUS) ((STATUS) != eSTATUS_SUCCESS)
+#define STATUS_RETRY(STATUS) ((STATUS) == eSTATUS_RETRY)
 
 // clang-format on
 

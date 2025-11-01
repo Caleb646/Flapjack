@@ -132,7 +132,7 @@ vPID_t const* PIDGetActivePID (void) {
     return &gPID;
 }
 
-vPID_t* PIDGetMutableActivePID (void) {
+vPID_t* PID_GetMutableActivePID (void) {
 
     if (PID_VALID (&gPID) == false) {
         return NULL;

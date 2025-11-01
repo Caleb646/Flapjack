@@ -44,7 +44,7 @@ eSTATUS_t PIDStart (vPID_t* pPID);
 eSTATUS_t PIDStop (vPID_t* pPID);
 eSTATUS_t PIDUpdate (vPID_t* pPID, Vec3f const* currentAttitude, Vec3f const* targetAttitude, Vec3f const* maxAttitude, float dt, Vec3f* pOut);
 vPID_t const* PIDGetActivePID (void);
-vPID_t * PIDGetMutableActivePID (void);
+vPID_t * PID_GetMutableActivePID (void);
 
 // clang-format on
 

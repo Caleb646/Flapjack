@@ -127,6 +127,51 @@ typedef struct {
 } IMUErr;
 
 typedef struct {
+    union {
+        uint16_t raw;
+        struct {
+            uint16_t por_detected : 1;
+            uint16_t reserved_1 : 4;
+            uint16_t drdyTemp : 1;
+            uint16_t drdyGyro : 1;
+            uint16_t drdyAccel : 1;
+        };
+    };
+} IMU_SysStatusReg_t;
+
+typedef struct {
+    union {
+        uint16_t raw;
+        struct {
+            uint16_t unused : 10;
+            uint16_t errStatus : 1;
+            uint16_t drdyTemp : 1;
+            uint16_t drdyGyro : 1;
+            uint16_t drdyAccel : 1;
+            uint16_t fifoWatermark : 1;
+            uint16_t fifoFull : 1;
+        } int_1;
+    };
+} IMU_INTStatusReg_t;
+
+typedef struct {
+    union {
+        uint16_t raw;
+        struct {
+            uint16_t error_status : 4;
+            uint16_t sc_st_complete : 1;
+            uint16_t gyro_sc_complete : 1;
+            uint16_t st_result : 1;
+            uint16_t sample_rate_err : 1;
+            uint16_t reserved_1 : 2;
+            uint16_t axis_map_complete : 1;
+            uint16_t state : 2;
+            uint16_t reserved_2 : 3;
+        } feat_1;
+    };
+} IMU_FeatureReg_t;
+
+typedef struct {
     IMU_ACC_RANGE range;
     IMU_ACC_ODR odr;
     IMU_ACC_BW bw;
@@ -141,15 +186,6 @@ typedef struct {
     IMU_GYRO_AVG avg;
     IMU_GYRO_MODE mode;
 } IMUGyroConf;
-
-typedef struct {
-    uint8_t errStatus;
-    uint8_t selfCalibComplete;
-    uint8_t gyroSelfCalibResult;
-    uint8_t selfTestResult;
-    uint8_t axisRemapComplete;
-    uint8_t systemState;
-} IMUFeatureStatus;
 
 /*
  *   0x0 --> x=x; y=y; z=z;
@@ -200,28 +236,19 @@ typedef struct {
     uint8_t nBusDummyBytes;
     bool usingEXTIInterrupt;
     bool isInitialized;
-    bool gyroDataUpdated;
-    bool accelDataUpdated;
+    bool volatile gyroDataUpdated;
+    bool volatile accelDataUpdated;
 } IMU_t;
 
 // typedef IMU_t volatile vIMU_t;
 typedef IMU_t vIMU_t;
 
-typedef struct {
-    /*! Stores the self-calibration result */
-    int8_t result;
-    /*! Stores the self-calibration error codes status */
-    uint8_t error;
-} IMUSelfCalibResult;
-
 #ifdef UNIT_TEST
 
 eSTATUS_t IMUSendCmd (vIMU_t const* pIMU, uint16_t cmd);
-eSTATUS_t IMUGetFeatureStatus (vIMU_t const* pIMU, uint16_t featureRegAddr, IMUFeatureStatus* pResultOut);
-eSTATUS_t IMUGetINTStatus (vIMU_t const* pIMU, uint16_t* pOutStatus);
-eSTATUS_t IMUGetStatusReg (vIMU_t const* pIMU, uint16_t* pOutStatus);
-eSTATUS_t IMUGetDeviceErr (vIMU_t* pIMU, IMUErr* pOutErr);
-void IMULogDeviceErr (vIMU_t* pIMU, IMUErr const* pErr);
+eSTATUS_t IMUGetFeatureStatus (vIMU_t const* pIMU, uint16_t featureRegAddr, IMU_FeatureReg_t* pOutStatus);
+eSTATUS_t IMUGetINTStatus (vIMU_t const* pIMU, IMU_INTStatusReg_t*);
+eSTATUS_t IMUGetSysStatus (vIMU_t const* pIMU, IMU_SysStatusReg_t* pOutStatus);
 eSTATUS_t IMUReadReg (vIMU_t const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
 eSTATUS_t IMUWriteReg (vIMU_t const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
 eSTATUS_t IMUUpdateRawGyro (vIMU_t* pIMU);
@@ -230,7 +257,7 @@ eSTATUS_t IMUSetAxesRemap (vIMU_t* pIMU, IMUAxesRemapConf remap);
 eSTATUS_t IMUSoftReset (vIMU_t* pIMU);
 eSTATUS_t IMUGetConf_ (vIMU_t* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf, uint8_t altConfFlag);
 eSTATUS_t IMUSetConf_ (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf, uint8_t altConfFlag);
-eSTATUS_t IMUCalibrate (vIMU_t* pIMU, uint8_t calibSelection, uint8_t applyCorrection, IMUSelfCalibResult* pResultOut);
+eSTATUS_t IMUCalibrate (vIMU_t* pIMU, uint8_t calibSelection, uint8_t applyCorrection);
 eSTATUS_t IMUSetupInterrupts (vIMU_t const* pIMU);
 eSTATUS_t IMUEnableInterrupts (vIMU_t const* pIMU);
 eSTATUS_t IMUDisableInterrupts (vIMU_t const* pIMU);

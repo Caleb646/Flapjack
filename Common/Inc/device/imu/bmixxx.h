@@ -633,8 +633,7 @@
 #define BMI3_SET_BITS(reg_data, bitname, data) \
     ((reg_data & ~(bitname##_MASK)) | ((data << bitname##_POS) & bitname##_MASK))
 
-#define BMI3_GET_BITS(reg_data, bitname) \
-    ((reg_data & (bitname##_MASK)) >> (bitname##_POS))
+#define BMI3_GET_BITS(reg_data, bitname) ((reg_data & (bitname##_MASK)) >> (bitname##_POS))
 
 #define BMI3_SET_BIT_POS0(reg_data, bitname, data) \
     ((reg_data & ~(bitname##_MASK)) | (data & bitname##_MASK))
@@ -1025,8 +1024,8 @@ valid in combination with an active bit in INT_STATUS_INT1/2. */
 #define BMI3_I3C_ERROR0_MASK                        UINT16_C (0x0100)
 #define BMI3_I3C_ERROR0_POS                         UINT8_C (8)
 
-/*! S0/S1 error occurred. When S0/S1 error occurs, the slave will recover automatically after 60 us as if we see a
- * HDR-exit pattern on the bus while the flag will persist for notification purpose.
+/*! S0/S1 error occurred. When S0/S1 error occurs, the slave will recover automatically after 60 us
+ * as if we see a HDR-exit pattern on the bus while the flag will persist for notification purpose.
  * This flag is clear-on-read type. It is cleared automatically once read.
  */
 #define BMI3_I3C_ERROR3_MASK                        UINT16_C (0x0800)
@@ -2255,136 +2254,70 @@ valid in combination with an active bit in INT_STATUS_INT1/2. */
 
 #define BMI3_FOC_SAMPLE_LIMIT                       UINT8_C (128)
 
-#define BMI3_ACC_2G_MAX_NOISE_LIMIT \
-    (BMI3_ACC_FOC_2G_REF + BMI3_ACC_FOC_2G_OFFSET)
-#define BMI3_ACC_2G_MIN_NOISE_LIMIT \
-    (BMI3_ACC_FOC_2G_REF - BMI3_ACC_FOC_2G_OFFSET)
-#define BMI3_ACC_4G_MAX_NOISE_LIMIT \
-    (BMI3_ACC_FOC_4G_REF + BMI3_ACC_FOC_4G_OFFSET)
-#define BMI3_ACC_4G_MIN_NOISE_LIMIT \
-    (BMI3_ACC_FOC_4G_REF - BMI3_ACC_FOC_4G_OFFSET)
-#define BMI3_ACC_8G_MAX_NOISE_LIMIT \
-    (BMI3_ACC_FOC_8G_REF + BMI3_ACC_FOC_8G_OFFSET)
-#define BMI3_ACC_8G_MIN_NOISE_LIMIT \
-    (BMI3_ACC_FOC_8G_REF - BMI3_ACC_FOC_8G_OFFSET)
-#define BMI3_ACC_16G_MAX_NOISE_LIMIT \
-    (BMI3_ACC_FOC_16G_REF + BMI3_ACC_FOC_16G_OFFSET)
-#define BMI3_ACC_16G_MIN_NOISE_LIMIT \
-    (BMI3_ACC_FOC_16G_REF - BMI3_ACC_FOC_16G_OFFSET)
+#define BMI3_ACC_2G_MAX_NOISE_LIMIT                 (BMI3_ACC_FOC_2G_REF + BMI3_ACC_FOC_2G_OFFSET)
+#define BMI3_ACC_2G_MIN_NOISE_LIMIT                 (BMI3_ACC_FOC_2G_REF - BMI3_ACC_FOC_2G_OFFSET)
+#define BMI3_ACC_4G_MAX_NOISE_LIMIT                 (BMI3_ACC_FOC_4G_REF + BMI3_ACC_FOC_4G_OFFSET)
+#define BMI3_ACC_4G_MIN_NOISE_LIMIT                 (BMI3_ACC_FOC_4G_REF - BMI3_ACC_FOC_4G_OFFSET)
+#define BMI3_ACC_8G_MAX_NOISE_LIMIT                 (BMI3_ACC_FOC_8G_REF + BMI3_ACC_FOC_8G_OFFSET)
+#define BMI3_ACC_8G_MIN_NOISE_LIMIT                 (BMI3_ACC_FOC_8G_REF - BMI3_ACC_FOC_8G_OFFSET)
+#define BMI3_ACC_16G_MAX_NOISE_LIMIT                (BMI3_ACC_FOC_16G_REF + BMI3_ACC_FOC_16G_OFFSET)
+#define BMI3_ACC_16G_MIN_NOISE_LIMIT                (BMI3_ACC_FOC_16G_REF - BMI3_ACC_FOC_16G_OFFSET)
 
 /*! Macro to define accelerometer configuration value for FOC */
-#define BMI3_FOC_ACC_CONF_VAL_LSB  UINT8_C (0xB7)
-#define BMI3_FOC_ACC_CONF_VAL_MSB  UINT8_C (0x40)
+#define BMI3_FOC_ACC_CONF_VAL_LSB                   UINT8_C (0xB7)
+#define BMI3_FOC_ACC_CONF_VAL_MSB                   UINT8_C (0x40)
 
 /*! Macro to define X Y and Z axis for an array */
-#define BMI3_X_AXIS                UINT8_C (0)
-#define BMI3_Y_AXIS                UINT8_C (1)
-#define BMI3_Z_AXIS                UINT8_C (2)
+#define BMI3_X_AXIS                                 UINT8_C (0)
+#define BMI3_Y_AXIS                                 UINT8_C (1)
+#define BMI3_Z_AXIS                                 UINT8_C (2)
 
-#define BMI3_FOC_INVERT_VALUE      INT8_C (-1)
+#define BMI3_FOC_INVERT_VALUE                       INT8_C (-1)
 
 /*! For defining absolute values */
-#define BMI3_ABS(a)                ((a) > 0 ? (a) : -(a))
+#define BMI3_ABS(a)                                 ((a) > 0 ? (a) : -(a))
 
 /*! Sensortime resolution in seconds */
-#define BMI3_SENSORTIME_RESOLUTION 0.0000390625f
+#define BMI3_SENSORTIME_RESOLUTION                  0.0000390625f
 
 /*! Maximum available register length */
-#define BMI3_MAX_LEN               UINT8_C (128)
+#define BMI3_MAX_LEN                                UINT8_C (128)
 
-#define BMI3_ACC_2G                UINT8_C (2)
-#define BMI3_ACC_4G                UINT8_C (4)
-#define BMI3_ACC_8G                UINT8_C (8)
-#define BMI3_ACC_16G               UINT8_C (16)
+#define BMI3_ACC_2G                                 UINT8_C (2)
+#define BMI3_ACC_4G                                 UINT8_C (4)
+#define BMI3_ACC_8G                                 UINT8_C (8)
+#define BMI3_ACC_16G                                UINT8_C (16)
 
-#define BMI3_ACC_2G_BIT_POS        UINT8_C (1)
-#define BMI3_ACC_4G_BIT_POS        UINT8_C (2)
-#define BMI3_ACC_8G_BIT_POS        UINT8_C (3)
-#define BMI3_ACC_16G_BIT_POS       UINT8_C (4)
+#define BMI3_ACC_2G_BIT_POS                         UINT8_C (1)
+#define BMI3_ACC_4G_BIT_POS                         UINT8_C (2)
+#define BMI3_ACC_8G_BIT_POS                         UINT8_C (3)
+#define BMI3_ACC_16G_BIT_POS                        UINT8_C (4)
 
 /*! Maximum number of interrupt pins */
-#define BMI3_INT_PIN_MAX_NUM       UINT8_C (2)
+#define BMI3_INT_PIN_MAX_NUM                        UINT8_C (2)
 
 /******************************************************************************/
 /*! @name       Gyro self-calibration/self-test coefficient macros  */
 /******************************************************************************/
-#define BMI3_SC_ST_VALUE_0         UINT16_C (0x5A2E)
-#define BMI3_SC_ST_VALUE_1         UINT16_C (0x9219)
-#define BMI3_SC_ST_VALUE_2         UINT16_C (0x5637)
-#define BMI3_SC_ST_VALUE_3         UINT16_C (0xFFE8)
-#define BMI3_SC_ST_VALUE_4         UINT16_C (0xFFEF)
-#define BMI3_SC_ST_VALUE_5         UINT16_C (0x000D)
-#define BMI3_SC_ST_VALUE_6         UINT16_C (0x07CA)
-#define BMI3_SC_ST_VALUE_7         UINT16_C (0xFFCD)
-#define BMI3_SC_ST_VALUE_8         UINT16_C (0xEF6C)
+#define BMI3_SC_ST_VALUE_0                          UINT16_C (0x5A2E)
+#define BMI3_SC_ST_VALUE_1                          UINT16_C (0x9219)
+#define BMI3_SC_ST_VALUE_2                          UINT16_C (0x5637)
+#define BMI3_SC_ST_VALUE_3                          UINT16_C (0xFFE8)
+#define BMI3_SC_ST_VALUE_4                          UINT16_C (0xFFEF)
+#define BMI3_SC_ST_VALUE_5                          UINT16_C (0x000D)
+#define BMI3_SC_ST_VALUE_6                          UINT16_C (0x07CA)
+#define BMI3_SC_ST_VALUE_7                          UINT16_C (0xFFCD)
+#define BMI3_SC_ST_VALUE_8                          UINT16_C (0xEF6C)
 
-#define BMI3_SC_SENSITIVITY_EN     UINT8_C (1)
-#define BMI3_SC_OFFSET_EN          UINT8_C (2)
+#define BMI3_SC_SENSITIVITY_EN                      UINT8_C (1)
+#define BMI3_SC_OFFSET_EN                           UINT8_C (2)
 
 /*! Self-calibration enable disable macros */
-#define BMI3_SC_APPLY_CORR_DIS     UINT8_C (0)
-#define BMI3_SC_APPLY_CORR_EN      UINT8_C (4)
+#define BMI3_SC_APPLY_CORR_DIS                      UINT8_C (0)
+#define BMI3_SC_APPLY_CORR_EN                       UINT8_C (4)
 
-#define INITIAL_LOW_VALUE          INT16_C (32767)
-#define INITIAL_HIGH_VALUE         INT16_C (-32768)
-
-typedef struct {
-    /*! Map interrupt output to either INT1 or INT2 or IBI
-     *  Value   Name        Description
-     *   00   DISABLED   Interrupt disabled
-     *   01   MAP_INT1     Mapped to INT1
-     *   10   MAP_INT2     Mapped to INT2
-     *   11   MAP_IBI     Mapped to I3C IBI
-     */
-
-    /*! Maps no-motion output to either INT1 or INT2 or IBI */
-    uint8_t no_motion_out;
-
-    /*! Maps any-motion output to either INT1 or INT2 or IBI */
-    uint8_t any_motion_out;
-
-    /*! Maps flat output to either INT1 or INT2 or IBI */
-    uint8_t flat_out;
-
-    /*! Maps orientation output to either INT1 or INT2 or IBI */
-    uint8_t orientation_out;
-
-    /*! Maps step detector output to either INT1 or INT2 or IBI */
-    uint8_t step_detector_out;
-
-    /*! Maps step counter output to either INT1 or INT2 or IBI */
-    uint8_t step_counter_out;
-
-    /*! Maps significant motion output to either INT1 or INT2 or IBI */
-    uint8_t sig_motion_out;
-
-    /*! Maps tilt output to either INT1 or INT2 or IBI */
-    uint8_t tilt_out;
-
-    /*! Maps tap output to either INT1 or INT2 or IBI */
-    uint8_t tap_out;
-
-    /*! Maps i3c output to either INT1 or INT2 or IBI  */
-    uint8_t i3c_out;
-
-    /*! Maps feature engine's error or status change to either INT1 or INT2 or IBI */
-    uint8_t err_status;
-
-    /*! Maps temperature data ready interrupt to either INT1 or INT2 or IBI */
-    uint8_t temp_drdy_int;
-
-    /*! Maps gyro data ready interrupt to either INT1 or INT2 or IBI */
-    uint8_t gyr_drdy_int;
-
-    /*! Maps accel data ready interrupt to either INT1 or INT2 or IBI */
-    uint8_t acc_drdy_int;
-
-    /*! Maps FIFO watermark interrupt to either INT1 or INT2 or IBI */
-    uint8_t fifo_watermark_int;
-
-    /*! Maps FIFO full interrupt to either INT1 or INT2 or IBI */
-    uint8_t fifo_full_int;
-} bmi3_map_int;
+#define INITIAL_LOW_VALUE                           INT16_C (32767)
+#define INITIAL_HIGH_VALUE                          INT16_C (-32768)
 
 typedef enum {
     BMI3_INT_NONE,
@@ -2394,5 +2327,40 @@ typedef enum {
     BMI3_INT_PIN_MAX
 } bmi3_hw_int_pin;
 
+typedef uint8_t eBMI3_FEAT_ERROR_STATUS_t;
+enum {
+    eBMI3_FEAT_ERROR_ENGINE_INACTIVE    = 0x00,
+    eBMI3_FEAT_ERROR_ENGINE_ACTIVE      = 0x01,
+    eBMI3_FEAT_ERROR_NO_ERROR           = 0x05,
+    eBMI3_FEAT_ERROR_AXIS_MAP_ERROR     = 0x06,
+    eBMI3_FEAT_ERROR_CALIB_ABORTED      = 0x09,
+    eBMI3_FEAT_ERROR_CALIB_IGNORED      = 0x0A,
+    eBMI3_FEAT_ERROR_CALIB_FAILED       = 0x0C,
+    eBMI3_FEAT_ERROR_CALIB_ILLEGAL_CONF = 0x0D
+};
+
+typedef uint8_t eBMI3_FEAT_CALIB_STATUS_t;
+enum { eBMI3_FEAT_CALIB_ONGOING = 0x00, eBMI3_FEAT_CALIB_COMPLETE = 0x01 };
+
+typedef uint8_t BMI3_FEAT_GYRO_CALIB_STATUS_t;
+enum { eBMI3_FEAT_GYRO_CALIB_NOT_OK = 0x00, BMI3_FEAT_GYRO_CALIB_OK = 0x01 };
+
+typedef uint8_t BMI3_FEAT_SELF_TEST_RESULT_t;
+enum { eBMI3_FEAT_SELF_TEST_NOT_OK = 0x00, eBMI3_FEAT_SELF_TEST_OK = 0x01 };
+
+typedef uint8_t BMI3_FEAT_SAMPLE_RATE_ERR_t;
+enum { eBMI3_FEAT_SAMPLE_RATE_ERR_NO_ERR = 0x00, eBMI3_FEAT_SAMPLE_RATE_ERR_ERR = 0x01 };
+
+typedef uint8_t BMI3_FEAT_AXIS_MAP_STATUS_t;
+enum { eBMI3_FEAT_AXIS_MAP_NOT_COMPLETE = 0x00, eBMI3_FEAT_AXIS_MAP_COMPLETE = 0x01 };
+
+typedef uint8_t BMI3_FEAT_STATE_t;
+enum {
+    eBMI3_FEAT_STATE_SYS_IN_FEAT_MODE  = 0x00,
+    eBMI3_FEAT_STATE_CALIB_ONGOING     = 0x01,
+    eBMI3_FEAT_STATE_SELF_TEST_ONGOING = 0x02,
+    eBMI3_FEAT_STATE_ERROR_MODE        = 0x03
+};
+// scComplete > 0 && scResult > 0 && scErrStatus == 0x5U && systemState == 0x00
 
 #endif // SENSORS_BMIXXX_H

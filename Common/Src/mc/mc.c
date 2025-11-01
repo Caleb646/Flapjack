@@ -24,14 +24,14 @@ eSTATUS_t MCStartAll (void) {
 
     eSTATUS_t status = eSTATUS_SUCCESS;
 
-    status = PIDStart (PIDGetMutableActivePID ());
+    status = PIDStart (PID_GetMutableActivePID ());
     RETURN_IF (STATUS_FAIL (status), status, "Failed to start PID");
 
     Vec3f startingAttitude = { 0.0F };
-    status                 = FilterStart (FilterGetMutableActiveFilter (), 500U, &startingAttitude);
+    status = FilterStart (Filter_GetMutableActiveFilter (), 500U, &startingAttitude);
     RETURN_IF (STATUS_FAIL (status), status, "Failed to start filter");
 
-    if (FCStateSetCurrentAttitude (FCStateGetMutableActiveState (), startingAttitude) == false) {
+    if (FCStateSetCurrentAttitude (FCState_GetMutableActiveState (), startingAttitude) == false) {
         LOG_ERROR ("Failed to set starting attitude in FC state");
         return eSTATUS_FAILURE;
     }

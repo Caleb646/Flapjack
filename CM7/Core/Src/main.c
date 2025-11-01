@@ -245,7 +245,7 @@ void TaskMotionControlUpdate (void* pvParameters) {
             pMag = &mag;
         }
 
-        status = FilterUpdate (FilterGetMutableActiveFilter (), &accel, &gyro, pMag, dt, &currentAttitude);
+        status = FilterUpdate (Filter_GetMutableActiveFilter (), &accel, &gyro, pMag, dt, &currentAttitude);
         if (STATUS_FAIL (status)) {
             LOG_ERROR ("Failed to filter IMU data with Madgwick filter");
             continue;
@@ -253,13 +253,13 @@ void TaskMotionControlUpdate (void* pvParameters) {
 
         Vec3f pidAttitude = { 0.0F };
         status =
-        PIDUpdate (PIDGetMutableActivePID (), &currentAttitude, &targetAttitude, &maxAttitude, dt, &pidAttitude);
+        PIDUpdate (PID_GetMutableActivePID (), &currentAttitude, &targetAttitude, &maxAttitude, dt, &pidAttitude);
         if (STATUS_FAIL (status)) {
             LOG_ERROR ("Failed to update PID attitude");
             continue;
         }
 
-        status = ActuatorsWrite (pidAttitude, targetThrottle);
+        status = ActuatorsUpdate (pidAttitude, targetThrottle);
         if (STATUS_FAIL (status)) {
             LOG_ERROR ("Failed to write actuators");
             continue;

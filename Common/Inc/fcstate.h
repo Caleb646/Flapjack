@@ -39,7 +39,7 @@ eSTATUS_t FCStateInit (FCStateInitConf_t conf, vFCState_t* pOut);
 eSTATUS_t FCStateStart (vFCState_t* pState);
 eSTATUS_t FCStateStop (vFCState_t* pState);
 vFCState_t const* FCStateGetActiveState (void);
-vFCState_t* FCStateGetMutableActiveState (void);
+vFCState_t* FCState_GetMutableActiveState (void);
 FCState_t FCStateGetCopyOfActiveState (void);
 bool FCStateSetOpState (vFCState_t* pState, eOP_STATE_t newOpState);
 
@@ -58,9 +58,9 @@ char const* OpState2Char (eOP_STATE_t opState);
 
 // clang-format off
 
-#define FC_SET_STOPPED_OP_STATE() FCStateSetOpState (FCStateGetMutableActiveState (), eOP_STATE_STOPPED)
-#define FC_SET_RUNNING_OP_STATE() FCStateSetOpState (FCStateGetMutableActiveState (), eOP_STATE_RUNNING)
-#define FC_SET_ERROR_OP_STATE() FCStateSetOpState (FCStateGetMutableActiveState (), eOP_STATE_ERROR)
+#define FC_SET_STOPPED_OP_STATE() FCStateSetOpState (FCState_GetMutableActiveState (), eOP_STATE_STOPPED)
+#define FC_SET_RUNNING_OP_STATE() FCStateSetOpState (FCState_GetMutableActiveState (), eOP_STATE_RUNNING)
+#define FC_SET_ERROR_OP_STATE() FCStateSetOpState (FCState_GetMutableActiveState (), eOP_STATE_ERROR)
 
 // clang-format on
 

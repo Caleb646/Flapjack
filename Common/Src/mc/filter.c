@@ -484,7 +484,7 @@ vFilter_t const* FilterGetActiveFilter (void) {
     return &gFilter;
 }
 
-vFilter_t* FilterGetMutableActiveFilter (void) {
+vFilter_t* Filter_GetMutableActiveFilter (void) {
 
     if (FILTER_VALID (&gFilter) == false) {
         return NULL;
