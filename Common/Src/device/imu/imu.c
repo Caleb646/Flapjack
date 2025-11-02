@@ -42,7 +42,10 @@
 static SHARED_MEM_SECTION IMU_t gIMU = { 0 };
 
 static eSTATUS_t IMUGetDeviceErr (vIMU_t* pIMU, IMUErr* pOutErr);
-static void IMULogDeviceErr (vIMU_t* pIMU, IMUErr const* pErr);
+static void IMU_LogFeatStatus (vIMU_t* pIMU);
+static void IMU_LogDeviceErr (vIMU_t* pIMU, IMUErr const* pErr);
+static void IMU_LogDeviceConf (vIMU_t* pIMU);
+static void IMU_LogError (vIMU_t* pIMU);
 
 #ifndef UNIT_TEST
 
@@ -60,7 +63,7 @@ static eSTATUS_t IMUGetConf_ (vIMU_t* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGC
 static eSTATUS_t IMUSetConf_ (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf, uint8_t altConfFlag);
 static eSTATUS_t IMUCalibrate (vIMU_t* pIMU, uint8_t calibSelection, uint8_t applyCorrection);
 static eSTATUS_t IMUSetupInterrupts (vIMU_t const* pIMU);
-static eSTATUS_t IMUEnableInterrupts (vIMU_t const* pIMU);
+// static eSTATUS_t IMUEnableInterrupts (vIMU_t const* pIMU);
 static eSTATUS_t IMUDisableInterrupts (vIMU_t const* pIMU);
 static eSTATUS_t
 IMUConvertRaw (IMU_ACC_RANGE aRange, Vec3i ra, IMU_GYRO_RANGE gRange, Vec3i rg, Vec3f* pAccelOut, Vec3f* pGyroOut);
@@ -116,7 +119,7 @@ static void IMU_LogDeviceConf (vIMU_t* pIMU) {
     );
 }
 
-void IMULogDeviceErr (vIMU_t* pIMU, IMUErr const* pErr) {
+void IMU_LogDeviceErr (vIMU_t* pIMU, IMUErr const* pErr) {
 
     IMUErr err;
     if (pErr == NULL) {
@@ -159,7 +162,7 @@ void IMULogDeviceErr (vIMU_t* pIMU, IMUErr const* pErr) {
 static void IMU_LogError (vIMU_t* pIMU) {
     IMU_LogFeatStatus (pIMU);
     IMU_LogDeviceConf (pIMU);
-    IMULogDeviceErr (pIMU, NULL);
+    IMU_LogDeviceErr (pIMU, NULL);
 }
 
 STATIC_TESTABLE_DECL eSTATUS_t IMUSendCmd (vIMU_t const* pIMU, uint16_t cmd) {
@@ -369,7 +372,7 @@ STATIC_TESTABLE_DECL eSTATUS_t IMUSetAxesRemap (vIMU_t* pIMU, IMUAxesRemapConf r
 
     if (STATUS_FAIL (status)) {
         LOG_ERROR ("vIMU_t axis remap did not complete in time");
-        IMULogDeviceErr (pIMU, NULL);
+        IMU_LogDeviceErr (pIMU, NULL);
         return status;
     }
 
@@ -432,7 +435,7 @@ STATIC_TESTABLE_DECL eSTATUS_t IMUSoftReset (vIMU_t* pIMU) {
     }
     if (featEnabled != true) {
         LOG_ERROR ("Failed to enable feature engine after soft reset");
-        IMULogDeviceErr (pIMU, NULL);
+        IMU_LogDeviceErr (pIMU, NULL);
         return eSTATUS_FAILURE;
     }
     return status;
@@ -632,7 +635,7 @@ STATIC_TESTABLE_DECL eSTATUS_t IMUCalibrate (vIMU_t* pIMU, uint8_t calibSelectio
 
         if (CALIB_IS_ONGOING (featureStatus) == false) {
             LOG_ERROR ("IMU has not started the self calibration");
-            IMULogDeviceErr (pIMU, NULL);
+            IMU_LogDeviceErr (pIMU, NULL);
             goto error;
         }
     }
@@ -713,18 +716,18 @@ STATIC_TESTABLE_DECL eSTATUS_t IMUSetupInterrupts (vIMU_t const* pIMU) {
     return status;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t IMUEnableInterrupts (vIMU_t const* pIMU) {
+// STATIC_TESTABLE_DECL eSTATUS_t IMUEnableInterrupts (vIMU_t const* pIMU) {
 
-    if (pIMU == NULL) {
-        return (eSTATUS_t)eIMU_NULL_PTR;
-    }
+//     if (pIMU == NULL) {
+//         return (eSTATUS_t)eIMU_NULL_PTR;
+//     }
 
-    // Enable INT1 and INT2 with active high
-    uint8_t pEnableInterrupts[2] = { (1U << 2U | 1U << 0U), (1U << 2U | 1U << 0U) };
-    eSTATUS_t status             = IMUWriteReg (pIMU, BMI3_REG_IO_INT_CTRL, pEnableInterrupts, 2);
+//     // Enable INT1 and INT2 with active high
+//     uint8_t pEnableInterrupts[2] = { (1U << 2U | 1U << 0U), (1U << 2U | 1U << 0U) };
+//     eSTATUS_t status             = IMUWriteReg (pIMU, BMI3_REG_IO_INT_CTRL, pEnableInterrupts, 2);
 
-    return status;
-}
+//     return status;
+// }
 
 STATIC_TESTABLE_DECL eSTATUS_t IMUDisableInterrupts (vIMU_t const* pIMU) {
 
@@ -1059,7 +1062,7 @@ eSTATUS_t IMUHandleErr (vIMU_t* pIMU) {
         return eSTATUS_FAILURE;
     }
 
-    IMULogDeviceErr (pIMU, &err);
+    IMU_LogDeviceErr (pIMU, &err);
     return eSTATUS_FAILURE;
 }
 

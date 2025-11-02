@@ -98,6 +98,10 @@ int main (void) {
     MX_SPI5_Init ();
     MX_USB_OTG_HS_PCD_Init ();
 
+    if (CommonInit () != eSTATUS_SUCCESS) {
+        CriticalErrorHandler ();
+    }
+
     if (SyncInit () != eSTATUS_SUCCESS) {
         CriticalErrorHandler ();
     }
@@ -183,14 +187,14 @@ static void MX_RTC_Init (void) {
 
     /** Enable the RTC Tamper 1
      */
-    sTamper.Tamper            = RTC_TAMPER_1;
-    sTamper.Trigger           = RTC_TAMPERTRIGGER_RISINGEDGE;
-    sTamper.NoErase           = RTC_TAMPER_ERASE_BACKUP_ENABLE;
-    sTamper.MaskFlag          = RTC_TAMPERMASK_FLAG_DISABLE;
-    sTamper.Filter            = RTC_TAMPERFILTER_DISABLE;
-    sTamper.SamplingFrequency = RTC_TAMPERSAMPLINGFREQ_RTCCLK_DIV32768;
-    sTamper.PrechargeDuration = RTC_TAMPERPRECHARGEDURATION_1RTCCLK;
-    sTamper.TamperPullUp      = RTC_TAMPER_PULLUP_ENABLE;
+    sTamper.Tamper                     = RTC_TAMPER_1;
+    sTamper.Trigger                    = RTC_TAMPERTRIGGER_RISINGEDGE;
+    sTamper.NoErase                    = RTC_TAMPER_ERASE_BACKUP_ENABLE;
+    sTamper.MaskFlag                   = RTC_TAMPERMASK_FLAG_DISABLE;
+    sTamper.Filter                     = RTC_TAMPERFILTER_DISABLE;
+    sTamper.SamplingFrequency          = RTC_TAMPERSAMPLINGFREQ_RTCCLK_DIV32768;
+    sTamper.PrechargeDuration          = RTC_TAMPERPRECHARGEDURATION_1RTCCLK;
+    sTamper.TamperPullUp               = RTC_TAMPER_PULLUP_ENABLE;
     sTamper.TimeStampOnTamperDetection = RTC_TIMESTAMPONTAMPERDETECTION_ENABLE;
     if (HAL_RTCEx_SetTamper (&hrtc, &sTamper) != HAL_OK) {
         Error_Handler ();
@@ -204,26 +208,26 @@ static void MX_RTC_Init (void) {
  */
 static void MX_SAI1_Init (void) {
 
-    hsai_BlockA1.Instance                 = SAI1_Block_A;
-    hsai_BlockA1.Init.Protocol            = SAI_FREE_PROTOCOL;
-    hsai_BlockA1.Init.AudioMode           = SAI_MODEMASTER_TX;
-    hsai_BlockA1.Init.DataSize            = SAI_DATASIZE_8;
-    hsai_BlockA1.Init.FirstBit            = SAI_FIRSTBIT_MSB;
-    hsai_BlockA1.Init.ClockStrobing       = SAI_CLOCKSTROBING_FALLINGEDGE;
-    hsai_BlockA1.Init.Synchro             = SAI_ASYNCHRONOUS;
-    hsai_BlockA1.Init.OutputDrive         = SAI_OUTPUTDRIVE_DISABLE;
-    hsai_BlockA1.Init.NoDivider           = SAI_MCK_OVERSAMPLING_DISABLE;
-    hsai_BlockA1.Init.MckOverSampling     = SAI_MCK_OVERSAMPLING_DISABLE;
-    hsai_BlockA1.Init.FIFOThreshold       = SAI_FIFOTHRESHOLD_EMPTY;
-    hsai_BlockA1.Init.AudioFrequency      = SAI_AUDIO_FREQUENCY_192K;
-    hsai_BlockA1.Init.SynchroExt          = SAI_SYNCEXT_DISABLE;
-    hsai_BlockA1.Init.MonoStereoMode      = SAI_STEREOMODE;
-    hsai_BlockA1.Init.CompandingMode      = SAI_NOCOMPANDING;
-    hsai_BlockA1.Init.TriState            = SAI_OUTPUT_NOTRELEASED;
-    hsai_BlockA1.Init.PdmInit.Activation  = DISABLE;
-    hsai_BlockA1.Init.PdmInit.MicPairsNbr = 1;
-    hsai_BlockA1.Init.PdmInit.ClockEnable = SAI_PDM_CLOCK1_ENABLE;
-    hsai_BlockA1.FrameInit.FrameLength    = 8;
+    hsai_BlockA1.Instance                    = SAI1_Block_A;
+    hsai_BlockA1.Init.Protocol               = SAI_FREE_PROTOCOL;
+    hsai_BlockA1.Init.AudioMode              = SAI_MODEMASTER_TX;
+    hsai_BlockA1.Init.DataSize               = SAI_DATASIZE_8;
+    hsai_BlockA1.Init.FirstBit               = SAI_FIRSTBIT_MSB;
+    hsai_BlockA1.Init.ClockStrobing          = SAI_CLOCKSTROBING_FALLINGEDGE;
+    hsai_BlockA1.Init.Synchro                = SAI_ASYNCHRONOUS;
+    hsai_BlockA1.Init.OutputDrive            = SAI_OUTPUTDRIVE_DISABLE;
+    hsai_BlockA1.Init.NoDivider              = SAI_MCK_OVERSAMPLING_DISABLE;
+    hsai_BlockA1.Init.MckOverSampling        = SAI_MCK_OVERSAMPLING_DISABLE;
+    hsai_BlockA1.Init.FIFOThreshold          = SAI_FIFOTHRESHOLD_EMPTY;
+    hsai_BlockA1.Init.AudioFrequency         = SAI_AUDIO_FREQUENCY_192K;
+    hsai_BlockA1.Init.SynchroExt             = SAI_SYNCEXT_DISABLE;
+    hsai_BlockA1.Init.MonoStereoMode         = SAI_STEREOMODE;
+    hsai_BlockA1.Init.CompandingMode         = SAI_NOCOMPANDING;
+    hsai_BlockA1.Init.TriState               = SAI_OUTPUT_NOTRELEASED;
+    hsai_BlockA1.Init.PdmInit.Activation     = DISABLE;
+    hsai_BlockA1.Init.PdmInit.MicPairsNbr    = 1;
+    hsai_BlockA1.Init.PdmInit.ClockEnable    = SAI_PDM_CLOCK1_ENABLE;
+    hsai_BlockA1.FrameInit.FrameLength       = 8;
     hsai_BlockA1.FrameInit.ActiveFrameLength = 1;
     hsai_BlockA1.FrameInit.FSDefinition      = SAI_FS_STARTFRAME;
     hsai_BlockA1.FrameInit.FSPolarity        = SAI_FS_ACTIVE_LOW;
@@ -284,28 +288,28 @@ static void MX_SPDIFRX1_Init (void) {
  * @retval None
  */
 static void MX_SPI5_Init (void) {
-    hspi5.Instance               = SPI5;
-    hspi5.Init.Mode              = SPI_MODE_MASTER;
-    hspi5.Init.Direction         = SPI_DIRECTION_2LINES;
-    hspi5.Init.DataSize          = SPI_DATASIZE_4BIT;
-    hspi5.Init.CLKPolarity       = SPI_POLARITY_LOW;
-    hspi5.Init.CLKPhase          = SPI_PHASE_1EDGE;
-    hspi5.Init.NSS               = SPI_NSS_HARD_INPUT;
-    hspi5.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
-    hspi5.Init.FirstBit          = SPI_FIRSTBIT_MSB;
-    hspi5.Init.TIMode            = SPI_TIMODE_DISABLE;
-    hspi5.Init.CRCCalculation    = SPI_CRCCALCULATION_DISABLE;
-    hspi5.Init.CRCPolynomial     = 0x0;
-    hspi5.Init.NSSPMode          = SPI_NSS_PULSE_ENABLE;
-    hspi5.Init.NSSPolarity       = SPI_NSS_POLARITY_LOW;
-    hspi5.Init.FifoThreshold     = SPI_FIFO_THRESHOLD_01DATA;
+    hspi5.Instance                        = SPI5;
+    hspi5.Init.Mode                       = SPI_MODE_MASTER;
+    hspi5.Init.Direction                  = SPI_DIRECTION_2LINES;
+    hspi5.Init.DataSize                   = SPI_DATASIZE_4BIT;
+    hspi5.Init.CLKPolarity                = SPI_POLARITY_LOW;
+    hspi5.Init.CLKPhase                   = SPI_PHASE_1EDGE;
+    hspi5.Init.NSS                        = SPI_NSS_HARD_INPUT;
+    hspi5.Init.BaudRatePrescaler          = SPI_BAUDRATEPRESCALER_2;
+    hspi5.Init.FirstBit                   = SPI_FIRSTBIT_MSB;
+    hspi5.Init.TIMode                     = SPI_TIMODE_DISABLE;
+    hspi5.Init.CRCCalculation             = SPI_CRCCALCULATION_DISABLE;
+    hspi5.Init.CRCPolynomial              = 0x0;
+    hspi5.Init.NSSPMode                   = SPI_NSS_PULSE_ENABLE;
+    hspi5.Init.NSSPolarity                = SPI_NSS_POLARITY_LOW;
+    hspi5.Init.FifoThreshold              = SPI_FIFO_THRESHOLD_01DATA;
     hspi5.Init.TxCRCInitializationPattern = SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
     hspi5.Init.RxCRCInitializationPattern = SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
-    hspi5.Init.MasterSSIdleness = SPI_MASTER_SS_IDLENESS_00CYCLE;
-    hspi5.Init.MasterInterDataIdleness = SPI_MASTER_INTERDATA_IDLENESS_00CYCLE;
-    hspi5.Init.MasterReceiverAutoSusp = SPI_MASTER_RX_AUTOSUSP_DISABLE;
-    hspi5.Init.MasterKeepIOState      = SPI_MASTER_KEEP_IO_STATE_DISABLE;
-    hspi5.Init.IOSwap                 = SPI_IO_SWAP_DISABLE;
+    hspi5.Init.MasterSSIdleness           = SPI_MASTER_SS_IDLENESS_00CYCLE;
+    hspi5.Init.MasterInterDataIdleness    = SPI_MASTER_INTERDATA_IDLENESS_00CYCLE;
+    hspi5.Init.MasterReceiverAutoSusp     = SPI_MASTER_RX_AUTOSUSP_DISABLE;
+    hspi5.Init.MasterKeepIOState          = SPI_MASTER_KEEP_IO_STATE_DISABLE;
+    hspi5.Init.IOSwap                     = SPI_IO_SWAP_DISABLE;
     if (HAL_SPI_Init (&hspi5) != HAL_OK) {
         Error_Handler ();
     }
@@ -356,9 +360,8 @@ static void MX_GPIO_Init (void) {
     /*Configure GPIO pins : PI6 PI5 PI4 PI1
                              PI0 PI7 PI2 PI3
                              PI9 PI10 */
-    GPIO_InitStruct.Pin = GPIO_PIN_6 | GPIO_PIN_5 | GPIO_PIN_4 |
-                          GPIO_PIN_1 | GPIO_PIN_0 | GPIO_PIN_7 | GPIO_PIN_2 |
-                          GPIO_PIN_3 | GPIO_PIN_9 | GPIO_PIN_10;
+    GPIO_InitStruct.Pin = GPIO_PIN_6 | GPIO_PIN_5 | GPIO_PIN_4 | GPIO_PIN_1 | GPIO_PIN_0 |
+                          GPIO_PIN_7 | GPIO_PIN_2 | GPIO_PIN_3 | GPIO_PIN_9 | GPIO_PIN_10;
     GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull      = GPIO_NOPULL;
     GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_VERY_HIGH;
@@ -384,9 +387,8 @@ static void MX_GPIO_Init (void) {
     /*Configure GPIO pins : PE1 PE0 PE10 PE9
                              PE11 PE12 PE15 PE8
                              PE13 PE7 PE14 */
-    GPIO_InitStruct.Pin = GPIO_PIN_1 | GPIO_PIN_0 | GPIO_PIN_10 | GPIO_PIN_9 |
-                          GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_15 |
-                          GPIO_PIN_8 | GPIO_PIN_13 | GPIO_PIN_7 | GPIO_PIN_14;
+    GPIO_InitStruct.Pin = GPIO_PIN_1 | GPIO_PIN_0 | GPIO_PIN_10 | GPIO_PIN_9 | GPIO_PIN_11 | GPIO_PIN_12 |
+                          GPIO_PIN_15 | GPIO_PIN_8 | GPIO_PIN_13 | GPIO_PIN_7 | GPIO_PIN_14;
     GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull      = GPIO_NOPULL;
     GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_VERY_HIGH;
@@ -404,9 +406,8 @@ static void MX_GPIO_Init (void) {
     /*Configure GPIO pins : PH15 PH14 PH13 PH5
                              PH10 PH11 PH9 PH12
                              PH6 PH8 PH7 */
-    GPIO_InitStruct.Pin = GPIO_PIN_15 | GPIO_PIN_14 | GPIO_PIN_13 |
-                          GPIO_PIN_5 | GPIO_PIN_10 | GPIO_PIN_11 | GPIO_PIN_9 |
-                          GPIO_PIN_12 | GPIO_PIN_6 | GPIO_PIN_8 | GPIO_PIN_7;
+    GPIO_InitStruct.Pin = GPIO_PIN_15 | GPIO_PIN_14 | GPIO_PIN_13 | GPIO_PIN_5 | GPIO_PIN_10 |
+                          GPIO_PIN_11 | GPIO_PIN_9 | GPIO_PIN_12 | GPIO_PIN_6 | GPIO_PIN_8 | GPIO_PIN_7;
     GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull      = GPIO_NOPULL;
     GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_VERY_HIGH;
@@ -415,8 +416,7 @@ static void MX_GPIO_Init (void) {
 
     /*Configure GPIO pins : PG15 PG8 PG4 PG2
                              PG0 PG1 */
-    GPIO_InitStruct.Pin = GPIO_PIN_15 | GPIO_PIN_8 | GPIO_PIN_4 |
-                          GPIO_PIN_2 | GPIO_PIN_0 | GPIO_PIN_1;
+    GPIO_InitStruct.Pin = GPIO_PIN_15 | GPIO_PIN_8 | GPIO_PIN_4 | GPIO_PIN_2 | GPIO_PIN_0 | GPIO_PIN_1;
     GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull      = GPIO_NOPULL;
     GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_VERY_HIGH;
@@ -433,8 +433,8 @@ static void MX_GPIO_Init (void) {
 
     /*Configure GPIO pins : PD0 PD1 PD15 PD14
                              PD10 PD9 PD8 */
-    GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_15 |
-                          GPIO_PIN_14 | GPIO_PIN_10 | GPIO_PIN_9 | GPIO_PIN_8;
+    GPIO_InitStruct.Pin =
+    GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_15 | GPIO_PIN_14 | GPIO_PIN_10 | GPIO_PIN_9 | GPIO_PIN_8;
     GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull      = GPIO_NOPULL;
     GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_VERY_HIGH;
@@ -444,9 +444,8 @@ static void MX_GPIO_Init (void) {
     /*Configure GPIO pins : PF2 PF1 PF0 PF3
                              PF5 PF4 PF13 PF14
                              PF12 PF15 PF11 */
-    GPIO_InitStruct.Pin = GPIO_PIN_2 | GPIO_PIN_1 | GPIO_PIN_0 | GPIO_PIN_3 |
-                          GPIO_PIN_5 | GPIO_PIN_4 | GPIO_PIN_13 | GPIO_PIN_14 |
-                          GPIO_PIN_12 | GPIO_PIN_15 | GPIO_PIN_11;
+    GPIO_InitStruct.Pin = GPIO_PIN_2 | GPIO_PIN_1 | GPIO_PIN_0 | GPIO_PIN_3 | GPIO_PIN_5 | GPIO_PIN_4 |
+                          GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_12 | GPIO_PIN_15 | GPIO_PIN_11;
     GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull      = GPIO_NOPULL;
     GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_VERY_HIGH;

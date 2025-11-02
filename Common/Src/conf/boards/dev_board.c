@@ -5,43 +5,43 @@
 #include <stdint.h>
 
 
-#define TIM8_CH1_GPIO GPIO_ID_MAKE (eGPIO_PORTID_C, eGPIO_PINID_6)
+// #define TIM8_CH1_GPIO GPIO_ID_MAKE (eGPIO_PORTID_C, eGPIO_PINID_6)
 
 /*
  * Servo Configuration
  */
 static GPIOBoardConf_t gpioTimer8ch1 = { .id   = GPIO_ID_MAKE (eGPIO_PORTID_C, eGPIO_PINID_6),
                                          .conf = {
-                                         .mode      = GPIO_MODE_AF_PP,
+                                         .mode      = GPIO_MODE_AF_PP, // GPIO_MODE_OUTPUT_PP
                                          .pull      = GPIO_NOPULL,
-                                         .speed     = GPIO_SPEED_FREQ_LOW,
-                                         .alternate = GPIO_AF3_TIM8,
+                                         .speed     = GPIO_SPEED_FREQ_HIGH,
+                                         .alternate = GPIO_AF3_TIM8, // 0U
                                          } };
 
-static TimerBoardConf_t timer8ch1 = { TIMER_ID_MAKE (eTIMER_8_DEV_ID, eTIMER_CHANNEL_1_ID), &gpioTimer8ch1 };
+static TimerBoardConf_t timer8ch1 = { TIMER_ID_MAKE (eTIMER_8_DEVICE_ID, eTIMER_CHANNEL_1_ID), &gpioTimer8ch1 };
 
-static DeviceBoardConf_t leftMotorServo = { .deviceId = eSERVO_1_ID,
-                                            .servo    = { .pTimerBoardConf       = &timer8ch1,
-                                                          .pLinkedMotorBoardConf = NULL,
-                                                          .pwmFrequency          = 50U,
-                                                          .pidRollMix            = 1.0F,
-                                                          .pidPitchMix           = 1.0F,
-                                                          .pidYawMix             = 1.0F } };
-/*
- * Motor Configuration
- */
 static GPIOBoardConf_t gpioTimer13ch1 = { .id   = GPIO_ID_MAKE (eGPIO_PORTID_F, eGPIO_PINID_8),
                                           .conf = {
                                           .mode      = GPIO_MODE_AF_PP,
                                           .pull      = GPIO_NOPULL,
-                                          .speed     = GPIO_SPEED_FREQ_LOW,
-                                          .alternate = GPIO_AF2_TIM12,
+                                          .speed     = GPIO_SPEED_FREQ_HIGH,
+                                          .alternate = GPIO_AF9_TIM13,
                                           } };
 
-static TimerBoardConf_t timer13ch1 = { TIMER_ID_MAKE (eTIMER_13_DEV_ID, eTIMER_CHANNEL_1_ID), &gpioTimer13ch1 };
+static TimerBoardConf_t timer13ch1 = { TIMER_ID_MAKE (eTIMER_13_DEVICE_ID, eTIMER_CHANNEL_1_ID), &gpioTimer13ch1 };
 
+static DeviceBoardConf_t leftMotorServo = { .deviceId = eSERVO_1_ID,
+                                            .servo = { .pTimerBoardConf = &timer13ch1, // &timer8ch1,
+                                                       .pLinkedMotorBoardConf = NULL,
+                                                       .pwmFrequency          = 50U,
+                                                       .pidRollMix            = 1.0F,
+                                                       .pidPitchMix           = 1.0F,
+                                                       .pidYawMix             = 1.0F } };
+/*
+ * Motor Configuration
+ */
 static DeviceBoardConf_t leftMotor = { .deviceId = eMOTOR_1_ID,
-                                       .motor    = { .pTimerBoardConf       = &timer13ch1,
+                                       .motor    = { .pTimerBoardConf = &timer8ch1, // &timer13ch1,
                                                      .pLinkedServoBoardConf = NULL,
                                                      .useDMA                = false,
                                                      .dshotSpeed            = 150,
@@ -49,18 +49,18 @@ static DeviceBoardConf_t leftMotor = { .deviceId = eMOTOR_1_ID,
                                                      .pidPitchMix           = 1.0F,
                                                      .pidYawMix             = 1.0F } };
 
-#define TIM13_CH1_GPIO GPIO_ID_MAKE (eGPIO_PORTID_F, eGPIO_PINID_8)
+// #define TIM13_CH1_GPIO GPIO_ID_MAKE (eGPIO_PORTID_F, eGPIO_PINID_8)
 
 /*
  * IMU Configuration
  */
-#define SPI2_SCK_GPIO  GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_12)
-#define SPI2_MISO_GPIO GPIO_ID_MAKE (eGPIO_PORTID_C, eGPIO_PINID_2)
-#define SPI2_MOSI_GPIO GPIO_ID_MAKE (eGPIO_PORTID_C, eGPIO_PINID_3)
-#define IMU_NSS_GPIO   GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_11)
-#define IMU_INT_EXTI   eEXTI_7_ID
-#define IMU_INT_GPIO   GPIO_ID_MAKE (eGPIO_PORTID_C, eGPIO_PINID_7)
-#define IMU_BUS_ID     eSPI_2_BUS_ID
+// #define SPI2_SCK_GPIO  GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_12)
+// #define SPI2_MISO_GPIO GPIO_ID_MAKE (eGPIO_PORTID_C, eGPIO_PINID_2)
+// #define SPI2_MOSI_GPIO GPIO_ID_MAKE (eGPIO_PORTID_C, eGPIO_PINID_3)
+// #define IMU_NSS_GPIO   GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_11)
+// #define IMU_INT_EXTI   eEXTI_7_ID
+// #define IMU_INT_GPIO   GPIO_ID_MAKE (eGPIO_PORTID_C, eGPIO_PINID_7)
+// #define IMU_BUS_ID     eSPI_2_BUS_ID
 
 static GPIOSharedConf_t gpioShared_Spi_2 = { .mode      = GPIO_MODE_AF_PP,
                                              .pull      = GPIO_NOPULL,

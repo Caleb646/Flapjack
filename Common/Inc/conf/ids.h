@@ -24,9 +24,6 @@ enum {
     eGPIO_PINID_MAX
 };
 
-// #define GPIO_CHANNELID_NBITS    ((__builtin_ctz (eGPIO_PINID_MAX)))
-#define GPIO_CHANNELID_NBITS (4U)
-
 /* NOTE: because the port ids are not powers of two they
  cannot be or'ed together.
  Also the first port id starts at 1 so 0 can be used
@@ -47,7 +44,6 @@ enum {
     eGPIO_PORTID_END__
 };
 
-#define eGPIO_PORTID_MAX ((eGPIO_PORTID_END__ / eGPIO_PINID_MAX))
 
 // id = port id | pin id
 typedef uint8_t eGPIO_ID_t;
@@ -55,12 +51,13 @@ enum {
     eGPIO_ID_NULL = 0U,
 };
 
-// #define GPIO_ID2PORTIDX(id) (((id) >> 15U) > 0U ? __builtin_ctz ((id) >> 15U) : 0U)
-#define GPIO_ID2PORTIDX(id)     (((id) >> GPIO_CHANNELID_NBITS) - 1U)
-#define GPIO_ID2PINIDX(id)      ((id) & (eGPIO_PINID_MAX - 1U))
-#define GPIO_ID_MAKE(port, pin) ((eGPIO_ID_t)(port) | (eGPIO_ID_t)(pin))
-#define GPIO_ID_IS_GPIO(id) \
-    ((id) != eGPIO_ID_NULL && (GPIO_ID2PORTIDX ((id)) < eGPIO_PORTID_MAX))
+#define GPIO_PIN_ID_NBITS             (4U)
+#define GPIO_MAX_PINS                 (eGPIO_PINID_MAX)
+#define GPIO_MAX_PORTS                ((eGPIO_PORTID_END__ / eGPIO_PINID_MAX))
+#define GPIO_ID_TO_PORT_IDX(ID)       (((ID) >> GPIO_PIN_ID_NBITS) - 1U)
+#define GPIO_ID_TO_PIN_IDX(ID)        ((ID) & (eGPIO_PINID_MAX - 1U))
+#define GPIO_ID_MAKE(PORT_ID, PIN_ID) ((eGPIO_ID_t)(PORT_ID) | (eGPIO_ID_t)(PIN_ID))
+#define GPIO_ID_VALID(ID)             ((ID) != eGPIO_ID_NULL && (GPIO_ID_TO_PORT_IDX ((ID)) < GPIO_MAX_PORTS))
 
 typedef uint8_t eDEVICE_ID_t;
 enum {
@@ -93,16 +90,13 @@ enum {
     eDEVICE_ID_MAX
 };
 
-#define eSERVO_ID_MAX    (eSERVO_ID_END__ - eSERVO_ID_BEGIN__)
-#define eMOTOR_ID_MAX    (eMOTOR_ID_END__ - eMOTOR_ID_BEGIN__)
-
-#define SERVO_ID2IDX(id) ((id) - eSERVO_ID_BEGIN__)
-#define DEVICE_ID_IS_SERVO(id) \
-    ((id) >= eSERVO_ID_BEGIN__ && (id) < eSERVO_ID_END__)
-
-#define MOTOR_ID2IDX(id) ((id) - eMOTOR_ID_BEGIN__)
-#define DEVICE_ID_IS_MOTOR(id) \
-    ((id) >= eMOTOR_ID_BEGIN__ && (id) < eMOTOR_ID_END__)
+#define SERVO_MAX_SERVOS       (eSERVO_ID_END__ - eSERVO_ID_BEGIN__)
+#define MOTOR_MAX_MOTORS       (eMOTOR_ID_END__ - eMOTOR_ID_BEGIN__)
+#define DEVICE_MAX_DEVICES     (eDEVICE_ID_MAX - 1U)
+#define SERVO_ID_TO_IDX(id)    ((id) - eSERVO_ID_BEGIN__)
+#define DEVICE_ID_IS_SERVO(id) ((id) >= eSERVO_ID_BEGIN__ && (id) < eSERVO_ID_END__)
+#define MOTOR_ID_TO_IDX(id)    ((id) - eMOTOR_ID_BEGIN__)
+#define DEVICE_ID_IS_MOTOR(id) ((id) >= eMOTOR_ID_BEGIN__ && (id) < eMOTOR_ID_END__)
 
 typedef uint8_t eBUS_ID_t;
 enum {
@@ -133,19 +127,17 @@ enum {
     eBUS_ID_MAX
 };
 
-#define eSPI_BUS_ID_MAX  (eSPI_BUS_ID_END__ - eSPI_BUS_ID_BEGIN__)
-#define eUART_BUS_ID_MAX (eUART_BUS_ID_END__ - eUART_BUS_ID_BEGIN__)
-#define eI2C_BUS_ID_MAX  (eI2C_BUS_ID_END__ - eI2C_BUS_ID_BEGIN__)
+#define BUS_MAX_BUSES          (eBUS_ID_MAX - 1U)
+#define SPI_MAX_BUSES          (eSPI_BUS_ID_END__ - eSPI_BUS_ID_BEGIN__)
+#define UART_MAX_BUSES         (eUART_BUS_ID_END__ - eUART_BUS_ID_BEGIN__)
+#define I2C_MAX_BUSES          (eI2C_BUS_ID_END__ - eI2C_BUS_ID_BEGIN__)
 
-#define BUS_ID_IS_I2C(id) \
-    ((id) >= eI2C_BUS_ID_BEGIN__ && (id) < eI2C_BUS_ID_END__)
-#define BUS_ID_IS_SPI(id) \
-    ((id) >= eSPI_BUS_ID_BEGIN__ && (id) < eSPI_BUS_ID_END__)
-#define BUS_ID_IS_UART(id) \
-    ((id) >= eUART_BUS_ID_BEGIN__ && (id) < eUART_BUS_ID_END__)
-#define SPI_BUS_ID2IDX(id)  ((id) - eSPI_BUS_ID_BEGIN__)
-#define UART_BUS_ID2IDX(id) ((id) - eUART_BUS_ID_BEGIN__)
-#define I2C_BUS_ID2IDX(id)  ((id) - eI2C_BUS_ID_BEGIN__)
+#define BUS_ID_IS_I2C(ID)      ((ID) >= eI2C_BUS_ID_BEGIN__ && (ID) < eI2C_BUS_ID_END__)
+#define BUS_ID_IS_SPI(ID)      ((ID) >= eSPI_BUS_ID_BEGIN__ && (ID) < eSPI_BUS_ID_END__)
+#define BUS_ID_IS_UART(ID)     ((ID) >= eUART_BUS_ID_BEGIN__ && (ID) < eUART_BUS_ID_END__)
+#define SPI_BUS_ID_TO_IDX(ID)  ((ID) - eSPI_BUS_ID_BEGIN__)
+#define UART_BUS_ID_TO_IDX(ID) ((ID) - eUART_BUS_ID_BEGIN__)
+#define I2C_BUS_ID_TO_IDX(ID)  ((ID) - eI2C_BUS_ID_BEGIN__)
 
 typedef uint8_t eTIMER_CHANNEL_ID_t;
 enum {
@@ -153,20 +145,18 @@ enum {
     eTIMER_CHANNEL_2_ID,
     eTIMER_CHANNEL_3_ID,
     eTIMER_CHANNEL_4_ID,
+
     eTIMER_CHANNEL_ID_MAX
 };
 
-#define TIMER_CHANNEL_ID_NBITS      2U
-#define TIMER_CHANNEL_ID_MASK       (eTIMER_CHANNEL_ID_MAX - 1U)
-#define TIMER_CHANNEL_HAL_ID_OFFSET 4U
-
-typedef uint8_t eTIMER_DEV_ID_t;
+typedef uint8_t eTIMER_DEVICE_ID_t;
 enum {
-    eTIMER_5_DEV_ID  = 1U * (eTIMER_CHANNEL_ID_MAX * 1U),
-    eTIMER_8_DEV_ID  = 1U * (eTIMER_CHANNEL_ID_MAX * 2U),
-    eTIMER_12_DEV_ID = 1U * (eTIMER_CHANNEL_ID_MAX * 3U),
-    eTIMER_13_DEV_ID = 1U * (eTIMER_CHANNEL_ID_MAX * 4U),
-    eTIMER_DEV_ID_MAX
+    eTIMER_5_DEVICE_ID  = 1U * (eTIMER_CHANNEL_ID_MAX * 1U),
+    eTIMER_8_DEVICE_ID  = 1U * (eTIMER_CHANNEL_ID_MAX * 2U),
+    eTIMER_12_DEVICE_ID = 1U * (eTIMER_CHANNEL_ID_MAX * 3U),
+    eTIMER_13_DEVICE_ID = 1U * (eTIMER_CHANNEL_ID_MAX * 4U),
+
+    eTIMER_DEVICE_ID_MAX
 };
 
 // id = timer id | channel id
@@ -175,16 +165,25 @@ enum {
     eTIMER_ID_NULL = 0U,
 };
 
-#define eTIMER_ID_MAX            ((eTIMER_DEV_ID_MAX / eTIMER_CHANNEL_ID_MAX))
-#define TIMER_ID2IDX(id)         (((id) >> TIMER_CHANNEL_ID_NBITS) - 1U)
-#define TIMER_ID2CHANNEL_IDX(id) ((id) & TIMER_CHANNEL_ID_MASK)
-#define TIMER_ID2HALCHANNEL(id) \
-    ((TIM_CHANNEL_1) + (TIMER_ID2CHANNEL_IDX ((id)) * TIMER_CHANNEL_HAL_ID_OFFSET))
-#define TIMER_ID_CLEAR_CHANNEL_BITS(id) ((id) & (~TIMER_CHANNEL_ID_MASK))
-#define TIMER_ID_IS_TIMER(id) \
-    ((((id) != eTIMER_ID_NULL) && (TIMER_ID2IDX ((id)) < eTIMER_ID_MAX)))
-#define TIMER_ID_MAKE(timerId, channelId) \
-    ((eTIMER_ID_t)(timerId) | (eTIMER_ID_t)(channelId))
+// clang-format off
+#define TIMER_CHAN_ID_NBITS        2U
+#define TIMER_CHAN_ID_MASK         (eTIMER_CHANNEL_ID_MAX - 1U)
+#define TIMER_CHAN_HAL_ID_OFFSET   4U
+#define TIMER_ID_CLR_CHAN_BITS(ID) ((ID) & (~TIMER_CHAN_ID_MASK))
+
+#define TIMER_MAX_DEVICES          (eTIMER_DEVICE_ID_MAX / eTIMER_CHANNEL_ID_MAX)
+#define TIMER_MAX_CHANNELS         eTIMER_CHANNEL_ID_MAX
+#define TIMER_MAX_TIMERS           (TIMER_MAX_DEVICES * TIMER_MAX_CHANNELS)
+
+#define TIMER_ID_TO_DEVICE_IDX(ID) (((ID) >> TIMER_CHAN_ID_NBITS) - 1U)
+#define TIMER_ID_TO_CHAN_IDX(ID)   ((ID) & TIMER_CHAN_ID_MASK)
+#define TIMER_ID_TO_IDX(ID)        (TIMER_ID_CLR_CHAN_BITS((ID)) - 1U)
+
+#define TIMER_ID_TO_HAL_CHAN(ID) ((TIM_CHANNEL_1) + (TIMER_ID_TO_CHAN_IDX ((ID)) * TIMER_CHAN_HAL_ID_OFFSET))
+#define TIMER_ID_VALID(ID) ((((ID) != eTIMER_ID_NULL) && (TIMER_ID_TO_IDX ((ID)) < TIMER_MAX_TIMERS)))
+#define TIMER_ID_MAKE(TIMER_ID, CHAN_ID) ((eTIMER_ID_t)(TIMER_ID) | (eTIMER_ID_t)(CHAN_ID))
+
+// clang-format on
 
 typedef uint8_t eEXTI_ID_t;
 enum {
@@ -208,7 +207,7 @@ enum {
     eEXTI_ID_MAX
 };
 
-#define EXTI_ID_IS_EXTI(id) ((id) < eEXTI_ID_MAX)
-#define EXTI_ID2IDX(id)     (id)
+#define EXTI_ID_VALID(ID)  ((ID) < eEXTI_ID_MAX)
+#define EXTI_ID_TO_IDX(ID) (ID)
 
 #endif // CONF_IDS_H

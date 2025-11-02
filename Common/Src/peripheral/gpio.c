@@ -9,7 +9,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#define GPIO_NPORTS eGPIO_PORTID_MAX
+#define GPIO_NPORTS GPIO_MAX_PORTS
 #define GPIO_NPINS  eGPIO_PINID_MAX
 #define PORT_OFFSET 0x400 // each port is offset by 0x400
 
@@ -65,8 +65,8 @@ void GPIOSystemInit (void) {
     }
     for (uint32_t portId = 0; portId < GPIO_NPORTS; ++portId) {
         for (uint32_t pinId = 0; pinId < GPIO_NPINS; ++pinId) {
-            vIO_t* pIO = &gIOs[(portId * GPIO_NPINS) + pinId];
-            pIO->pPort = (GPIO_TypeDef*)((uintptr_t)GPIOA + (portId * PORT_OFFSET));
+            vIO_t* pIO   = &gIOs[(portId * GPIO_NPINS) + pinId];
+            pIO->pPort   = (GPIO_TypeDef*)((uintptr_t)GPIOA + (portId * PORT_OFFSET));
             pIO->pin     = GPIO_PIN_0 << pinId;
             pIO->ownerId = eDEVICE_ID_NULL;
         }
@@ -76,11 +76,11 @@ void GPIOSystemInit (void) {
 
 vIO_t* GPIOGetIOfromId (eGPIO_ID_t gpioId) {
 
-    if (GPIO_ID_IS_GPIO (gpioId) == false || isSystemInitialized == false) {
+    if (GPIO_ID_VALID (gpioId) == false || isSystemInitialized == false) {
         return NULL;
     }
-    eGPIO_PORTID_t portIdx = GPIO_ID2PORTIDX (gpioId);
-    eGPIO_PINID_t pinIdx   = GPIO_ID2PINIDX (gpioId);
+    eGPIO_PORTID_t portIdx = GPIO_ID_TO_PORT_IDX (gpioId);
+    eGPIO_PINID_t pinIdx   = GPIO_ID_TO_PIN_IDX (gpioId);
     uint32_t idx           = (portIdx * GPIO_NPINS) + pinIdx;
     if (idx >= (GPIO_NPORTS * GPIO_NPINS)) {
         return NULL;

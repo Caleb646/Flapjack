@@ -16,7 +16,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#define SERVO_COUNT (eSERVO_ID_MAX)
+#define SERVO_COUNT (SERVO_MAX_SERVOS)
 
 typedef struct {
     DeviceBoardConf_t boardConf;
@@ -27,7 +27,7 @@ typedef struct Motor_s Motor_t;
 typedef struct Servo_s {
     eDEVICE_ID_t servoId;
     eDEVICE_ID_t linkedMotorId;
-    eTIMER_ID_t timerId;
+    vTimer_t* pTimer;
     uint32_t usLeftDutyCycle;
     uint32_t usMiddleDutyCycle;
     uint32_t usRightDutyCycle;
@@ -64,8 +64,7 @@ eSTATUS_t ServoWrite (Servo_t* pServo, float targetAngle);
         *(pSTATUS)           = ServoInit (conf, NULL); \
     } while (0)
 
-#define SERVO_START(SERVO_ID) ServoStart (ServoGetById (SERVO_ID))
-#define SERVO_WRITE(SERVO_ID, TARGET_ANGLE) \
-    ServoWrite (ServoGetById (SERVO_ID), TARGET_ANGLE)
+#define SERVO_START(SERVO_ID)               ServoStart (ServoGetById (SERVO_ID))
+#define SERVO_WRITE(SERVO_ID, TARGET_ANGLE) ServoWrite (ServoGetById (SERVO_ID), TARGET_ANGLE)
 
 #endif // DEVICE_SERVO_H

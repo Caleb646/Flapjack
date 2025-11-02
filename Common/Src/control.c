@@ -105,12 +105,12 @@ STATIC_TESTABLE_DECL eSTATUS_t ControlInit_Shared (void) {
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t ControlDefaultCmdHandler (DefaultCommand cmd) {
+// STATIC_TESTABLE_DECL eSTATUS_t ControlDefaultCmdHandler (DefaultCommand cmd) {
 
-    eCMD_t cmdType = cmd.header.commandType;
-    LOG_WARN ("No handler registered for command type: %s", ControlCmdType2Char (cmdType));
-    return false;
-}
+//     eCMD_t cmdType = cmd.header.commandType;
+//     LOG_WARN ("No handler registered for command type: %s", ControlCmdType2Char (cmdType));
+//     return false;
+// }
 
 STATIC_TESTABLE_DECL eSTATUS_t ControlInit_Consumer (void) {
 

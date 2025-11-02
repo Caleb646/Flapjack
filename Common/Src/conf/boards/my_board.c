@@ -16,10 +16,12 @@ static GPIOSharedConf_t gpioShared_Tim8  = { .mode      = GPIO_MODE_AF_PP,
                                              .pull      = GPIO_NOPULL,
                                              .speed     = GPIO_SPEED_FREQ_LOW,
                                              .alternate = GPIO_AF3_TIM8 };
-static GPIOSharedConf_t gpioShared_Tim12 = { .mode      = GPIO_MODE_AF_PP,
-                                             .pull      = GPIO_NOPULL,
-                                             .speed     = GPIO_SPEED_FREQ_LOW,
-                                             .alternate = GPIO_AF2_TIM12 };
+static GPIOSharedConf_t gpioShared_Tim12 = {
+    .mode      = GPIO_MODE_AF_PP, // GPIO_MODE_OUTPUT_PP using Bitbanging not DMA
+    .pull      = GPIO_NOPULL,
+    .speed     = GPIO_SPEED_FREQ_LOW,
+    .alternate = GPIO_AF2_TIM12 // 0U
+};
 
 static GPIOBoardConf_t gpioTimer5ch1 = { .id      = GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_0),
                                          .pShared = &gpioShared_Tim5 };
@@ -44,17 +46,17 @@ static GPIOBoardConf_t gpioTimer12ch1 = { .id      = GPIO_ID_MAKE (eGPIO_PORTID_
 static GPIOBoardConf_t gpioTimer12ch2 = { .id      = GPIO_ID_MAKE (eGPIO_PORTID_H, eGPIO_PINID_9),
                                           .pShared = &gpioShared_Tim12 };
 
-static TimerBoardConf_t timer5ch1 = { TIMER_ID_MAKE (eTIMER_5_DEV_ID, eTIMER_CHANNEL_1_ID), &gpioTimer5ch1 };
-static TimerBoardConf_t timer5ch2 = { TIMER_ID_MAKE (eTIMER_5_DEV_ID, eTIMER_CHANNEL_2_ID), &gpioTimer5ch2 };
-static TimerBoardConf_t timer5ch3 = { TIMER_ID_MAKE (eTIMER_5_DEV_ID, eTIMER_CHANNEL_3_ID), &gpioTimer5ch3 };
-static TimerBoardConf_t timer5ch4 = { TIMER_ID_MAKE (eTIMER_5_DEV_ID, eTIMER_CHANNEL_4_ID), &gpioTimer5ch4 };
-static TimerBoardConf_t timer8ch1 = { TIMER_ID_MAKE (eTIMER_8_DEV_ID, eTIMER_CHANNEL_1_ID), &gpioTimer8ch1 };
-static TimerBoardConf_t timer8ch2 = { TIMER_ID_MAKE (eTIMER_8_DEV_ID, eTIMER_CHANNEL_2_ID), &gpioTimer8ch2 };
-static TimerBoardConf_t timer8ch3 = { TIMER_ID_MAKE (eTIMER_8_DEV_ID, eTIMER_CHANNEL_3_ID), &gpioTimer8ch3 };
+static TimerBoardConf_t timer5ch1 = { TIMER_ID_MAKE (eTIMER_5_DEVICE_ID, eTIMER_CHANNEL_1_ID), &gpioTimer5ch1 };
+static TimerBoardConf_t timer5ch2 = { TIMER_ID_MAKE (eTIMER_5_DEVICE_ID, eTIMER_CHANNEL_2_ID), &gpioTimer5ch2 };
+static TimerBoardConf_t timer5ch3 = { TIMER_ID_MAKE (eTIMER_5_DEVICE_ID, eTIMER_CHANNEL_3_ID), &gpioTimer5ch3 };
+static TimerBoardConf_t timer5ch4 = { TIMER_ID_MAKE (eTIMER_5_DEVICE_ID, eTIMER_CHANNEL_4_ID), &gpioTimer5ch4 };
+static TimerBoardConf_t timer8ch1 = { TIMER_ID_MAKE (eTIMER_8_DEVICE_ID, eTIMER_CHANNEL_1_ID), &gpioTimer8ch1 };
+static TimerBoardConf_t timer8ch2 = { TIMER_ID_MAKE (eTIMER_8_DEVICE_ID, eTIMER_CHANNEL_2_ID), &gpioTimer8ch2 };
+static TimerBoardConf_t timer8ch3 = { TIMER_ID_MAKE (eTIMER_8_DEVICE_ID, eTIMER_CHANNEL_3_ID), &gpioTimer8ch3 };
 // static TimerBoardConf_t timer8ch4 = { TIMER_ID_MAKE (eTIMER_8_DEV_ID, eTIMER_CHANNEL_4_ID),
 //                                       &gpioTimer8ch4 };
-static TimerBoardConf_t timer12ch1 = { TIMER_ID_MAKE (eTIMER_12_DEV_ID, eTIMER_CHANNEL_1_ID), &gpioTimer12ch1 };
-static TimerBoardConf_t timer12ch2 = { TIMER_ID_MAKE (eTIMER_12_DEV_ID, eTIMER_CHANNEL_2_ID), &gpioTimer12ch2 };
+static TimerBoardConf_t timer12ch1 = { TIMER_ID_MAKE (eTIMER_12_DEVICE_ID, eTIMER_CHANNEL_1_ID), &gpioTimer12ch1 };
+static TimerBoardConf_t timer12ch2 = { TIMER_ID_MAKE (eTIMER_12_DEVICE_ID, eTIMER_CHANNEL_2_ID), &gpioTimer12ch2 };
 
 
 /*

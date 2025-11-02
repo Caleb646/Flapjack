@@ -203,9 +203,8 @@ void TaskMotionControlUpdate (void* pvParameters) {
 
     while (1) {
 
-        FCState_t fcState   = FCStateGetCopyOfActiveState ();
-        eOP_STATE_t opState = fcState.opState;
-        if (opState != eOP_STATE_RUNNING) {
+        FCState_t fcState = FCStateGetCopyOfActiveState ();
+        if (fcState.opState != eOP_STATE_RUNNING) {
             /*
              * Update msStartTime and msLogStart so dt does not get too large.
              */
@@ -322,6 +321,10 @@ int main (void) {
         asm volatile ("NOP");
     }
 
+    if (CommonInit () != eSTATUS_SUCCESS) {
+        CriticalErrorHandler ();
+    }
+
     // eSTATUS_t status = eSTATUS_SUCCESS;
     if (SyncInit () != eSTATUS_SUCCESS) {
         CriticalErrorHandler ();
@@ -330,6 +333,37 @@ int main (void) {
     if (LoggerInit () != eSTATUS_SUCCESS) {
         CriticalErrorHandler ();
     }
+
+    // TODO: Add sanity check for HAL_Delay and GetMilliseconds
+    // DelayMicroseconds and GetMicroseconds
+    uint32_t const msDelay = 10;
+    uint32_t tempStart     = GetMilliseconds ();
+    HAL_Delay (msDelay);
+    uint32_t tempEnd = GetMilliseconds ();
+    if (tempEnd == tempStart || tempEnd < tempStart) {
+        LOG_ERROR ("HAL_Delay malfunctioning");
+        CriticalErrorHandler ();
+    }
+
+    if ((tempEnd - tempStart) < msDelay - 2U || (tempEnd - tempStart) > msDelay + 2U) {
+        LOG_ERROR ("HAL_Delay inaccurate delay time: %u ms", (tempEnd - tempStart));
+        CriticalErrorHandler ();
+    }
+
+    uint32_t const usDelay = msDelay * 1000U;
+    tempStart              = GetMicroseconds ();
+    DelayMicroseconds (usDelay);
+    tempEnd = GetMicroseconds ();
+    if (tempEnd == tempStart || tempEnd < tempStart) {
+        LOG_ERROR ("DelayMicroseconds malfunctioning");
+        CriticalErrorHandler ();
+    }
+
+    if ((tempEnd - tempStart) < usDelay - (2U * 1000U) || (tempEnd - tempStart) > usDelay + (2U * 1000U)) {
+        LOG_ERROR ("DelayMicroseconds inaccurate delay time: %u ms", (tempEnd - tempStart));
+        CriticalErrorHandler ();
+    }
+
 
     if (BOARD_CONF_INIT () != true) {
         CriticalErrorHandler ();

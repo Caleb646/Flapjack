@@ -141,6 +141,24 @@ typedef struct {
     };
 } Vec4f;
 
+extern float ge_ScaledSystemCoreClock;
+
+#define CURRENT_CYCLES() (DWT->CYCCNT)
+#define US_TO_CYCLES(US_FLOAT) \
+    ((uint32_t)((((US_FLOAT) * 10.0F) * ge_ScaledSystemCoreClock) + 0.5F))
+
+#define DELAY_CYCLES(CYCLES_UINT32)                             \
+    {                                                           \
+        uint32_t start = CURRENT_CYCLES ();                     \
+        while ((CURRENT_CYCLES () - start) < (CYCLES_UINT32)) { \
+            __NOP ();                                           \
+        }                                                       \
+    }
+#define F_DELAY_MICROSECONDS(US_FLOAT) DELAY_CYCLES (US_TO_CYCLES (US_FLOAT))
+
+
+eSTATUS_t CommonInit (void);
+
 void CriticalErrorHandler (void);
 int32_t clipi32 (int32_t v, int32_t lower, int32_t upper);
 float clipf32 (float v, float lower, float upper);

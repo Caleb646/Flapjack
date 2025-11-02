@@ -9,7 +9,7 @@
 #error "UNIT_TEST should be defined in this file"
 #endif
 
-#define GPIO_MAX_COUNT (eGPIO_PORTID_MAX * eGPIO_PINID_MAX)
+#define GPIO_MAX_COUNT (GPIO_MAX_PORTS * eGPIO_PINID_MAX)
 
 // Test that GPIO indexing works correctly for different port/pin combinations
 void test_GPIO_array_indexing (void) {
@@ -95,9 +95,9 @@ void test_GPIO_ownership_tracking (void) {
 
     // Create a test GPIO configuration with minimal setup
     GPIOBoardConf_t test_config = { .id   = test_gpio,
-                                    .conf = { .mode  = 0x1, // Output mode
-                                              .pull  = 0x0, // No pull
-                                              .speed = 0x0, // Low speed
+                                    .conf = { .mode      = 0x1, // Output mode
+                                              .pull      = 0x0, // No pull
+                                              .speed     = 0x0, // Low speed
                                               .alternate = 0 } };
 
     // Initialize GPIO with device1 - should succeed
@@ -123,11 +123,7 @@ void test_GPIO_ownership_tracking (void) {
 
 // Test multiple GPIO allocations and freeing
 void test_GPIO_multiple_allocations (void) {
-    eDEVICE_ID_t devices[] = { eIMU_DEVICE_ID,
-                               eGPS_DEVICE_ID,
-                               eBARO_DEVICE_ID,
-                               eMAG_DEVICE_ID,
-                               eRF_RECEIVER_DEVICE_ID };
+    eDEVICE_ID_t devices[] = { eIMU_DEVICE_ID, eGPS_DEVICE_ID, eBARO_DEVICE_ID, eMAG_DEVICE_ID, eRF_RECEIVER_DEVICE_ID };
 
     eGPIO_ID_t gpios[] = { GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_0),
                            GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_1),
@@ -140,9 +136,9 @@ void test_GPIO_multiple_allocations (void) {
     // Allocate all GPIOs
     for (uint8_t i = 0; i < num_gpios; i++) {
         GPIOBoardConf_t config = { .id   = gpios[i],
-                                   .conf = { .mode  = 0x1, // Output mode
-                                             .pull  = 0x0, // No pull
-                                             .speed = 0x0, // Low speed
+                                   .conf = { .mode      = 0x1, // Output mode
+                                             .pull      = 0x0, // No pull
+                                             .speed     = 0x0, // Low speed
                                              .alternate = 0 } };
 
         eSTATUS_t result = GPIOInit (devices[i], config);
@@ -192,7 +188,7 @@ void test_GPIO_error_conditions (void) {
 
     // Test freeing unowned GPIO (should succeed but have no effect)
     eGPIO_ID_t unowned_gpio = GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_10);
-    result = GPIOFreeById (unowned_gpio);
+    result                  = GPIOFreeById (unowned_gpio);
     TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result); // Should succeed even if not owned
 }
 
@@ -211,8 +207,8 @@ void test_GPIO_array_direct_access (void) {
     vIO_t* pIO           = GPIOGetIOfromId (test_gpio);
 
     // Calculate expected array index
-    uint8_t port_idx      = GPIO_ID2PORTIDX (test_gpio);
-    uint8_t pin_idx       = GPIO_ID2PINIDX (test_gpio);
+    uint8_t port_idx      = GPIO_ID_TO_PORT_IDX (test_gpio);
+    uint8_t pin_idx       = GPIO_ID_TO_PIN_IDX (test_gpio);
     uint32_t expected_idx = port_idx * eGPIO_PINID_MAX + pin_idx;
 
     // Verify the returned pointer matches the expected array position

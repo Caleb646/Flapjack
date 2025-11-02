@@ -1,6 +1,7 @@
 #ifndef CONF_H
 #define CONF_H
 
+#include "conf/board.h"
 #include "conf/ids.h"
 #include "hal.h"
 

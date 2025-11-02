@@ -53,7 +53,7 @@ static UARTInterruptMapping_t const gUartInterruptMappings[] = {
     { .hwId = UART_IT_FE, .cbId = eBUS_CALLBACK_ID_ERROR },  // UART frame error interruption
 };
 
-static SHARED_MEM_SECTION UARTBus_t gBuses[eUART_BUS_ID_MAX] = { 0 };
+static SHARED_MEM_SECTION UARTBus_t gBuses[UART_MAX_BUSES] = { 0 };
 
 static USART_TypeDef* UARTGetInstanceById (eBUS_ID_t busId) {
 
@@ -69,7 +69,7 @@ static USART_TypeDef* UARTGetInstanceById (eBUS_ID_t busId) {
 
 static vUARTBus_t* UARTGetBusByInstance (USART_TypeDef* instance) {
 
-    for (uint32_t i = 0; i < eUART_BUS_ID_MAX; i++) {
+    for (uint32_t i = 0; i < UART_MAX_BUSES; i++) {
         if (gBuses[i].handle.Instance == instance) {
             return &gBuses[i];
         }
@@ -184,8 +184,8 @@ static eSTATUS_t UARTInitGPIO (vUARTBus_t* pBus, UARTInitConf_t conf) {
 
 vUARTBus_t* UARTGetBusById (eBUS_ID_t busId) {
 
-    uint32_t busIndex = UART_BUS_ID2IDX (busId);
-    if (BUS_ID_IS_UART (busId) == false || busIndex >= eUART_BUS_ID_MAX) {
+    uint32_t busIndex = UART_BUS_ID_TO_IDX (busId);
+    if (BUS_ID_IS_UART (busId) == false || busIndex >= UART_MAX_BUSES) {
         return NULL;
     }
     return &gBuses[busIndex];

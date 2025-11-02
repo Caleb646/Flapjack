@@ -2361,6 +2361,5 @@ enum {
     eBMI3_FEAT_STATE_SELF_TEST_ONGOING = 0x02,
     eBMI3_FEAT_STATE_ERROR_MODE        = 0x03
 };
-// scComplete > 0 && scResult > 0 && scErrStatus == 0x5U && systemState == 0x00
 
 #endif // SENSORS_BMIXXX_H

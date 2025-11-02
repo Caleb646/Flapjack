@@ -127,7 +127,6 @@ eSTATUS_t ServoInit (ServoInitConf_t conf, Servo_t* pOutServo) {
     }
     memset (pServo, 0, sizeof (Servo_t));
     pServo->servoId           = servoId;
-    pServo->timerId           = timerId;
     pServo->usingDMA          = false;
     pServo->pitchMix          = pidPitchMix;
     pServo->yawMix            = pidYawMix;
@@ -142,6 +141,7 @@ eSTATUS_t ServoInit (ServoInitConf_t conf, Servo_t* pOutServo) {
 
     TIMER_INIT_PWM (&status, servoId, timerId, pwmFrequency, *pTimerBoardConf);
     GOTO_IF (STATUS_FAIL (status), error, "Failed to initialize timer for Servo_t");
+    pServo->pTimer = Timer_Get_ById (timerId);
 
     if (pLinkedMotorBoardConf != NULL) {
         pServo->linkedMotorId = pLinkedMotorBoardConf->deviceId;
@@ -177,8 +177,7 @@ eSTATUS_t ServoStart (Servo_t* pServo) {
         return eSTATUS_FAILURE;
     }
 
-    eTIMER_ID_t timerId = pServo->timerId;
-    if (TIMER_START (timerId, NULL, 0) != eSTATUS_SUCCESS) {
+    if (Timer_Start (pServo->pTimer, NULL, 0) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start Timer for Servo_t");
         return eSTATUS_FAILURE;
     }
@@ -195,8 +194,7 @@ eSTATUS_t ServoStop (Servo_t* pServo) {
         return eSTATUS_FAILURE;
     }
 
-    eTIMER_ID_t timerId = pServo->timerId;
-    if (TIMER_STOP (timerId) != eSTATUS_SUCCESS) {
+    if (Timer_Stop (pServo->pTimer) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to stop Timer for Servo_t");
         return eSTATUS_FAILURE;
     }
@@ -211,11 +209,9 @@ eSTATUS_t ServoWrite (Servo_t* pServo, float targetAngle) {
         return eSTATUS_FAILURE;
     }
 
-    eTIMER_ID_t timerId    = pServo->timerId;
     float usableMaxAngle   = pServo->usableMaxAngle;
     float clippedAngle     = clipf32 (targetAngle, -usableMaxAngle, usableMaxAngle);
     pServo->curAngle       = clippedAngle;
     pServo->curTargetAngle = targetAngle;
-
-    return TIMER_WRITE (timerId, (uint32_t)ServoAngle2PWM (pServo, clippedAngle));
+    return Timer_Write (pServo->pTimer, (uint32_t)ServoAngle2PWM (pServo, clippedAngle));
 }

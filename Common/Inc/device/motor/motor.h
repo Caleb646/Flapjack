@@ -15,7 +15,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#define MOTOR_COUNT (eMOTOR_ID_MAX)
+#define MOTOR_COUNT (MOTOR_MAX_MOTORS)
 
 typedef uint8_t eMOTOR_CMD_t;
 enum {
@@ -64,10 +64,8 @@ eSTATUS_t MotorWriteCmd (Motor_t* pMotor, eMOTOR_CMD_t command);
         *(pSTATUS)           = MotorInit (conf, NULL); \
     } while (0)
 
-#define MOTOR_START(MOTOR_ID) MotorStart (MotorGetById (MOTOR_ID))
-#define MOTOR_WRITE(MOTOR_ID, MOTOR_VALUE) \
-    MotorWrite (MotorGetById (MOTOR_ID), MOTOR_VALUE)
-#define MOTOR_WRITE_CMD(MOTOR_ID, COMMAND) \
-    MotorWriteCmd (MotorGetById (MOTOR_ID), COMMAND)
+#define MOTOR_START(MOTOR_ID)              MotorStart (MotorGetById (MOTOR_ID))
+#define MOTOR_WRITE(MOTOR_ID, MOTOR_VALUE) MotorWrite (MotorGetById (MOTOR_ID), MOTOR_VALUE)
+#define MOTOR_WRITE_CMD(MOTOR_ID, COMMAND) MotorWriteCmd (MotorGetById (MOTOR_ID), COMMAND)
 
 #endif // DEVICE_MOTOR_H

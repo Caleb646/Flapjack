@@ -19,27 +19,43 @@
 typedef uint8_t eDSHOT_TYPE_t;
 enum { eDSHOT_TYPE_150 = 0, eDSHOT_TYPE_300 = 1, eDSHOT_TYPE_600 = 2 };
 
+typedef uint8_t eDSHOT_OP_MODE_t;
+enum { eDSHOT_OP_MODE_BB_NO_TIMER = 0, eDSHOT_OP_MODE_BB_WITH_TIMER = 1, eDSHOT_OP_MODE_DMA = 2 };
+
+typedef struct DShot_s DShot_t;
+typedef DShot_t vDShot_t;
+typedef eSTATUS_t (*DShot_Write_Fn_t) (vDShot_t* pDShot, uint16_t motorVal);
+
 typedef struct {
     eDEVICE_ID_t motorId;
     MotorDeviceConf_t motorBoardConf;
 } DShotInitConf_t;
 
-typedef struct {
+typedef struct DShot_s {
     eDSHOT_TYPE_t dshotType;
+    eDSHOT_OP_MODE_t opMode;
     eDEVICE_ID_t deviceId;
-    eTIMER_ID_t timerId;
-    bool usingDMA;
-    vIO_t* pGPIO; /*!< GPIO handle for bitbang */
-    uint32_t pMotorDmaBuffer[DSHOT_DMA_BUFFER_SIZE]; /*!< DMA buffer for DShot */
+
+    union {
+        vTimer_t* pTimer;
+        vIO_t* pGPIO;
+    };
+
+    uint32_t pMotorDmaBuffer[DSHOT_DMA_BUFFER_SIZE];
 
     uint16_t timerTicksPeriod;
-    uint16_t timerTicksforBit_1; /*!< microsecond value to send a 1 */
-    uint16_t timerTicksforBit_0; /*!< microsecond value to send a 0 */
+    uint16_t timerTicksforBit_1;
+    uint16_t timerTicksforBit_0;
 
-    float usPeriod;      /*!< microsecond value for one bit period */
-    float usValforBit_1; /*!< microsecond value to send a 1 */
-    float usValforBit_0; /*!< microsecond value to send a 0 */
+    float usPeriod;
+    float usValforBit_1;
+    float usValforBit_0;
 
+    uint32_t cyclesPeriod;
+    uint32_t cyclesforBit_1;
+    uint32_t cyclesforBit_0;
+
+    DShot_Write_Fn_t writeFn;
     bool isInitialized;
 } DShot_t;
 
@@ -60,10 +76,9 @@ eSTATUS_t DShotWrite (vDShot_t* pDShot, uint16_t motorVal);
         *(pSTATUS)           = DShotInit (conf, NULL);       \
     } while (0)
 
-#define DSHOT_START(MOTOR_ID) DShotStart (DShotGetById (MOTOR_ID))
-#define DSHOT_STOP(MOTOR_ID)  DShotStop (DShotGetById (MOTOR_ID))
-#define DSHOT_WRITE(MOTOR_ID, VALUE) \
-    DShotWrite (DShotGetById (MOTOR_ID), VALUE)
+#define DSHOT_START(MOTOR_ID)        DShotStart (DShotGetById (MOTOR_ID))
+#define DSHOT_STOP(MOTOR_ID)         DShotStop (DShotGetById (MOTOR_ID))
+#define DSHOT_WRITE(MOTOR_ID, VALUE) DShotWrite (DShotGetById (MOTOR_ID), VALUE)
 
 
 #endif /* __MOTION_CONTROL_DSHOT_H__ */

@@ -11,9 +11,9 @@
 #include <stdint.h>
 #include <string.h>
 
-#define SPI_VALID(pBus) (pBus != NULL && pBus->isInitialized == true)
+#define SPI_VALID(pBUS) ((pBUS) != NULL && (pBUS)->isInitialized == true)
 
-static SHARED_MEM_SECTION SPIBus_t gSPIBusses[eSPI_BUS_ID_MAX] = { 0 };
+static SHARED_MEM_SECTION SPIBus_t gSPIBusses[SPI_MAX_BUSES] = { 0 };
 
 static SPI_TypeDef* SPIGetInstanceById (eBUS_ID_t busId) {
 
@@ -189,8 +189,8 @@ static eSTATUS_t SPIInitGPIO (vSPIBus_t* pBus, SPIInitConf_t conf) {
 
 vSPIBus_t* SPIGetBusById (eBUS_ID_t busId) {
 
-    uint32_t busIndex = SPI_BUS_ID2IDX (busId);
-    if (BUS_ID_IS_SPI (busId) == false || busIndex >= eSPI_BUS_ID_MAX) {
+    uint32_t busIndex = SPI_BUS_ID_TO_IDX (busId);
+    if (BUS_ID_IS_SPI (busId) == false || busIndex >= SPI_MAX_BUSES) {
         LOG_ERROR ("Invalid SPI bus ID");
         return NULL;
     }

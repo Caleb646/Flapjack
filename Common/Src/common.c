@@ -4,6 +4,18 @@
 #include <stdint.h>
 #include <string.h>
 
+float ge_ScaledSystemCoreClock = 0.0F;
+
+static void DWTInit (void);
+
+eSTATUS_t CommonInit (void) {
+
+    DWTInit ();
+    // Scale by 10Mhz for fDelayMicroseconds function
+    ge_ScaledSystemCoreClock = (float)SystemCoreClock / 10000000.0F;
+    return eSTATUS_SUCCESS;
+}
+
 void CriticalErrorHandler (void) {
     __disable_irq ();
     __BKPT (1);
@@ -46,14 +58,9 @@ float mapf32 (float v, float fromMin, float fromMax, float toMin, float toMax) {
     return toMin + ((v - fromMin) / (fromMax - fromMin)) * (toMax - toMin);
 }
 
-static inline void DWTInit (void) {
+static void DWTInit (void) {
 
 #ifndef UNIT_TEST
-
-    static bool dwtEnabled = false;
-    if (dwtEnabled == true) {
-        return;
-    }
     // Enable core debug access and trace unit
     CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
     // Enable DWT cycle counter
@@ -83,7 +90,6 @@ uint32_t GetMicroseconds (void) {
     uint32_t usTime = (SysTick->LOAD - SysTick->VAL) / (SysTick->LOAD / 1000U);
     return msTime * 1000U + usTime;
 #else
-    DWTInit ();
     uint32_t usTime = DWT->CYCCNT / (SystemCoreClock / 1000000U);
     return msTime * 1000U + usTime;
 #endif
@@ -103,15 +109,11 @@ void DelayMicroseconds (uint32_t us) {
 #endif // UNIT_TEST
 }
 
+
 void fDelayMicroseconds (float us) {
 
 #ifndef UNIT_TEST
 
-    if (us < 0.0F) {
-        return;
-    }
-    // Ensure DWT is enabled
-    DWTInit ();
     /*
      * Example: 6.67 us
      * time = 6.67 * 10 = 66.7
@@ -119,10 +121,8 @@ void fDelayMicroseconds (float us) {
      * -> 427 cycles
      * error = 427 (cycles) - 426.88 (exact cycles) = 0.12 cycles
      */
-    float time = us * 10.0F;
-    uint32_t cycles =
-    (uint32_t)((time * (float)(SystemCoreClock / 10000000U)) + 0.5F);
-    uint32_t start = DWT->CYCCNT;
+    uint32_t start  = DWT->CYCCNT;
+    uint32_t cycles = (uint32_t)(((us * 10.0F) * ge_ScaledSystemCoreClock) + 0.5F);
     while ((DWT->CYCCNT - start) < cycles) {
         __NOP ();
     }
