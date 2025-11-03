@@ -89,7 +89,7 @@ typedef struct MotorDeviceConf_s {
     TimerBoardConf_t* pTimerBoardConf;
     DeviceBoardConf_t* pLinkedServoBoardConf;
     bool useDMA;
-    uint8_t dshotSpeed;
+    eDSHOT_TYPE_t dshotSpeed;
     float pidRollMix;
     float pidPitchMix;
     float pidYawMix;

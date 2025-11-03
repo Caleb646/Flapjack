@@ -210,4 +210,8 @@ enum {
 #define EXTI_ID_VALID(ID)  ((ID) < eEXTI_ID_MAX)
 #define EXTI_ID_TO_IDX(ID) (ID)
 
+typedef uint8_t eDSHOT_TYPE_t;
+enum { eDSHOT_TYPE_150 = 0, eDSHOT_TYPE_300 = 1, eDSHOT_TYPE_600 = 2 };
+
+
 #endif // CONF_IDS_H
