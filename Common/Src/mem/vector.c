@@ -1,17 +1,16 @@
 #include "mem/vector.h"
-#include "common.h"
+#include "core/core.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 
-eSTATUS_t
-Vector_Init (Vector_t* pVector, void* pBuffer, uint16_t capacity, uint16_t elementSize, bool isShared) {
+eSTATUS_t Vector_Init (Vector_t* pVector, void* pBuffer, uint16_t capacity, uint16_t elementSize, bool isShared) {
 
     if (pVector == NULL || pBuffer == NULL || elementSize == 0) {
         return eSTATUS_FAILURE;
     }
 
-    pVector->processID = isShared ? 1 : 0; // Set processID to 1 for shared, 0 for non-shared
+    pVector->processID   = isShared ? 1 : 0; // Set processID to 1 for shared, 0 for non-shared
     pVector->pData       = pBuffer;
     pVector->capacity    = capacity;
     pVector->elementSize = elementSize;
@@ -63,8 +62,7 @@ eSTATUS_t Vector_PushBack (Vector_t* pVector, void const* pElement) {
     }
 
     // Calculate the address where to insert the new element
-    uint8_t* pDest =
-    ((uint8_t*)pVector->pData) + (pVector->size * pVector->elementSize);
+    uint8_t* pDest = ((uint8_t*)pVector->pData) + (pVector->size * pVector->elementSize);
 
     // Copy the element to the vector
     memcpy (pDest, pElement, pVector->elementSize);
@@ -86,8 +84,7 @@ eSTATUS_t Vector_PopBack (Vector_t* pVector, void* pOutElement) {
 
     if (pOutElement != NULL) {
         // Calculate the address of the element to pop
-        uint8_t* pSrc = ((uint8_t*)pVector->pData) +
-                        ((pVector->size - 1U) * pVector->elementSize);
+        uint8_t* pSrc = ((uint8_t*)pVector->pData) + ((pVector->size - 1U) * pVector->elementSize);
         memcpy (pOutElement, pSrc, pVector->elementSize);
     }
     pVector->size--;
@@ -148,9 +145,8 @@ eSTATUS_t Vector_Insert (Vector_t* pVector, uint16_t index, void const* pElement
 
     if (index < pVector->size) {
         // Move elements to make space for the new element
-        uint8_t* pDest =
-        ((uint8_t*)pVector->pData) + ((index + 1) * pVector->elementSize);
-        uint8_t* pSrc = ((uint8_t*)pVector->pData) + (index * pVector->elementSize);
+        uint8_t* pDest = ((uint8_t*)pVector->pData) + ((index + 1) * pVector->elementSize);
+        uint8_t* pSrc  = ((uint8_t*)pVector->pData) + (index * pVector->elementSize);
         memmove (pDest, pSrc, (pVector->size - index) * pVector->elementSize);
     }
 
@@ -181,8 +177,7 @@ eSTATUS_t Vector_Erase (Vector_t* pVector, uint16_t index, void* pOutElement) {
     // Move elements to fill the gap
     if (index < pVector->size - 1) {
         uint8_t* pDest = ((uint8_t*)pVector->pData) + (index * pVector->elementSize);
-        uint8_t* pSrc =
-        ((uint8_t*)pVector->pData) + ((index + 1) * pVector->elementSize);
+        uint8_t* pSrc  = ((uint8_t*)pVector->pData) + ((index + 1) * pVector->elementSize);
         memmove (pDest, pSrc, (pVector->size - index - 1) * pVector->elementSize);
     }
 

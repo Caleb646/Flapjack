@@ -35,7 +35,7 @@
 #ifndef RING_BUFF_H
 #define RING_BUFF_H
 
-#include "common.h"
+#include "core/core.h"
 #include <stdint.h>
 
 /**

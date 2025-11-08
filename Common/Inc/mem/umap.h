@@ -1,7 +1,7 @@
 #ifndef MEM_UMAP_H
 #define MEM_UMAP_H
 
-#include "common.h"
+#include "core/core.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -23,16 +23,7 @@ typedef struct {
     bool (*equalFunc) (void const* pKey1, void const* pKey2, uint16_t keySize);
 } UMap_t;
 
-bool UMap_Init (
-UMap_t* pUMap,
-UMapEntry_t* pEntries,
-void* pKeys,
-void* pValues,
-uint16_t capacity,
-uint16_t keySize,
-uint16_t valueSize,
-bool isShared
-);
+bool UMap_Init (UMap_t* pUMap, UMapEntry_t* pEntries, void* pKeys, void* pValues, uint16_t capacity, uint16_t keySize, uint16_t valueSize, bool isShared);
 
 bool UMap_InitWithFunctions (
 UMap_t* pUMap,

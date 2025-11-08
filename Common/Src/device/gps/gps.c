@@ -1,11 +1,12 @@
 #include "device/gps/gps.h"
-#include "common.h"
+#include "core/core.h"
+#include "core/log/logger.h"
 #include "device/gps/parser/minmea.h"
-#include "log/logger.h"
 #include "mem/mem.h"
 #include "peripheral/bus/bus.h"
 #include <stdbool.h>
 #include <stdint.h>
+
 
 #define GPS_SENTENCE_MAX_LENGTH MINMEA_MAX_SENTENCE_LENGTH
 #define GPS_START_BYTE          '$'

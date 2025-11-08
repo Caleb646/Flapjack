@@ -1,12 +1,12 @@
 #ifndef DEVICE_MOTOR_H
 #define DEVICE_MOTOR_H
 
-#include "common.h"
 #include "conf/board.h"
 #include "conf/conf.h"
 #include "conf/ids.h"
+#include "core/core.h"
+#include "core/log/logger.h"
 #include "hal.h"
-#include "log/logger.h"
 #include "mc/dshot.h"
 #include "mem/vector.h"
 #include "peripheral/dma.h"
@@ -14,6 +14,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+
+
 
 #define MOTOR_COUNT (MOTOR_MAX_MOTORS)
 

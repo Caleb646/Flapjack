@@ -1,15 +1,16 @@
 #ifndef SENSORS_IMU_H
 #define SENSORS_IMU_H
 
-#include "common.h"
 #include "conf/board.h"
 #include "conf/conf.h"
+#include "core/core.h"
+#include "core/log/logger.h"
 #include "device/imu/bmixxx.h"
 #include "hal.h"
-#include "log/logger.h"
 #include "peripheral/bus/bus.h"
 #include <stdint.h>
 #include <string.h>
+
 
 
 #define IMU_LOG_CALIB_DATA(rslt, error) \
@@ -270,14 +271,14 @@ eSTATUS_t IMUInit (IMUInitConf_t conf, IMU_t* pOutIMU, BusVTable_t* pBusOverride
 eSTATUS_t IMUStart (vIMU_t* pIMU);
 eSTATUS_t IMUStop (vIMU_t* pIMU);
 eSTATUS_t IMUHandleErr (vIMU_t* pIMU);
-eSTATUS_t IMUUpdate (vIMU_t* pIMU, bool forcePolling, Vec3f* pOutputAccel, Vec3f* pOutputGyro);
+eSTATUS_t IMU_Update (vIMU_t* pIMU, bool forcePolling, Vec3f* pOutputAccel, Vec3f* pOutputGyro);
 eSTATUS_t IMUGetConf (vIMU_t* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf);
 eSTATUS_t IMUGetAltConf (vIMU_t* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf);
 eSTATUS_t IMUSetConf (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf);
 eSTATUS_t IMUSetAltConf (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf);
 eSTATUS_t IMUCompareConfs (IMUAccConf aconf, IMUGyroConf gconf, IMUAccConf aconf2, IMUGyroConf gconf2);
 vIMU_t const* IMUGetActiveDevice (void);
-vIMU_t* IMUGetMutableActiveDevice (void);
+vIMU_t* IMU_GetMutableActiveDevice (void);
 void IMU2CPUInterruptHandler (vIMU_t* pIMU);
 
 #define IMU_INIT(pSTATUS, DEVICE_BOARD_CONF)                 \

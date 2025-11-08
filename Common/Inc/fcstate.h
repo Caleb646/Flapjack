@@ -1,7 +1,7 @@
 #ifndef MC_FCSTATE_H
 #define MC_FCSTATE_H
 
-#include "common.h"
+#include "core/core.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -35,32 +35,33 @@ typedef struct {
 // typedef FCState volatile vFCState;
 typedef FCState_t vFCState_t;
 
-eSTATUS_t FCStateInit (FCStateInitConf_t conf, vFCState_t* pOut);
-eSTATUS_t FCStateStart (vFCState_t* pState);
-eSTATUS_t FCStateStop (vFCState_t* pState);
-vFCState_t const* FCStateGetActiveState (void);
+eSTATUS_t FCState_Init (FCStateInitConf_t conf, vFCState_t* pOut);
+eSTATUS_t FCState_Start (vFCState_t* pState);
+eSTATUS_t FCState_Stop (vFCState_t* pState);
+vFCState_t const* FCState_GetActiveState (void);
 vFCState_t* FCState_GetMutableActiveState (void);
-FCState_t FCStateGetCopyOfActiveState (void);
-bool FCStateSetOpState (vFCState_t* pState, eOP_STATE_t newOpState);
+FCState_t FCState_GetCopyOfActiveState (void);
+bool FCState_Set_OpState (vFCState_t* pState, eOP_STATE_t newOpState);
+bool FCState_Set_CurrentAttitude (vFCState_t* pState, Vec3f newCurrentAttitude);
+bool FCState_Set_TargetAttitude (vFCState_t* pState, Vec3f newTargetAttitude);
+bool FCState_Set_MaxAttitude (vFCState_t* pState, Vec3f newMaxAttitude);
+bool FCState_Set_TargetThrottle (vFCState_t* pState, float newThrottle);
 
-bool FCStateSetCurrentAttitude (vFCState_t* pState, Vec3f newAttitude);
-bool FCStateSetTargetAttitude (vFCState_t* pState, Vec3f newAttitude);
-bool FCStateSetMaxAttitude (vFCState_t* pState, Vec3f newAttitude);
-bool FCStateSetTargetThrottle (vFCState_t* pState, float newThrottle);
+char const* OpStateToChar (eOP_STATE_t opState);
 
-char const* OpState2Char (eOP_STATE_t opState);
-
-#define FCSTATE_INIT(pSTATUS)                           \
-    do {                                                \
-        FCStateInitConf_t conf = { 0 };                 \
-        *(pSTATUS)             = FCStateInit (conf, 0); \
+#define FCSTATE_INIT(pSTATUS)                            \
+    do {                                                 \
+        FCStateInitConf_t conf = { 0 };                  \
+        *(pSTATUS)             = FCState_Init (conf, 0); \
     } while (0)
 
 // clang-format off
 
-#define FC_SET_STOPPED_OP_STATE() FCStateSetOpState (FCState_GetMutableActiveState (), eOP_STATE_STOPPED)
-#define FC_SET_RUNNING_OP_STATE() FCStateSetOpState (FCState_GetMutableActiveState (), eOP_STATE_RUNNING)
-#define FC_SET_ERROR_OP_STATE() FCStateSetOpState (FCState_GetMutableActiveState (), eOP_STATE_ERROR)
+#define FC_SET_STOPPED_OP_STATE() FCState_Set_OpState (FCState_GetMutableActiveState (), eOP_STATE_STOPPED)
+#define FC_SET_RUNNING_OP_STATE() FCState_Set_OpState (FCState_GetMutableActiveState (), eOP_STATE_RUNNING)
+#define FC_SET_ERROR_OP_STATE() FCState_Set_OpState (FCState_GetMutableActiveState (), eOP_STATE_ERROR)
+
+#define FC_SET_CURRENT_ATTITUDE(NEW_CURRENT_ATTITUDE) FCState_Set_CurrentAttitude (FCState_GetMutableActiveState (), (NEW_CURRENT_ATTITUDE))
 
 // clang-format on
 

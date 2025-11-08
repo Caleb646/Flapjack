@@ -33,7 +33,7 @@
  * Version:         v1.3.1
  */
 #include "mem/ring_buff.h"
-#include "common.h"
+#include "core/core.h"
 #include <stdint.h>
 #include <string.h>
 

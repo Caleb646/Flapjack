@@ -1,12 +1,10 @@
-#include "log/logger.h"
-#include "common.h"
-#include "conf/board.h"
-#include "conf/conf.h"
+#include "core/log/logger.h"
+#include "core/core_shared.h"
+#include "core/log/format.h"
+#include "core/sync.h"
 #include "hal.h"
-#include "log/format.h"
 #include "mem/mem.h"
 #include "mem/ring_buff.h"
-#include "sync.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>

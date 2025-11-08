@@ -1,13 +1,14 @@
 #ifndef DEVICE_GPS_GPS_H
 #define DEVICE_GPS_GPS_H
 
-#include "common.h"
 #include "conf/board.h"
 #include "conf/ids.h"
+#include "core/core.h"
 #include "device/gps/gps.h"
 #include "peripheral/bus/bus.h"
 #include <stdbool.h>
 #include <stdint.h>
+
 
 typedef struct {
     DeviceBoardConf_t boardConf;

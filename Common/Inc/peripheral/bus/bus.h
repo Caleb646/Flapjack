@@ -1,15 +1,16 @@
 #ifndef PERIPHERAL_BUS_BUS_H
 #define PERIPHERAL_BUS_BUS_H
 
-#include "common.h"
 #include "conf/board.h"
 #include "conf/ids.h"
+#include "core/core.h"
 #include "peripheral/bus/bus_core.h"
 #include "peripheral/bus/i2c.h"
 #include "peripheral/bus/spi.h"
 #include "peripheral/bus/uart.h"
 #include <stdbool.h>
 #include <stdint.h>
+
 
 // clang-format off
 

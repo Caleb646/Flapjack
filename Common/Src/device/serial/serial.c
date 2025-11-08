@@ -1,10 +1,7 @@
 #include "device/serial/serial.h"
-#include "common.h"
-#include "conf/board.h"
 #include "conf/conf.h"
+#include "core/core.h"
 #include "hal.h"
-#include "log/format.h"
-#include "log/logger.h"
 #include "mem/mem.h"
 #include "peripheral/bus/bus.h"
 #include <stdbool.h>

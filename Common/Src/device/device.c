@@ -1,8 +1,9 @@
 #include "device/device.h"
-#include "common.h"
 #include "conf/board.h"
 #include "conf/conf.h"
 #include "conf/ids.h"
+#include "core/core.h"
+#include "core/log/logger.h"
 #include "device/flash/flash.h"
 #include "device/gps/gps.h"
 #include "device/imu/imu.h"
@@ -11,12 +12,12 @@
 #include "device/serial/serial.h"
 #include "device/servo/servo.h"
 #include "hal.h"
-#include "log/logger.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 
-eSTATUS_t DeviceInitAll (BoardConf_t* pBoardConf) {
+
+eSTATUS_t Device_InitAll (BoardConf_t* pBoardConf) {
 
     RETURN_IF_NULL (pBoardConf, eSTATUS_FAILURE, "Board configuration is NULL");
     eSTATUS_t status = eSTATUS_SUCCESS;
@@ -62,7 +63,7 @@ eSTATUS_t DeviceInitAll (BoardConf_t* pBoardConf) {
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t DeviceStartAll (void) {
+eSTATUS_t Device_StartAll (void) {
 
     eSTATUS_t status = eSTATUS_SUCCESS;
 
@@ -73,11 +74,11 @@ eSTATUS_t DeviceStartAll (void) {
     LOG_ERROR_IF (STATUS_FAIL (status), "Failed to start Flash");
 
     // IMU is required
-    status = IMUStart (IMUGetMutableActiveDevice ());
+    status = IMUStart (IMU_GetMutableActiveDevice ());
     RETURN_IF (STATUS_FAIL (status), status, "Failed to start IMU");
 
     // Mag is allowed to fail
-    status = MagStart (MagGetMutableActiveDevice ());
+    status = MagStart (Mag_GetMutableActiveDevice ());
     LOG_ERROR_IF (STATUS_FAIL (status), "Failed to start Magnetometer");
 
     // GPS is allowed to fail

@@ -24,11 +24,11 @@
 #include "task.h"
 #include "timers.h"
 
-#include "common.h"
 #include "control.h"
-#include "log/logger.h"
+#include "core/core.h"
+#include "core/log/logger.h"
+#include "core/sync.h"
 #include "peripheral/bus/uart.h"
-#include "sync.h"
 
 
 #ifndef HSEM_ID_0
@@ -98,23 +98,15 @@ int main (void) {
     MX_SPI5_Init ();
     MX_USB_OTG_HS_PCD_Init ();
 
-    if (CommonInit () != eSTATUS_SUCCESS) {
+    if (Core_Init () != eSTATUS_SUCCESS) {
         CriticalErrorHandler ();
     }
 
-    if (SyncInit () != eSTATUS_SUCCESS) {
-        CriticalErrorHandler ();
-    }
-
-    if (LoggerInit () != eSTATUS_SUCCESS) {
-        CriticalErrorHandler ();
-    }
-
-    if (ControlInit () != eSTATUS_SUCCESS) {
+    if (Control_Init () != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to init control module");
         CriticalErrorHandler ();
     }
-    HAL_Delay (1000);
+    Delay (1000);
 
     uint16_t taskPriority = 1;
     BaseType_t taskStatus =

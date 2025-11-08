@@ -1,7 +1,7 @@
 #ifndef MOTION_CONTROL_FILTER_H
 #define MOTION_CONTROL_FILTER_H
 
-#include "common.h"
+#include "core/core.h"
 #include "device/imu/imu.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -67,7 +67,7 @@ bool FilterMadgwickUpdate_9DOF (FilterMadgwick_t* pFilter,Vec3f const* pAccel,Ve
 eSTATUS_t FilterInit (FilterInitConf_t conf, Filter_t* pOut);
 eSTATUS_t FilterStart (vFilter_t* pFilter, uint32_t warmUpIterations, Vec3f* pOutAttitude);
 eSTATUS_t FilterStop (vFilter_t* pFilter);
-eSTATUS_t FilterUpdate (vFilter_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyro, Vec3f const* pMag, float dt, Vec3f* pOutput);
+eSTATUS_t Filter_Update (vFilter_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyro, Vec3f const* pMag, float dt, Vec3f* pOutput);
 vFilter_t const* FilterGetActiveFilter (void);
 vFilter_t* Filter_GetMutableActiveFilter (void);
 

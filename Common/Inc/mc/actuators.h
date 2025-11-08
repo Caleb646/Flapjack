@@ -1,9 +1,9 @@
 #ifndef MOTION_CONTROL_ACTUATORS_H
 #define MOTION_CONTROL_ACTUATORS_H
 
-#include "common.h"
 #include "conf/board.h"
 #include "conf/conf.h"
+#include "core/core.h"
 #include "device/motor/motor.h"
 #include "device/servo/servo.h"
 #include "hal.h"
@@ -14,6 +14,7 @@
 #include <stdint.h>
 #include <string.h>
 
+
 #ifdef UNIT_TEST
 eSTATUS_t ActuatorsMixPair (Servo_t* pServo, Motor_t* pMotor, Vec3f pidAttitude, float targetThrottle);
 eSTATUS_t ActuatorsArm (Motor_t* pMotor);
@@ -21,7 +22,7 @@ eSTATUS_t ActuatorsArm (Motor_t* pMotor);
 
 eSTATUS_t ActuatorsStart (void);
 eSTATUS_t ActuatorsStop (void);
-eSTATUS_t ActuatorsUpdate (Vec3f pidAttitude, float targetThrottle);
+eSTATUS_t Actuators_Update (Vec3f pidAttitude, float targetThrottle);
 void ActuatorsLogData (void);
 
 #endif // MOTION_CONTROL_ACTUATORS_H

@@ -1,13 +1,14 @@
 #ifndef LOG_H
 #define LOG_H
 
-#include "common.h"
 #include "conf/conf.h"
+#include "core/core_shared.h"
+#include "core/log/format.h"
 #include "hal.h"
-#include "log/format.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+
 
 // Macro to extract filename from __FILE__ at compile time
 #ifdef _WIN32

@@ -1,11 +1,11 @@
 #include "mc/actuators.h"
-#include "common.h"
 #include "conf/board.h"
 #include "conf/conf.h"
 #include "conf/ids.h"
+#include "core/core.h"
+#include "core/log/logger.h"
 #include "device/motor/motor.h"
 #include "device/servo/servo.h"
-#include "log/logger.h"
 #include "mc/dshot.h"
 #include "mem/vector.h"
 #include "peripheral/gpio.h"
@@ -21,7 +21,7 @@
 /*
  * \param pidAttitude roll, pitch, and yaw are between -1 and 1
  */
-STATIC_TESTABLE_DECL eSTATUS_t ActuatorsMixPair (Servo_t* pServo, Motor_t* pMotor, Vec3f pidAttitude, float targetThrottle) {
+STATIC eSTATUS_t ActuatorsMixPair (Servo_t* pServo, Motor_t* pMotor, Vec3f pidAttitude, float targetThrottle) {
     /*
      *  Motor_t Mixing
      */
@@ -60,7 +60,7 @@ STATIC_TESTABLE_DECL eSTATUS_t ActuatorsMixPair (Servo_t* pServo, Motor_t* pMoto
  * \brief After motors are armed, a motor write has to be issued at
  * least every 5ms or the motor ESC will stop the motor.
  */
-STATIC_TESTABLE_DECL eSTATUS_t ActuatorsArmMotor (Motor_t* pMotor) {
+STATIC eSTATUS_t ActuatorsArmMotor (Motor_t* pMotor) {
 
     // #ifndef USE_SERVOS_ONLY
 
@@ -116,7 +116,7 @@ eSTATUS_t ActuatorsStop (void) {
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t ActuatorsUpdate (Vec3f pidAttitude, float targetThrottle) {
+eSTATUS_t Actuators_Update (Vec3f pidAttitude, float targetThrottle) {
 
     eSTATUS_t status       = eSTATUS_SUCCESS;
     Vector_t* pMotorVector = MotorGetAll ();

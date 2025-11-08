@@ -1,11 +1,10 @@
 #ifndef DEVICE_SERIAL_SERIAL_H
 #define DEVICE_SERIAL_SERIAL_H
 
-#include "common.h"
 #include "conf/board.h"
 #include "conf/conf.h"
+#include "core/core.h"
 #include "hal.h"
-#include "log/format.h"
 #include "peripheral/bus/bus.h"
 #include <stdint.h>
 #include <stdio.h>

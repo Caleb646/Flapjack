@@ -1,11 +1,12 @@
 #ifndef PERIPHS_UART_H
 #define PERIPHS_UART_H
-#include "common.h"
 #include "conf/board.h"
 #include "conf/conf.h"
+#include "core/core.h"
 #include "hal.h"
 #include "peripheral/bus/bus_core.h"
 #include "peripheral/gpio.h"
+
 
 typedef uint8_t eUART_BAUD_t;
 enum {

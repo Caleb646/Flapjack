@@ -1,11 +1,12 @@
 
 #include "mc/mc.h"
+#include "core/log/logger.h"
 #include "fcstate.h"
-#include "log/logger.h"
 #include <stdbool.h>
 #include <stdint.h>
 
-eSTATUS_t MCInitAll (void) {
+
+eSTATUS_t MC_InitAll (void) {
 
     eSTATUS_t status = eSTATUS_SUCCESS;
 
@@ -20,7 +21,7 @@ eSTATUS_t MCInitAll (void) {
     return status;
 }
 
-eSTATUS_t MCStartAll (void) {
+eSTATUS_t MC_StartAll (void) {
 
     eSTATUS_t status = eSTATUS_SUCCESS;
 
@@ -31,7 +32,7 @@ eSTATUS_t MCStartAll (void) {
     status = FilterStart (Filter_GetMutableActiveFilter (), 500U, &startingAttitude);
     RETURN_IF (STATUS_FAIL (status), status, "Failed to start filter");
 
-    if (FCStateSetCurrentAttitude (FCState_GetMutableActiveState (), startingAttitude) == false) {
+    if (FCState_Set_CurrentAttitude (FCState_GetMutableActiveState (), startingAttitude) == false) {
         LOG_ERROR ("Failed to set starting attitude in FC state");
         return eSTATUS_FAILURE;
     }

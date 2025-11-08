@@ -1,16 +1,17 @@
 #ifndef DEVICE_MAG_MAG_H
 #define DEVICE_MAG_MAG_H
 
-#include "common.h"
 #include "conf/board.h"
 #include "conf/conf.h"
 #include "conf/ids.h"
+#include "core/core.h"
 #include "device/mag/mmc5983.h"
 #include "hal.h"
 #include "peripheral/bus/bus.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+
 
 typedef int8_t eMAG_STATUS_t;
 enum {
@@ -45,9 +46,9 @@ typedef Mag_t vMag_t;
 eMAG_STATUS_t MagInit (MagInitConf_t conf, Mag_t* pOutMag, BusVTable_t* pBusOverride);
 eMAG_STATUS_t MagStart (vMag_t* pMag);
 eMAG_STATUS_t MagStop (vMag_t* pMag);
-eMAG_STATUS_t MagUpdate (vMag_t* pMag, bool forcePolling, Vec3f* pOutput);
+eMAG_STATUS_t Mag_Update (vMag_t* pMag, bool forcePolling, Vec3f* pOutput);
 vMag_t const* MagGetActiveDevice (void);
-vMag_t* MagGetMutableActiveDevice (void);
+vMag_t* Mag_GetMutableActiveDevice (void);
 
 #define MAG_INIT(pSTATUS, DEVICE_BOARD_CONF)                   \
     do {                                                       \

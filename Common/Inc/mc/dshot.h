@@ -1,14 +1,15 @@
 #ifndef __MOTION_CONTROL_DSHOT_H__
 #define __MOTION_CONTROL_DSHOT_H__
 
-#include "common.h"
 #include "conf/board.h"
 #include "conf/conf.h"
 #include "conf/ids.h"
+#include "core/core.h"
 #include "hal.h"
 #include "peripheral/dma.h"
 #include "peripheral/gpio.h"
 #include "peripheral/timer.h"
+
 
 #define DSHOT_DMA_BUFFER_SIZE 18U /* resolution + frame reset (2us) */
 #define DSHOT_FRAME_SIZE      16U

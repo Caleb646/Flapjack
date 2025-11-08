@@ -1,10 +1,11 @@
 #ifndef PERIPHERAL_BUS_BUS_CORE_H
 #define PERIPHERAL_BUS_BUS_CORE_H
 
-#include "common.h"
 #include "conf/conf.h"
+#include "core/core.h"
 #include <stdint.h>
 #include <string.h>
+
 
 typedef uint8_t eBUS_CALLBACK_ID_t;
 enum {

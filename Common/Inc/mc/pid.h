@@ -1,10 +1,10 @@
 #ifndef MC_PID_H
 #define MC_PID_H
 
-#include "common.h"
 #include "conf/board.h"
 #include "conf/conf.h"
 #include "control.h"
+#include "core/core.h"
 #include "device/motor/motor.h"
 #include "device/servo/servo.h"
 #include "fcstate.h"
@@ -42,7 +42,7 @@ typedef PID_t vPID_t;
 eSTATUS_t PIDInit (PIDInitConf_t conf);
 eSTATUS_t PIDStart (vPID_t* pPID);
 eSTATUS_t PIDStop (vPID_t* pPID);
-eSTATUS_t PIDUpdate (vPID_t* pPID, Vec3f const* currentAttitude, Vec3f const* targetAttitude, Vec3f const* maxAttitude, float dt, Vec3f* pOut);
+eSTATUS_t PID_Update (vPID_t* pPID, Vec3f const* currentAttitude, Vec3f const* targetAttitude, Vec3f const* maxAttitude, float dt, Vec3f* pOut);
 vPID_t const* PIDGetActivePID (void);
 vPID_t * PID_GetMutableActivePID (void);
 

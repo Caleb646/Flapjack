@@ -1,5 +1,5 @@
 #include "mem/queue.h"
-#include "common.h"
+#include "core/core.h"
 #include "hal.h"
 #include "mem/mem.h"
 #include <stdint.h>

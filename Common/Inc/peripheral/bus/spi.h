@@ -1,14 +1,15 @@
 #ifndef PERIPHS_SPI_H
 #define PERIPHS_SPI_H
 
-#include "common.h"
 #include "conf/board.h"
 #include "conf/conf.h"
+#include "core/core.h"
 #include "hal.h"
 #include "peripheral/bus/bus_core.h"
 #include "peripheral/gpio.h"
 #include <stdint.h>
 #include <string.h>
+
 
 #define SPI_MAX_DEVICES_PER_BUS 3U
 

@@ -1,7 +1,7 @@
 #include "peripheral/bus/bus.h"
-#include "common.h"
 #include "conf/board.h"
 #include "conf/ids.h"
+#include "core/core.h"
 #include "peripheral/bus/i2c.h"
 #include "peripheral/bus/spi.h"
 #include "peripheral/bus/uart.h"

@@ -1,9 +1,10 @@
 #ifndef DMA_H
 #define DMA_H
-#include "common.h"
+#include "core/core.h"
+#include "core/log/logger.h"
 #include "hal.h"
-#include "log/logger.h"
 #include <stdint.h>
+
 
 typedef uint8_t eDMA_STREAM_ID_t;
 enum {

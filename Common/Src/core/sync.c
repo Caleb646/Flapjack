@@ -1,5 +1,5 @@
-#include "sync.h"
-#include "common.h"
+#include "core/sync.h"
+#include "core/core_shared.h"
 #include "hal.h"
 #include "mem/mem.h"
 #include "mem/queue.h"
@@ -55,7 +55,7 @@ void CM4_SEV_IRQHandler (void) {
     SyncIRQHandler (MAILBOX_CM7_ID);
 }
 
-STATIC_TESTABLE_DECL uint16_t SyncGetOtherCoresMailBoxID (void) {
+STATIC uint16_t SyncGetOtherCoresMailBoxID (void) {
 
     if (HAL_GetCurrentCPUID () == CM7_CPUID) {
         return MAILBOX_CM4_ID;
@@ -63,7 +63,7 @@ STATIC_TESTABLE_DECL uint16_t SyncGetOtherCoresMailBoxID (void) {
     return MAILBOX_CM7_ID;
 }
 
-STATIC_TESTABLE_DECL vMailBox_t* SyncMailBoxGet (uint32_t mbID) {
+STATIC vMailBox_t* SyncMailBoxGet (uint32_t mbID) {
 
     if (mbID >= MAILBOX_COUNT) {
         return NULL;
@@ -71,7 +71,7 @@ STATIC_TESTABLE_DECL vMailBox_t* SyncMailBoxGet (uint32_t mbID) {
     return &ga_MailBoxes[mbID];
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t SyncMailBoxWrite (uint32_t mbID, uint8_t const* pBuffer, uint32_t len) {
+STATIC eSTATUS_t SyncMailBoxWrite (uint32_t mbID, uint8_t const* pBuffer, uint32_t len) {
 
     if (len > sizeof (MailBox_t) || pBuffer == NULL) {
         return eSTATUS_FAILURE;
@@ -80,7 +80,7 @@ STATIC_TESTABLE_DECL eSTATUS_t SyncMailBoxWrite (uint32_t mbID, uint8_t const* p
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t SyncMailBoxWriteNotify (uint32_t mbID, uint8_t const* pBuffer, uint32_t len) {
+STATIC eSTATUS_t SyncMailBoxWriteNotify (uint32_t mbID, uint8_t const* pBuffer, uint32_t len) {
 
     eSTATUS_t status = SyncMailBoxWrite (mbID, pBuffer, len);
     if (status != eSTATUS_SUCCESS) {
@@ -96,7 +96,7 @@ STATIC_TESTABLE_DECL eSTATUS_t SyncMailBoxWriteNotify (uint32_t mbID, uint8_t co
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t SyncMailBoxRead (uint32_t mbID, uint8_t* pBuffer, uint32_t len) {
+STATIC eSTATUS_t SyncMailBoxRead (uint32_t mbID, uint8_t* pBuffer, uint32_t len) {
 
     if (len > sizeof (MailBox_t) || pBuffer == NULL) {
         return eSTATUS_FAILURE;
@@ -106,7 +106,7 @@ STATIC_TESTABLE_DECL eSTATUS_t SyncMailBoxRead (uint32_t mbID, uint8_t* pBuffer,
 }
 
 
-STATIC_TESTABLE_DECL task_handler_fn_t SyncGetTaskHandler (eSYNC_TASKID_t taskId) {
+STATIC task_handler_fn_t SyncGetTaskHandler (eSYNC_TASKID_t taskId) {
 
     if (TASK_TYPE_IS_VALID (taskId) == false) {
         return NULL;
@@ -114,7 +114,7 @@ STATIC_TESTABLE_DECL task_handler_fn_t SyncGetTaskHandler (eSYNC_TASKID_t taskId
     return ga_Handlers[taskId];
 }
 
-STATIC_TESTABLE_DECL void SyncIRQHandler (uint16_t myCPUMailBoxId) {
+STATIC void SyncIRQHandler (uint16_t myCPUMailBoxId) {
 
     DefaultTask task = { 0 };
     eSTATUS_t status = SyncMailBoxRead (myCPUMailBoxId, (uint8_t*)&task, sizeof (DefaultTask));

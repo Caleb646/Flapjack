@@ -1,9 +1,10 @@
-#include "common.h"
 #include "conf/board.h"
 #include "conf/ids.h"
+#include "core/core.h"
 #include "hal.h"
 #include "peripheral/gpio.h"
 #include "unity/unity.h"
+
 
 #ifndef UNIT_TEST
 #error "UNIT_TEST should be defined in this file"

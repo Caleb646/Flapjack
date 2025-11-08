@@ -1,9 +1,9 @@
 #include "control.h"
-#include "common.h"
 #include "conf/conf.h"
+#include "core/core.h"
+#include "core/log/logger.h"
 #include "fcstate.h"
 #include "hal.h"
-#include "log/logger.h"
 #include "mem/mem.h"
 #include "mem/queue.h"
 #include "mem/umap.h"
@@ -55,12 +55,12 @@ static bool ControlGetNewCmd (DefaultCommand* pOutCmd);
 //     UARTRead_IT (busId, ga_UartInterruptBuffer, sizeof (DefaultCommand));
 // }
 
-// STATIC_TESTABLE_DECL CmdHandlerFn_t ControlGetHandler (DefaultCommand defCmd) {
+// STATIC CmdHandlerFn_t ControlGetHandler (DefaultCommand defCmd) {
 
 //     eCMD_t cmdType = defCmd.header.commandType;
 //     if (cmdType == eCMD_CHANGE_OP_STATE) {
 
-//         vFCState_t const* pState = FCStateGetActiveState ();
+//         vFCState_t const* pState = FCState_GetActiveState ();
 //         ChangeOpStateCmd cmd     = *(ChangeOpStateCmd*)&defCmd;
 //         uint16_t cState          = pState->opState;
 //         uint16_t nState          = cmd.requestedState;
@@ -73,7 +73,7 @@ static bool ControlGetNewCmd (DefaultCommand* pOutCmd);
 //     return pHandler ? *pHandler : NULL;
 // }
 
-STATIC_TESTABLE_DECL eSTATUS_t ControlInit_Producer (void) {
+STATIC eSTATUS_t ControlInit_Producer (void) {
 
     if (RawCommandQueue_Init () != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize raw command queue");
@@ -83,7 +83,7 @@ STATIC_TESTABLE_DECL eSTATUS_t ControlInit_Producer (void) {
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t ControlInit_Shared (void) {
+STATIC eSTATUS_t ControlInit_Shared (void) {
 
     // if (CmdHandlersUMap_Init () == false) {
     //     LOG_ERROR ("Failed to initialize command handlers map");
@@ -105,14 +105,14 @@ STATIC_TESTABLE_DECL eSTATUS_t ControlInit_Shared (void) {
     return eSTATUS_SUCCESS;
 }
 
-// STATIC_TESTABLE_DECL eSTATUS_t ControlDefaultCmdHandler (DefaultCommand cmd) {
+// STATIC eSTATUS_t ControlDefaultCmdHandler (DefaultCommand cmd) {
 
 //     eCMD_t cmdType = cmd.header.commandType;
 //     LOG_WARN ("No handler registered for command type: %s", ControlCmdType2Char (cmdType));
 //     return false;
 // }
 
-STATIC_TESTABLE_DECL eSTATUS_t ControlInit_Consumer (void) {
+STATIC eSTATUS_t ControlInit_Consumer (void) {
 
     // eCMD_t cmds[]             = { eCMD_NULL,
     //                               // eCMD_CHANGE_OP_STATE, // op state changes can have multiple handlers based on current and next state
@@ -136,7 +136,7 @@ STATIC_TESTABLE_DECL eSTATUS_t ControlInit_Consumer (void) {
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL bool ControlGetNewCmd (DefaultCommand* pOutCmd) {
+STATIC bool ControlGetNewCmd (DefaultCommand* pOutCmd) {
 
     if (IS_PRODUCER_ME () == true) {
         LOG_ERROR ("Should only be called for the core that is consuming");
@@ -155,7 +155,7 @@ STATIC_TESTABLE_DECL bool ControlGetNewCmd (DefaultCommand* pOutCmd) {
     return true;
 }
 
-eSTATUS_t ControlInit (void) {
+eSTATUS_t Control_Init (void) {
 
     if (IS_PRODUCER_ME () == true) {
 

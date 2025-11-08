@@ -1,5 +1,5 @@
-#ifndef COMMON_H
-#define COMMON_H
+#ifndef CORE_COMMON_H
+#define CORE_COMMON_H
 
 #include "hal.h"
 #include <assert.h>
@@ -8,17 +8,14 @@
 #include <stdint.h>
 #include <stdio.h>
 
-// Test visibility macros
 #ifdef UNIT_TEST
-#define OVERRIDE_DURING_TESTING static
-#define STATIC_TESTABLE_DECL
 #define INLINE
+#define STATIC
 #define UNUSED_FN_DECL
 #else
-#define OVERRIDE_DURING_TESTING
-#define INLINE               inline
-#define STATIC_TESTABLE_DECL static
-#define UNUSED_FN_DECL       __attribute__ ((unused))
+#define INLINE         inline
+#define STATIC         static
+#define UNUSED_FN_DECL __attribute__ ((unused))
 #endif
 
 #define MICRO_DELAY_USE_SYSTICK  0
@@ -157,7 +154,7 @@ extern float ge_ScaledSystemCoreClock;
 #define F_DELAY_MICROSECONDS(US_FLOAT) DELAY_CYCLES (US_TO_CYCLES (US_FLOAT))
 
 
-eSTATUS_t CommonInit (void);
+eSTATUS_t CoreShared_Init (void);
 
 void CriticalErrorHandler (void);
 int32_t clipi32 (int32_t v, int32_t lower, int32_t upper);
@@ -165,8 +162,9 @@ float clipf32 (float v, float lower, float upper);
 float mapf32 (float v, float fromMin, float fromMax, float toMin, float toMax);
 uint32_t GetMilliseconds (void);
 uint32_t GetMicroseconds (void);
+void Delay (uint32_t ms);
 void DelayMicroseconds (uint32_t us);
-void fDelayMicroseconds (float us);
+// void fDelayMicroseconds (float us);
 /* Source --> Betaflight: https://github.com/betaflight/betaflight/blob/master/src/main/build/atomic.h */
 void BasePriRestoreMem (uint8_t* val);
 // set BASEPRI_MAX, with global memory barrier, returns true
@@ -209,4 +207,4 @@ enum {
 #endif
 
 
-#endif // COMMON_H
+#endif // CORE_COMMON_H

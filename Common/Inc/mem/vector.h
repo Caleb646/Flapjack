@@ -1,7 +1,7 @@
 #ifndef MEM_VECTOR_H
 #define MEM_VECTOR_H
 
-#include "common.h"
+#include "core/core.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -13,8 +13,7 @@ typedef struct {
     uint16_t size;
 } Vector_t;
 
-eSTATUS_t
-Vector_Init (Vector_t* pVector, void* pBuffer, uint16_t capacity, uint16_t elementSize, bool isShared);
+eSTATUS_t Vector_Init (Vector_t* pVector, void* pBuffer, uint16_t capacity, uint16_t elementSize, bool isShared);
 bool Vector_IsEmpty (Vector_t const* pVector);
 bool Vector_IsFull (Vector_t const* pVector);
 uint16_t Vector_Size (Vector_t const* pVector);

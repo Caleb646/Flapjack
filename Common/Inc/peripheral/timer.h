@@ -1,12 +1,14 @@
 #ifndef __PERIPHS_TIMER_H
 #define __PERIPHS_TIMER_H
 
-#include "common.h"
 #include "conf/conf.h"
+#include "core/core.h"
+#include "core/log/logger.h"
 #include "hal.h"
-#include "log/logger.h"
 #include "peripheral/dma.h"
 #include <stdint.h>
+
+
 
 typedef uint8_t eTIMER_MODE_t;
 enum {

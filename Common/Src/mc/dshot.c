@@ -30,17 +30,19 @@
  */
 
 #include "mc/dshot.h"
-#include "common.h"
 #include "conf/board.h"
 #include "conf/conf.h"
 #include "conf/ids.h"
+#include "core/core.h"
+#include "core/log/logger.h"
 #include "hal.h"
-#include "log/logger.h"
 #include "mem/mem.h"
 #include "peripheral/dma.h"
 #include "peripheral/gpio.h"
 #include "peripheral/timer.h"
 #include <stdint.h>
+
+
 
 #define DSHOT_VALID(pDSHOT) \
     (((pDSHOT) != NULL) && ((pDSHOT)->isInitialized == true) && (pDSHOT)->writeFn != NULL)

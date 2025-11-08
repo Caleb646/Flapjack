@@ -1,11 +1,11 @@
 
 #include "device/servo/servo.h"
-#include "common.h"
 #include "conf/board.h"
 #include "conf/conf.h"
 #include "conf/ids.h"
+#include "core/core.h"
+#include "core/log/logger.h"
 #include "hal.h"
-#include "log/logger.h"
 #include "mc/dshot.h"
 #include "mem/mem.h"
 #include "mem/vector.h"
@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <string.h>
 
+
 #define SERVO_VALID(pSERVO) ((pSERVO) != NULL && (pSERVO)->isInitialized == true)
 
 VECTOR_DEFINE_STATIC_SHARED (Servo, Servo_t, SERVO_COUNT);
@@ -23,7 +24,7 @@ VECTOR_DEFINE_STATIC_SHARED (Servo, Servo_t, SERVO_COUNT);
 static float ServoAngle2PWM (Servo_t* pServo, float targetAngle);
 #endif // UNIT_TEST
 
-STATIC_TESTABLE_DECL float ServoAngle2PWM (Servo_t* pServo, float targetAngle) {
+STATIC float ServoAngle2PWM (Servo_t* pServo, float targetAngle) {
     /*
      * NOTE: The servo on its own can move between -maxAngle and +maxAngle. But when placed
      * in the drone, it may only be able to move between -usableMaxAngle and +usableMaxAngle.

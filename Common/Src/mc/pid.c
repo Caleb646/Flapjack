@@ -1,8 +1,8 @@
 #include "mc/pid.h"
-#include "common.h"
 #include "conf/board.h"
 #include "conf/conf.h"
 #include "control.h"
+#include "core/core.h"
 #include "device/motor/motor.h"
 #include "device/servo/servo.h"
 #include "fcstate.h"
@@ -56,7 +56,7 @@ eSTATUS_t PIDStop (vPID_t* pPID) {
 }
 
 eSTATUS_t
-PIDUpdate (vPID_t* pPID, Vec3f const* pCurrentAttitude, Vec3f const* pTargetAttitude, Vec3f const* pMaxAttitude, float dt, Vec3f* pOut) {
+PID_Update (vPID_t* pPID, Vec3f const* pCurrentAttitude, Vec3f const* pTargetAttitude, Vec3f const* pMaxAttitude, float dt, Vec3f* pOut) {
 
     if (PID_VALID (pPID) == false || pOut == NULL || pCurrentAttitude == NULL ||
         pTargetAttitude == NULL || pMaxAttitude == NULL) {

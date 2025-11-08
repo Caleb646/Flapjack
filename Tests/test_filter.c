@@ -1,4 +1,4 @@
-#include "common.h"
+#include "core/core.h"
 #include "mc/filter.h"
 #include "unity/unity.h"
 #include <math.h>
@@ -60,13 +60,12 @@ void test_FilterMadgwick6DOF_NoRotation (void) {
     float dt       = 0.01F;
 
     for (int i = 0; i < 5; i++) {
-        bool success =
-        FilterMadgwickUpdate (&filter, &accel, &gyro, NULL, dt, &attitude);
+        bool success = FilterMadgwickUpdate (&filter, &accel, &gyro, NULL, dt, &attitude);
         TEST_ASSERT_TRUE (success);
     }
 
     // Should converge to no rotation (roll=0, pitch=0, yaw should be stable)
-    TEST_ASSERT_FLOAT_WITHIN (0.1F, 0.0F, attitude.roll); // Roll should be ~0
+    TEST_ASSERT_FLOAT_WITHIN (0.1F, 0.0F, attitude.roll);  // Roll should be ~0
     TEST_ASSERT_FLOAT_WITHIN (0.1F, 0.0F, attitude.pitch); // Pitch should be ~0
 }
 
@@ -75,8 +74,8 @@ void test_FilterMadgwick6DOF_Roll90Degrees (void) {
     MADG_TEST_INIT (0.1F, 0.0F);
 
     // Simulate 90-degree roll: gravity appears in Y direction
-    Vec3f accel = { 0.0F, 9.81F, 0.0F }; // Gravity in Y direction (rolled 90 degrees)
-    Vec3f gyro = { 10.0F, 0.0F, 0.0F }; // Rotating around the x-axis at 10 degrees/second
+    Vec3f accel    = { 0.0F, 9.81F, 0.0F }; // Gravity in Y direction (rolled 90 degrees)
+    Vec3f gyro     = { 10.0F, 0.0F, 0.0F }; // Rotating around the x-axis at 10 degrees/second
     Vec3f attitude = { 0.0F, 0.0F, 0.0F };
     float dt       = 0.01F;
     /*
@@ -84,8 +83,7 @@ void test_FilterMadgwick6DOF_Roll90Degrees (void) {
      * us close to 90 degrees. Especially with the 1.0F error.
      */
     for (int i = 0; i < (int)(9.0F * 1.0F / dt); i++) {
-        bool success =
-        FilterMadgwickUpdate (&filter, &accel, &gyro, NULL, dt, &attitude);
+        bool success = FilterMadgwickUpdate (&filter, &accel, &gyro, NULL, dt, &attitude);
         TEST_ASSERT_TRUE (success);
     }
 
@@ -99,8 +97,8 @@ void test_FilterMadgwick6DOF_Pitch90Degrees (void) {
     MADG_TEST_INIT (0.1F, 0.0F);
 
     // Simulate 90-degree pitch: gravity appears in X direction
-    Vec3f accel = { 9.81F, 0.0F, 0.0F }; // Gravity in X direction (pitched 90 degrees)
-    Vec3f gyro = { 0.0F, 10.0F, 0.0F }; // Rotating around the y-axis at 10 degrees/second
+    Vec3f accel    = { 9.81F, 0.0F, 0.0F }; // Gravity in X direction (pitched 90 degrees)
+    Vec3f gyro     = { 0.0F, 10.0F, 0.0F }; // Rotating around the y-axis at 10 degrees/second
     Vec3f attitude = { 0.0F, 0.0F, 0.0F };
     float dt       = 0.01F;
     /*
@@ -108,8 +106,7 @@ void test_FilterMadgwick6DOF_Pitch90Degrees (void) {
      * us close to 90 degrees. Especially with the 1.0F error.
      */
     for (int i = 0; i < (int)(9.0F * (1.0F / dt)); i++) {
-        bool success =
-        FilterMadgwickUpdate (&filter, &accel, &gyro, NULL, dt, &attitude);
+        bool success = FilterMadgwickUpdate (&filter, &accel, &gyro, NULL, dt, &attitude);
         TEST_ASSERT_TRUE (success);
     }
 
@@ -131,8 +128,7 @@ void test_FilterMadgwick6DOF_GyroIntegration (void) {
     // Initialize with stable attitude first
     gyro.z = 0.0F;
     for (int i = 0; i < 50; i++) {
-        bool success =
-        FilterMadgwickUpdate (&filter, &accel, &gyro, NULL, dt, &attitude);
+        bool success = FilterMadgwickUpdate (&filter, &accel, &gyro, NULL, dt, &attitude);
         TEST_ASSERT_TRUE (success);
     }
     float initial_yaw = attitude.yaw;
@@ -140,8 +136,7 @@ void test_FilterMadgwick6DOF_GyroIntegration (void) {
     // Now apply constant yaw rate for 1 second (100 iterations * 0.01s)
     gyro.z = 45.0F; // 45 degrees/second
     for (int i = 0; i < 100; i++) {
-        bool success =
-        FilterMadgwickUpdate (&filter, &accel, &gyro, NULL, dt, &attitude);
+        bool success = FilterMadgwickUpdate (&filter, &accel, &gyro, NULL, dt, &attitude);
         TEST_ASSERT_TRUE (success);
     }
 
@@ -180,8 +175,7 @@ void test_FilterMadgwick6DOF_QuaternionNormalization (void) {
 
     // Run several iterations
     for (int i = 0; i < 50; i++) {
-        bool success =
-        FilterMadgwickUpdate (&filter, &accel, &gyro, NULL, dt, &attitude);
+        bool success = FilterMadgwickUpdate (&filter, &accel, &gyro, NULL, dt, &attitude);
         TEST_ASSERT_TRUE (success);
 
         // Check that quaternion remains normalized
@@ -198,18 +192,16 @@ void test_FilterMadgwick6DOF_LargeTimeStep (void) {
     MADG_TEST_INIT (0.0F, 0.1F);
 
     // Test with large time step and multi-axis rotation
-    Vec3f accel = { 0.0F, 0.0F, 9.81F };
-    Vec3f gyro = { 5.0F, 3.0F, 2.0F }; // Rotation rates: 5°/s roll, 3°/s pitch, 2°/s yaw
+    Vec3f accel    = { 0.0F, 0.0F, 9.81F };
+    Vec3f gyro     = { 5.0F, 3.0F, 2.0F }; // Rotation rates: 5°/s roll, 3°/s pitch, 2°/s yaw
     Vec3f attitude = { 0.0F, 0.0F, 0.0F };
     float dt       = 0.02F; // 50 hz
     int iterations = 400;
 
     // Calculate expected total rotation for each axis
-    float expected_roll_total =
-    gyro.roll * dt * (float)iterations; // 5 * 1 * 10 = 50 degrees
-    float expected_pitch_total =
-    gyro.pitch * dt * (float)iterations; // 3 * 1 * 10 = 30 degrees
-    float expected_yaw_total = gyro.yaw * dt * (float)iterations; // 2 * 1 * 10 = 20 degrees
+    float expected_roll_total  = gyro.roll * dt * (float)iterations;  // 5 * 1 * 10 = 50 degrees
+    float expected_pitch_total = gyro.pitch * dt * (float)iterations; // 3 * 1 * 10 = 30 degrees
+    float expected_yaw_total   = gyro.yaw * dt * (float)iterations;   // 2 * 1 * 10 = 20 degrees
 
     for (int i = 0; i < iterations; i++) {
         // Convert angles to radians for trigonometric functions
@@ -224,12 +216,10 @@ void test_FilterMadgwick6DOF_LargeTimeStep (void) {
         accel.z = 9.81F * cosf (roll_rad) * cosf (pitch_rad);
 
         // Verify magnitude is preserved (should always be 9.81)
-        float accel_magnitude =
-        sqrtf ((accel.x * accel.x) + (accel.y * accel.y) + (accel.z * accel.z));
+        float accel_magnitude = sqrtf ((accel.x * accel.x) + (accel.y * accel.y) + (accel.z * accel.z));
         TEST_ASSERT_FLOAT_WITHIN (0.01F, 9.81F, accel_magnitude);
 
-        bool success =
-        FilterMadgwickUpdate (&filter, &accel, &gyro, NULL, dt, &attitude);
+        bool success = FilterMadgwickUpdate (&filter, &accel, &gyro, NULL, dt, &attitude);
         TEST_ASSERT_TRUE (success);
 
         // Check that quaternion remains normalized even with large time steps
@@ -424,16 +414,8 @@ void test_FilterMadgwick9DOF_MagnetometerDisturbance (void) {
     FilterMadgwickUpdate (&filter, &accel, &gyro, &disturbed_mag, dt, &disturbed_attitude);
 
     // Filter should still maintain reasonable attitude despite disturbance
-    TEST_ASSERT_FLOAT_WITHIN (
-    10.0F,
-    stable_attitude.roll,
-    disturbed_attitude.roll
-    );
-    TEST_ASSERT_FLOAT_WITHIN (
-    10.0F,
-    stable_attitude.pitch,
-    disturbed_attitude.pitch
-    );
+    TEST_ASSERT_FLOAT_WITHIN (10.0F, stable_attitude.roll, disturbed_attitude.roll);
+    TEST_ASSERT_FLOAT_WITHIN (10.0F, stable_attitude.pitch, disturbed_attitude.pitch);
     // Yaw might be more affected by mag disturbance, so allow larger tolerance
 
     // Return to normal magnetometer
@@ -445,16 +427,8 @@ void test_FilterMadgwick9DOF_MagnetometerDisturbance (void) {
     FilterMadgwickUpdate (&filter, &accel, &gyro, &mag, dt, &recovered_attitude);
 
     // Should recover to stable attitude
-    TEST_ASSERT_FLOAT_WITHIN (
-    5.0F,
-    stable_attitude.roll,
-    recovered_attitude.roll
-    );
-    TEST_ASSERT_FLOAT_WITHIN (
-    5.0F,
-    stable_attitude.pitch,
-    recovered_attitude.pitch
-    );
+    TEST_ASSERT_FLOAT_WITHIN (5.0F, stable_attitude.roll, recovered_attitude.roll);
+    TEST_ASSERT_FLOAT_WITHIN (5.0F, stable_attitude.pitch, recovered_attitude.pitch);
 }
 
 void test_FilterMadgwick9DOF_ZeroMagnetometer (void) {
@@ -462,8 +436,8 @@ void test_FilterMadgwick9DOF_ZeroMagnetometer (void) {
 
     Vec3f accel = { 0.0F, 0.0F, 9.81F }; // Gravity down
     Vec3f gyro  = { 0.0F, 0.0F, 0.0F };  // No rotation
-    Vec3f mag = { 0.0F, 0.0F, 0.0F }; // Zero magnetometer (should fail gracefully)
-    float dt = 0.01F;
+    Vec3f mag   = { 0.0F, 0.0F, 0.0F };  // Zero magnetometer (should fail gracefully)
+    float dt    = 0.01F;
 
     // Should handle zero magnetometer gracefully without crashing
     bool success = FilterMadgwickUpdate_9DOF (&filter, &accel, &gyro, &mag, dt);

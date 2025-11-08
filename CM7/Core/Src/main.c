@@ -31,23 +31,19 @@
 #include "task.h"
 #include "timers.h"
 
-#include "common.h"
-#include "conf/board.h"
 #include "conf/conf.h"
-#include "conf/ids.h"
 #include "control.h"
+#include "core/core.h"
 #include "device/device.h"
 #include "device/imu/imu.h"
 #include "device/mag/mag.h"
 #include "fcstate.h"
-#include "log/logger.h"
 #include "mc/actuators.h"
 #include "mc/filter.h"
 #include "mc/mc.h"
 #include "mc/pid.h"
 #include "peripheral/dma.h"
 #include "peripheral/gpio.h"
-#include "sync.h"
 
 #ifndef HSEM_ID_0
 #define HSEM_ID_0 (0U) /* HW semaphore 0*/
@@ -149,7 +145,9 @@ TaskHandle_t gpTaskMotionControlUpdate = { 0 };
 
 void TaskMainLoop (void* pvParameters) {
 
-    uint32_t msLogStart      = xTaskGetTickCount ();
+    FJ_UNUSED (pvParameters);
+
+    uint32_t msLogStart      = GetMilliseconds ();
     uint32_t const msLogStep = 3000;
     LOG_INFO ("Main loop started");
 
@@ -160,18 +158,17 @@ void TaskMainLoop (void* pvParameters) {
 
     if (ControlStart () != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start control module");
-        // configASSERT (0);
         CriticalErrorHandler ();
     }
 
-    while (1) {
+    while (true) {
 
         if (ControlProcess_Cmds () != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to process control commands");
         }
 
-        if ((xTaskGetTickCount () - msLogStart) >= msLogStep) {
-            msLogStart = xTaskGetTickCount ();
+        if ((GetMilliseconds () - msLogStart) >= msLogStep) {
+            msLogStart = GetMilliseconds ();
             // portENTER_CRITICAL ();
             // LOG_INFO ("Main loop is running, current state: %s", ControlOpState2Char
             // (ControlGetOpState ())); portEXIT_CRITICAL ();
@@ -185,30 +182,45 @@ void TaskMotionControlUpdate (void* pvParameters) {
 
     FJ_UNUSED (pvParameters);
 
-    uint32_t msLogStart      = GetMilliseconds ();
+    uint32_t msLastUpdate    = GetMilliseconds ();
     uint32_t const msLogStep = MS_PER_LOG_DATA_UPDATE;
     LOG_INFO ("Motion control update task started");
 
+    if (FJ_LOOP_UPDATE_RATE_HZ > 1000U || FJ_LOOP_UPDATE_RATE_HZ < 0U) {
+        LOG_ERROR ("Sensor update rate invalid");
+    }
 
     // TODO: TEMPORARY. should be done after receiving a start command
-    if (DeviceStartAll () != eSTATUS_SUCCESS) {
+    if (Device_StartAll () != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start Device module");
     }
 
-    if (MCStartAll () != eSTATUS_SUCCESS) {
+    if (MC_StartAll () != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to start Motion Control module");
     }
     FC_SET_RUNNING_OP_STATE ();
 
+    eSTATUS_t status      = eSTATUS_SUCCESS;
+    FCState_t fcState     = { 0 };
+    Vec3f currentAttitude = { 0.0F };
+    Vec3f targetAttitude  = { 0.0F };
+    Vec3f maxAttitude     = { 0.0F };
+    Vec3f pidAttitude     = { 0.0F };
+    float targetThrottle  = 0.0F;
+    float dt              = 0.0F;
+    Vec3f accel           = { 0.0F };
+    Vec3f gyro            = { 0.0F };
+    Vec3f mag             = { 0.0F };
+    Vec3f* pMagData       = NULL;
 
-    while (1) {
+    while (true) {
 
-        FCState_t fcState = FCStateGetCopyOfActiveState ();
+        fcState = FCState_GetCopyOfActiveState ();
         if (fcState.opState != eOP_STATE_RUNNING) {
             /*
-             * Update msStartTime and msLogStart so dt does not get too large.
+             * Update msLastUpdate so dt does not get too large.
              */
-            msLogStart = GetMilliseconds ();
+            msLastUpdate = GetMilliseconds ();
             // Limit state checks to 1000Hz
             vTaskDelay (pdMS_TO_TICKS (1));
             continue;
@@ -218,55 +230,54 @@ void TaskMotionControlUpdate (void* pvParameters) {
          * I am hitting this assert sometimes: configASSERT( listLIST_ITEM_CONTAINER( &( pxTCB->xEventListItem ) ) == NULL in tasks.c
          */
         // ulTaskNotifyTake (pdTRUE, pdMS_TO_TICKS (1000));
-        eSTATUS_t status      = eSTATUS_SUCCESS;
-        Vec3f currentAttitude = fcState.currentAttitude;
-        Vec3f targetAttitude  = fcState.targetAttitude;
-        Vec3f maxAttitude     = fcState.maxAttitude;
-        float targetThrottle  = fcState.targetThrottle;
-        float dt              = ((float)GetMilliseconds () - (float)msLogStart) / 1000.0F;
-        Vec3f accel           = { 0.0F };
-        Vec3f gyro            = { 0.0F };
-        Vec3f mag             = { 0.0F };
-        status                = IMUUpdate (IMUGetMutableActiveDevice (), false, &accel, &gyro);
-        if (STATUS_FAIL (status)) {
+        vIMU_t* pIMUDev    = IMU_GetMutableActiveDevice ();
+        vMag_t* pMagDev    = Mag_GetMutableActiveDevice ();
+        vFilter_t* pFilter = Filter_GetMutableActiveFilter ();
+        vPID_t* pPID       = PID_GetMutableActivePID ();
+        status             = eSTATUS_SUCCESS;
+        currentAttitude    = fcState.currentAttitude;
+        targetAttitude     = fcState.targetAttitude;
+        maxAttitude        = fcState.maxAttitude;
+        targetThrottle     = fcState.targetThrottle;
+        dt                 = ((float)GetMilliseconds () - (float)msLastUpdate) / 1000.0F;
+        // set to NULL each iteration
+        pMagData = NULL;
+
+        if (STATUS_FAIL (IMU_Update (pIMUDev, false, &accel, &gyro))) {
             LOG_ERROR ("Failed to get IMU data");
             continue;
         }
 
-        Vec3f* pMag        = NULL;
-        vMag_t* pMagDevice = MagGetMutableActiveDevice ();
-        if (pMagDevice != NULL) {
-            status = MagUpdate (pMagDevice, false, &mag);
-            if (STATUS_FAIL (status)) {
-                LOG_ERROR ("Failed to get Mag data");
-                continue;
-            }
-            pMag = &mag;
+        // NOTE: Okay if magnetometer data is not available
+        if (STATUS_OK (Mag_Update (pMagDev, false, &mag))) {
+            pMagData = &mag;
         }
 
-        status = FilterUpdate (Filter_GetMutableActiveFilter (), &accel, &gyro, pMag, dt, &currentAttitude);
+        status = Filter_Update (pFilter, &accel, &gyro, pMagData, dt, &currentAttitude);
         if (STATUS_FAIL (status)) {
             LOG_ERROR ("Failed to filter IMU data with Madgwick filter");
             continue;
         }
 
-        Vec3f pidAttitude = { 0.0F };
-        status =
-        PIDUpdate (PID_GetMutableActivePID (), &currentAttitude, &targetAttitude, &maxAttitude, dt, &pidAttitude);
+
+        status = PID_Update (pPID, &currentAttitude, &targetAttitude, &maxAttitude, dt, &pidAttitude);
         if (STATUS_FAIL (status)) {
             LOG_ERROR ("Failed to update PID attitude");
             continue;
         }
 
-        status = ActuatorsUpdate (pidAttitude, targetThrottle);
+        status = Actuators_Update (pidAttitude, targetThrottle);
         if (STATUS_FAIL (status)) {
             LOG_ERROR ("Failed to write actuators");
             continue;
         }
 
-        if ((GetMilliseconds () - msLogStart) >= msLogStep) {
+        if (FC_SET_CURRENT_ATTITUDE (currentAttitude) == false) {
+            LOG_ERROR ("Failed to set current attitude in FCState");
+            continue;
+        }
 
-            msLogStart = GetMilliseconds ();
+        if ((GetMilliseconds () - msLastUpdate) >= msLogStep) {
 
             Vec3f a   = accel;
             Vec3f g   = gyro;
@@ -283,9 +294,8 @@ void TaskMotionControlUpdate (void* pvParameters) {
             ActuatorsLogData ();
             // portEXIT_CRITICAL ();
         }
-        if (FJ_LOOP_UPDATE_RATE_HZ > 1000U || FJ_LOOP_UPDATE_RATE_HZ < 0U) {
-            LOG_ERROR ("Sensor update rate invalid");
-        }
+
+        msLastUpdate = GetMilliseconds ();
         // Limit loop to sensor update rate
         vTaskDelay (pdMS_TO_TICKS (1000U / FJ_LOOP_UPDATE_RATE_HZ));
     }
@@ -321,69 +331,29 @@ int main (void) {
         asm volatile ("NOP");
     }
 
-    if (CommonInit () != eSTATUS_SUCCESS) {
+    if (Core_Init () != eSTATUS_SUCCESS) {
         CriticalErrorHandler ();
     }
 
-    // eSTATUS_t status = eSTATUS_SUCCESS;
-    if (SyncInit () != eSTATUS_SUCCESS) {
+    if (BOARD_CONF_INIT () == false) {
         CriticalErrorHandler ();
     }
 
-    if (LoggerInit () != eSTATUS_SUCCESS) {
+    if (Device_InitAll (BoardConfGet ()) != eSTATUS_SUCCESS) {
         CriticalErrorHandler ();
     }
 
-    // TODO: Add sanity check for HAL_Delay and GetMilliseconds
-    // DelayMicroseconds and GetMicroseconds
-    uint32_t const msDelay = 10;
-    uint32_t tempStart     = GetMilliseconds ();
-    HAL_Delay (msDelay);
-    uint32_t tempEnd = GetMilliseconds ();
-    if (tempEnd == tempStart || tempEnd < tempStart) {
-        LOG_ERROR ("HAL_Delay malfunctioning");
-        CriticalErrorHandler ();
-    }
-
-    if ((tempEnd - tempStart) < msDelay - 2U || (tempEnd - tempStart) > msDelay + 2U) {
-        LOG_ERROR ("HAL_Delay inaccurate delay time: %u ms", (tempEnd - tempStart));
-        CriticalErrorHandler ();
-    }
-
-    uint32_t const usDelay = msDelay * 1000U;
-    tempStart              = GetMicroseconds ();
-    DelayMicroseconds (usDelay);
-    tempEnd = GetMicroseconds ();
-    if (tempEnd == tempStart || tempEnd < tempStart) {
-        LOG_ERROR ("DelayMicroseconds malfunctioning");
-        CriticalErrorHandler ();
-    }
-
-    if ((tempEnd - tempStart) < usDelay - (2U * 1000U) || (tempEnd - tempStart) > usDelay + (2U * 1000U)) {
-        LOG_ERROR ("DelayMicroseconds inaccurate delay time: %u ms", (tempEnd - tempStart));
-        CriticalErrorHandler ();
-    }
-
-
-    if (BOARD_CONF_INIT () != true) {
-        CriticalErrorHandler ();
-    }
-
-    if (DeviceInitAll (BoardConfGet ()) != eSTATUS_SUCCESS) {
-        CriticalErrorHandler ();
-    }
-
-    if (MCInitAll () != eSTATUS_SUCCESS) {
+    if (MC_InitAll () != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to init motion control module");
         CriticalErrorHandler ();
     }
 
-    if (ControlInit () != eSTATUS_SUCCESS) {
+    if (Control_Init () != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to init control module");
         CriticalErrorHandler ();
     }
     // Wait for CM4 to initialize UART
-    HAL_Delay (1000);
+    Delay (1000);
 
     /*
      * Init IMU

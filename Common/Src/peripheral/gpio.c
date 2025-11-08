@@ -1,13 +1,15 @@
 #include "peripheral/gpio.h"
-#include "common.h"
 #include "conf/board.h"
 #include "conf/conf.h"
+#include "core/core.h"
+#include "core/log/logger.h"
 #include "hal.h"
-#include "log/logger.h"
 #include "mem/mem.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+
+
 
 #define GPIO_NPORTS GPIO_MAX_PORTS
 #define GPIO_NPINS  eGPIO_PINID_MAX

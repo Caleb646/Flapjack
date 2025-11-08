@@ -19,7 +19,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 */
 
-#include "log/format.h"
+#include "core/log/format.h"
 #include <stdarg.h>
 
 typedef void (*putcf) (void*, char);

@@ -1,15 +1,17 @@
 #include "peripheral/bus/spi.h"
-#include "common.h"
 #include "conf/board.h"
 #include "conf/conf.h"
+#include "core/core.h"
+#include "core/log/logger.h"
 #include "hal.h"
-#include "log/logger.h"
 #include "mem/mem.h"
 #include "peripheral/bus/bus_core.h"
 #include "peripheral/gpio.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+
+
 
 #define SPI_VALID(pBUS) ((pBUS) != NULL && (pBUS)->isInitialized == true)
 

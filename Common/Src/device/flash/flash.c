@@ -1,16 +1,17 @@
 
 #include "device/flash/flash.h"
-#include "common.h"
 #include "conf/board.h"
 #include "conf/conf.h"
 #include "conf/ids.h"
+#include "core/core.h"
+#include "core/log/logger.h"
 #include "device/flash/W25N01GW.h"
-#include "log/logger.h"
 #include "mem/mem.h"
 #include "peripheral/bus/bus.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+
 
 #define FLASH_VALID(pFLASH)                                                                       \
     (                                                                                             \
@@ -21,21 +22,21 @@
 
 static SHARED_MEM_SECTION Flash_t g_Flash = { 0 };
 
-STATIC_TESTABLE_DECL INLINE eSTATUS_t FlashRead_ (vFlash_t* pFlash, uint8_t* pRx, uint32_t size) {
+STATIC INLINE eSTATUS_t FlashRead_ (vFlash_t* pFlash, uint8_t* pRx, uint32_t size) {
     return BUS_READ_BLOCK (pFlash->bus, pRx, size);
 }
 
 // clang-format off
-STATIC_TESTABLE_DECL INLINE eSTATUS_t FlashWrite_ (vFlash_t* pFlash, uint8_t const* pTx, uint32_t size) {
+STATIC INLINE eSTATUS_t FlashWrite_ (vFlash_t* pFlash, uint8_t const* pTx, uint32_t size) {
     return BUS_WRITE_BLOCK (pFlash->bus, pTx, size);
 }
 
-STATIC_TESTABLE_DECL INLINE eSTATUS_t FlashWriteRead (vFlash_t* pFlash, uint8_t const* pTx, uint8_t* pRx, uint32_t size) {
+STATIC INLINE eSTATUS_t FlashWriteRead (vFlash_t* pFlash, uint8_t const* pTx, uint8_t* pRx, uint32_t size) {
     // clang-format on
     return BUS_WRITE_READ_BLOCK (pFlash->bus, pTx, pRx, size);
 }
 
-STATIC_TESTABLE_DECL uint8_t FlashReadStatusReg (vFlash_t* pFlash, uint8_t regAddr) {
+STATIC uint8_t FlashReadStatusReg (vFlash_t* pFlash, uint8_t regAddr) {
 
     uint8_t tx[]            = { W25NO1GW_INSTR_READ_SR, regAddr, 0x00U };
     uint8_t rx[sizeof (tx)] = { 0 };
@@ -48,7 +49,7 @@ STATIC_TESTABLE_DECL uint8_t FlashReadStatusReg (vFlash_t* pFlash, uint8_t regAd
 }
 
 // clang-format off
-STATIC_TESTABLE_DECL eSTATUS_t FlashReadJEDECID (vFlash_t* pFlash, uint8_t* pManufacturerID, uint16_t* pDeviceId) {
+STATIC eSTATUS_t FlashReadJEDECID (vFlash_t* pFlash, uint8_t* pManufacturerID, uint16_t* pDeviceId) {
     // clang-format on
     uint8_t tx[1U + 4U]     = { 0 };
     tx[0]                   = W25NO1GW_INSTR_JEDEC_ID;
@@ -63,12 +64,12 @@ STATIC_TESTABLE_DECL eSTATUS_t FlashReadJEDECID (vFlash_t* pFlash, uint8_t* pMan
     return status;
 }
 
-STATIC_TESTABLE_DECL INLINE bool FlashCheckWriteInProgress (vFlash_t* pFlash) {
+STATIC INLINE bool FlashCheckWriteInProgress (vFlash_t* pFlash) {
     return (FlashReadStatusReg (pFlash, W25NO1GW_STATUS_REG) & W25NO1GW_STATUS_WIP_BIT) > 0U;
 }
 
 // clang-format off
-STATIC_TESTABLE_DECL INLINE bool FlashWaitWriteInProgress (vFlash_t* pFlash, uint32_t timeout) {
+STATIC INLINE bool FlashWaitWriteInProgress (vFlash_t* pFlash, uint32_t timeout) {
     // clang-format on
     while (FlashCheckWriteInProgress (pFlash) && timeout-- > 0U) {
         DelayMicroseconds (1U);
@@ -76,13 +77,13 @@ STATIC_TESTABLE_DECL INLINE bool FlashWaitWriteInProgress (vFlash_t* pFlash, uin
     return timeout > 0U ? true : false;
 }
 
-STATIC_TESTABLE_DECL INLINE bool FlashWriteEnable (vFlash_t* pFlash) {
+STATIC INLINE bool FlashWriteEnable (vFlash_t* pFlash) {
 
     uint8_t cmd = W25NO1GW_INSTR_WRITE_EN;
     return FlashWrite_ (pFlash, &cmd, 1U) == eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t FlashReset (vFlash_t* pFlash) {
+STATIC eSTATUS_t FlashReset (vFlash_t* pFlash) {
 
     bool success = FlashWaitWriteInProgress (pFlash, 1000U);
     RETURN_IF (success == false, eSTATUS_TIMEOUT, "timeout waiting for flash not busy");
@@ -95,7 +96,7 @@ STATIC_TESTABLE_DECL eSTATUS_t FlashReset (vFlash_t* pFlash) {
 }
 
 // clang-format off
-STATIC_TESTABLE_DECL eSTATUS_t FlashStartProgram (vFlash_t* pFlash, uint16_t columnAddr, uint8_t const* pData, uint32_t size) {
+STATIC eSTATUS_t FlashStartProgram (vFlash_t* pFlash, uint16_t columnAddr, uint8_t const* pData, uint32_t size) {
     // clang-format on
 
     if (size > W25NO1GW_PAGE_WRITABLE_SIZE) {
@@ -117,7 +118,7 @@ STATIC_TESTABLE_DECL eSTATUS_t FlashStartProgram (vFlash_t* pFlash, uint16_t col
     return status;
 }
 
-STATIC_TESTABLE_DECL eSTATUS_t FlashExecuteProgram (vFlash_t* pFlash, uint16_t pageAddr) {
+STATIC eSTATUS_t FlashExecuteProgram (vFlash_t* pFlash, uint16_t pageAddr) {
 
     uint8_t upperPageAddr = (uint8_t)(((uint32_t)pageAddr >> 8U) & 0xFFU);
     uint8_t lowerPageAddr = (uint8_t)(pageAddr & 0xFFU);

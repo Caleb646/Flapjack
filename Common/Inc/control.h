@@ -1,10 +1,10 @@
 #ifndef CONTROL_H
 #define CONTROL_H
 
-#include "common.h"
+#include "core/core.h"
+#include "core/log/logger.h"
 #include "fcstate.h"
 #include "hal.h"
-#include "log/logger.h"
 #include "mem/mem.h"
 #include "peripheral/bus/uart.h"
 
@@ -109,16 +109,16 @@ STATIC_ASSERT (sizeof (ChangePIDCmd) <= sizeof (DefaultCommand), "");
 // typedef bool (*OpStateTransitionHandler_t) (vFCState_t curState);
 typedef eSTATUS_t (*CmdHandlerFn_t) (DefaultCommand cmd);
 
-eSTATUS_t ControlInit (void);
+eSTATUS_t Control_Init (void);
 eSTATUS_t ControlStart (void);
 eSTATUS_t ControlProcess_RawCmds (void);
 eSTATUS_t ControlProcess_Cmds (void);
 bool ControlRegisterHandler (eCMD_t cmdType, SubCommand_t subCmd, CmdHandlerFn_t handler);
 char const* ControlCmdType2Char (eCMD_t commandType);
 
-#define CONTROL_INIT(pSTATUS)        \
-    do {                             \
-        *(pSTATUS) = ControlInit (); \
+#define CONTROL_INIT(pSTATUS)         \
+    do {                              \
+        *(pSTATUS) = Control_Init (); \
     } while (0)
 
 #define CONTROL_REG_HANDLER(CMD_TYPE, HANDLER) \

@@ -1,17 +1,20 @@
 
 #include "fcstate.h"
-#include "common.h"
 #include "conf/conf.h"
+#include "core/core.h"
 #include "mem/mem.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 
+
 #define FCSTATE_VALID(pSTATE) ((pSTATE) != NULL && (pSTATE)->isInitialized == true)
 
 static SHARED_MEM_SECTION FCState_t gFCState = { 0 };
 
-eSTATUS_t FCStateInit (FCStateInitConf_t conf, vFCState_t* pOut) {
+eSTATUS_t FCState_Init (FCStateInitConf_t conf, vFCState_t* pOut) {
+
+    FJ_UNUSED (conf);
 
     vFCState_t* pState = &gFCState;
     if (pOut != NULL) {
@@ -33,7 +36,7 @@ eSTATUS_t FCStateInit (FCStateInitConf_t conf, vFCState_t* pOut) {
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t FCStateStart (vFCState_t* pState) {
+eSTATUS_t FCState_Start (vFCState_t* pState) {
 
     if (FCSTATE_VALID (pState) == false) {
         return eSTATUS_FAILURE;
@@ -41,7 +44,7 @@ eSTATUS_t FCStateStart (vFCState_t* pState) {
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t FCStateStop (vFCState_t* pState) {
+eSTATUS_t FCState_Stop (vFCState_t* pState) {
 
     if (FCSTATE_VALID (pState) == false) {
         return eSTATUS_FAILURE;
@@ -63,7 +66,7 @@ eSTATUS_t FCStateUpdate (vFCState_t const* pNewState, vFCState_t* pOutState) {
     return eSTATUS_SUCCESS;
 }
 
-vFCState_t const* FCStateGetActiveState (void) {
+vFCState_t const* FCState_GetActiveState (void) {
 
     if (FCSTATE_VALID (&gFCState) == false) {
         return NULL;
@@ -79,7 +82,7 @@ vFCState_t* FCState_GetMutableActiveState (void) {
     return &gFCState;
 }
 
-FCState_t FCStateGetCopyOfActiveState (void) {
+FCState_t FCState_GetCopyOfActiveState (void) {
 
     if (FCSTATE_VALID (&gFCState) == false) {
         return (FCState_t){ 0 };
@@ -87,7 +90,7 @@ FCState_t FCStateGetCopyOfActiveState (void) {
     return gFCState;
 }
 
-bool FCStateSetOpState (vFCState_t* pState, eOP_STATE_t newOpState) {
+bool FCState_Set_OpState (vFCState_t* pState, eOP_STATE_t newOpState) {
 
     if (FCSTATE_VALID (pState) == false) {
         return false;
@@ -96,34 +99,34 @@ bool FCStateSetOpState (vFCState_t* pState, eOP_STATE_t newOpState) {
     return true;
 }
 
-bool FCStateSetCurrentAttitude (vFCState_t* pState, Vec3f newAttitude) {
+bool FCState_Set_CurrentAttitude (vFCState_t* pState, Vec3f newCurrentAttitude) {
 
     if (FCSTATE_VALID (pState) == false) {
         return false;
     }
-    pState->currentAttitude = newAttitude;
+    pState->currentAttitude = newCurrentAttitude;
     return true;
 }
 
-bool FCStateSetTargetAttitude (vFCState_t* pState, Vec3f newAttitude) {
+bool FCState_Set_TargetAttitude (vFCState_t* pState, Vec3f newTargetAttitude) {
 
     if (FCSTATE_VALID (pState) == false) {
         return false;
     }
-    pState->targetAttitude = newAttitude;
+    pState->targetAttitude = newTargetAttitude;
     return true;
 }
 
-bool FCStateSetMaxAttitude (vFCState_t* pState, Vec3f newAttitude) {
+bool FCState_Set_MaxAttitude (vFCState_t* pState, Vec3f newMaxAttitude) {
 
     if (FCSTATE_VALID (pState) == false) {
         return false;
     }
-    pState->maxAttitude = newAttitude;
+    pState->maxAttitude = newMaxAttitude;
     return true;
 }
 
-bool FCStateSetTargetThrottle (vFCState_t* pState, float newThrottle) {
+bool FCState_Set_TargetThrottle (vFCState_t* pState, float newThrottle) {
 
     if (FCSTATE_VALID (pState) == false) {
         return false;
@@ -135,7 +138,7 @@ bool FCStateSetTargetThrottle (vFCState_t* pState, float newThrottle) {
     return true;
 }
 
-char const* OpState2Char (eOP_STATE_t opState) {
+char const* OpStateToChar (eOP_STATE_t opState) {
 
     switch (opState) {
     case eOP_STATE_STOPPED: return "[STOPPED]";

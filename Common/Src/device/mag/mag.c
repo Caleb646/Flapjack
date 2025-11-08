@@ -1,17 +1,18 @@
 #include "device/mag/mag.h"
-#include "common.h"
 #include "conf/board.h"
 #include "conf/conf.h"
 #include "conf/ids.h"
+#include "core/core.h"
+#include "core/log/logger.h"
 #include "device/mag/mmc5983.h"
 #include "hal.h"
-#include "log/logger.h"
 #include "mem/mem.h"
 #include "peripheral/bus/bus.h"
 #include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+
 
 #define MAX_BUFFER_SIZE      12U
 #define NCONTROL_REGISTERS   4U
@@ -23,7 +24,7 @@
 static SHARED_MEM_SECTION Mag_t gMag                                    = { 0 };
 static SHARED_MEM_SECTION uint8_t gControlRegisters[NCONTROL_REGISTERS] = { 0 };
 
-STATIC_TESTABLE_DECL eMAG_STATUS_t MagRead (vMag_t* pMag, uint8_t reg, uint8_t* pData, uint16_t size) {
+STATIC eMAG_STATUS_t MagRead (vMag_t* pMag, uint8_t reg, uint8_t* pData, uint16_t size) {
 
     // eBUS_ID_t busId       = pMag->busId;
     // eDEVICE_ID_t deviceId = pMag->deviceId;
@@ -47,7 +48,7 @@ STATIC_TESTABLE_DECL eMAG_STATUS_t MagRead (vMag_t* pMag, uint8_t reg, uint8_t* 
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL eMAG_STATUS_t MagWrite (vMag_t* pMag, uint8_t reg, uint8_t const* pData, uint16_t size) {
+STATIC eMAG_STATUS_t MagWrite (vMag_t* pMag, uint8_t reg, uint8_t const* pData, uint16_t size) {
 
     // eBUS_ID_t busId       = pMag->busId;
     // eDEVICE_ID_t deviceId = pMag->deviceId;
@@ -71,7 +72,7 @@ STATIC_TESTABLE_DECL eMAG_STATUS_t MagWrite (vMag_t* pMag, uint8_t reg, uint8_t 
     return eSTATUS_SUCCESS;
 }
 
-STATIC_TESTABLE_DECL bool MagControlRegWrite (vMag_t* pMag, uint8_t reg, uint8_t bitMask, bool doWrite) {
+STATIC bool MagControlRegWrite (vMag_t* pMag, uint8_t reg, uint8_t bitMask, bool doWrite) {
 
     uint8_t* pValue = &gControlRegisters[CONTROL_REG2IDX (reg)];
     *pValue |= bitMask;
@@ -85,7 +86,7 @@ STATIC_TESTABLE_DECL bool MagControlRegWrite (vMag_t* pMag, uint8_t reg, uint8_t
     return true;
 }
 
-STATIC_TESTABLE_DECL uint8_t MagReadStatusReg (vMag_t* pMag) {
+STATIC uint8_t MagReadStatusReg (vMag_t* pMag) {
 
     uint8_t status = 0;
     if (MagRead (pMag, MMC5983_STATUS_REG, &status, 1U) != eSTATUS_SUCCESS) {
@@ -95,12 +96,12 @@ STATIC_TESTABLE_DECL uint8_t MagReadStatusReg (vMag_t* pMag) {
     return status;
 }
 
-STATIC_TESTABLE_DECL bool MagXYZIsReady (vMag_t* pMag) {
+STATIC bool MagXYZIsReady (vMag_t* pMag) {
 
     return (MagReadStatusReg (pMag) & MMC5983_MEAS_M_DONE) > 0 ? true : false;
 }
 
-STATIC_TESTABLE_DECL eMAG_STATUS_t MagSoftReset (vMag_t* pMag) {
+STATIC eMAG_STATUS_t MagSoftReset (vMag_t* pMag) {
 
     // eMAG_STATUS_t status = eSTATUS_SUCCESS;
     memset (gControlRegisters, 0, sizeof (gControlRegisters));
@@ -116,7 +117,7 @@ STATIC_TESTABLE_DECL eMAG_STATUS_t MagSoftReset (vMag_t* pMag) {
 /*
  * Could be called inside an interrupt
  */
-STATIC_TESTABLE_DECL bool MagUpdateRawData (vMag_t* pMag) {
+STATIC bool MagUpdateRawData (vMag_t* pMag) {
 
     uint8_t pXYZ[7]  = { 0 };
     eSTATUS_t status = MagRead (pMag, MMC5983_X_OUT_0_REG, pXYZ, 7U);
@@ -137,7 +138,7 @@ STATIC_TESTABLE_DECL bool MagUpdateRawData (vMag_t* pMag) {
     return true;
 }
 
-STATIC_TESTABLE_DECL Vec3f MagRaw2NormedGauss (vMag_t const* pMag, Vec3u raw, bool doNormalization) {
+STATIC Vec3f MagRaw2NormedGauss (vMag_t const* pMag, Vec3u raw, bool doNormalization) {
 
     FJ_UNUSED (pMag);
     Vec3f output = { 0 };
@@ -155,7 +156,7 @@ STATIC_TESTABLE_DECL Vec3f MagRaw2NormedGauss (vMag_t const* pMag, Vec3u raw, bo
 /*
  * Called by interrupt handler
  */
-STATIC_TESTABLE_DECL UNUSED_FN_DECL bool MagUpdateFromINT (vMag_t* pMag) {
+STATIC UNUSED_FN_DECL bool MagUpdateFromINT (vMag_t* pMag) {
 
     if (MagXYZIsReady (pMag) == false) {
         return false;
@@ -166,7 +167,7 @@ STATIC_TESTABLE_DECL UNUSED_FN_DECL bool MagUpdateFromINT (vMag_t* pMag) {
     return true;
 }
 
-STATIC_TESTABLE_DECL bool MagUpdateFromPolling (vMag_t* pMag) {
+STATIC bool MagUpdateFromPolling (vMag_t* pMag) {
 
     // eMAG_STATUS_t status = eSTATUS_SUCCESS;
     bool success = true;
@@ -296,7 +297,7 @@ eMAG_STATUS_t MagStop (vMag_t* pMag) {
     return status;
 }
 
-eMAG_STATUS_t MagUpdate (vMag_t* pMag, bool forcePolling, Vec3f* pOutput) {
+eMAG_STATUS_t Mag_Update (vMag_t* pMag, bool forcePolling, Vec3f* pOutput) {
 
     RETURN_IF (MAG_VALID (pMag) == false, eMAG_INVALID_DEVICE, "MAG device is not initialized");
     RETURN_IF_NULL (pOutput, eMAG_INVALID_DEVICE, "Output pointer is NULL");
@@ -324,7 +325,7 @@ vMag_t const* MagGetActiveDevice (void) {
     return &gMag;
 }
 
-vMag_t* MagGetMutableActiveDevice (void) {
+vMag_t* Mag_GetMutableActiveDevice (void) {
 
     if (MAG_VALID (&gMag) == false) {
         // LOG_ERROR ("No active valid MAG device");

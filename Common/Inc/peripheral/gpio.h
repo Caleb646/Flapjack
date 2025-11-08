@@ -1,10 +1,11 @@
 #ifndef PERIPHS_GPIO_H
 #define PERIPHS_GPIO_H
 
-#include "common.h"
 #include "conf/board.h"
 #include "conf/conf.h"
+#include "core/core.h"
 #include "hal.h"
+
 
 // #define TIM5_CH1_GPIO_Pin           GPIO_PIN_0
 // #define TIM5_CH1_GPIO_Port          GPIOA

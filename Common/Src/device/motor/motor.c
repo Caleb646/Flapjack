@@ -1,10 +1,10 @@
 #include "device/motor/motor.h"
-#include "common.h"
 #include "conf/board.h"
 #include "conf/conf.h"
 #include "conf/ids.h"
+#include "core/core.h"
+#include "core/log/logger.h"
 #include "hal.h"
-#include "log/logger.h"
 #include "mc/dshot.h"
 #include "mem/mem.h"
 #include "mem/vector.h"
@@ -13,6 +13,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+
 
 
 #define MOTOR_VALID(pMOTOR) ((pMOTOR) != NULL && (pMOTOR)->isInitialized == true)

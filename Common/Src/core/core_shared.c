@@ -1,4 +1,4 @@
-#include "common.h"
+#include "core/core.h"
 #include "hal.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -7,16 +7,23 @@
 float ge_ScaledSystemCoreClock = 0.0F;
 
 static void DWTInit (void);
+static bool SanityCheckTimers (void);
 
-eSTATUS_t CommonInit (void) {
+eSTATUS_t CoreShared_Init (void) {
 
     DWTInit ();
     // Scale by 10Mhz for fDelayMicroseconds function
     ge_ScaledSystemCoreClock = (float)SystemCoreClock / 10000000.0F;
+
+    if (SanityCheckTimers () == false) {
+        return eSTATUS_FAILURE;
+    }
+
     return eSTATUS_SUCCESS;
 }
 
 void CriticalErrorHandler (void) {
+
     __disable_irq ();
     __BKPT (1);
     while (1) {
@@ -24,6 +31,12 @@ void CriticalErrorHandler (void) {
 }
 
 void __assert_func (const char* file, int line, const char* func, const char* failedexpr) {
+
+    FJ_UNUSED (file);
+    FJ_UNUSED (line);
+    FJ_UNUSED (func);
+    FJ_UNUSED (failedexpr);
+
     __BKPT (1);
     // asm volatile ("bkpt 1");
     CriticalErrorHandler ();
@@ -70,6 +83,37 @@ static void DWTInit (void) {
 #endif // UNIT_TEST
 }
 
+static bool SanityCheckTimers (void) {
+
+    uint32_t const msDelay = 10;
+    uint32_t tempStart     = GetMilliseconds ();
+    HAL_Delay (msDelay);
+    uint32_t tempEnd = GetMilliseconds ();
+
+    if (tempEnd == tempStart || tempEnd < tempStart) {
+        return false;
+    }
+
+    if ((tempEnd - tempStart) < msDelay - 2U || (tempEnd - tempStart) > msDelay + 2U) {
+        return false;
+    }
+
+    uint32_t const usDelay = msDelay * 1000U;
+    tempStart              = GetMicroseconds ();
+    DelayMicroseconds (usDelay);
+    tempEnd = GetMicroseconds ();
+
+    if (tempEnd == tempStart || tempEnd < tempStart) {
+        return false;
+    }
+
+    if ((tempEnd - tempStart) < usDelay - (2U * 1000U) || (tempEnd - tempStart) > usDelay + (2U * 1000U)) {
+        return false;
+    }
+
+    return true;
+}
+
 uint32_t GetMilliseconds (void) {
     // return pdMS_TO_TICKS (xTaskGetTickCount ());
     return HAL_GetTick ();
@@ -97,6 +141,11 @@ uint32_t GetMicroseconds (void) {
     return 0;
 }
 
+void Delay (uint32_t ms) {
+
+    DelayMicroseconds (ms * 1000U);
+}
+
 void DelayMicroseconds (uint32_t us) {
 
 #ifndef UNIT_TEST
@@ -110,25 +159,25 @@ void DelayMicroseconds (uint32_t us) {
 }
 
 
-void fDelayMicroseconds (float us) {
+// void fDelayMicroseconds (float us) {
 
-#ifndef UNIT_TEST
+// #ifndef UNIT_TEST
 
-    /*
-     * Example: 6.67 us
-     * time = 6.67 * 10 = 66.7
-     * cycles = 66.7 * (64MHz / 10MHz) = 66.7 * 6.4 = uint32_t(426.88 + 0.5)
-     * -> 427 cycles
-     * error = 427 (cycles) - 426.88 (exact cycles) = 0.12 cycles
-     */
-    uint32_t start  = DWT->CYCCNT;
-    uint32_t cycles = (uint32_t)(((us * 10.0F) * ge_ScaledSystemCoreClock) + 0.5F);
-    while ((DWT->CYCCNT - start) < cycles) {
-        __NOP ();
-    }
+//     /*
+//      * Example: 6.67 us
+//      * time = 6.67 * 10 = 66.7
+//      * cycles = 66.7 * (64MHz / 10MHz) = 66.7 * 6.4 = uint32_t(426.88 + 0.5)
+//      * -> 427 cycles
+//      * error = 427 (cycles) - 426.88 (exact cycles) = 0.12 cycles
+//      */
+//     uint32_t start  = DWT->CYCCNT;
+//     uint32_t cycles = (uint32_t)(((us * 10.0F) * ge_ScaledSystemCoreClock) + 0.5F);
+//     while ((DWT->CYCCNT - start) < cycles) {
+//         __NOP ();
+//     }
 
-#endif // UNIT_TEST
-}
+// #endif // UNIT_TEST
+// }
 
 /* Source --> Betaflight: https://github.com/betaflight/betaflight/blob/master/src/main/build/atomic.h */
 void BasePriRestoreMem (uint8_t* val) {

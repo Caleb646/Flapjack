@@ -1,7 +1,7 @@
 #ifndef SYNC_SYNC_H
 #define SYNC_SYNC_H
 
-#include "common.h"
+#include "core/core_shared.h"
 #include "mem/mem.h"
 #include <stdint.h>
 

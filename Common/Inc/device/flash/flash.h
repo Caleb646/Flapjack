@@ -1,7 +1,7 @@
 #ifndef DEVICE_FLASH_FLASH_H
 #define DEVICE_FLASH_FLASH_H
 
-#include "common.h"
+#include "core/core.h"
 #include "peripheral/bus/bus.h"
 #include <stdbool.h>
 #include <stdint.h>

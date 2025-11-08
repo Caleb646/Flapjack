@@ -1,13 +1,14 @@
 #include "mc/filter.h"
-#include "common.h"
+#include "core/core.h"
+#include "core/log/logger.h"
 #include "device/imu/imu.h"
 #include "device/mag/mag.h"
 #include "hal.h"
-#include "log/logger.h"
 #include "mem/mem.h"
 #include <math.h>
 #include <stdbool.h>
 #include <string.h>
+
 
 #define FILTER_VALID(pF) ((pF) != NULL && (pF)->isInitialized == true)
 
@@ -32,7 +33,7 @@ static bool FilterMadgwickInit (FilterMadgwickInitConf_t conf, FilterMadgwick_t*
  * 1g, 0) then the returned attitude will move towards (0, -90, 0).
  * Which is incorrect so the IMU data needs to be in FRD frame.
  */
-STATIC_TESTABLE_DECL
+STATIC
 bool FilterMadgwickUpdate_6DOF (FilterMadgwick_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyroDegs, float dt) {
     // Source: https://courses.cs.washington.edu/courses/cse474/17wi/labs/l4/madgwick_internal_report.pdf
 
@@ -137,7 +138,7 @@ bool FilterMadgwickUpdate_6DOF (FilterMadgwick_t* pFilter, Vec3f const* pAccel, 
     return true;
 }
 
-STATIC_TESTABLE_DECL bool
+STATIC bool
 FilterMadgwickUpdate_9DOF (FilterMadgwick_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyro, Vec3f const* pMag, float dt) {
 
     float SEq_1 = pFilter->qEst.q1;
@@ -323,15 +324,15 @@ FilterMadgwickUpdate_9DOF (FilterMadgwick_t* pFilter, Vec3f const* pAccel, Vec3f
     return true;
 }
 
-STATIC_TESTABLE_DECL bool
+STATIC bool
 FilterMadgwickWarmUp (FilterMadgwick_t* pFilter, vIMU_t* pIMU, vMag_t* pMag, uint32_t iterations, Vec3f* pOutAttitude) {
 
     if (pIMU == NULL) {
-        pIMU = IMUGetMutableActiveDevice ();
+        pIMU = IMU_GetMutableActiveDevice ();
     }
 
     if (pMag == NULL) {
-        pMag = MagGetMutableActiveDevice ();
+        pMag = Mag_GetMutableActiveDevice ();
     }
 
     float msStartTime = (float)GetMilliseconds ();
@@ -342,11 +343,11 @@ FilterMadgwickWarmUp (FilterMadgwick_t* pFilter, vIMU_t* pIMU, vMag_t* pMag, uin
         Vec3f accel      = { 0.0F };
         Vec3f gyro       = { 0.0F };
         Vec3f mag        = { 0.0F };
-        eSTATUS_t status = IMUUpdate (pIMU, true, &accel, &gyro);
+        eSTATUS_t status = IMU_Update (pIMU, true, &accel, &gyro);
         RETURN_IF (status != eSTATUS_SUCCESS, false, "Failed to poll IMU");
 
         if (pMag != NULL) {
-            status = MagUpdate (pMag, true, &mag);
+            status = Mag_Update (pMag, true, &mag);
             RETURN_IF (status != eSTATUS_SUCCESS, false, "Failed to poll Mag");
         }
 
@@ -367,7 +368,7 @@ FilterMadgwickWarmUp (FilterMadgwick_t* pFilter, vIMU_t* pIMU, vMag_t* pMag, uin
     return true;
 }
 
-STATIC_TESTABLE_DECL bool FilterMadgwickInit (FilterMadgwickInitConf_t conf, FilterMadgwick_t* pOut) {
+STATIC bool FilterMadgwickInit (FilterMadgwickInitConf_t conf, FilterMadgwick_t* pOut) {
 
     float gyroMeasureErrorDegs = conf.gyroMeasureErrorDegs;
     float gyroMeasureDriftDegs = conf.gyroMeasureDriftDegs;
@@ -382,7 +383,7 @@ STATIC_TESTABLE_DECL bool FilterMadgwickInit (FilterMadgwickInitConf_t conf, Fil
     return true;
 }
 
-STATIC_TESTABLE_DECL bool
+STATIC bool
 FilterMadgwickUpdate (FilterMadgwick_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyro, Vec3f const* pMag, float dt, Vec3f* pOutAttitude) {
 
     if (pMag == NULL) {
@@ -463,7 +464,7 @@ eSTATUS_t FilterStop (vFilter_t* pFilter) {
 }
 
 eSTATUS_t
-FilterUpdate (vFilter_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyro, Vec3f const* pMag, float dt, Vec3f* pOutput) {
+Filter_Update (vFilter_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyro, Vec3f const* pMag, float dt, Vec3f* pOutput) {
 
     if (FILTER_VALID (pFilter) == false || pOutput == NULL) {
         return eSTATUS_FAILURE;

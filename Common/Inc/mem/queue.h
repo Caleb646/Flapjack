@@ -1,7 +1,7 @@
 #ifndef MEM_QUEUE_H
 #define MEM_QUEUE_H
 
-#include "common.h"
+#include "core/core.h"
 #include <stdint.h>
 
 typedef struct {
@@ -14,8 +14,7 @@ typedef struct {
     uint16_t count;       // Current number of elements
 } Queue_t;
 
-eSTATUS_t
-QueueInit (Queue_t* pQueue, void* pBuffer, uint16_t capacity, uint16_t elementSize, bool isShared);
+eSTATUS_t QueueInit (Queue_t* pQueue, void* pBuffer, uint16_t capacity, uint16_t elementSize, bool isShared);
 bool QueueIsEmpty (Queue_t const* pQueue);
 bool QueueIsFull (Queue_t const* pQueue);
 uint16_t QueueGetElementCount (Queue_t const* pQueue);

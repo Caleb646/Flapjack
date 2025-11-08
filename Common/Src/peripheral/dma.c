@@ -1,11 +1,12 @@
 #include "peripheral/dma.h"
-#include "common.h"
+#include "core/core.h"
+#include "core/log/logger.h"
 #include "hal.h"
-#include "log/logger.h"
 #include "mem/mem.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+
 
 static SHARED_MEM_SECTION DMAStream_t gDMAStreams[eDMA_STREAM_MAX] = { 0 };
 
@@ -117,13 +118,13 @@ eSTATUS_t DMAInit (DMAInitConf_t conf, eDMA_STREAM_ID_t* pOutStreamId) {
     }
 
     memset (pStream, 0, sizeof (DMAStream_t));
-    pStream->streamId              = streamId;
-    pStream->handle.Instance       = DMAGetInstanceById (streamId);
-    pStream->handle.Init.Request   = conf.request;
-    pStream->handle.Init.Priority  = conf.priority;
-    pStream->handle.Init.Direction = conf.direction;
-    pStream->handle.Init.PeriphInc = DMA_PINC_DISABLE;
-    pStream->handle.Init.MemInc    = DMA_MINC_ENABLE;
+    pStream->streamId                        = streamId;
+    pStream->handle.Instance                 = DMAGetInstanceById (streamId);
+    pStream->handle.Init.Request             = conf.request;
+    pStream->handle.Init.Priority            = conf.priority;
+    pStream->handle.Init.Direction           = conf.direction;
+    pStream->handle.Init.PeriphInc           = DMA_PINC_DISABLE;
+    pStream->handle.Init.MemInc              = DMA_MINC_ENABLE;
     pStream->handle.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
     pStream->handle.Init.MemDataAlignment    = DMA_MDATAALIGN_WORD;
     pStream->handle.Init.Mode                = conf.transferMode;

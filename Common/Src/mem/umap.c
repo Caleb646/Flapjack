@@ -1,5 +1,5 @@
 #include "mem/umap.h"
-#include "common.h"
+#include "core/core.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -57,16 +57,7 @@ bool UMap_DefaultEqual (void const* pKey1, void const* pKey2, uint16_t keySize) 
     return memcmp (pKey1, pKey2, keySize) == 0U;
 }
 
-bool UMap_Init (
-UMap_t* pUMap,
-UMapEntry_t* pEntries,
-void* pKeys,
-void* pValues,
-uint16_t capacity,
-uint16_t keySize,
-uint16_t valueSize,
-bool isShared
-) {
+bool UMap_Init (UMap_t* pUMap, UMapEntry_t* pEntries, void* pKeys, void* pValues, uint16_t capacity, uint16_t keySize, uint16_t valueSize, bool isShared) {
     return UMap_InitWithFunctions (pUMap, pEntries, pKeys, pValues, capacity, keySize, valueSize, isShared, UMap_DefaultHash, UMap_DefaultEqual);
 }
 
@@ -82,9 +73,8 @@ bool isShared,
 uint32_t (*hashFunc) (void const*, uint16_t),
 bool (*equalFunc) (void const*, void const*, uint16_t)
 ) {
-    if (pUMap == NULL || pKeys == NULL || pValues == NULL ||
-        pEntries == NULL || capacity == 0 || keySize == 0 ||
-        valueSize == 0 || hashFunc == NULL || equalFunc == NULL) {
+    if (pUMap == NULL || pKeys == NULL || pValues == NULL || pEntries == NULL || capacity == 0 ||
+        keySize == 0 || valueSize == 0 || hashFunc == NULL || equalFunc == NULL) {
         return false;
     }
 
