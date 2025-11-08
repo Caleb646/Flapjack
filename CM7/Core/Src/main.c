@@ -50,8 +50,6 @@
 #endif
 
 void SystemClock_Config (void);
-static void MX_GPIO_Init (void);
-
 
 TaskHandle_t gpTaskMotionControlUpdate = { 0 };
 
@@ -315,11 +313,8 @@ int main (void) {
     /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
     HAL_Init ();
     SystemClock_Config ();
-    MX_GPIO_Init ();
-    // MX_SPI2_Init ();
 
     /* When system initialization is finished, Cortex-M7 will release Cortex-M4 by means of HSEM notification */
-
     /*HW semaphore Clock enable*/
     __HAL_RCC_HSEM_CLK_ENABLE ();
     // /*Take HSEM */
@@ -475,33 +470,6 @@ void SystemClock_Config (void) {
 }
 
 /**
- * @brief GPIO Initialization Function
- * @param None
- * @retval None
- */
-static void MX_GPIO_Init (void) {
-    GPIO_InitTypeDef GPIO_InitStruct = { 0 };
-    /* USER CODE BEGIN MX_GPIO_Init_1 */
-
-    /* USER CODE END MX_GPIO_Init_1 */
-
-    /* GPIO Ports Clock Enable */
-    __HAL_RCC_GPIOC_CLK_ENABLE ();
-    __HAL_RCC_GPIOA_CLK_ENABLE ();
-    __HAL_RCC_GPIOH_CLK_ENABLE ();
-    __HAL_RCC_GPIOF_CLK_ENABLE ();
-    __HAL_RCC_GPIOJ_CLK_ENABLE ();
-
-    /*Configure GPIO pin : CEC_CK_MCO1_Pin */
-    GPIO_InitStruct.Pin       = CEC_CK_MCO1_Pin;
-    GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull      = GPIO_NOPULL;
-    GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.Alternate = GPIO_AF0_MCO;
-    HAL_GPIO_Init (CEC_CK_MCO1_GPIO_Port, &GPIO_InitStruct);
-}
-
-/**
  * @brief  Period elapsed callback in non blocking mode
  * @note   This function is called  when TIM4 interrupt took place, inside
  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to
@@ -510,15 +478,12 @@ static void MX_GPIO_Init (void) {
  * @retval None
  */
 void HAL_TIM_PeriodElapsedCallback (TIM_HandleTypeDef* htim) {
+
     if (htim->Instance == TIM4) {
         HAL_IncTick ();
     }
 }
 
-/**
- * @brief  This function is executed in case of error occurrence.
- * @retval None
- */
 void Error_Handler (void) {
     __disable_irq ();
     while (1) {
