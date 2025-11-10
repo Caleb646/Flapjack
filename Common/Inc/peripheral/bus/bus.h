@@ -24,7 +24,7 @@ typedef struct {
     BusTransactionsFn_t TransactionsBlocking;
     BusRegisterCallbackFn_t RegisterCallback;
     eDEVICE_ID_t deviceId;
-    void* pCtx;
+    void* pCtx; // spi, i2c, uart bus
 } BusVTable_t;
 
 typedef struct {
