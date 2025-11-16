@@ -420,7 +420,11 @@ void SystemClock_Config (void) {
 
     /** Supply configuration update enable
      */
-    HAL_PWREx_ConfigSupply (PWR_DIRECT_SMPS_SUPPLY);
+    // TODO: this is fine for DEV board but for custom board SMPS is NOT setup
+    // Default power supply on reset should be LDO
+
+    // HAL_PWREx_ConfigSupply (PWR_DIRECT_SMPS_SUPPLY);
+    HAL_PWREx_ConfigSupply (PWR_LDO_SUPPLY);
 
     /** Configure the main internal regulator output voltage
      */
@@ -432,6 +436,7 @@ void SystemClock_Config (void) {
     /** Initializes the RCC Oscillators according to the specified
      * parameters in the RCC_OscInitTypeDef structure.
      */
+    // TODO: Custom board will NOT have HSE crystal
     RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI | RCC_OSCILLATORTYPE_LSI | RCC_OSCILLATORTYPE_HSE;
     RCC_OscInitStruct.HSEState            = RCC_HSE_ON;
     RCC_OscInitStruct.HSIState            = RCC_HSI_DIV1;

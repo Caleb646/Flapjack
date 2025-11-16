@@ -14276,7 +14276,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "39"
+		(property "Value" "200"
 			(at 243.84 308.6099 0)
 			(effects
 				(font
@@ -14303,7 +14303,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "330 Ohms ±1% 0.25W, 1/4W Chip Resistor 0603 (1608 Metric) Automotive AEC-Q200, Pulse Withstanding Thick Film"
+		(property "Description" "-55℃~+155℃ 100mW 200Ω 75V Thick Film Resistor ±1% ±100ppm/℃ 0603 Chip Resistor - Surface Mount ROHS"
 			(at 241.3 307.34 0)
 			(effects
 				(font
@@ -14312,7 +14312,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "FOJAN"
+		(property "Manufacturer_Name" "UNI-ROYAL(Uniroyal Elec)"
 			(at 241.3 307.34 0)
 			(effects
 				(font
@@ -14321,7 +14321,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "FRC0603F39R0TS"
+		(property "Manufacturer_Part_Number" "0603WAF2000T5E"
 			(at 241.3 307.34 0)
 			(effects
 				(font
@@ -14339,7 +14339,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC Part #" "C2907032"
+		(property "LCSC Part #" "C8218"
 			(at 241.3 307.34 0)
 			(effects
 				(font
@@ -16805,7 +16805,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "39"
+		(property "Value" "200"
 			(at 281.94 308.6099 0)
 			(effects
 				(font
@@ -16832,7 +16832,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "330 Ohms ±1% 0.25W, 1/4W Chip Resistor 0603 (1608 Metric) Automotive AEC-Q200, Pulse Withstanding Thick Film"
+		(property "Description" "-55℃~+155℃ 100mW 200Ω 75V Thick Film Resistor ±1% ±100ppm/℃ 0603 Chip Resistor - Surface Mount ROHS"
 			(at 279.4 307.34 0)
 			(effects
 				(font
@@ -16841,7 +16841,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "FOJAN"
+		(property "Manufacturer_Name" "UNI-ROYAL(Uniroyal Elec)"
 			(at 279.4 307.34 0)
 			(effects
 				(font
@@ -16850,7 +16850,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "FRC0603F39R0TS"
+		(property "Manufacturer_Part_Number" "0603WAF2000T5E"
 			(at 279.4 307.34 0)
 			(effects
 				(font
@@ -16868,7 +16868,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC Part #" "C2907032"
+		(property "LCSC Part #" "C8218"
 			(at 279.4 307.34 0)
 			(effects
 				(font
@@ -16920,7 +16920,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "39"
+		(property "Value" "200"
 			(at 269.24 308.6099 0)
 			(effects
 				(font
@@ -16947,7 +16947,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "330 Ohms ±1% 0.25W, 1/4W Chip Resistor 0603 (1608 Metric) Automotive AEC-Q200, Pulse Withstanding Thick Film"
+		(property "Description" "-55℃~+155℃ 100mW 200Ω 75V Thick Film Resistor ±1% ±100ppm/℃ 0603 Chip Resistor - Surface Mount ROHS"
 			(at 266.7 307.34 0)
 			(effects
 				(font
@@ -16956,7 +16956,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "FOJAN"
+		(property "Manufacturer_Name" "UNI-ROYAL(Uniroyal Elec)"
 			(at 266.7 307.34 0)
 			(effects
 				(font
@@ -16965,7 +16965,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "FRC0603F39R0TS"
+		(property "Manufacturer_Part_Number" "0603WAF2000T5E"
 			(at 266.7 307.34 0)
 			(effects
 				(font
@@ -16983,7 +16983,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC Part #" "C2907032"
+		(property "LCSC Part #" "C8218"
 			(at 266.7 307.34 0)
 			(effects
 				(font
@@ -20386,7 +20386,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "39"
+		(property "Value" "200"
 			(at 294.64 308.6099 0)
 			(effects
 				(font
@@ -20413,7 +20413,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "330 Ohms ±1% 0.25W, 1/4W Chip Resistor 0603 (1608 Metric) Automotive AEC-Q200, Pulse Withstanding Thick Film"
+		(property "Description" "-55℃~+155℃ 100mW 200Ω 75V Thick Film Resistor ±1% ±100ppm/℃ 0603 Chip Resistor - Surface Mount ROHS"
 			(at 292.1 307.34 0)
 			(effects
 				(font
@@ -20422,7 +20422,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "FOJAN"
+		(property "Manufacturer_Name" "UNI-ROYAL(Uniroyal Elec)"
 			(at 292.1 307.34 0)
 			(effects
 				(font
@@ -20431,7 +20431,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "FRC0603F39R0TS"
+		(property "Manufacturer_Part_Number" "0603WAF2000T5E"
 			(at 292.1 307.34 0)
 			(effects
 				(font
@@ -20449,7 +20449,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC Part #" "C2907032"
+		(property "LCSC Part #" "C8218"
 			(at 292.1 307.34 0)
 			(effects
 				(font
@@ -20658,7 +20658,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "39"
+		(property "Value" "200"
 			(at 256.54 308.6099 0)
 			(effects
 				(font
@@ -20685,7 +20685,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "330 Ohms ±1% 0.25W, 1/4W Chip Resistor 0603 (1608 Metric) Automotive AEC-Q200, Pulse Withstanding Thick Film"
+		(property "Description" "-55℃~+155℃ 100mW 200Ω 75V Thick Film Resistor ±1% ±100ppm/℃ 0603 Chip Resistor - Surface Mount ROHS"
 			(at 254 307.34 0)
 			(effects
 				(font
@@ -20694,7 +20694,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Name" "FOJAN"
+		(property "Manufacturer_Name" "UNI-ROYAL(Uniroyal Elec)"
 			(at 254 307.34 0)
 			(effects
 				(font
@@ -20703,7 +20703,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer_Part_Number" "FRC0603F39R0TS"
+		(property "Manufacturer_Part_Number" "0603WAF2000T5E"
 			(at 254 307.34 0)
 			(effects
 				(font
@@ -20721,7 +20721,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC Part #" "C2907032"
+		(property "LCSC Part #" "C8218"
 			(at 254 307.34 0)
 			(effects
 				(font
