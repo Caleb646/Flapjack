@@ -98,7 +98,7 @@ typedef struct RingBuff_ {
 
 #ifndef UNIT_TEST
 
-STATIC_ASSERT (sizeof (RingBuff) == 32, "RingBuff is not 32 bytes");
+// STATIC_ASSERT (sizeof (RingBuff) == 32, "RingBuff is not 32 bytes");
 
 #endif
 

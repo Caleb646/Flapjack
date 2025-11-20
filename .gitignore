@@ -6,6 +6,8 @@ CM7/Release/**
 
 Scripts/build
 
+**/build/**
+
 # Kicad Ignores
 *.lnk
 *.kicad_pcb.lck

@@ -42,8 +42,7 @@
                 "USE_PWR_DIRECT_SMPS_SUPPLY"
         ],
             "compilerPath": "C:/Program Files (x86)/GNU Arm Embedded Toolchain/10 2021.10/bin/arm-none-eabi-gcc",
-            "cStandard": "c17",
-            "cppStandard": "gnu++17",
+            "cStandard": "c11",
             "intelliSenseMode": "gcc-arm",
             "configurationProvider": "none"
         }
