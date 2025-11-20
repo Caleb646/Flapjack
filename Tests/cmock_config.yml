@@ -1,0 +1,59 @@
+---
+:cmock:
+  :plugins: # ruby build/_deps/cmock-src/lib/cmock.rb -ocmock_config.yml ../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_spi.h
+    - :ignore
+    - :callback
+  :verbosity: 2
+  :when_no_prototypes: :warn
+  
+  # File configuration
+  :skeleton_path: ''
+  :mock_prefix: 'mock_'
+  :mock_suffix: ''
+  
+  # Parser configuration
+  :strippables: ['(?:__attribute__\s*\([ (]*.*?[ )]*\)+)']
+  :attributes:
+    - __ramfunc
+    - __irq
+    - __fiq
+    - register
+    - extern
+    - __weak
+    - __packed
+  :c_calling_conventions:
+    - __stdcall
+    - __cdecl
+    - __fastcall
+  :treat_externs: :exclude
+  :treat_inlines: :exclude
+  
+  # Type handling configuration
+  :treat_as:
+    uint8_t: HEX8
+    uint16_t: HEX16
+    uint32_t: UINT32
+    int8_t: INT8
+    bool: UINT8
+  :memcmp_if_unknown: true
+  :when_ptr: :compare_data
+  
+  # Mock generation configuration
+  :enforce_strict_ordering: true
+  :fail_on_unexpected_calls: true
+  :callback_include_count: true
+  :callback_after_arg_check: false
+  :exclude_setjmp_h: false
+  
+  # Includes to add to generated mocks
+  :includes:
+    - stm32h747xx.h
+    - stm32h7xx_hal_conf.h
+  :includes_h_pre_orig_header:
+    - stm32h7xx_hal_conf.h
+  
+  # Defines to use during parsing
+  :defines:
+    - STM32H747xx
+    - CORE_CM7
+    - USE_HAL_DRIVER

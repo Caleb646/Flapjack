@@ -1,3 +1,4 @@
+#include "mock_stm32h7xx_hal_spi.h"
 #include "peripheral/bus/spi.h"
 #include "unity/unity.h"
 #include <stdbool.h>
@@ -11,17 +12,22 @@
 static vSPIBus_t test_bus;
 
 void setUp (void) {
+    // Initialize CMock for each test
+    CMock_Init ();
+
     // Reset test bus for each test
-    test_bus.isInitialized              = false;
-    test_bus.busId                      = eSPI_1_BUS_ID;
-    test_bus.deviceId                   = 1; // Use simple numeric ID
-    test_bus.nDevices                   = 0;
-    test_bus.activeTransaction.deviceId = 0;
-    test_bus.activeTransaction.pNss     = NULL;
+    test_bus.isInitialized            = false;
+    test_bus.busId                    = eSPI_1_BUS_ID;
+    test_bus.deviceId                 = 1; // Use simple numeric ID
+    test_bus.nDevices                 = 0;
+    test_bus.activeOperation.deviceId = 0;
+    test_bus.activeOperation.pNss     = NULL;
 }
 
 void tearDown (void) {
-    // Clean up after each test
+    // Verify all mocks and clean up
+    CMock_Verify ();
+    CMock_Destroy ();
 }
 
 // Test SPIInit with invalid bus ID
@@ -54,8 +60,8 @@ void test_SPITransaction_StateTracking (void) {
     test_bus.connectedDevices.ids[0] = eIMU_DEVICE_ID;
 
     // Initially no active transaction
-    TEST_ASSERT_EQUAL (0, test_bus.activeTransaction.deviceId);
-    TEST_ASSERT_NULL (test_bus.activeTransaction.pNss);
+    TEST_ASSERT_EQUAL (0, test_bus.activeOperation.deviceId);
+    TEST_ASSERT_NULL (test_bus.activeOperation.pNss);
 
     // The transaction functions should handle null GPIO gracefully
     // This tests the basic transaction state tracking without GPIO dependencies
@@ -70,12 +76,10 @@ void test_SPIDataTransfer_FunctionSignatures (void) {
     uint8_t rxData[4];
 
     // These should return failure but not crash
-    eSTATUS_t readStatus =
-    SPIRead_Blocking (&test_bus, eIMU_DEVICE_ID, rxData, sizeof (rxData));
+    eSTATUS_t readStatus = SPIRead_Blocking (&test_bus, eIMU_DEVICE_ID, rxData, sizeof (rxData));
     TEST_ASSERT_EQUAL (eSTATUS_FAILURE, readStatus);
 
-    eSTATUS_t writeStatus =
-    SPIWrite_Blocking (&test_bus, eIMU_DEVICE_ID, testData, sizeof (testData));
+    eSTATUS_t writeStatus = SPIWrite_Blocking (&test_bus, eIMU_DEVICE_ID, testData, sizeof (testData));
     TEST_ASSERT_EQUAL (eSTATUS_FAILURE, writeStatus);
 
     eSTATUS_t writeReadStatus =
