@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cmake -S . -B build
+cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE="./cmake/gcc_tc.cmake"
 cmake --build build # --verbose 2>&1 | tee ./build/build_log.txt
 # ./build/Debug/test_queue.exe
 # ctest --test-dir build

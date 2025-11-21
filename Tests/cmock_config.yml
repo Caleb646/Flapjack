@@ -38,14 +38,22 @@
   :fail_on_unexpected_calls: true  # Do we want cmock to fail when it encounters a function call that wasn't expected?
   :callback_include_count: true    # Do we want cmock to include the number of calls to this callback, when using callbacks?
   :callback_after_arg_check: false # Do we want cmock to enforce an argument check first when using a callback?
+
+  :include_original_header: false
+  :includes_orig_header: false
+  :orig_header_include: false
+  
   :includes:
-    - stm32h747xx.h
-    - stm32h7xx_hal_conf.h
-  :includes_h_pre_orig_header:
-    - stm32h7xx_hal_conf.h
-  #:includes_h_post_orig_header: []
-  #:includes_c_pre_header:  []
-  #:includes_c_post_header:  []
+    - hal.h
+  # :includes:
+  #   - stm32h747xx.h
+  #   - stm32h7xx_hal_conf.h
+  # :includes_h_pre_orig_header:
+  #   - stm32h7xx_hal_conf.h
+  :includes_h_pre_orig_header: []
+  :includes_h_post_orig_header: []
+  :includes_c_pre_header:  []
+  :includes_c_post_header:  []
   #:array_size_type:  []            # Specify a type or types that should be used for array lengths
   #:array_size_name:  'size|len'    # Specify a name or names that CMock might automatically recognize as the length of an array
   :exclude_setjmp_h:  false        # Don't use setjmp when running CMock. Note that this might result in late reporting or out-of-order failures.

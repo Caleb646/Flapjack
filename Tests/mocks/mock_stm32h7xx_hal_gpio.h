@@ -3,8 +3,7 @@
 #define _MOCK_STM32H7XX_HAL_GPIO_H
 
 #include "unity.h"
-#include "stm32h747xx.h"
-#include "stm32h7xx_hal_conf.h"
+#include "hal_stub.h"
 #include "stm32h7xx_hal_gpio.h"
 
 /* Ignore the following warnings, since we are copying code */
