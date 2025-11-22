@@ -55,7 +55,7 @@ static bool ControlGetNewCmd (DefaultCommand* pOutCmd);
 //     UARTRead_IT (busId, ga_UartInterruptBuffer, sizeof (DefaultCommand));
 // }
 
-// STATIC CmdHandlerFn_t ControlGetHandler (DefaultCommand defCmd) {
+// FJ_STATIC CmdHandlerFn_t ControlGetHandler (DefaultCommand defCmd) {
 
 //     eCMD_t cmdType = defCmd.header.commandType;
 //     if (cmdType == eCMD_CHANGE_OP_STATE) {
@@ -73,7 +73,7 @@ static bool ControlGetNewCmd (DefaultCommand* pOutCmd);
 //     return pHandler ? *pHandler : NULL;
 // }
 
-STATIC eSTATUS_t ControlInit_Producer (void) {
+FJ_STATIC eSTATUS_t ControlInit_Producer (void) {
 
     if (RawCommandQueue_Init () != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize raw command queue");
@@ -83,7 +83,7 @@ STATIC eSTATUS_t ControlInit_Producer (void) {
     return eSTATUS_SUCCESS;
 }
 
-STATIC eSTATUS_t ControlInit_Shared (void) {
+FJ_STATIC eSTATUS_t ControlInit_Shared (void) {
 
     // if (CmdHandlersUMap_Init () == false) {
     //     LOG_ERROR ("Failed to initialize command handlers map");
@@ -105,14 +105,14 @@ STATIC eSTATUS_t ControlInit_Shared (void) {
     return eSTATUS_SUCCESS;
 }
 
-// STATIC eSTATUS_t ControlDefaultCmdHandler (DefaultCommand cmd) {
+// FJ_STATIC eSTATUS_t ControlDefaultCmdHandler (DefaultCommand cmd) {
 
 //     eCMD_t cmdType = cmd.header.commandType;
 //     LOG_WARN ("No handler registered for command type: %s", ControlCmdType2Char (cmdType));
 //     return false;
 // }
 
-STATIC eSTATUS_t ControlInit_Consumer (void) {
+FJ_STATIC eSTATUS_t ControlInit_Consumer (void) {
 
     // eCMD_t cmds[]             = { eCMD_NULL,
     //                               // eCMD_CHANGE_OP_STATE, // op state changes can have multiple handlers based on current and next state
@@ -136,7 +136,7 @@ STATIC eSTATUS_t ControlInit_Consumer (void) {
     return eSTATUS_SUCCESS;
 }
 
-STATIC bool ControlGetNewCmd (DefaultCommand* pOutCmd) {
+FJ_STATIC bool ControlGetNewCmd (DefaultCommand* pOutCmd) {
 
     if (IS_PRODUCER_ME () == true) {
         LOG_ERROR ("Should only be called for the core that is consuming");

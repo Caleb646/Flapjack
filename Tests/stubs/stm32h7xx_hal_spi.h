@@ -1,5 +1,0 @@
-#ifndef STM32H7XX_HAL_SPI_H
-#define STM32H7XX_HAL_SPI_H
-
-
-#endif // STM32H7XX_HAL_SPI_H

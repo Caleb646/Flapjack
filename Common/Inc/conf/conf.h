@@ -13,6 +13,8 @@
 #define BOARD_CONF_INIT() BoardConfInit_DevBoard ()
 #endif
 
+#define MICRO_DELAY_USE_SYSTICK            0
+
 #define PRIMARY_LOGGER_ROLE                CM4_CPUID
 // #define PRIMARY_LOGGER_ROLE                CM7_CPUID
 #define LOGGER_SHOULD_BLOCK_ON_OVERWRITE   1U

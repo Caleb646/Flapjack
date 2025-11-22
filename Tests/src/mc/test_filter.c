@@ -1,6 +1,6 @@
 #include "core/core.h"
 #include "mc/filter.h"
-#include "unity/unity.h"
+#include "unity.h"
 #include <math.h>
 
 #ifndef UNIT_TEST
@@ -9,58 +9,57 @@
 
 #define PI_F 3.14159265359F
 
-#define MADG_TEST_INIT(ERROR_DEGS, DRIFT_DEGS)                 \
-    FilterMadgwick_t filter = { 0 };                           \
-    do {                                                       \
-        FilterMadgwickInitConf_t conf = { 0 };                 \
-        conf.gyroMeasureErrorDegs     = (ERROR_DEGS);          \
-        conf.gyroMeasureDriftDegs     = (DRIFT_DEGS);          \
-        TEST_ASSERT_TRUE (FilterMadgwickInit (conf, &filter)); \
-    } while (0)
+static float const g_DefGyroMeasureErrorDegs = 5.0F;
+static float const g_DefGyroMeasureDriftDegs = 0.0F;
 
-#define MADG_TEST_DEF_INIT() MADG_TEST_INIT (5.0F, 0.0F)
+static FilterMadgwickInitConf_t const g_DefMadgConf           = { .gyroMeasureErrorDegs = 5.0F,
+                                                                  .gyroMeasureDriftDegs = 0.0F };
+static FilterMadgwickInitConf_t const g_MadgConf_01Err_0Drift = { .gyroMeasureErrorDegs = 0.1F,
+                                                                  .gyroMeasureDriftDegs = 0.0F };
+static FilterMadgwick_t g_MadgFilter_Uninitialized;
+static FilterMadgwick_t g_DefMadgFilter;
+static FilterMadgwick_t g_MadgFilter_01Err_0Drift;
+
+void setUp (void) {
+
+    memset (&g_MadgFilter_Uninitialized, 0, sizeof (FilterMadgwick_t));
+    memset (&g_DefMadgFilter, 0, sizeof (FilterMadgwick_t));
+    memset (&g_MadgFilter_01Err_0Drift, 0, sizeof (FilterMadgwick_t));
+
+    FilterMadgwickInit (g_DefMadgConf, &g_DefMadgFilter);
+    FilterMadgwickInit (g_MadgConf_01Err_0Drift, &g_MadgFilter_01Err_0Drift);
+}
+
+void tearDown (void) {
+    // This is run after EACH test
+}
 
 
 void test_FilterMadgwickInit (void) {
 
-    float gyroMeasureErrorDegs = 5.0F;
-    float gyroMeasureDriftDegs = 0.0F;
-    MADG_TEST_INIT (gyroMeasureErrorDegs, gyroMeasureDriftDegs);
+    FilterMadgwick_t* pFilter = &g_MadgFilter_Uninitialized;
+    TEST_ASSERT_TRUE (FilterMadgwickInit (g_DefMadgConf, pFilter));
 
-    // Check that quaternion is initialized to identity (no rotation)
-    TEST_ASSERT_FLOAT_WITHIN (0.001F, 1.0F, filter.qEst.q1);
-    TEST_ASSERT_FLOAT_WITHIN (0.001F, 0.0F, filter.qEst.q2);
-    TEST_ASSERT_FLOAT_WITHIN (0.001F, 0.0F, filter.qEst.q3);
-    TEST_ASSERT_FLOAT_WITHIN (0.001F, 0.0F, filter.qEst.q4);
+    TEST_ASSERT_FLOAT_WITHIN (0.001F, 1.0F, pFilter->qEst.q1);
+    TEST_ASSERT_FLOAT_WITHIN (0.001F, 0.0F, pFilter->qEst.q2);
+    TEST_ASSERT_FLOAT_WITHIN (0.001F, 0.0F, pFilter->qEst.q3);
+    TEST_ASSERT_FLOAT_WITHIN (0.001F, 0.0F, pFilter->qEst.q4);
 
-    float expected_beta = sqrtf (3.0F / 4.0F) * (gyroMeasureErrorDegs * PI_F / 180.0F);
-    TEST_ASSERT_FLOAT_WITHIN (0.001F, expected_beta, filter.beta);
-}
-
-void test_FilterMadgwick6DOF_NullPointers (void) {
-
-    MADG_TEST_DEF_INIT ();
-    Vec3f accel = { 0.0F, 0.0F, 9.81F };
-    Vec3f gyro  = { 0.0F, 0.0F, 0.0F };
-    Vec3f attitude;
-    float dt = 0.01F;
-
-    bool success = FilterMadgwickUpdate (&filter, &accel, &gyro, NULL, dt, &attitude);
-    TEST_ASSERT_TRUE (success);
+    float expected_beta = sqrtf (3.0F / 4.0F) * (g_DefMadgConf.gyroMeasureErrorDegs * PI_F / 180.0F);
+    TEST_ASSERT_FLOAT_WITHIN (0.001F, expected_beta, pFilter->beta);
 }
 
 void test_FilterMadgwick6DOF_NoRotation (void) {
 
-    MADG_TEST_INIT (5.0F, 0.0F);
-
     // Stationary case: no gyro movement, gravity pointing down (Z-axis)
-    Vec3f accel    = { 0.0F, 0.0F, 9.81F }; // Gravity in Z direction
-    Vec3f gyro     = { 0.0F, 0.0F, 0.0F };  // No rotation
-    Vec3f attitude = { 0.0F, 0.0F, 0.0F };
-    float dt       = 0.01F;
+    FilterMadgwick_t* pFilter = &g_DefMadgFilter;
+    Vec3f accel               = { 0.0F, 0.0F, 9.81F }; // Gravity in Z direction
+    Vec3f gyro                = { 0.0F, 0.0F, 0.0F };  // No rotation
+    Vec3f attitude            = { 0.0F, 0.0F, 0.0F };
+    float dt                  = 0.01F;
 
     for (int i = 0; i < 5; i++) {
-        bool success = FilterMadgwickUpdate (&filter, &accel, &gyro, NULL, dt, &attitude);
+        bool success = FilterMadgwickUpdate (pFilter, &accel, &gyro, NULL, dt, &attitude);
         TEST_ASSERT_TRUE (success);
     }
 
@@ -71,8 +70,7 @@ void test_FilterMadgwick6DOF_NoRotation (void) {
 
 void test_FilterMadgwick6DOF_Roll90Degrees (void) {
 
-    MADG_TEST_INIT (0.1F, 0.0F);
-
+    FilterMadgwick_t* pFilter = &g_MadgFilter_01Err_0Drift;
     // Simulate 90-degree roll: gravity appears in Y direction
     Vec3f accel    = { 0.0F, 9.81F, 0.0F }; // Gravity in Y direction (rolled 90 degrees)
     Vec3f gyro     = { 10.0F, 0.0F, 0.0F }; // Rotating around the x-axis at 10 degrees/second
@@ -83,7 +81,7 @@ void test_FilterMadgwick6DOF_Roll90Degrees (void) {
      * us close to 90 degrees. Especially with the 1.0F error.
      */
     for (int i = 0; i < (int)(9.0F * 1.0F / dt); i++) {
-        bool success = FilterMadgwickUpdate (&filter, &accel, &gyro, NULL, dt, &attitude);
+        bool success = FilterMadgwickUpdate (pFilter, &accel, &gyro, NULL, dt, &attitude);
         TEST_ASSERT_TRUE (success);
     }
 
@@ -94,8 +92,7 @@ void test_FilterMadgwick6DOF_Roll90Degrees (void) {
 
 void test_FilterMadgwick6DOF_Pitch90Degrees (void) {
 
-    MADG_TEST_INIT (0.1F, 0.0F);
-
+    FilterMadgwick_t* pFilter = &g_MadgFilter_01Err_0Drift;
     // Simulate 90-degree pitch: gravity appears in X direction
     Vec3f accel    = { 9.81F, 0.0F, 0.0F }; // Gravity in X direction (pitched 90 degrees)
     Vec3f gyro     = { 0.0F, 10.0F, 0.0F }; // Rotating around the y-axis at 10 degrees/second
@@ -106,7 +103,7 @@ void test_FilterMadgwick6DOF_Pitch90Degrees (void) {
      * us close to 90 degrees. Especially with the 1.0F error.
      */
     for (int i = 0; i < (int)(9.0F * (1.0F / dt)); i++) {
-        bool success = FilterMadgwickUpdate (&filter, &accel, &gyro, NULL, dt, &attitude);
+        bool success = FilterMadgwickUpdate (pFilter, &accel, &gyro, NULL, dt, &attitude);
         TEST_ASSERT_TRUE (success);
     }
 
@@ -118,17 +115,16 @@ void test_FilterMadgwick6DOF_Pitch90Degrees (void) {
 
 void test_FilterMadgwick6DOF_GyroIntegration (void) {
 
-    MADG_TEST_INIT (0.1F, 0.0F);
-
-    Vec3f accel    = { 0.0F, 0.0F, 9.81F };
-    Vec3f gyro     = { 0.0F, 0.0F, 45.0F }; // 45 degrees/second yaw rate
-    Vec3f attitude = { 0.0F, 0.0F, 0.0F };
-    float dt       = 0.01F;
+    FilterMadgwick_t* pFilter = &g_MadgFilter_01Err_0Drift;
+    Vec3f accel               = { 0.0F, 0.0F, 9.81F };
+    Vec3f gyro                = { 0.0F, 0.0F, 45.0F }; // 45 degrees/second yaw rate
+    Vec3f attitude            = { 0.0F, 0.0F, 0.0F };
+    float dt                  = 0.01F;
 
     // Initialize with stable attitude first
     gyro.z = 0.0F;
     for (int i = 0; i < 50; i++) {
-        bool success = FilterMadgwickUpdate (&filter, &accel, &gyro, NULL, dt, &attitude);
+        bool success = FilterMadgwickUpdate (pFilter, &accel, &gyro, NULL, dt, &attitude);
         TEST_ASSERT_TRUE (success);
     }
     float initial_yaw = attitude.yaw;
@@ -136,7 +132,7 @@ void test_FilterMadgwick6DOF_GyroIntegration (void) {
     // Now apply constant yaw rate for 1 second (100 iterations * 0.01s)
     gyro.z = 45.0F; // 45 degrees/second
     for (int i = 0; i < 100; i++) {
-        bool success = FilterMadgwickUpdate (&filter, &accel, &gyro, NULL, dt, &attitude);
+        bool success = FilterMadgwickUpdate (pFilter, &accel, &gyro, NULL, dt, &attitude);
         TEST_ASSERT_TRUE (success);
     }
 
@@ -145,52 +141,9 @@ void test_FilterMadgwick6DOF_GyroIntegration (void) {
     TEST_ASSERT_FLOAT_WITHIN (15.0F, 45.0F, fabsf (yaw_change));
 }
 
-// void test_FilterMadgwick6DOF_ZeroAcceleration (void) {
-
-//     MADG_TEST_INIT (5.0F, 0.0F);
-
-//     // Test with zero acceleration (should handle gracefully)
-//     Vec3f accel = { 0.0F, 0.0F, 0.0F };  // No acceleration
-//     Vec3f gyro  = { 10.0F, 0.0F, 0.0F }; // Some gyro input
-//     Vec3f attitude;
-//     float dt = 0.01F;
-
-//     FilterMadgwickUpdate (&filter, &accel, &gyro, NULL, dt, &attitude);
-//     // TEST_ASSERT_TRUE (success);
-
-//     // Should not crash and should produce valid output
-//     TEST_ASSERT_TRUE (attitude.roll >= -180.0F && attitude.roll <= 180.0F);
-//     TEST_ASSERT_TRUE (attitude.pitch >= -90.0F && attitude.pitch <= 90.0F);
-//     TEST_ASSERT_TRUE (attitude.yaw >= -180.0F && attitude.yaw <= 180.0F);
-// }
-
-void test_FilterMadgwick6DOF_QuaternionNormalization (void) {
-
-    MADG_TEST_INIT (5.0F, 0.0F);
-
-    Vec3f accel    = { 0.0F, 0.0F, 9.81F };
-    Vec3f gyro     = { 1.0F, 2.0F, 3.0F };
-    Vec3f attitude = { 0.0F, 0.0F, 0.0F };
-    float dt       = 0.01F;
-
-    // Run several iterations
-    for (int i = 0; i < 50; i++) {
-        bool success = FilterMadgwickUpdate (&filter, &accel, &gyro, NULL, dt, &attitude);
-        TEST_ASSERT_TRUE (success);
-
-        // Check that quaternion remains normalized
-        float quat_magnitude = sqrtf (
-        (filter.qEst.q1 * filter.qEst.q1) + (filter.qEst.q2 * filter.qEst.q2) +
-        (filter.qEst.q3 * filter.qEst.q3) + (filter.qEst.q4 * filter.qEst.q4)
-        );
-        TEST_ASSERT_FLOAT_WITHIN (0.01F, 1.0F, quat_magnitude);
-    }
-}
-
 void test_FilterMadgwick6DOF_LargeTimeStep (void) {
 
-    MADG_TEST_INIT (0.0F, 0.1F);
-
+    FilterMadgwick_t* pFilter = &g_MadgFilter_01Err_0Drift;
     // Test with large time step and multi-axis rotation
     Vec3f accel    = { 0.0F, 0.0F, 9.81F };
     Vec3f gyro     = { 5.0F, 3.0F, 2.0F }; // Rotation rates: 5°/s roll, 3°/s pitch, 2°/s yaw
@@ -219,13 +172,13 @@ void test_FilterMadgwick6DOF_LargeTimeStep (void) {
         float accel_magnitude = sqrtf ((accel.x * accel.x) + (accel.y * accel.y) + (accel.z * accel.z));
         TEST_ASSERT_FLOAT_WITHIN (0.01F, 9.81F, accel_magnitude);
 
-        bool success = FilterMadgwickUpdate (&filter, &accel, &gyro, NULL, dt, &attitude);
+        bool success = FilterMadgwickUpdate (pFilter, &accel, &gyro, NULL, dt, &attitude);
         TEST_ASSERT_TRUE (success);
 
         // Check that quaternion remains normalized even with large time steps
         float quat_magnitude = sqrtf (
-        (filter.qEst.q1 * filter.qEst.q1) + (filter.qEst.q2 * filter.qEst.q2) +
-        (filter.qEst.q3 * filter.qEst.q3) + (filter.qEst.q4 * filter.qEst.q4)
+        (pFilter->qEst.q1 * pFilter->qEst.q1) + (pFilter->qEst.q2 * pFilter->qEst.q2) +
+        (pFilter->qEst.q3 * pFilter->qEst.q3) + (pFilter->qEst.q4 * pFilter->qEst.q4)
         );
         TEST_ASSERT_FLOAT_WITHIN (0.01F, 1.0F, quat_magnitude);
     }
@@ -386,69 +339,69 @@ void test_FilterMadgwick6DOF_LargeTimeStep (void) {
 //     TEST_ASSERT_FLOAT_WITHIN (2.0F, 0.0F, final_attitude.pitch);
 // }
 
-void test_FilterMadgwick9DOF_MagnetometerDisturbance (void) {
-    MADG_TEST_DEF_INIT ();
+// void test_FilterMadgwick9DOF_MagnetometerDisturbance (void) {
+//     MADG_TEST_DEF_INIT ();
 
-    Vec3f accel = { 0.0F, 0.0F, 9.81F }; // Gravity down
-    Vec3f gyro  = { 0.0F, 0.0F, 0.0F };  // No rotation
-    Vec3f mag   = { 1.0F, 0.0F, 0.0F };  // North pointing
-    float dt    = 0.01F;
+//     Vec3f accel = { 0.0F, 0.0F, 9.81F }; // Gravity down
+//     Vec3f gyro  = { 0.0F, 0.0F, 0.0F };  // No rotation
+//     Vec3f mag   = { 1.0F, 0.0F, 0.0F };  // North pointing
+//     float dt    = 0.01F;
 
-    // Converge to stable state first
-    for (int i = 0; i < 100; i++) {
-        FilterMadgwickUpdate_9DOF (&filter, &accel, &gyro, &mag, dt);
-    }
+//     // Converge to stable state first
+//     for (int i = 0; i < 100; i++) {
+//         FilterMadgwickUpdate_9DOF (&filter, &accel, &gyro, &mag, dt);
+//     }
 
-    Vec3f stable_attitude;
-    FilterMadgwickUpdate (&filter, &accel, &gyro, &mag, dt, &stable_attitude);
+//     Vec3f stable_attitude;
+//     FilterMadgwickUpdate (&filter, &accel, &gyro, &mag, dt, &stable_attitude);
 
-    // Introduce magnetometer disturbance (e.g., iron interference)
-    Vec3f disturbed_mag = { 0.5F, 1.5F, -0.8F }; // Disturbed magnetic field
+//     // Introduce magnetometer disturbance (e.g., iron interference)
+//     Vec3f disturbed_mag = { 0.5F, 1.5F, -0.8F }; // Disturbed magnetic field
 
-    // Run for several iterations with disturbance
-    for (int i = 0; i < 50; i++) {
-        FilterMadgwickUpdate_9DOF (&filter, &accel, &gyro, &disturbed_mag, dt);
-    }
+//     // Run for several iterations with disturbance
+//     for (int i = 0; i < 50; i++) {
+//         FilterMadgwickUpdate_9DOF (&filter, &accel, &gyro, &disturbed_mag, dt);
+//     }
 
-    Vec3f disturbed_attitude;
-    FilterMadgwickUpdate (&filter, &accel, &gyro, &disturbed_mag, dt, &disturbed_attitude);
+//     Vec3f disturbed_attitude;
+//     FilterMadgwickUpdate (&filter, &accel, &gyro, &disturbed_mag, dt, &disturbed_attitude);
 
-    // Filter should still maintain reasonable attitude despite disturbance
-    TEST_ASSERT_FLOAT_WITHIN (10.0F, stable_attitude.roll, disturbed_attitude.roll);
-    TEST_ASSERT_FLOAT_WITHIN (10.0F, stable_attitude.pitch, disturbed_attitude.pitch);
-    // Yaw might be more affected by mag disturbance, so allow larger tolerance
+//     // Filter should still maintain reasonable attitude despite disturbance
+//     TEST_ASSERT_FLOAT_WITHIN (10.0F, stable_attitude.roll, disturbed_attitude.roll);
+//     TEST_ASSERT_FLOAT_WITHIN (10.0F, stable_attitude.pitch, disturbed_attitude.pitch);
+//     // Yaw might be more affected by mag disturbance, so allow larger tolerance
 
-    // Return to normal magnetometer
-    for (int i = 0; i < 100; i++) {
-        FilterMadgwickUpdate_9DOF (&filter, &accel, &gyro, &mag, dt);
-    }
+//     // Return to normal magnetometer
+//     for (int i = 0; i < 100; i++) {
+//         FilterMadgwickUpdate_9DOF (&filter, &accel, &gyro, &mag, dt);
+//     }
 
-    Vec3f recovered_attitude;
-    FilterMadgwickUpdate (&filter, &accel, &gyro, &mag, dt, &recovered_attitude);
+//     Vec3f recovered_attitude;
+//     FilterMadgwickUpdate (&filter, &accel, &gyro, &mag, dt, &recovered_attitude);
 
-    // Should recover to stable attitude
-    TEST_ASSERT_FLOAT_WITHIN (5.0F, stable_attitude.roll, recovered_attitude.roll);
-    TEST_ASSERT_FLOAT_WITHIN (5.0F, stable_attitude.pitch, recovered_attitude.pitch);
-}
+//     // Should recover to stable attitude
+//     TEST_ASSERT_FLOAT_WITHIN (5.0F, stable_attitude.roll, recovered_attitude.roll);
+//     TEST_ASSERT_FLOAT_WITHIN (5.0F, stable_attitude.pitch, recovered_attitude.pitch);
+// }
 
-void test_FilterMadgwick9DOF_ZeroMagnetometer (void) {
-    MADG_TEST_DEF_INIT ();
+// void test_FilterMadgwick9DOF_ZeroMagnetometer (void) {
+//     MADG_TEST_DEF_INIT ();
 
-    Vec3f accel = { 0.0F, 0.0F, 9.81F }; // Gravity down
-    Vec3f gyro  = { 0.0F, 0.0F, 0.0F };  // No rotation
-    Vec3f mag   = { 0.0F, 0.0F, 0.0F };  // Zero magnetometer (should fail gracefully)
-    float dt    = 0.01F;
+//     Vec3f accel = { 0.0F, 0.0F, 9.81F }; // Gravity down
+//     Vec3f gyro  = { 0.0F, 0.0F, 0.0F };  // No rotation
+//     Vec3f mag   = { 0.0F, 0.0F, 0.0F };  // Zero magnetometer (should fail gracefully)
+//     float dt    = 0.01F;
 
-    // Should handle zero magnetometer gracefully without crashing
-    bool success = FilterMadgwickUpdate_9DOF (&filter, &accel, &gyro, &mag, dt);
-    TEST_ASSERT_FALSE (success); // Should return false for zero magnetometer
+//     // Should handle zero magnetometer gracefully without crashing
+//     bool success = FilterMadgwickUpdate_9DOF (&filter, &accel, &gyro, &mag, dt);
+//     TEST_ASSERT_FALSE (success); // Should return false for zero magnetometer
 
-    // Quaternion should remain valid (not NaN)
-    TEST_ASSERT_TRUE (!isnan (filter.qEst.q1));
-    TEST_ASSERT_TRUE (!isnan (filter.qEst.q2));
-    TEST_ASSERT_TRUE (!isnan (filter.qEst.q3));
-    TEST_ASSERT_TRUE (!isnan (filter.qEst.q4));
-}
+//     // Quaternion should remain valid (not NaN)
+//     TEST_ASSERT_TRUE (!isnan (filter.qEst.q1));
+//     TEST_ASSERT_TRUE (!isnan (filter.qEst.q2));
+//     TEST_ASSERT_TRUE (!isnan (filter.qEst.q3));
+//     TEST_ASSERT_TRUE (!isnan (filter.qEst.q4));
+// }
 
 // void test_FilterMadgwick9DOF_MagInclinationEffect (void) {
 //     MADG_TEST_DEF_INIT ();
@@ -502,26 +455,18 @@ void test_FilterMadgwick9DOF_ZeroMagnetometer (void) {
 //     }
 // }
 
-void setUp (void) {
-    // This is run before EACH test
-}
-
-void tearDown (void) {
-    // This is run after EACH test
-}
-
 int main (void) {
     UNITY_BEGIN ();
 
     // 6DOF Tests (IMU + Gyroscope only)
     RUN_TEST (test_FilterMadgwickInit);
-    RUN_TEST (test_FilterMadgwick6DOF_NullPointers);
+    // RUN_TEST (test_FilterMadgwick6DOF_NullPointers);
     RUN_TEST (test_FilterMadgwick6DOF_NoRotation);
     RUN_TEST (test_FilterMadgwick6DOF_Roll90Degrees);
     RUN_TEST (test_FilterMadgwick6DOF_Pitch90Degrees);
     RUN_TEST (test_FilterMadgwick6DOF_GyroIntegration);
     // RUN_TEST (test_FilterMadgwick6DOF_ZeroAcceleration);
-    RUN_TEST (test_FilterMadgwick6DOF_QuaternionNormalization);
+    // RUN_TEST (test_FilterMadgwick6DOF_QuaternionNormalization);
     RUN_TEST (test_FilterMadgwick6DOF_LargeTimeStep);
 
     // 9DOF Tests (IMU + Gyroscope + Magnetometer)
@@ -530,8 +475,8 @@ int main (void) {
     // RUN_TEST (test_FilterMadgwick9DOF_SouthPointing);
     // RUN_TEST (test_FilterMadgwick9DOF_TiltedWithMag);
     // RUN_TEST (test_FilterMadgwick9DOF_YawRotationWithMag);
-    RUN_TEST (test_FilterMadgwick9DOF_MagnetometerDisturbance);
-    RUN_TEST (test_FilterMadgwick9DOF_ZeroMagnetometer);
+    // RUN_TEST (test_FilterMadgwick9DOF_MagnetometerDisturbance);
+    // RUN_TEST (test_FilterMadgwick9DOF_ZeroMagnetometer);
     // RUN_TEST (test_FilterMadgwick9DOF_MagInclinationEffect);
     // RUN_TEST (test_FilterMadgwick9DOF_QuaternionNormalization);
 

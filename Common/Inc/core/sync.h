@@ -2,7 +2,6 @@
 #define SYNC_SYNC_H
 
 #include "core/core_shared.h"
-#include "mem/mem.h"
 #include <stdint.h>
 
 #define MAILBOX_CM4_ID (0U)
@@ -38,9 +37,9 @@ typedef struct {
     uint16_t len;
 } SyncTaskUartOut;
 
-STATIC_ASSERT (sizeof (SyncTaskHeader) == 4U, "");
+FJ_STATIC_ASSERT (sizeof (SyncTaskHeader) == 4U, "");
 
-STATIC_ASSERT (sizeof (SyncTaskUartOut) < sizeof (MailBox_t), "");
+FJ_STATIC_ASSERT (sizeof (SyncTaskUartOut) < sizeof (MailBox_t), "");
 
 typedef eSTATUS_t (*task_handler_fn_t) (DefaultTask const* pTask);
 

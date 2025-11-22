@@ -12,7 +12,6 @@
 #include <string.h>
 
 
-
 #define SPI_VALID(pBUS) ((pBUS) != NULL && (pBUS)->isInitialized == true)
 
 static SHARED_MEM_SECTION SPIBus_t gSPIBusses[SPI_MAX_BUSES] = { 0 };
@@ -29,7 +28,7 @@ static SPI_TypeDef* SPIGetInstanceById (eBUS_ID_t busId) {
     }
 }
 
-static INLINE vIO_t* SPIGetGPIOByDeviceId (vSPIBus_t* pBus, eDEVICE_ID_t deviceId) {
+static FJ_INLINE vIO_t* SPIGetGPIOByDeviceId (vSPIBus_t* pBus, eDEVICE_ID_t deviceId) {
 
     for (uint32_t i = 0; i < pBus->nDevices; ++i) {
 
@@ -40,7 +39,7 @@ static INLINE vIO_t* SPIGetGPIOByDeviceId (vSPIBus_t* pBus, eDEVICE_ID_t deviceI
     return NULL;
 }
 
-static INLINE bool SPIBeginOperation (vSPIBus_t* pBus, eDEVICE_ID_t deviceId) {
+static FJ_INLINE bool SPIBeginOperation (vSPIBus_t* pBus, eDEVICE_ID_t deviceId) {
 
     if (SPI_VALID (pBus) == false) {
         LOG_ERROR ("Failed to get SPI bus by ID");
@@ -63,7 +62,7 @@ static INLINE bool SPIBeginOperation (vSPIBus_t* pBus, eDEVICE_ID_t deviceId) {
     return true;
 }
 
-static INLINE void SPIEndOperation (vSPIBus_t* pBus) {
+static FJ_INLINE void SPIEndOperation (vSPIBus_t* pBus) {
 
     if (pBus->activeOperation.pNss == NULL) {
         LOG_ERROR ("SPI bus is not in a transaction");

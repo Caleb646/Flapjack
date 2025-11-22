@@ -2,7 +2,6 @@
 #ifndef MEM_H
 #define MEM_H
 
-#include "core/core.h"
 #include "mem/ring_buff.h"
 #include "stdint.h"
 

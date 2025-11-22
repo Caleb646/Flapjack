@@ -5,7 +5,7 @@ CM7/Release/**
 *.cyclo
 
 Scripts/build
-
+**/OLD
 **./build
 **/build/**
 

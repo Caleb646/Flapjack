@@ -41,8 +41,6 @@ uint32_t SystemCoreClock = 480000000U; // Mock system clock
 
 // HAL function implementations with mock pointer checking
 void HAL_Delay (uint32_t ms) {
-
-    return;
 }
 
 uint32_t HAL_GetTick (void) {
@@ -55,4 +53,19 @@ uint32_t HAL_GetCurrentCPUID (void) {
 }
 
 void __disable_irq (void) {
+}
+
+void HAL_NVIC_SetPriorityGrouping (uint32_t PriorityGroup) {
+}
+
+void HAL_NVIC_SetPriority (IRQn_Type IRQn, uint32_t PreemptPriority, uint32_t SubPriority) {
+}
+
+void HAL_NVIC_EnableIRQ (IRQn_Type IRQn) {
+}
+
+void HAL_NVIC_DisableIRQ (IRQn_Type IRQn) {
+}
+
+void HAL_NVIC_SystemReset (void) {
 }

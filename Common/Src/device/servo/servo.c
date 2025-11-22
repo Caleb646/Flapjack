@@ -24,7 +24,7 @@ VECTOR_DEFINE_STATIC_SHARED (Servo, Servo_t, SERVO_COUNT);
 static float ServoAngle2PWM (Servo_t* pServo, float targetAngle);
 #endif // UNIT_TEST
 
-STATIC float ServoAngle2PWM (Servo_t* pServo, float targetAngle) {
+FJ_STATIC float ServoAngle2PWM (Servo_t* pServo, float targetAngle) {
     /*
      * NOTE: The servo on its own can move between -maxAngle and +maxAngle. But when placed
      * in the drone, it may only be able to move between -usableMaxAngle and +usableMaxAngle.

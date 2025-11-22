@@ -44,7 +44,7 @@
   :orig_header_include: false
   
   :includes:
-    - hal.h
+    - hal_stub.h
   # :includes:
   #   - stm32h747xx.h
   #   - stm32h7xx_hal_conf.h

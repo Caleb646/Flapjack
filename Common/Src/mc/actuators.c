@@ -21,7 +21,7 @@
 /*
  * \param pidAttitude roll, pitch, and yaw are between -1 and 1
  */
-STATIC eSTATUS_t ActuatorsMixPair (Servo_t* pServo, Motor_t* pMotor, Vec3f pidAttitude, float targetThrottle) {
+FJ_STATIC eSTATUS_t ActuatorsMixPair (Servo_t* pServo, Motor_t* pMotor, Vec3f pidAttitude, float targetThrottle) {
     /*
      *  Motor_t Mixing
      */
@@ -60,7 +60,7 @@ STATIC eSTATUS_t ActuatorsMixPair (Servo_t* pServo, Motor_t* pMotor, Vec3f pidAt
  * \brief After motors are armed, a motor write has to be issued at
  * least every 5ms or the motor ESC will stop the motor.
  */
-STATIC eSTATUS_t ActuatorsArmMotor (Motor_t* pMotor) {
+FJ_STATIC eSTATUS_t ActuatorsArmMotor (Motor_t* pMotor) {
 
     // #ifndef USE_SERVOS_ONLY
 

@@ -9,36 +9,34 @@
 #include <stdio.h>
 
 #ifdef UNIT_TEST
-#define INLINE
-#define STATIC
-#define UNUSED_FN_DECL
+#define FJ_INLINE
+#define FJ_STATIC
+#define FJ_UNUSED_FN_DECL
 #else
-#define INLINE         inline
-#define STATIC         static
-#define UNUSED_FN_DECL __attribute__ ((unused))
+#define FJ_INLINE         inline
+#define FJ_STATIC         static
+#define FJ_UNUSED_FN_DECL __attribute__ ((unused))
 #endif
 
-#define MICRO_DELAY_USE_SYSTICK  0
+#define FJ_UNUSED(x)                (void)(x)
+#define FJ_STATIC_ASSERT(expr, msg) static_assert ((expr), msg)
+#define FJ_ASSERT(expr)             assert ((expr))
+#define FJ_MASSERT(expr, __VARGS__) assert ((expr))
 
-#define FJ_UNUSED(x)             (void)(x)
-#define STATIC_ASSERT(expr, msg) static_assert ((expr), msg)
-#define ASSERT(expr)             assert ((expr))
-#define MASSERT(expr, __VARGS__) assert ((expr))
+#define MIN_I32(x, y)               (((x) < (y)) ? (x) : (y))
+#define MIN_U32(x, y)               (((x) < (y)) ? (x) : (y))
+#define MIN_F32(x, y)               (((x) < (y)) ? (x) : (y))
+#define MAX_I32(x, y)               (((x) > (y)) ? (x) : (y))
+#define MAX_U32(x, y)               (((x) > (y)) ? (x) : (y))
+#define MAX_F32(x, y)               (((x) > (y)) ? (x) : (y))
+#define ABS_F32(x)                  (((float)(x) < 0.0F) ? -((float)(x)) : (float)(x))
 
-#define MIN_I32(x, y)            (((x) < (y)) ? (x) : (y))
-#define MIN_U32(x, y)            (((x) < (y)) ? (x) : (y))
-#define MIN_F32(x, y)            (((x) < (y)) ? (x) : (y))
-#define MAX_I32(x, y)            (((x) > (y)) ? (x) : (y))
-#define MAX_U32(x, y)            (((x) > (y)) ? (x) : (y))
-#define MAX_F32(x, y)            (((x) > (y)) ? (x) : (y))
-#define ABS_F32(x)               (((float)(x) < 0.0F) ? -((float)(x)) : (float)(x))
+#define DEG2RAD(x)                  (((float)(x)) * 0.017453292519943295F) // (π / 180)
+#define RAD2DEG(x)                  (((float)(x)) * 57.29577951308232F)    // (180 / π)
 
-#define DEG2RAD(x)               (((float)(x)) * 0.017453292519943295F) // (π / 180)
-#define RAD2DEG(x)               (((float)(x)) * 57.29577951308232F)    // (180 / π)
+#define BUF_TO_U16(BUF)             ((uint16_t)(((uint32_t)(BUF)[1] << 8U) | (uint16_t)(BUF)[0]))
 
-#define BUF_TO_U16(BUF)          ((uint16_t)(((uint32_t)(BUF)[1] << 8U) | (uint16_t)(BUF)[0]))
-
-#define ARRAY_SIZE(ARRAY)        (sizeof (ARRAY) / sizeof ((ARRAY)[0]))
+#define ARRAY_SIZE(ARRAY)           (sizeof (ARRAY) / sizeof ((ARRAY)[0]))
 
 #define FOR_EACH(TYPE, ARRAY) \
     for (TYPE* pElement = &((ARRAY)[0]); pElement <= &((ARRAY)[ARRAY_SIZE (ARRAY) - 1U]); ++pElement)

@@ -100,11 +100,11 @@ typedef struct {
     } D; // 0 to 65,535
 } ChangePIDCmd;
 
-STATIC_ASSERT (sizeof (DefaultCommand) <= CMD_TOTAL_SIZE_BYTES, "");
-STATIC_ASSERT (sizeof (ChangeOpStateCmd) <= sizeof (DefaultCommand), "");
-STATIC_ASSERT (sizeof (ChangeFlightModeCmd) <= sizeof (DefaultCommand), "");
-STATIC_ASSERT (sizeof (ChangeVelocityCmd) <= sizeof (DefaultCommand), "");
-STATIC_ASSERT (sizeof (ChangePIDCmd) <= sizeof (DefaultCommand), "");
+FJ_STATIC_ASSERT (sizeof (DefaultCommand) <= CMD_TOTAL_SIZE_BYTES, "");
+FJ_STATIC_ASSERT (sizeof (ChangeOpStateCmd) <= sizeof (DefaultCommand), "");
+FJ_STATIC_ASSERT (sizeof (ChangeFlightModeCmd) <= sizeof (DefaultCommand), "");
+FJ_STATIC_ASSERT (sizeof (ChangeVelocityCmd) <= sizeof (DefaultCommand), "");
+FJ_STATIC_ASSERT (sizeof (ChangePIDCmd) <= sizeof (DefaultCommand), "");
 
 // typedef bool (*OpStateTransitionHandler_t) (vFCState_t curState);
 typedef eSTATUS_t (*CmdHandlerFn_t) (DefaultCommand cmd);

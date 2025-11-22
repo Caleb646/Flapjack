@@ -33,7 +33,7 @@ static bool FilterMadgwickInit (FilterMadgwickInitConf_t conf, FilterMadgwick_t*
  * 1g, 0) then the returned attitude will move towards (0, -90, 0).
  * Which is incorrect so the IMU data needs to be in FRD frame.
  */
-STATIC
+FJ_STATIC
 bool FilterMadgwickUpdate_6DOF (FilterMadgwick_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyroDegs, float dt) {
     // Source: https://courses.cs.washington.edu/courses/cse474/17wi/labs/l4/madgwick_internal_report.pdf
 
@@ -138,7 +138,7 @@ bool FilterMadgwickUpdate_6DOF (FilterMadgwick_t* pFilter, Vec3f const* pAccel, 
     return true;
 }
 
-STATIC bool
+FJ_STATIC bool
 FilterMadgwickUpdate_9DOF (FilterMadgwick_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyro, Vec3f const* pMag, float dt) {
 
     float SEq_1 = pFilter->qEst.q1;
@@ -324,7 +324,7 @@ FilterMadgwickUpdate_9DOF (FilterMadgwick_t* pFilter, Vec3f const* pAccel, Vec3f
     return true;
 }
 
-STATIC bool
+FJ_STATIC bool
 FilterMadgwickWarmUp (FilterMadgwick_t* pFilter, vIMU_t* pIMU, vMag_t* pMag, uint32_t iterations, Vec3f* pOutAttitude) {
 
     if (pIMU == NULL) {
@@ -368,7 +368,7 @@ FilterMadgwickWarmUp (FilterMadgwick_t* pFilter, vIMU_t* pIMU, vMag_t* pMag, uin
     return true;
 }
 
-STATIC bool FilterMadgwickInit (FilterMadgwickInitConf_t conf, FilterMadgwick_t* pOut) {
+FJ_STATIC bool FilterMadgwickInit (FilterMadgwickInitConf_t conf, FilterMadgwick_t* pOut) {
 
     float gyroMeasureErrorDegs = conf.gyroMeasureErrorDegs;
     float gyroMeasureDriftDegs = conf.gyroMeasureDriftDegs;
@@ -383,7 +383,7 @@ STATIC bool FilterMadgwickInit (FilterMadgwickInitConf_t conf, FilterMadgwick_t*
     return true;
 }
 
-STATIC bool
+FJ_STATIC bool
 FilterMadgwickUpdate (FilterMadgwick_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyro, Vec3f const* pMag, float dt, Vec3f* pOutAttitude) {
 
     if (pMag == NULL) {

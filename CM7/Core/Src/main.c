@@ -415,6 +415,7 @@ int main (void) {
  * @retval None
  */
 void SystemClock_Config (void) {
+
     RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
     RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
 

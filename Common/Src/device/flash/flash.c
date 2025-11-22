@@ -22,21 +22,21 @@
 
 static SHARED_MEM_SECTION Flash_t g_Flash = { 0 };
 
-STATIC INLINE eSTATUS_t FlashRead_ (vFlash_t* pFlash, uint8_t* pRx, uint32_t size) {
+FJ_STATIC FJ_INLINE eSTATUS_t FlashRead_ (vFlash_t* pFlash, uint8_t* pRx, uint32_t size) {
     return BUS_READ_BLOCK (pFlash->bus, pRx, size);
 }
 
 // clang-format off
-STATIC INLINE eSTATUS_t FlashWrite_ (vFlash_t* pFlash, uint8_t const* pTx, uint32_t size) {
+FJ_STATIC FJ_INLINE eSTATUS_t FlashWrite_ (vFlash_t* pFlash, uint8_t const* pTx, uint32_t size) {
     return BUS_WRITE_BLOCK (pFlash->bus, pTx, size);
 }
 
-STATIC INLINE eSTATUS_t FlashWriteRead (vFlash_t* pFlash, uint8_t const* pTx, uint8_t* pRx, uint32_t size) {
+FJ_STATIC FJ_INLINE eSTATUS_t FlashWriteRead (vFlash_t* pFlash, uint8_t const* pTx, uint8_t* pRx, uint32_t size) {
     // clang-format on
     return BUS_WRITE_READ_BLOCK (pFlash->bus, pTx, pRx, size);
 }
 
-STATIC uint8_t FlashReadStatusReg (vFlash_t* pFlash, uint8_t regAddr) {
+FJ_STATIC uint8_t FlashReadStatusReg (vFlash_t* pFlash, uint8_t regAddr) {
 
     uint8_t tx[]            = { W25NO1GW_INSTR_READ_SR, regAddr, 0x00U };
     uint8_t rx[sizeof (tx)] = { 0 };
@@ -49,7 +49,7 @@ STATIC uint8_t FlashReadStatusReg (vFlash_t* pFlash, uint8_t regAddr) {
 }
 
 // clang-format off
-STATIC eSTATUS_t FlashReadJEDECID (vFlash_t* pFlash, uint8_t* pManufacturerID, uint16_t* pDeviceId) {
+FJ_STATIC eSTATUS_t FlashReadJEDECID (vFlash_t* pFlash, uint8_t* pManufacturerID, uint16_t* pDeviceId) {
     // clang-format on
     uint8_t tx[1U + 4U]     = { 0 };
     tx[0]                   = W25NO1GW_INSTR_JEDEC_ID;
@@ -64,12 +64,12 @@ STATIC eSTATUS_t FlashReadJEDECID (vFlash_t* pFlash, uint8_t* pManufacturerID, u
     return status;
 }
 
-STATIC INLINE bool FlashCheckWriteInProgress (vFlash_t* pFlash) {
+FJ_STATIC FJ_INLINE bool FlashCheckWriteInProgress (vFlash_t* pFlash) {
     return (FlashReadStatusReg (pFlash, W25NO1GW_STATUS_REG) & W25NO1GW_STATUS_WIP_BIT) > 0U;
 }
 
 // clang-format off
-STATIC INLINE bool FlashWaitWriteInProgress (vFlash_t* pFlash, uint32_t timeout) {
+FJ_STATIC FJ_INLINE bool FlashWaitWriteInProgress (vFlash_t* pFlash, uint32_t timeout) {
     // clang-format on
     while (FlashCheckWriteInProgress (pFlash) && timeout-- > 0U) {
         DelayMicroseconds (1U);
@@ -77,13 +77,13 @@ STATIC INLINE bool FlashWaitWriteInProgress (vFlash_t* pFlash, uint32_t timeout)
     return timeout > 0U ? true : false;
 }
 
-STATIC INLINE bool FlashWriteEnable (vFlash_t* pFlash) {
+FJ_STATIC FJ_INLINE bool FlashWriteEnable (vFlash_t* pFlash) {
 
     uint8_t cmd = W25NO1GW_INSTR_WRITE_EN;
     return FlashWrite_ (pFlash, &cmd, 1U) == eSTATUS_SUCCESS;
 }
 
-STATIC eSTATUS_t FlashReset (vFlash_t* pFlash) {
+FJ_STATIC eSTATUS_t FlashReset (vFlash_t* pFlash) {
 
     bool success = FlashWaitWriteInProgress (pFlash, 1000U);
     RETURN_IF (success == false, eSTATUS_TIMEOUT, "timeout waiting for flash not busy");
@@ -96,7 +96,7 @@ STATIC eSTATUS_t FlashReset (vFlash_t* pFlash) {
 }
 
 // clang-format off
-STATIC eSTATUS_t FlashStartProgram (vFlash_t* pFlash, uint16_t columnAddr, uint8_t const* pData, uint32_t size) {
+FJ_STATIC eSTATUS_t FlashStartProgram (vFlash_t* pFlash, uint16_t columnAddr, uint8_t const* pData, uint32_t size) {
     // clang-format on
 
     if (size > W25NO1GW_PAGE_WRITABLE_SIZE) {
@@ -118,7 +118,7 @@ STATIC eSTATUS_t FlashStartProgram (vFlash_t* pFlash, uint16_t columnAddr, uint8
     return status;
 }
 
-STATIC eSTATUS_t FlashExecuteProgram (vFlash_t* pFlash, uint16_t pageAddr) {
+FJ_STATIC eSTATUS_t FlashExecuteProgram (vFlash_t* pFlash, uint16_t pageAddr) {
 
     uint8_t upperPageAddr = (uint8_t)(((uint32_t)pageAddr >> 8U) & 0xFFU);
     uint8_t lowerPageAddr = (uint8_t)(pageAddr & 0xFFU);

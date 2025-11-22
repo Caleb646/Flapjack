@@ -24,7 +24,7 @@
 static SHARED_MEM_SECTION Mag_t gMag                                    = { 0 };
 static SHARED_MEM_SECTION uint8_t gControlRegisters[NCONTROL_REGISTERS] = { 0 };
 
-STATIC eMAG_STATUS_t MagRead (vMag_t* pMag, uint8_t reg, uint8_t* pData, uint16_t size) {
+FJ_STATIC eMAG_STATUS_t MagRead (vMag_t* pMag, uint8_t reg, uint8_t* pData, uint16_t size) {
 
     // eBUS_ID_t busId       = pMag->busId;
     // eDEVICE_ID_t deviceId = pMag->deviceId;
@@ -48,7 +48,7 @@ STATIC eMAG_STATUS_t MagRead (vMag_t* pMag, uint8_t reg, uint8_t* pData, uint16_
     return eSTATUS_SUCCESS;
 }
 
-STATIC eMAG_STATUS_t MagWrite (vMag_t* pMag, uint8_t reg, uint8_t const* pData, uint16_t size) {
+FJ_STATIC eMAG_STATUS_t MagWrite (vMag_t* pMag, uint8_t reg, uint8_t const* pData, uint16_t size) {
 
     // eBUS_ID_t busId       = pMag->busId;
     // eDEVICE_ID_t deviceId = pMag->deviceId;
@@ -72,7 +72,7 @@ STATIC eMAG_STATUS_t MagWrite (vMag_t* pMag, uint8_t reg, uint8_t const* pData, 
     return eSTATUS_SUCCESS;
 }
 
-STATIC bool MagControlRegWrite (vMag_t* pMag, uint8_t reg, uint8_t bitMask, bool doWrite) {
+FJ_STATIC bool MagControlRegWrite (vMag_t* pMag, uint8_t reg, uint8_t bitMask, bool doWrite) {
 
     uint8_t* pValue = &gControlRegisters[CONTROL_REG2IDX (reg)];
     *pValue |= bitMask;
@@ -86,7 +86,7 @@ STATIC bool MagControlRegWrite (vMag_t* pMag, uint8_t reg, uint8_t bitMask, bool
     return true;
 }
 
-STATIC uint8_t MagReadStatusReg (vMag_t* pMag) {
+FJ_STATIC uint8_t MagReadStatusReg (vMag_t* pMag) {
 
     uint8_t status = 0;
     if (MagRead (pMag, MMC5983_STATUS_REG, &status, 1U) != eSTATUS_SUCCESS) {
@@ -96,12 +96,12 @@ STATIC uint8_t MagReadStatusReg (vMag_t* pMag) {
     return status;
 }
 
-STATIC bool MagXYZIsReady (vMag_t* pMag) {
+FJ_STATIC bool MagXYZIsReady (vMag_t* pMag) {
 
     return (MagReadStatusReg (pMag) & MMC5983_MEAS_M_DONE) > 0 ? true : false;
 }
 
-STATIC eMAG_STATUS_t MagSoftReset (vMag_t* pMag) {
+FJ_STATIC eMAG_STATUS_t MagSoftReset (vMag_t* pMag) {
 
     // eMAG_STATUS_t status = eSTATUS_SUCCESS;
     memset (gControlRegisters, 0, sizeof (gControlRegisters));
@@ -117,7 +117,7 @@ STATIC eMAG_STATUS_t MagSoftReset (vMag_t* pMag) {
 /*
  * Could be called inside an interrupt
  */
-STATIC bool MagUpdateRawData (vMag_t* pMag) {
+FJ_STATIC bool MagUpdateRawData (vMag_t* pMag) {
 
     uint8_t pXYZ[7]  = { 0 };
     eSTATUS_t status = MagRead (pMag, MMC5983_X_OUT_0_REG, pXYZ, 7U);
@@ -138,7 +138,7 @@ STATIC bool MagUpdateRawData (vMag_t* pMag) {
     return true;
 }
 
-STATIC Vec3f MagRaw2NormedGauss (vMag_t const* pMag, Vec3u raw, bool doNormalization) {
+FJ_STATIC Vec3f MagRaw2NormedGauss (vMag_t const* pMag, Vec3u raw, bool doNormalization) {
 
     FJ_UNUSED (pMag);
     Vec3f output = { 0 };
@@ -156,7 +156,7 @@ STATIC Vec3f MagRaw2NormedGauss (vMag_t const* pMag, Vec3u raw, bool doNormaliza
 /*
  * Called by interrupt handler
  */
-STATIC UNUSED_FN_DECL bool MagUpdateFromINT (vMag_t* pMag) {
+FJ_STATIC FJ_UNUSED_FN_DECL bool MagUpdateFromINT (vMag_t* pMag) {
 
     if (MagXYZIsReady (pMag) == false) {
         return false;
@@ -167,7 +167,7 @@ STATIC UNUSED_FN_DECL bool MagUpdateFromINT (vMag_t* pMag) {
     return true;
 }
 
-STATIC bool MagUpdateFromPolling (vMag_t* pMag) {
+FJ_STATIC bool MagUpdateFromPolling (vMag_t* pMag) {
 
     // eMAG_STATUS_t status = eSTATUS_SUCCESS;
     bool success = true;

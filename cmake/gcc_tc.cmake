@@ -1,8 +1,8 @@
 # Toolchain file for GCC on Cygwin
 # set(CMAKE_SYSTEM_NAME Generic)
 # set(CMAKE_SYSTEM_PROCESSOR x86_64) # output of `uname -m`
-set(CMAKE_C_COMPILER gcc)
-set(CMAKE_CXX_COMPILER g++)
+# set(CMAKE_C_COMPILER gcc)
+# set(CMAKE_CXX_COMPILER g++)
 # set (CMAKE_GENERATOR "MinGW Makefiles" CACHE INTERNAL "" FORCE)
 
 # set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)

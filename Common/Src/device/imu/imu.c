@@ -166,7 +166,7 @@ static void IMU_LogError (vIMU_t* pIMU) {
     IMU_LogDeviceErr (pIMU, NULL);
 }
 
-STATIC eSTATUS_t IMUSendCmd (vIMU_t const* pIMU, uint16_t cmd) {
+FJ_STATIC eSTATUS_t IMUSendCmd (vIMU_t const* pIMU, uint16_t cmd) {
 
     uint8_t pRegData[2] = { 0 };
     pRegData[0]         = (uint8_t)(cmd & BMI3_SET_LOW_BYTE);
@@ -179,7 +179,7 @@ STATIC eSTATUS_t IMUSendCmd (vIMU_t const* pIMU, uint16_t cmd) {
     return eSTATUS_SUCCESS;
 }
 
-STATIC eSTATUS_t IMUGetFeatureStatus (vIMU_t const* pIMU, uint16_t featureRegAddr, IMU_FeatureReg_t* pOutStatus) {
+FJ_STATIC eSTATUS_t IMUGetFeatureStatus (vIMU_t const* pIMU, uint16_t featureRegAddr, IMU_FeatureReg_t* pOutStatus) {
 
     uint8_t pData[2] = { 0 };
     eSTATUS_t status = IMUReadReg (pIMU, featureRegAddr, pData, 2U);
@@ -197,7 +197,7 @@ STATIC eSTATUS_t IMUGetFeatureStatus (vIMU_t const* pIMU, uint16_t featureRegAdd
     return eSTATUS_FAILURE;
 }
 
-STATIC eSTATUS_t IMUGetINTStatus (vIMU_t const* pIMU, IMU_INTStatusReg_t* pOutStatus) {
+FJ_STATIC eSTATUS_t IMUGetINTStatus (vIMU_t const* pIMU, IMU_INTStatusReg_t* pOutStatus) {
 
     uint8_t pBuff[2] = { 0U };
     eSTATUS_t status = IMUReadReg (pIMU, BMI3_REG_INT_STATUS_INT1, pBuff, 2);
@@ -209,7 +209,7 @@ STATIC eSTATUS_t IMUGetINTStatus (vIMU_t const* pIMU, IMU_INTStatusReg_t* pOutSt
     return eSTATUS_SUCCESS;
 }
 
-STATIC eSTATUS_t IMUGetSysStatus (vIMU_t const* pIMU, IMU_SysStatusReg_t* pOutStatus) {
+FJ_STATIC eSTATUS_t IMUGetSysStatus (vIMU_t const* pIMU, IMU_SysStatusReg_t* pOutStatus) {
 
     uint8_t pBuff[2] = { 0U };
     eSTATUS_t status = IMUReadReg (pIMU, BMI3_REG_STATUS, pBuff, 2);
@@ -221,7 +221,7 @@ STATIC eSTATUS_t IMUGetSysStatus (vIMU_t const* pIMU, IMU_SysStatusReg_t* pOutSt
     return eSTATUS_SUCCESS;
 }
 
-STATIC eSTATUS_t IMUGetDeviceErr (vIMU_t* pIMU, IMUErr* pOutErr) {
+FJ_STATIC eSTATUS_t IMUGetDeviceErr (vIMU_t* pIMU, IMUErr* pOutErr) {
 
     uint8_t pBuff[2]      = { 0U };
     eSTATUS_t status      = IMUReadReg (pIMU, BMI3_REG_ERR_REG, pBuff, 2);
@@ -241,7 +241,7 @@ STATIC eSTATUS_t IMUGetDeviceErr (vIMU_t* pIMU, IMUErr* pOutErr) {
     return eSTATUS_SUCCESS;
 }
 
-STATIC eSTATUS_t IMUReadReg (vIMU_t const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len) {
+FJ_STATIC eSTATUS_t IMUReadReg (vIMU_t const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len) {
 
     uint8_t pTx[RW_BUFFER_SZ] = { 0 };
     // set read mask for register address
@@ -273,7 +273,7 @@ STATIC eSTATUS_t IMUReadReg (vIMU_t const* pIMU, uint8_t reg, uint8_t* pBuf, uin
     return eSTATUS_SUCCESS;
 }
 
-STATIC eSTATUS_t IMUWriteReg (vIMU_t const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len) {
+FJ_STATIC eSTATUS_t IMUWriteReg (vIMU_t const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len) {
 
     uint8_t pTx[RW_BUFFER_SZ] = { 0 };
     if (len + 1 > RW_BUFFER_SZ) {
@@ -292,7 +292,7 @@ STATIC eSTATUS_t IMUWriteReg (vIMU_t const* pIMU, uint8_t reg, uint8_t* pBuf, ui
     return eSTATUS_SUCCESS;
 }
 
-STATIC eSTATUS_t IMUUpdateRawGyro (vIMU_t* pIMU) {
+FJ_STATIC eSTATUS_t IMUUpdateRawGyro (vIMU_t* pIMU) {
 
     uint8_t pBuffer[6] = { 0 };
     eSTATUS_t status   = IMUReadReg (pIMU, BMI3_REG_GYR_DATA_X, pBuffer, 6);
@@ -311,7 +311,7 @@ STATIC eSTATUS_t IMUUpdateRawGyro (vIMU_t* pIMU) {
     return eSTATUS_SUCCESS;
 }
 
-STATIC eSTATUS_t IMUUpdateRawAccel (vIMU_t* pIMU) {
+FJ_STATIC eSTATUS_t IMUUpdateRawAccel (vIMU_t* pIMU) {
 
     uint8_t pBuffer[6] = { 0 };
     eSTATUS_t status   = IMUReadReg (pIMU, BMI3_REG_ACC_DATA_X, pBuffer, 6);
@@ -330,7 +330,7 @@ STATIC eSTATUS_t IMUUpdateRawAccel (vIMU_t* pIMU) {
     return eSTATUS_SUCCESS;
 }
 
-STATIC eSTATUS_t IMUSetAxesRemap (vIMU_t* pIMU, IMUAxesRemapConf remap) {
+FJ_STATIC eSTATUS_t IMUSetAxesRemap (vIMU_t* pIMU, IMUAxesRemapConf remap) {
 
     uint8_t addr[2] = { BMI3_BASE_ADDR_AXIS_REMAP, 0 };
     uint8_t data    = 0;
@@ -381,7 +381,7 @@ STATIC eSTATUS_t IMUSetAxesRemap (vIMU_t* pIMU, IMUAxesRemapConf remap) {
     return eSTATUS_SUCCESS;
 }
 
-STATIC eSTATUS_t IMUSoftReset (vIMU_t* pIMU) {
+FJ_STATIC eSTATUS_t IMUSoftReset (vIMU_t* pIMU) {
     /* Send soft reset command to BMI323 */
     eSTATUS_t status = IMUSendCmd (pIMU, BMI3_CMD_SOFT_RESET);
 
@@ -442,7 +442,7 @@ STATIC eSTATUS_t IMUSoftReset (vIMU_t* pIMU) {
     return status;
 }
 
-STATIC eSTATUS_t IMUGetConf_ (vIMU_t* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf, uint8_t altConfFlag) {
+FJ_STATIC eSTATUS_t IMUGetConf_ (vIMU_t* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf, uint8_t altConfFlag) {
     eSTATUS_t status = eSTATUS_SUCCESS;
     /* Accelerometer Config */
     if (pAConf != NULL) {
@@ -512,7 +512,7 @@ STATIC eSTATUS_t IMUGetConf_ (vIMU_t* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGC
     return status;
 }
 
-STATIC eSTATUS_t IMUSetConf_ (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf, uint8_t altConfFlag) {
+FJ_STATIC eSTATUS_t IMUSetConf_ (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf, uint8_t altConfFlag) {
     /* Configure Accelerometer */
     eSTATUS_t status = eSTATUS_SUCCESS;
     if (pAConf != NULL) {
@@ -588,7 +588,7 @@ STATIC eSTATUS_t IMUSetConf_ (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroCon
     return status;
 }
 
-STATIC eSTATUS_t IMUCalibrate (vIMU_t* pIMU, uint8_t calibSelection, uint8_t applyCorrection) {
+FJ_STATIC eSTATUS_t IMUCalibrate (vIMU_t* pIMU, uint8_t calibSelection, uint8_t applyCorrection) {
 
     FJ_UNUSED (calibSelection);
     FJ_UNUSED (applyCorrection);
@@ -673,7 +673,7 @@ error:
     return status;
 }
 
-STATIC eSTATUS_t IMUSetupInterrupts (vIMU_t const* pIMU) {
+FJ_STATIC eSTATUS_t IMUSetupInterrupts (vIMU_t const* pIMU) {
     uint8_t pRegData[4] = { 0 };
     uint16_t temp       = 0;
     /* Map all enabled interrupts to pin INT1 */
@@ -717,7 +717,7 @@ STATIC eSTATUS_t IMUSetupInterrupts (vIMU_t const* pIMU) {
     return status;
 }
 
-// STATIC eSTATUS_t IMUEnableInterrupts (vIMU_t const* pIMU) {
+// FJ_STATIC eSTATUS_t IMUEnableInterrupts (vIMU_t const* pIMU) {
 
 //     if (pIMU == NULL) {
 //         return (eSTATUS_t)eIMU_NULL_PTR;
@@ -730,7 +730,7 @@ STATIC eSTATUS_t IMUSetupInterrupts (vIMU_t const* pIMU) {
 //     return status;
 // }
 
-STATIC eSTATUS_t IMUDisableInterrupts (vIMU_t const* pIMU) {
+FJ_STATIC eSTATUS_t IMUDisableInterrupts (vIMU_t const* pIMU) {
 
     if (pIMU == NULL) {
         return (eSTATUS_t)eIMU_NULL_PTR;
@@ -743,7 +743,7 @@ STATIC eSTATUS_t IMUDisableInterrupts (vIMU_t const* pIMU) {
     return status;
 }
 
-STATIC eSTATUS_t IMUConvertRaw (IMU_ACC_RANGE aRange, Vec3i ra, IMU_GYRO_RANGE gRange, Vec3i rg, Vec3f* pAccelOut, Vec3f* pGyroOut) {
+FJ_STATIC eSTATUS_t IMUConvertRaw (IMU_ACC_RANGE aRange, Vec3i ra, IMU_GYRO_RANGE gRange, Vec3i rg, Vec3f* pAccelOut, Vec3f* pGyroOut) {
 
     if (pAccelOut == NULL || pGyroOut == NULL) {
         return (eSTATUS_t)eIMU_NULL_PTR;
@@ -926,7 +926,7 @@ eSTATUS_t IMUStart (vIMU_t* pIMU) {
 /*
  * Called by the interrupt handler
  */
-STATIC UNUSED_FN_DECL bool IMUUpdatefromINT (vIMU_t* pIMU) {
+FJ_STATIC FJ_UNUSED_FN_DECL bool IMUUpdatefromINT (vIMU_t* pIMU) {
 
     IMU_INTStatusReg_t INTStatus = { 0 };
     eSTATUS_t status             = IMUGetINTStatus (pIMU, &INTStatus);
@@ -948,7 +948,7 @@ STATIC UNUSED_FN_DECL bool IMUUpdatefromINT (vIMU_t* pIMU) {
     return eSTATUS_SUCCESS;
 }
 
-STATIC bool IMUUpdatefromPolling (vIMU_t* pIMU) {
+FJ_STATIC bool IMUUpdatefromPolling (vIMU_t* pIMU) {
 
     bool accelRdy    = false;
     bool gyroRdy     = false;
