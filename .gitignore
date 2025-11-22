@@ -4,10 +4,10 @@ CM4/Release/**
 CM7/Release/**
 *.cyclo
 
-Scripts/build
-**/OLD
-**./build
-**/build/**
+**OLD
+**build
+**stm32_build
+**tests_build
 
 # Kicad Ignores
 *.lnk
