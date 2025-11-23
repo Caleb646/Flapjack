@@ -1,4 +1,4 @@
-#include "mem/queue.h"
+#include "core/stl/queue.h"
 #include "unity/unity.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -27,8 +27,7 @@ static Queue_t test_queue_struct;
 
 void test_QueueInit_ValidParameters (void) {
 
-    eSTATUS_t result =
-    QueueInit (&test_queue_uint8, test_buffer_uint8, 8, sizeof (uint8_t), false);
+    eSTATUS_t result = QueueInit (&test_queue_uint8, test_buffer_uint8, 8, sizeof (uint8_t), false);
 
     TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result);
     TEST_ASSERT_EQUAL (8, QueueGetCapacity (&test_queue_uint8));
@@ -38,47 +37,39 @@ void test_QueueInit_ValidParameters (void) {
 }
 
 void test_QueueInit_NullQueue (void) {
-    eSTATUS_t result =
-    QueueInit (NULL, test_buffer_uint8, 8, sizeof (uint8_t), false);
+    eSTATUS_t result = QueueInit (NULL, test_buffer_uint8, 8, sizeof (uint8_t), false);
     TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
 }
 
 void test_QueueInit_NullBuffer (void) {
-    eSTATUS_t result =
-    QueueInit (&test_queue_uint8, NULL, 8, sizeof (uint8_t), false);
+    eSTATUS_t result = QueueInit (&test_queue_uint8, NULL, 8, sizeof (uint8_t), false);
     TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
 }
 
 void test_QueueInit_ZeroCapacity (void) {
-    eSTATUS_t result =
-    QueueInit (&test_queue_uint8, test_buffer_uint8, 0, sizeof (uint8_t), false);
+    eSTATUS_t result = QueueInit (&test_queue_uint8, test_buffer_uint8, 0, sizeof (uint8_t), false);
     TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
 }
 
 void test_QueueInit_NonPowerOf2Capacity (void) {
     // Test with capacity 3 (not a power of 2)
-    eSTATUS_t result =
-    QueueInit (&test_queue_uint8, test_buffer_uint8, 3, sizeof (uint8_t), false);
+    eSTATUS_t result = QueueInit (&test_queue_uint8, test_buffer_uint8, 3, sizeof (uint8_t), false);
     TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
 
     // Test with capacity 5 (not a power of 2)
-    result =
-    QueueInit (&test_queue_uint8, test_buffer_uint8, 5, sizeof (uint8_t), false);
+    result = QueueInit (&test_queue_uint8, test_buffer_uint8, 5, sizeof (uint8_t), false);
     TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
 
     // Test with capacity 6 (not a power of 2)
-    result =
-    QueueInit (&test_queue_uint8, test_buffer_uint8, 6, sizeof (uint8_t), false);
+    result = QueueInit (&test_queue_uint8, test_buffer_uint8, 6, sizeof (uint8_t), false);
     TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
 
     // Test with capacity 7 (not a power of 2)
-    result =
-    QueueInit (&test_queue_uint8, test_buffer_uint8, 7, sizeof (uint8_t), false);
+    result = QueueInit (&test_queue_uint8, test_buffer_uint8, 7, sizeof (uint8_t), false);
     TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
 
     // Test with capacity 9 (not a power of 2)
-    result =
-    QueueInit (&test_queue_uint8, test_buffer_uint8, 9, sizeof (uint8_t), false);
+    result = QueueInit (&test_queue_uint8, test_buffer_uint8, 9, sizeof (uint8_t), false);
     TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
 }
 

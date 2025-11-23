@@ -1,24 +1,41 @@
 #include "conf/board.h"
+#include "common.h"
 
-bool ge_isBoardConfInitialized = false;
-BoardConf_t ge_BoardConf       = { 0 };
+SHARED_MEM_SECTION BoardConf_t g_BoardConf = { 0 };
+
+eSTATUS_t BoardConfInit (void) {
+
+    eSTATUS_t status = eSTATUS_SUCCESS;
+#if defined(MY_BOARD)
+    status = BoardConfInit_MyBoard ();
+#elif defined(DEV_BOARD)
+    status = BoardConfInit_DevBoard ();
+#else
+#error "No board defined"
+#endif
+
+    if (FJ_OK (status)) {
+        g_BoardConf.isInitialized = true;
+    }
+    return status;
+}
 
 BoardConf_t* BoardConfGet (void) {
 
-    if (ge_isBoardConfInitialized == false) {
+    if (g_BoardConf.isInitialized == false) {
         return 0;
     }
-    return &ge_BoardConf;
+    return &g_BoardConf;
 }
 
 DeviceBoardConf_t* BoardConfGetDeviceById (eDEVICE_ID_t deviceId) {
 
-    if (ge_isBoardConfInitialized == false) {
+    if (g_BoardConf.isInitialized == false) {
         return 0;
     }
-    for (uint32_t i = 0; i < ge_BoardConf.numDevices; ++i) {
-        if (ge_BoardConf.ppDeviceBoardConfs[i]->deviceId == deviceId) {
-            return ge_BoardConf.ppDeviceBoardConfs[i];
+    for (uint32_t i = 0; i < g_BoardConf.numDevices; ++i) {
+        if (g_BoardConf.ppDeviceBoardConfs[i]->deviceId == deviceId) {
+            return g_BoardConf.ppDeviceBoardConfs[i];
         }
     }
     return 0;

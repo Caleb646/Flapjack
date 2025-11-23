@@ -181,9 +181,10 @@ SECTIONS
   .shared_mem (NOLOAD) :
   {
     . = ALIGN(4);
-    _shared_mem_start = .;
+    __SHARED_MEM_START__ = .;
     KEEP(*(SORT_BY_NAME(.shared_mem*)))
-    _shared_mem_end = .;
+    . = ALIGN(4);
+    __SHARED_MEM_END__ = .;
   } >RAM_D3
 
   /* Remove information from the compiler libraries */

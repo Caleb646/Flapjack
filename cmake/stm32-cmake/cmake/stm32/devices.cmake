@@ -176,7 +176,7 @@ foreach(FAMILY ${STM32_FETCH_FAMILIES})
 	FetchContent_Declare(
 		STM32Cube${FAMILY}
 		GIT_REPOSITORY https://github.com/STMicroelectronics/STM32Cube${FAMILY}/
-		GIT_TAG        ${CUBE_${FAMILY}_VERSION}
+		GIT_TAG        ${CUBE_${FAMILY}_VERSION} # v1.12.1 # 
 		GIT_PROGRESS   TRUE
 	)
 

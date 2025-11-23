@@ -1,10 +1,10 @@
 #include "peripheral/bus/spi.h"
+#include "common.h"
 #include "conf/board.h"
 #include "conf/conf.h"
 #include "core/core.h"
 #include "core/log/logger.h"
 #include "hal.h"
-#include "mem/mem.h"
 #include "peripheral/bus/bus_core.h"
 #include "peripheral/gpio.h"
 #include <stdbool.h>
@@ -111,6 +111,7 @@ static eSTATUS_t SPIClockInit (vSPIBus_t* pBus, SPIInitConf_t conf) {
     }
     if (busId == eSPI_4_BUS_ID) {
         __HAL_RCC_SPI4_CLK_ENABLE ();
+        // uint32_t test = RCC_SPI45CLKSOURCE_PCLK1;
         SPI_INIT_CLOCK (&status, eSPI_4_BUS_ID, RCC_PERIPHCLK_SPI4, RCC_SPI45CLKSOURCE_PCLK2);
         return status;
     }

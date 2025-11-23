@@ -210,18 +210,19 @@ foreach(COMP ${CMSIS_FIND_COMPONENTS_FAMILIES})
     endif()
 
     # search for system_stm32[XX]xx.c
-    # find_file(CMSIS_${FAMILY}${CORE_U}_SYSTEM
-    #     NAMES system_stm32${FAMILY_L}xx.c
-    #     PATHS "${CMSIS_${FAMILY}${CORE_U}_PATH}/Source/Templates"
-    #     NO_DEFAULT_PATH
-    # )
-    # list(APPEND CMSIS_SOURCES "${CMSIS_${FAMILY}${CORE_U}_SYSTEM}")
+    # system_stm32h7xx_dualcore_boot_cm4_cm7
+    find_file(CMSIS_${FAMILY}${CORE_U}_SYSTEM
+        NAMES system_stm32${FAMILY_L}xx_dualcore_boot_cm4_cm7.c
+        PATHS "${CMSIS_${FAMILY}${CORE_U}_PATH}/Source/Templates"
+        NO_DEFAULT_PATH
+    )
+    list(APPEND CMSIS_SOURCES "${CMSIS_${FAMILY}${CORE_U}_SYSTEM}")
     
-    # if(NOT CMSIS_${FAMILY}${CORE_U}_SYSTEM)
-    #     message(VERBOSE "FindCMSIS: system_stm32${FAMILY_L}xx.c for ${FAMILY}${CORE_U} has not been found")
-    #     continue()
-    # endif()
-    message(TRACE "Using system file in ./Src instead of searching for system_stm32${FAMILY_L}xx.c")
+    if(NOT CMSIS_${FAMILY}${CORE_U}_SYSTEM)
+        message(VERBOSE "FindCMSIS: system_stm32${FAMILY_L}xx.c for ${FAMILY}${CORE_U} has not been found")
+        continue()
+    endif()
+    # message(WARN " !!!!!!!!!! Using system file in ./Src instead of searching for system_stm32${FAMILY_L}xx.c !!!!!!!!!!")
     
     set(STM_DEVICES_FOUND TRUE)
     foreach(DEVICE ${STM_DEVICES})
@@ -243,27 +244,27 @@ foreach(COMP ${CMSIS_FIND_COMPONENTS_FAMILIES})
             continue()
         endif()
         
-        message(TRACE "Using startup file in ./Src/cm{4,7} instead of searching for startup_stm32${TYPE_L}.s")
-        # find_file(CMSIS_${FAMILY}${CORE_U}_${TYPE}_STARTUP
-        #     NAMES startup_stm32${TYPE_L}.s 
-        #           startup_stm32${TYPE_L}${CORE_Ucm}.s
-        #     PATHS "${CMSIS_${FAMILY}${CORE_U}_PATH}/Source/Templates/gcc"
-        #     NO_DEFAULT_PATH
-        # )
-        # list(APPEND CMSIS_SOURCES "${CMSIS_${FAMILY}${CORE_U}_${TYPE}_STARTUP}")
-        # if(NOT CMSIS_${FAMILY}${CORE_U}_${TYPE}_STARTUP)
-        #     set(STM_DEVICES_FOUND FALSE)
-        #     message(VERBOSE "FindCMSIS: did not find file: startup_stm32${TYPE_L}.s or startup_stm32${TYPE_L}${CORE_Ucm}.s")
-        #     break()
-        # endif()
+        # message(WARN " !!!!!!!!!! Using startup file in ./Src/cm{4,7} instead of searching for startup_stm32${TYPE_L}.s !!!!!!!!!!")
+        find_file(CMSIS_${FAMILY}${CORE_U}_${TYPE}_STARTUP
+            NAMES startup_stm32${TYPE_L}.s 
+                  startup_stm32${TYPE_L}${CORE_Ucm}.s
+            PATHS "${CMSIS_${FAMILY}${CORE_U}_PATH}/Source/Templates/gcc"
+            NO_DEFAULT_PATH
+        )
+        list(APPEND CMSIS_SOURCES "${CMSIS_${FAMILY}${CORE_U}_${TYPE}_STARTUP}")
+        if(NOT CMSIS_${FAMILY}${CORE_U}_${TYPE}_STARTUP)
+            set(STM_DEVICES_FOUND FALSE)
+            message(VERBOSE "FindCMSIS: did not find file: startup_stm32${TYPE_L}.s or startup_stm32${TYPE_L}${CORE_Ucm}.s")
+            break()
+        endif()
         
-        # if(NOT (TARGET CMSIS::STM32::${TYPE}${CORE_C}))
-        #     message(TRACE "FindCMSIS: creating library CMSIS::STM32::${TYPE}${CORE_C}")
-        #     add_library(CMSIS::STM32::${TYPE}${CORE_C} INTERFACE IMPORTED)
-        #     target_link_libraries(CMSIS::STM32::${TYPE}${CORE_C} INTERFACE CMSIS::STM32::${FAMILY}${CORE_C} STM32::${TYPE}${CORE_C})
-        #     target_sources(CMSIS::STM32::${TYPE}${CORE_C} INTERFACE "${CMSIS_${FAMILY}${CORE_U}_${TYPE}_STARTUP}")
-        #     target_sources(CMSIS::STM32::${TYPE}${CORE_C} INTERFACE "${CMSIS_${FAMILY}${CORE_U}_SYSTEM}")
-        # endif()
+        if(NOT (TARGET CMSIS::STM32::${TYPE}${CORE_C}))
+            message(TRACE "FindCMSIS: creating library CMSIS::STM32::${TYPE}${CORE_C}")
+            add_library(CMSIS::STM32::${TYPE}${CORE_C} INTERFACE IMPORTED)
+            target_link_libraries(CMSIS::STM32::${TYPE}${CORE_C} INTERFACE CMSIS::STM32::${FAMILY}${CORE_C} STM32::${TYPE}${CORE_C})
+            target_sources(CMSIS::STM32::${TYPE}${CORE_C} INTERFACE "${CMSIS_${FAMILY}${CORE_U}_${TYPE}_STARTUP}")
+            target_sources(CMSIS::STM32::${TYPE}${CORE_C} INTERFACE "${CMSIS_${FAMILY}${CORE_U}_SYSTEM}")
+        endif()
         
         add_library(CMSIS::STM32::${DEVICE}${CORE_C} INTERFACE IMPORTED)
         target_link_libraries(CMSIS::STM32::${DEVICE}${CORE_C} INTERFACE CMSIS::STM32::${TYPE}${CORE_C})

@@ -1,4 +1,4 @@
-#include "mem/vector.h"
+#include "core/stl/vector.h"
 #include "unity/unity.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -41,8 +41,7 @@ void tearDown (void) {
 
 // Test Vector_Init function
 void test_VectorInit_ValidParameters (void) {
-    eSTATUS_t result =
-    Vector_Init (&test_vector_uint8, test_buffer_uint8, 8, sizeof (uint8_t), false);
+    eSTATUS_t result = Vector_Init (&test_vector_uint8, test_buffer_uint8, 8, sizeof (uint8_t), false);
 
     TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result);
     TEST_ASSERT_EQUAL (8, Vector_Capacity (&test_vector_uint8));
@@ -53,28 +52,24 @@ void test_VectorInit_ValidParameters (void) {
 }
 
 void test_VectorInit_SharedVector (void) {
-    eSTATUS_t result =
-    Vector_Init (&test_vector_uint8, test_buffer_uint8, 8, sizeof (uint8_t), true);
+    eSTATUS_t result = Vector_Init (&test_vector_uint8, test_buffer_uint8, 8, sizeof (uint8_t), true);
 
     TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result);
     TEST_ASSERT_EQUAL (1, test_vector_uint8.processID); // Shared
 }
 
 void test_VectorInit_NullVector (void) {
-    eSTATUS_t result =
-    Vector_Init (NULL, test_buffer_uint8, 8, sizeof (uint8_t), false);
+    eSTATUS_t result = Vector_Init (NULL, test_buffer_uint8, 8, sizeof (uint8_t), false);
     TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
 }
 
 void test_VectorInit_NullBuffer (void) {
-    eSTATUS_t result =
-    Vector_Init (&test_vector_uint8, NULL, 8, sizeof (uint8_t), false);
+    eSTATUS_t result = Vector_Init (&test_vector_uint8, NULL, 8, sizeof (uint8_t), false);
     TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
 }
 
 void test_VectorInit_ZeroElementSize (void) {
-    eSTATUS_t result =
-    Vector_Init (&test_vector_uint8, test_buffer_uint8, 8, 0, false);
+    eSTATUS_t result = Vector_Init (&test_vector_uint8, test_buffer_uint8, 8, 0, false);
     TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
 }
 
@@ -248,7 +243,7 @@ void test_VectorInsert_ValidIndex (void) {
     }
 
     uint8_t insertValue = 20;
-    eSTATUS_t result = Vector_Insert (&test_vector_uint8, 1, &insertValue);
+    eSTATUS_t result    = Vector_Insert (&test_vector_uint8, 1, &insertValue);
 
     TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result);
     TEST_ASSERT_EQUAL (3, Vector_Size (&test_vector_uint8));

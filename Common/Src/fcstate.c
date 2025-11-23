@@ -1,11 +1,12 @@
 
 #include "fcstate.h"
+#include "common.h"
 #include "conf/conf.h"
 #include "core/core.h"
-#include "mem/mem.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+
 
 
 #define FCSTATE_VALID(pSTATE) ((pSTATE) != NULL && (pSTATE)->isInitialized == true)

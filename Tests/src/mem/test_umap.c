@@ -1,4 +1,4 @@
-#include "mem/umap.h"
+#include "core/stl/umap.h"
 #include "unity/unity.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -67,16 +67,8 @@ void tearDown (void) {
 // Test UMap_Init function
 void test_UMapInit_ValidParameters (void) {
 
-    bool result = UMap_Init (
-    &test_umap_uint32,
-    test_entries_uint32,
-    test_keys_uint32,
-    test_values_uint32,
-    8,
-    sizeof (uint32_t),
-    sizeof (uint32_t),
-    false
-    );
+    bool result =
+    UMap_Init (&test_umap_uint32, test_entries_uint32, test_keys_uint32, test_values_uint32, 8, sizeof (uint32_t), sizeof (uint32_t), false);
 
     TEST_ASSERT_TRUE (result);
     TEST_ASSERT_EQUAL (8, UMap_Capacity (&test_umap_uint32));
@@ -87,16 +79,8 @@ void test_UMapInit_ValidParameters (void) {
 }
 
 void test_UMapInit_NullUMap (void) {
-    bool result = UMap_Init (
-    NULL,
-    test_entries_uint32,
-    test_keys_uint32,
-    test_values_uint32,
-    8,
-    sizeof (uint32_t),
-    sizeof (uint32_t),
-    false
-    );
+    bool result =
+    UMap_Init (NULL, test_entries_uint32, test_keys_uint32, test_values_uint32, 8, sizeof (uint32_t), sizeof (uint32_t), false);
     TEST_ASSERT_FALSE (result);
 }
 
@@ -107,44 +91,20 @@ void test_UMapInit_NullEntries (void) {
 }
 
 void test_UMapInit_NullKeyBuffer (void) {
-    bool result = UMap_Init (
-    &test_umap_uint32,
-    test_entries_uint32,
-    NULL,
-    test_values_uint32,
-    8,
-    sizeof (uint32_t),
-    sizeof (uint32_t),
-    false
-    );
+    bool result =
+    UMap_Init (&test_umap_uint32, test_entries_uint32, NULL, test_values_uint32, 8, sizeof (uint32_t), sizeof (uint32_t), false);
     TEST_ASSERT_FALSE (result);
 }
 
 void test_UMapInit_NullValueBuffer (void) {
-    bool result = UMap_Init (
-    &test_umap_uint32,
-    test_entries_uint32,
-    test_keys_uint32,
-    NULL,
-    8,
-    sizeof (uint32_t),
-    sizeof (uint32_t),
-    false
-    );
+    bool result =
+    UMap_Init (&test_umap_uint32, test_entries_uint32, test_keys_uint32, NULL, 8, sizeof (uint32_t), sizeof (uint32_t), false);
     TEST_ASSERT_FALSE (result);
 }
 
 void test_UMapInit_ZeroCapacity (void) {
-    bool result = UMap_Init (
-    &test_umap_uint32,
-    test_entries_uint32,
-    test_keys_uint32,
-    test_values_uint32,
-    0,
-    sizeof (uint32_t),
-    sizeof (uint32_t),
-    false
-    );
+    bool result =
+    UMap_Init (&test_umap_uint32, test_entries_uint32, test_keys_uint32, test_values_uint32, 0, sizeof (uint32_t), sizeof (uint32_t), false);
     TEST_ASSERT_FALSE (result);
 }
 
@@ -155,16 +115,8 @@ void test_UMapInit_ZeroKeySize (void) {
 }
 
 void test_UMapInit_ZeroValueSize (void) {
-    bool result = UMap_Init (
-    &test_umap_uint32,
-    test_entries_uint32,
-    test_keys_uint32,
-    test_values_uint32,
-    8,
-    sizeof (uint32_t),
-    0,
-    false
-    );
+    bool result =
+    UMap_Init (&test_umap_uint32, test_entries_uint32, test_keys_uint32, test_values_uint32, 8, sizeof (uint32_t), 0, false);
     TEST_ASSERT_FALSE (result);
 }
 
@@ -224,16 +176,7 @@ void test_UMapInitWithFunctions_NullEqualFunction (void) {
 
 // Test basic insert and find operations
 void test_UMapInsert_SingleItem (void) {
-    UMap_Init (
-    &test_umap_uint32,
-    test_entries_uint32,
-    test_keys_uint32,
-    test_values_uint32,
-    8,
-    sizeof (uint32_t),
-    sizeof (uint32_t),
-    false
-    );
+    UMap_Init (&test_umap_uint32, test_entries_uint32, test_keys_uint32, test_values_uint32, 8, sizeof (uint32_t), sizeof (uint32_t), false);
 
     uint32_t key   = 42;
     uint32_t value = 100;
@@ -247,16 +190,7 @@ void test_UMapInsert_SingleItem (void) {
 }
 
 void test_UMapInsert_MultipleItems (void) {
-    UMap_Init (
-    &test_umap_uint32,
-    test_entries_uint32,
-    test_keys_uint32,
-    test_values_uint32,
-    8,
-    sizeof (uint32_t),
-    sizeof (uint32_t),
-    false
-    );
+    UMap_Init (&test_umap_uint32, test_entries_uint32, test_keys_uint32, test_values_uint32, 8, sizeof (uint32_t), sizeof (uint32_t), false);
 
     for (uint32_t i = 1; i <= 5; i++) {
         uint32_t key   = i;
@@ -273,16 +207,7 @@ void test_UMapInsert_MultipleItems (void) {
 }
 
 void test_UMapInsert_UpdateExistingKey (void) {
-    UMap_Init (
-    &test_umap_uint32,
-    test_entries_uint32,
-    test_keys_uint32,
-    test_values_uint32,
-    8,
-    sizeof (uint32_t),
-    sizeof (uint32_t),
-    false
-    );
+    UMap_Init (&test_umap_uint32, test_entries_uint32, test_keys_uint32, test_values_uint32, 8, sizeof (uint32_t), sizeof (uint32_t), false);
 
     uint32_t key    = 42;
     uint32_t value1 = 100;
@@ -306,16 +231,7 @@ void test_UMapInsert_UpdateExistingKey (void) {
 }
 
 void test_UMapInsert_NullParameters (void) {
-    UMap_Init (
-    &test_umap_uint32,
-    test_entries_uint32,
-    test_keys_uint32,
-    test_values_uint32,
-    8,
-    sizeof (uint32_t),
-    sizeof (uint32_t),
-    false
-    );
+    UMap_Init (&test_umap_uint32, test_entries_uint32, test_keys_uint32, test_values_uint32, 8, sizeof (uint32_t), sizeof (uint32_t), false);
 
     uint32_t key   = 42;
     uint32_t value = 100;
@@ -365,16 +281,7 @@ void test_UMapInsert_FullMap (void) {
 
 // Test find operations
 void test_UMapFind_ExistingKey (void) {
-    UMap_Init (
-    &test_umap_uint32,
-    test_entries_uint32,
-    test_keys_uint32,
-    test_values_uint32,
-    8,
-    sizeof (uint32_t),
-    sizeof (uint32_t),
-    false
-    );
+    UMap_Init (&test_umap_uint32, test_entries_uint32, test_keys_uint32, test_values_uint32, 8, sizeof (uint32_t), sizeof (uint32_t), false);
 
     uint32_t key   = 42;
     uint32_t value = 100;
@@ -387,16 +294,7 @@ void test_UMapFind_ExistingKey (void) {
 }
 
 void test_UMapFind_NonExistingKey (void) {
-    UMap_Init (
-    &test_umap_uint32,
-    test_entries_uint32,
-    test_keys_uint32,
-    test_values_uint32,
-    8,
-    sizeof (uint32_t),
-    sizeof (uint32_t),
-    false
-    );
+    UMap_Init (&test_umap_uint32, test_entries_uint32, test_keys_uint32, test_values_uint32, 8, sizeof (uint32_t), sizeof (uint32_t), false);
 
     uint32_t key   = 42;
     uint32_t value = 100;
@@ -409,16 +307,7 @@ void test_UMapFind_NonExistingKey (void) {
 }
 
 void test_UMapFind_NullParameters (void) {
-    UMap_Init (
-    &test_umap_uint32,
-    test_entries_uint32,
-    test_keys_uint32,
-    test_values_uint32,
-    8,
-    sizeof (uint32_t),
-    sizeof (uint32_t),
-    false
-    );
+    UMap_Init (&test_umap_uint32, test_entries_uint32, test_keys_uint32, test_values_uint32, 8, sizeof (uint32_t), sizeof (uint32_t), false);
 
     uint32_t key   = 42;
     uint32_t value = 100;
@@ -439,16 +328,7 @@ void test_UMapFind_NullParameters (void) {
 
 // Test UMap_FindPtr
 void test_UMapFindPtr_ExistingKey (void) {
-    UMap_Init (
-    &test_umap_uint32,
-    test_entries_uint32,
-    test_keys_uint32,
-    test_values_uint32,
-    8,
-    sizeof (uint32_t),
-    sizeof (uint32_t),
-    false
-    );
+    UMap_Init (&test_umap_uint32, test_entries_uint32, test_keys_uint32, test_values_uint32, 8, sizeof (uint32_t), sizeof (uint32_t), false);
 
     uint32_t key   = 42;
     uint32_t value = 100;
@@ -467,37 +347,19 @@ void test_UMapFindPtr_ExistingKey (void) {
 }
 
 void test_UMapFindPtr_NonExistingKey (void) {
-    UMap_Init (
-    &test_umap_uint32,
-    test_entries_uint32,
-    test_keys_uint32,
-    test_values_uint32,
-    8,
-    sizeof (uint32_t),
-    sizeof (uint32_t),
-    false
-    );
+    UMap_Init (&test_umap_uint32, test_entries_uint32, test_keys_uint32, test_values_uint32, 8, sizeof (uint32_t), sizeof (uint32_t), false);
 
     uint32_t key   = 42;
     uint32_t value = 100;
     UMap_Insert (&test_umap_uint32, &key, &value);
 
     uint32_t non_existing_key = 999;
-    void* pValue = UMap_FindPtr (&test_umap_uint32, &non_existing_key);
+    void* pValue              = UMap_FindPtr (&test_umap_uint32, &non_existing_key);
     TEST_ASSERT_NULL (pValue);
 }
 
 void test_UMapFindPtr_NullParameters (void) {
-    UMap_Init (
-    &test_umap_uint32,
-    test_entries_uint32,
-    test_keys_uint32,
-    test_values_uint32,
-    8,
-    sizeof (uint32_t),
-    sizeof (uint32_t),
-    false
-    );
+    UMap_Init (&test_umap_uint32, test_entries_uint32, test_keys_uint32, test_values_uint32, 8, sizeof (uint32_t), sizeof (uint32_t), false);
 
     uint32_t key = 42;
 
@@ -512,16 +374,7 @@ void test_UMapFindPtr_NullParameters (void) {
 
 // Test UMap_Contains
 void test_UMapContains_ExistingKey (void) {
-    UMap_Init (
-    &test_umap_uint32,
-    test_entries_uint32,
-    test_keys_uint32,
-    test_values_uint32,
-    8,
-    sizeof (uint32_t),
-    sizeof (uint32_t),
-    false
-    );
+    UMap_Init (&test_umap_uint32, test_entries_uint32, test_keys_uint32, test_values_uint32, 8, sizeof (uint32_t), sizeof (uint32_t), false);
 
     uint32_t key   = 42;
     uint32_t value = 100;
@@ -532,37 +385,19 @@ void test_UMapContains_ExistingKey (void) {
 }
 
 void test_UMapContains_NonExistingKey (void) {
-    UMap_Init (
-    &test_umap_uint32,
-    test_entries_uint32,
-    test_keys_uint32,
-    test_values_uint32,
-    8,
-    sizeof (uint32_t),
-    sizeof (uint32_t),
-    false
-    );
+    UMap_Init (&test_umap_uint32, test_entries_uint32, test_keys_uint32, test_values_uint32, 8, sizeof (uint32_t), sizeof (uint32_t), false);
 
     uint32_t key   = 42;
     uint32_t value = 100;
     UMap_Insert (&test_umap_uint32, &key, &value);
 
     uint32_t non_existing_key = 999;
-    bool contains = UMap_Contains (&test_umap_uint32, &non_existing_key);
+    bool contains             = UMap_Contains (&test_umap_uint32, &non_existing_key);
     TEST_ASSERT_FALSE (contains);
 }
 
 void test_UMapContains_NullParameters (void) {
-    UMap_Init (
-    &test_umap_uint32,
-    test_entries_uint32,
-    test_keys_uint32,
-    test_values_uint32,
-    8,
-    sizeof (uint32_t),
-    sizeof (uint32_t),
-    false
-    );
+    UMap_Init (&test_umap_uint32, test_entries_uint32, test_keys_uint32, test_values_uint32, 8, sizeof (uint32_t), sizeof (uint32_t), false);
 
     uint32_t key = 42;
 
@@ -577,16 +412,7 @@ void test_UMapContains_NullParameters (void) {
 
 // Test UMap_Clear
 void test_UMapClear_WithItems (void) {
-    UMap_Init (
-    &test_umap_uint32,
-    test_entries_uint32,
-    test_keys_uint32,
-    test_values_uint32,
-    8,
-    sizeof (uint32_t),
-    sizeof (uint32_t),
-    false
-    );
+    UMap_Init (&test_umap_uint32, test_entries_uint32, test_keys_uint32, test_values_uint32, 8, sizeof (uint32_t), sizeof (uint32_t), false);
 
     // Add some items
     for (uint32_t i = 1; i <= 3; i++) {
@@ -614,16 +440,7 @@ void test_UMapClear_WithItems (void) {
 }
 
 void test_UMapClear_EmptyMap (void) {
-    UMap_Init (
-    &test_umap_uint32,
-    test_entries_uint32,
-    test_keys_uint32,
-    test_values_uint32,
-    8,
-    sizeof (uint32_t),
-    sizeof (uint32_t),
-    false
-    );
+    UMap_Init (&test_umap_uint32, test_entries_uint32, test_keys_uint32, test_values_uint32, 8, sizeof (uint32_t), sizeof (uint32_t), false);
 
     UMap_Clear (&test_umap_uint32);
 
@@ -675,16 +492,7 @@ void test_UMapStringKeys_InsertAndFind (void) {
 
 // Test with struct values
 void test_UMapStructValues_InsertAndFind (void) {
-    UMap_Init (
-    &test_umap_struct,
-    test_entries_struct,
-    test_keys_struct,
-    test_values_struct,
-    2,
-    sizeof (uint32_t),
-    sizeof (TestStruct),
-    false
-    );
+    UMap_Init (&test_umap_struct, test_entries_struct, test_keys_struct, test_values_struct, 2, sizeof (uint32_t), sizeof (TestStruct), false);
 
     uint32_t key1     = 1;
     uint32_t key2     = 2;
@@ -725,19 +533,10 @@ void test_UMapStructValues_InsertAndFind (void) {
 // Test hash collision handling (linear probing)
 void test_UMapHashCollision_LinearProbing (void) {
     // Use a small capacity to force collisions
-    UMap_Init (
-    &test_umap_uint32,
-    test_entries_uint32,
-    test_keys_uint32,
-    test_values_uint32,
-    4,
-    sizeof (uint32_t),
-    sizeof (uint32_t),
-    false
-    );
+    UMap_Init (&test_umap_uint32, test_entries_uint32, test_keys_uint32, test_values_uint32, 4, sizeof (uint32_t), sizeof (uint32_t), false);
 
     // Insert keys that will likely cause hash collisions in a small map
-    uint32_t keys[] = { 1, 5, 9, 13 }; // These may collide depending on hash function
+    uint32_t keys[]   = { 1, 5, 9, 13 }; // These may collide depending on hash function
     uint32_t values[] = { 10, 50, 90, 130 };
 
     // Insert all items
