@@ -17,20 +17,27 @@
                 "STM32H747xx"
                 // "USE_PWR_DIRECT_SMPS_SUPPLY"
         ],
-            "compilerPath": "/usr/bin/arm-none-eabi-gcc",
-            "cStandard": "c17",
+            "compilerPath": "C:/arm_none_eabi_14.3.rel1/bin/arm-none-eabi-gcc",
+            "cStandard": "c11",
             "cppStandard": "gnu++17",
             "intelliSenseMode": "gcc-arm",
             "configurationProvider": "none"
         },
+
+
+
+
+
+
+        
         {
             "name": "Windows DEBUG",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/CM4",
-                "${workspaceFolder}/CM7",
-                "${workspaceFolder}/Drivers",
-                "${workspaceFolder}/Middlewares"
+                "${workspaceFolder}/Firmware/Inc",
+                "${workspaceFolder}/Build/stm32/_deps/stm32cubeh7-src/Drivers/STM32H7xx_HAL_Driver/Inc",
+                "${workspaceFolder}/Build/stm32/_deps/stm32cubeh7-src/Drivers/CMSIS/Device/ST/STM32H7xx/Include",
+                "${workspaceFolder}/Build/stm32/_deps/stm32cubeh7-src/Drivers/CMSIS/Include"
             ],
             "defines": [
                 // "UNIT_TEST", // Uncomment for unit tests
@@ -38,11 +45,12 @@
                 "CORE_CM4",
                 "CORE_CM7",
                 "USE_HAL_DRIVER",
-                "STM32H747xx",
-                "USE_PWR_DIRECT_SMPS_SUPPLY"
+                "STM32H747xx"
+                // "USE_PWR_DIRECT_SMPS_SUPPLY"
         ],
-            "compilerPath": "C:/Program Files (x86)/GNU Arm Embedded Toolchain/10 2021.10/bin/arm-none-eabi-gcc",
+            "compilerPath": "C:/arm_none_eabi_14.3.rel1/bin/arm-none-eabi-gcc",
             "cStandard": "c11",
+            "cppStandard": "gnu++17",
             "intelliSenseMode": "gcc-arm",
             "configurationProvider": "none"
         }

@@ -8,6 +8,7 @@ CM7/Release/**
 **build
 **stm32_build
 **tests_build
+**Build
 
 # Kicad Ignores
 *.lnk
