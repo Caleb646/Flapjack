@@ -11,7 +11,7 @@ if(NOT BUILD_TESTS)
     # stm32_fetch_cmsis(H7)
     # stm32_fetch_hal(H7)
     # Cube includes driver(cmsis and hal) and middleware (usb, freertos etc)
-    stm32_fetch_cube(H7)
+    # stm32_fetch_cube(H7)
     # stm32_find_freertos(FreeRTOS ${FREERTOS_PATH})
 
     if(NOT DEFINED ENV{BOARD_CONF})

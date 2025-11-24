@@ -4,11 +4,12 @@ CM4/Release/**
 CM7/Release/**
 *.cyclo
 
-**OLD
-**build
-**stm32_build
-**tests_build
+**OLD/**
+**build/**
+**stm32_build/**
+**tests_build/**
 **Build
+**Tools
 
 # Kicad Ignores
 *.lnk

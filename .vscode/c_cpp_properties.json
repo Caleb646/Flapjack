@@ -35,9 +35,9 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/Firmware/Inc",
-                "${workspaceFolder}/Build/stm32/_deps/stm32cubeh7-src/Drivers/STM32H7xx_HAL_Driver/Inc",
-                "${workspaceFolder}/Build/stm32/_deps/stm32cubeh7-src/Drivers/CMSIS/Device/ST/STM32H7xx/Include",
-                "${workspaceFolder}/Build/stm32/_deps/stm32cubeh7-src/Drivers/CMSIS/Include"
+                "${workspaceFolder}/Vendor/STM32CubeH7/Drivers/STM32H7xx_HAL_Driver/Inc",
+                "${workspaceFolder}/Vendor/STM32CubeH7/Drivers/CMSIS/Device/ST/STM32H7xx/Include",
+                "${workspaceFolder}/Vendor/STM32CubeH7/Drivers/CMSIS/Include"
             ],
             "defines": [
                 // "UNIT_TEST", // Uncomment for unit tests
@@ -48,7 +48,7 @@
                 "STM32H747xx"
                 // "USE_PWR_DIRECT_SMPS_SUPPLY"
         ],
-            "compilerPath": "C:/arm_none_eabi_14.3.rel1/bin/arm-none-eabi-gcc",
+            "compilerPath": "${workspaceFolder}/Tools/msys/mingw64/bin/arm-none-eabi-gcc",
             "cStandard": "c11",
             "cppStandard": "gnu++17",
             "intelliSenseMode": "gcc-arm",
