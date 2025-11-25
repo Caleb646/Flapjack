@@ -50,13 +50,15 @@ else
     fi
 
     # Run for the first time
-    ${MSYS_DIR}/usr/bin/bash -lc ' '
+    ${MSYS_DIR}/usr/bin/bash -lc ':'
     # Update MSYS2 -- Core update (in case any core packages are outdated)
     ${MSYS_DIR}/usr/bin/bash -lc 'pacman --noconfirm -Syuu'
     # Install base development tools
     ${MSYS_DIR}/usr/bin/bash -lc 'pacman -S --needed --noconfirm base-devel'
-    # Install Mingw Make for CMake to be able to generator Makefiles
-    ${MSYS_DIR}/usr/bin/bash -lc 'pacman -S --needed --noconfirm mingw-w64-x86_64-make'
+    # Install Mingw toolchain for Mingw Make for CMake to be able to generator Makefiles and
+    # gcc to build and run tests on host
+    # ${MSYS_DIR}/usr/bin/bash -lc 'pacman -S --needed --noconfirm mingw-w64-x86_64-make'
+    ${MSYS_DIR}/usr/bin/bash -lc 'pacman -S --needed --noconfirm mingw-w64-x86_64-toolchain'
     # Install ARM GCC Toolchain
     ${MSYS_DIR}/usr/bin/bash -lc 'pacman -S --needed --noconfirm mingw-w64-x86_64-arm-none-eabi-gcc'
 
@@ -77,7 +79,6 @@ export PATH="${MSYS_DIR}/mingw64/bin:${PATH}"
 export STM32_TOOLCHAIN_PATH="${MSYS_DIR}/mingw64"
 export STM32_TARGET_TRIPLET=arm-none-eabi
 export STM32_CUBE_H7_PATH="${PWD}/Vendor/STM32CubeH7"
-# export CUBE_H7_VERSION="v1.12.1"
 export FREERTOS_PATH="${STM32_CUBE_H7_PATH}/Middlewares/Third_Party"
 
 if [ ! -d "${STM32_TOOLCHAIN_PATH}" ]; then
@@ -95,7 +96,8 @@ fi
 
 export BOARD_CONF=$1
 
-cmake --fresh -S . -B Build/stm32 -G "MinGW Makefiles"
+# cmake --fresh -S . -B Build/stm32 -G "MinGW Makefiles"
+cmake -S . -B Build/stm32 -G "MinGW Makefiles"
 cmake --build Build/stm32
 
 
