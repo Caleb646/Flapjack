@@ -9,7 +9,6 @@
 #include <string.h>
 
 
-
 // #ifdef __GNUC__
 // #define PUTCHAR_PROTOTYPE int __io_putchar (int ch)
 // #else
@@ -201,7 +200,7 @@ eSTATUS_t LoggerInit (void) {
     ATOMIC_BLOCK_LOCAL (eNVIC_PRIO_LVL_MAX) {
 
         gLoggerInitialized = true;
-        SysSEMTake ();
+        SysSem_Take ();
 
         gCurrentSinkIdx = 0U;
         memset ((void*)gLoggerSinks, 0, sizeof (gLoggerSinks));
@@ -213,7 +212,7 @@ eSTATUS_t LoggerInit (void) {
             gLoggerInitialized = false;
             return eSTATUS_FAILURE;
         }
-        SysSEMRelease ();
+        SysSem_Release ();
     }
 
     return eSTATUS_SUCCESS;

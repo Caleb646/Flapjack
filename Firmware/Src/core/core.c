@@ -3,7 +3,6 @@
 #include "hal.h"
 #include <string.h>
 
-
 float ge_ScaledSystemCoreClock = 0.0F;
 extern uint32_t __SHARED_MEM_START__;
 extern uint32_t __SHARED_MEM_END__;
@@ -79,21 +78,20 @@ eSTATUS_t Core_Init (void) {
             return eSTATUS_FAILURE;
         }
 
-        if (FJ_OK (SystemClock_Config ()) == false) {
+        if (FJ_FAIL (SystemClock_Config ())) {
             return eSTATUS_FAILURE;
         }
 
-        if (FJ_OK (ZeroSharedMemory ()) == false) {
+        if (FJ_FAIL (ZeroSharedMemory ())) {
             return eSTATUS_FAILURE;
         }
 
-        if (FJ_OK (BoardConfInit ()) == false) {
+        if (FJ_FAIL (BoardConfInit ())) {
             return eSTATUS_FAILURE;
         }
 
     } else {
         __HAL_RCC_HSEM_CLK_ENABLE ();
-        /* Activate HSEM notification for Cortex-M4*/
         HAL_HSEM_ActivateNotification (__HAL_HSEM_SEMID_TO_MASK (SYS_SEM_ID));
         /*
         Domain D2 goes to STOP mode (Cortex-M4 in deep-sleep) waiting for Cortex-M7 to
@@ -101,7 +99,6 @@ eSTATUS_t Core_Init (void) {
         */
         HAL_PWREx_ClearPendingEvent ();
         HAL_PWREx_EnterSTOPMode (PWR_MAINREGULATOR_ON, PWR_STOPENTRY_WFE, PWR_D2_DOMAIN);
-        /* Clear HSEM flag */
         __HAL_HSEM_CLEAR_FLAG (__HAL_HSEM_SEMID_TO_MASK (SYS_SEM_ID));
     }
 
@@ -124,9 +121,9 @@ eSTATUS_t Core_Init (void) {
         // When system initialization is finished, Cortex-M7
         // will release Cortex-M4 by means of HSEM notification
         __HAL_RCC_HSEM_CLK_ENABLE ();
-        SysSEMTake ();
+        SysSem_Take ();
         // Release HSEM in order to notify the CPU2(CM4)
-        SysSEMRelease ();
+        SysSem_Release ();
         // Wait until CPU2 wakes up from stop mode
         while (__HAL_RCC_GET_FLAG (RCC_FLAG_D2CKRDY) == RESET) {
             __NOP ();

@@ -88,6 +88,7 @@ enum {
 #define STATUS_FAIL(STATUS) ((STATUS) != eSTATUS_SUCCESS)
 #define STATUS_RETRY(STATUS) ((STATUS) == eSTATUS_RETRY)
 #define FJ_OK(STATUS)    STATUS_OK(STATUS)
+#define FJ_FAIL(STATUS)    STATUS_FAIL(STATUS)
 
 #define IS_CM7_ME()     (HAL_GetCurrentCPUID() == CM7_CPUID)
 #define IS_CM4_ME()     (HAL_GetCurrentCPUID() == CM4_CPUID)
@@ -176,8 +177,8 @@ void DelayMicroseconds (uint32_t us);
 
 #define SYS_SEM_ID 1U
 // bool SysSEMEnable (void);
-bool SysSEMTake (void);
-void SysSEMRelease (void);
+bool SysSem_Take (void);
+void SysSem_Release (void);
 
 /* Source --> Betaflight: https://github.com/betaflight/betaflight/blob/master/src/main/build/atomic.h */
 void BasePriRestoreMem (uint8_t* val);

@@ -55,7 +55,8 @@
         "stm32h7xx.h": "c",
         "stm32h7xx_hal_gpio.h": "c",
         "stm32h747xx.h": "c",
-        "cmsis_os.h": "c"
+        "cmsis_os.h": "c",
+        "expected": "c"
     },
     "C_Cpp.codeAnalysis.clangTidy.enabled": true,
     // "C_Cpp.codeAnalysis.clangTidy.path": "${Env:CLANG_TIDY_PATH}",

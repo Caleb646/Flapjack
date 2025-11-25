@@ -47,10 +47,10 @@ float clipf32 (float v, float lower, float upper) {
 }
 
 float mapf32 (float v, float fromMin, float fromMax, float toMin, float toMax) {
-    if (fromMax == fromMin) {
-        return toMin;
-    }
-    return toMin + ((v - fromMin) / (fromMax - fromMin)) * (toMax - toMin);
+    // if (fromMax == fromMin) {
+    //     return toMin;
+    // }
+    return toMin + ((v - fromMin) / ((fromMax - fromMin) + 0.0001F)) * (toMax - toMin);
 }
 
 uint32_t GetMilliseconds (void) {
@@ -66,16 +66,16 @@ uint32_t GetMicroseconds (void) {
     /* Systick->LOAD Initial Value -->  SYSTICK_CLOCK_HZ (64MHz) / 1000U ) - 1UL = 64,000 */
 #ifndef UNIT_TEST
     uint32_t msTime = GetMilliseconds ();
-#if MICRO_DELAY_USE_SYSTICK == 1
-    if (SysTick->LOAD == SysTick->VAL) {
-        return msTime * 1000U;
-    }
-    uint32_t usTime = (SysTick->LOAD - SysTick->VAL) / (SysTick->LOAD / 1000U);
-    return msTime * 1000U + usTime;
-#else
+    // #if MICRO_DELAY_USE_SYSTICK == 1
+    //     if (SysTick->LOAD == SysTick->VAL) {
+    //         return msTime * 1000U;
+    //     }
+    //     uint32_t usTime = (SysTick->LOAD - SysTick->VAL) / (SysTick->LOAD / 1000U);
+    //     return msTime * 1000U + usTime;
+    // #else
     uint32_t usTime = DWT->CYCCNT / (SystemCoreClock / 1000000U);
     return msTime * 1000U + usTime;
-#endif
+// #endif
 #endif // UNIT_TEST
     return 0;
 }
@@ -103,14 +103,14 @@ void DelayMicroseconds (uint32_t us) {
 //     return true;
 // }
 
-bool SysSEMTake (void) {
+bool SysSem_Take (void) {
 
     while (HAL_HSEM_FastTake (SYS_SEM_ID) != HAL_OK) {
     }
     return true;
 }
 
-void SysSEMRelease (void) {
+void SysSem_Release (void) {
 
     HAL_HSEM_Release (SYS_SEM_ID, 0);
 }

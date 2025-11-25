@@ -6,7 +6,6 @@
 #include <string.h>
 
 
-
 #define TASK_MAGIC                 0xBEEFU
 #define TASK_QUEUE_CAPACITY        64U
 
@@ -90,8 +89,8 @@ FJ_STATIC eSTATUS_t SyncMailBoxWriteNotify (uint32_t mbID, uint8_t const* pBuffe
 
 #ifndef UNIT_TEST
 
-    asm volatile ("dsb");
-    asm volatile ("sev");
+    __ASM volatile ("dsb");
+    __ASM volatile ("sev");
 
 #endif
     return eSTATUS_SUCCESS;

@@ -118,7 +118,7 @@ static void putchw (void* putp, putcf putf, int n, char z, char* bf) {
         putf (putp, ch);
 }
 
-void tfp_format (void* putp, putcf putf, char* fmt, va_list va) {
+void tfp_format (void* putp, putcf putf, char const* fmt, va_list va) {
     char bf[12];
 
     char ch;
@@ -195,7 +195,7 @@ void init_printf (void* putp, void (*putf) (void*, char)) {
     stdout_putp = putp;
 }
 
-void tfp_printf (char* fmt, ...) {
+void tfp_printf (char const* fmt, ...) {
     va_list va;
     va_start (va, fmt);
     tfp_format (stdout_putp, stdout_putf, fmt, va);
@@ -207,7 +207,7 @@ static void putcp (void* p, char c) {
 }
 
 
-void tfp_sprintf (char* s, char* fmt, ...) {
+void tfp_sprintf (char* s, char const* fmt, ...) {
     va_list va;
     va_start (va, fmt);
     tfp_format (&s, putcp, fmt, va);

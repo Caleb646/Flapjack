@@ -90,52 +90,52 @@ FCState_t FCState_GetCopyOfActiveState (void) {
     return gFCState;
 }
 
-bool FCState_Set_OpState (vFCState_t* pState, eOP_STATE_t newOpState) {
+eSTATUS_t FCState_Set_OpState (vFCState_t* pState, eOP_STATE_t newOpState) {
 
     if (FCSTATE_VALID (pState) == false) {
-        return false;
+        return eSTATUS_FAILURE;
     }
     pState->opState = newOpState;
-    return true;
+    return eSTATUS_SUCCESS;
 }
 
-bool FCState_Set_CurrentAttitude (vFCState_t* pState, Vec3f newCurrentAttitude) {
+eSTATUS_t FCState_Set_CurrentAttitude (vFCState_t* pState, Vec3f newCurrentAttitude) {
 
     if (FCSTATE_VALID (pState) == false) {
-        return false;
+        return eSTATUS_FAILURE;
     }
     pState->currentAttitude = newCurrentAttitude;
-    return true;
+    return eSTATUS_SUCCESS;
 }
 
-bool FCState_Set_TargetAttitude (vFCState_t* pState, Vec3f newTargetAttitude) {
+eSTATUS_t FCState_Set_TargetAttitude (vFCState_t* pState, Vec3f newTargetAttitude) {
 
     if (FCSTATE_VALID (pState) == false) {
-        return false;
+        return eSTATUS_FAILURE;
     }
     pState->targetAttitude = newTargetAttitude;
-    return true;
+    return eSTATUS_SUCCESS;
 }
 
-bool FCState_Set_MaxAttitude (vFCState_t* pState, Vec3f newMaxAttitude) {
+eSTATUS_t FCState_Set_MaxAttitude (vFCState_t* pState, Vec3f newMaxAttitude) {
 
     if (FCSTATE_VALID (pState) == false) {
-        return false;
+        return eSTATUS_FAILURE;
     }
     pState->maxAttitude = newMaxAttitude;
-    return true;
+    return eSTATUS_SUCCESS;
 }
 
-bool FCState_Set_TargetThrottle (vFCState_t* pState, float newThrottle) {
+eSTATUS_t FCState_Set_TargetThrottle (vFCState_t* pState, float newThrottle) {
 
     if (FCSTATE_VALID (pState) == false) {
-        return false;
+        return eSTATUS_FAILURE;
     }
     if (newThrottle < 0.0F || newThrottle > 1.0F) {
-        return false;
+        return eSTATUS_FAILURE;
     }
     pState->targetThrottle = newThrottle;
-    return true;
+    return eSTATUS_SUCCESS;
 }
 
 char const* OpStateToChar (eOP_STATE_t opState) {

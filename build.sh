@@ -98,7 +98,7 @@ export BOARD_CONF=$1
 
 # cmake --fresh -S . -B Build/stm32 -G "MinGW Makefiles"
 cmake -S . -B Build/stm32 -G "MinGW Makefiles"
-cmake --build Build/stm32
+cmake --build Build/stm32 # --verbose
 
 
 

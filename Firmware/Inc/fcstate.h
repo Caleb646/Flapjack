@@ -41,11 +41,11 @@ eSTATUS_t FCState_Stop (vFCState_t* pState);
 vFCState_t const* FCState_GetActiveState (void);
 vFCState_t* FCState_GetMutableActiveState (void);
 FCState_t FCState_GetCopyOfActiveState (void);
-bool FCState_Set_OpState (vFCState_t* pState, eOP_STATE_t newOpState);
-bool FCState_Set_CurrentAttitude (vFCState_t* pState, Vec3f newCurrentAttitude);
-bool FCState_Set_TargetAttitude (vFCState_t* pState, Vec3f newTargetAttitude);
-bool FCState_Set_MaxAttitude (vFCState_t* pState, Vec3f newMaxAttitude);
-bool FCState_Set_TargetThrottle (vFCState_t* pState, float newThrottle);
+eSTATUS_t FCState_Set_OpState (vFCState_t* pState, eOP_STATE_t newOpState);
+eSTATUS_t FCState_Set_CurrentAttitude (vFCState_t* pState, Vec3f newCurrentAttitude);
+eSTATUS_t FCState_Set_TargetAttitude (vFCState_t* pState, Vec3f newTargetAttitude);
+eSTATUS_t FCState_Set_MaxAttitude (vFCState_t* pState, Vec3f newMaxAttitude);
+eSTATUS_t FCState_Set_TargetThrottle (vFCState_t* pState, float newThrottle);
 
 char const* OpStateToChar (eOP_STATE_t opState);
 

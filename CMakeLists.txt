@@ -75,6 +75,8 @@ if(NOT BUILD_TESTS)
         ${FJ_SRC_DIR}/common.c
         ${FJ_SRC_DIR}/control.c
         ${FJ_SRC_DIR}/fcstate.c
+        ${FJ_SRC_DIR}/scheduler.c
+        ${FJ_SRC_DIR}/syscalls.c
         ${FJ_SRC_DIR}/main.c
         # ${FJ_SRC_DIR}/system_stm32h7xx_dualcore_boot_cm4_cm7.c
     )
@@ -86,6 +88,36 @@ if(NOT BUILD_TESTS)
         USE_PWR_LDO_SUPPLY
     )
 
+    set(FJ_SHARED_CFLAGS
+        -std=c11
+        -pedantic
+        # -pedantic-errors
+        # -Werror
+        -Wall
+        -Wextra
+        -Waggregate-return
+        -Wbad-function-cast
+        -Wcast-align
+        -Wcast-qual
+        -Wfloat-equal
+        -Wformat=2
+        -Winline
+        -Wmissing-declarations
+        -Wmissing-prototypes
+        -Wnested-externs
+        -Wpointer-arith
+        -Wredundant-decls
+        -Wshadow
+        -Wstrict-prototypes
+        -Wswitch
+        -Wundef
+        -Wunreachable-code
+        -Wunused
+        -Wwrite-strings
+        -Wstrict-aliasing
+    )
+    list(JOIN FJ_SHARED_CFLAGS " " FJ_SHARED_CFLAGS_STRING)
+
     add_executable(m7core 
         ${FJ_SRC_DIR}/cm7/freertos.c
         # ${FJ_SRC_DIR}/cm7/stm32h7xx_hal_timebase_tim.c
@@ -95,11 +127,13 @@ if(NOT BUILD_TESTS)
 
         ${CMSIS_SOURCES}
     )
+
     # message(STATUS "HAL include dirs for m7core: ${HAL_INCLUDE_DIRS}")
     # message(STATUS "HAL sources for m7core: ${HAL_SOURCES}")
     # message(STATUS "CMSIS include dirs for m7core: ${CMSIS_INCLUDE_DIRS}")
     # message(STATUS "CMSIS sources for m7core: ${CMSIS_SOURCES}")
-    
+    set_source_files_properties(${FJ_SHARED_SRCS} PROPERTIES COMPILE_FLAGS ${FJ_SHARED_CFLAGS_STRING})
+    # target_compile_options(m7core PRIVATE ${FJ_SHARED_CFLAGS})
     target_compile_definitions(m7core PRIVATE ${FJ_SHARED_DEFINES} CORE_CM7)
     target_include_directories(m7core PRIVATE 
         ${FJ_INC_DIR}
@@ -115,6 +149,7 @@ if(NOT BUILD_TESTS)
         HAL::STM32::H7::M7::CORTEX
         HAL::STM32::H7::M7::DMA
         HAL::STM32::H7::M7::DMAEx
+        HAL::STM32::H7::M7::HSEM
         HAL::STM32::H7::M7::UART
         HAL::STM32::H7::M7::UARTEx
         HAL::STM32::H7::M7::SPI
@@ -149,6 +184,8 @@ if(NOT BUILD_TESTS)
 
         ${CMSIS_SOURCES}
     )
+    set_source_files_properties(${FJ_SHARED_SRCS} PROPERTIES COMPILE_FLAGS ${FJ_SHARED_CFLAGS_STRING})
+    # target_compile_options(m4core PRIVATE ${FJ_SHARED_CFLAGS})
     target_compile_definitions(m4core PRIVATE ${FJ_SHARED_DEFINES} CORE_CM4)
     target_include_directories(m4core PRIVATE 
         ${FJ_INC_DIR}
@@ -162,6 +199,7 @@ if(NOT BUILD_TESTS)
         HAL::STM32::H7::M4::RCCEx
         HAL::STM32::H7::M4::GPIO
         HAL::STM32::H7::M4::CORTEX
+        HAL::STM32::H7::M4::HSEM
         HAL::STM32::H7::M4::DMA
         HAL::STM32::H7::M4::DMAEx
         HAL::STM32::H7::M4::UART

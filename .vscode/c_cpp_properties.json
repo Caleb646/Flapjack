@@ -35,9 +35,14 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/Firmware/Inc",
+                "${workspaceFolder}/Firmware/Inc/cm4",
+                "${workspaceFolder}/Firmware/Inc/cm7",
                 "${workspaceFolder}/Vendor/STM32CubeH7/Drivers/STM32H7xx_HAL_Driver/Inc",
                 "${workspaceFolder}/Vendor/STM32CubeH7/Drivers/CMSIS/Device/ST/STM32H7xx/Include",
-                "${workspaceFolder}/Vendor/STM32CubeH7/Drivers/CMSIS/Include"
+                "${workspaceFolder}/Vendor/STM32CubeH7/Drivers/CMSIS/Include",
+                "${workspaceFolder}/Vendor/STM32CubeH7/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS",
+                "${workspaceFolder}/Vendor/STM32CubeH7/Middlewares/Third_Party/FreeRTOS/Source/include",
+                "${workspaceFolder}/Vendor/STM32CubeH7/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1"
             ],
             "defines": [
                 // "UNIT_TEST", // Uncomment for unit tests
@@ -45,7 +50,9 @@
                 "CORE_CM4",
                 "CORE_CM7",
                 "USE_HAL_DRIVER",
-                "STM32H747xx"
+                "STM32H747xx",
+                "__GNUC__",
+                "DEV_BOARD"
                 // "USE_PWR_DIRECT_SMPS_SUPPLY"
         ],
             "compilerPath": "${workspaceFolder}/Tools/msys/mingw64/bin/arm-none-eabi-gcc",
