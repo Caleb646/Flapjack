@@ -67,5 +67,17 @@
     ],
     "C_Cpp.errorSquiggles": "enabled",
     "cmake.ignoreCMakeListsMissing": true,
-    "git.ignoreLimitWarning": true
+    "git.ignoreLimitWarning": true,
+
+    "terminal.integrated.profiles.windows": {
+        "Flapjack": {
+            "path": "C:\\Program Files\\Git\\bin\\bash.exe",
+            "args": [
+                "-c",
+                "source Scripts/config.bash && exec bash"
+            ],
+            "cwd": "${workspaceFolder}"
+        }
+    },
+    "terminal.integrated.defaultProfile.windows": "Flapjack"
 }

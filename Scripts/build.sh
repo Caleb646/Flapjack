@@ -1,22 +1,17 @@
 #!/bin/bash
 
-TOOLS_DIR="${PWD}/Tools"
-MSYS_DIR="${TOOLS_DIR}/msys"
-MSYS_EXE_FNAME="msys2-x86_64-20250830.exe"
-MSYS_EXE_URL="https://repo.msys2.org/distrib/x86_64/${MSYS_EXE_FNAME}"
-
 install_msys() {
 
     echo "MSYS2 not found. Starting download and installation..."
-    if ! mkdir -p "$TOOLS_DIR"; then
-        echo "ERROR: Failed to create directory $TOOLS_DIR"
+    if ! mkdir -p "${TOOLS_DIR}"; then
+        echo "ERROR: Failed to create directory ${TOOLS_DIR}"
         return 1
     fi
 
     echo "Downloading MSYS2"
-    curl -L -o "$TOOLS_DIR/${MSYS_EXE_FNAME}" "$MSYS_EXE_URL"
+    curl -L -o "${TOOLS_DIR}/${MSYS_EXE_FNAME}" "${MSYS_EXE_URL}"
     
-    if [ ! -f "$TOOLS_DIR/${MSYS_EXE_FNAME}" ]; then
+    if [ ! -f "${TOOLS_DIR}/${MSYS_EXE_FNAME}" ]; then
         echo "ERROR: Download failed"
         return 1
     fi
@@ -26,8 +21,8 @@ install_msys() {
 
     if [ $? -eq 0 ]; then
         echo "Installation successful, removing msys installer..."
-        rm "$TOOLS_DIR/${MSYS_EXE_FNAME}"
-        echo "Installer removed: $TOOLS_DIR/${MSYS_EXE_FNAME}"
+        rm "${TOOLS_DIR}/${MSYS_EXE_FNAME}"
+        echo "Installer removed: ${TOOLS_DIR}/${MSYS_EXE_FNAME}"
         return 0
     else
         echo "Installation failed, keeping msys installer for retry"
@@ -35,15 +30,20 @@ install_msys() {
     fi
 }
 
-if [ -d "$MSYS_DIR" ]; then
-    echo "MSYS2 already installed at: $MSYS_DIR"
+if [ ! -d "${TOOLS_DIR}" ]; then
+    echo "TOOLS_DIR ${$TOOLS_DIR} does not exist"
+    exit 1
+fi
+
+if [ -d "${MSYS_DIR}" ]; then
+    echo "MSYS2 already installed at: ${MSYS_DIR}"
     echo "Skipping download and installation."
 else
 
     install_msys
     
     if [ $? -eq 0 ]; then
-        echo "MSYS2 successfully installed at: $MSYS_DIR"
+        echo "MSYS2 successfully installed at: ${MSYS_DIR}"
     else
         echo "MSYS2 installation failed"
         exit 1
@@ -64,22 +64,15 @@ else
 
 fi
 
-if [ ! -d "${MSYS_DIR}/mingw64/bin" ]; then
-    echo "ERROR: ARM GNU Toolchain path not found at ${MSYS_DIR}/mingw64/bin"
+if [ ! -d "${MINGW64_GNU_BIN_PATH}" ]; then
+    echo "ERROR: ARM GNU Toolchain path not found at ${MINGW64_GNU_BIN_PATH}"
     exit 1
 fi
 
-if [ ! -f "${MSYS_DIR}/mingw64/bin/mingw32-make.exe" ]; then
-    echo "ERROR: mingw32-make.exe not found in ${MSYS_DIR}/mingw64/bin"
+if [ ! -f "${MINGW64_GNU_BIN_PATH}/mingw32-make.exe" ]; then
+    echo "ERROR: mingw32-make.exe not found in ${MINGW64_GNU_BIN_PATH}"
     exit 1
 fi
-
-export PATH="${MSYS_DIR}/mingw64/bin:${PATH}"
-# stm32-cmake appends bin to the path
-export STM32_TOOLCHAIN_PATH="${MSYS_DIR}/mingw64"
-export STM32_TARGET_TRIPLET=arm-none-eabi
-export STM32_CUBE_H7_PATH="${PWD}/Vendor/STM32CubeH7"
-export FREERTOS_PATH="${STM32_CUBE_H7_PATH}/Middlewares/Third_Party"
 
 if [ ! -d "${STM32_TOOLCHAIN_PATH}" ]; then
     echo "${STM32_TOOLCHAIN_PATH} does not exist."
@@ -94,11 +87,9 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
-export BOARD_CONF=$1
-
 # cmake --fresh -S . -B Build/stm32 -G "MinGW Makefiles"
-cmake -S . -B Build/stm32 -G "MinGW Makefiles"
-cmake --build Build/stm32 # --verbose
+cmake -S ${PROJECT_ROOT} -B ${STM32_BUILD_DIR} -G ${CMAKE_GENERATOR} -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE} -DBOARD_CONFIG=${BOARD_CONF} # -DCMAKE_BUILD_TYPE=Debug
+cmake --build ${STM32_BUILD_DIR} # --verbose
 
 
 

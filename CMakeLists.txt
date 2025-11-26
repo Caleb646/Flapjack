@@ -14,16 +14,16 @@ if(NOT BUILD_TESTS)
     # stm32_fetch_cube(H7)
     # stm32_find_freertos(FreeRTOS ${FREERTOS_PATH})
 
-    if(NOT DEFINED ENV{BOARD_CONF})
+    if(NOT DEFINED ${BOARD_CONFIG})
         message(FATAL_ERROR "Set the BOARD_CONF environment variable.")
     endif()
 
-    if("$ENV{BOARD_CONF}" STREQUAL "")
+    if("${BOARD_CONFIG}" STREQUAL "")
         message(FATAL_ERROR "BOARD_CONF environment variable is empty!")
     endif()
 
-    if(NOT "$ENV{BOARD_CONF}" MATCHES "^(DEV_BOARD|MY_BOARD)$")
-        message(FATAL_ERROR "Invalid BOARD_CONF: '$ENV{BOARD_CONF}'. Must be DEV_BOARD or MY_BOARD")
+    if(NOT "${BOARD_CONFIG}" MATCHES "^(DEV_BOARD|MY_BOARD)$")
+        message(FATAL_ERROR "Invalid BOARD_CONF: '${BOARD_CONFIG}'. Must be DEV_BOARD or MY_BOARD")
     endif()
 
     find_package(CMSIS 5.6.0 COMPONENTS STM32H747BI_M4 STM32H747BI_M7 RTOS REQUIRED) # RTOS_V2 REQUIRED)
@@ -82,7 +82,7 @@ if(NOT BUILD_TESTS)
     )
 
     set(FJ_SHARED_DEFINES
-        $ENV{BOARD_CONF}
+        ${BOARD_CONFIG}
         USE_HAL_DRIVER
         STM32H747xx
         USE_PWR_LDO_SUPPLY

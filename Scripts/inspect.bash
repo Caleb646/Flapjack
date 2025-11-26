@@ -1,5 +1,6 @@
 #!/bin/bash
 
 # Inspect the symbol tables of the built ELF files for both CM7 and CM4
-arm-none-eabi-objdump -t CM7/Debug/Drone_CM7.elf > Scripts/build/cm7_inspect.txt
-arm-none-eabi-objdump -t CM4/Debug/Drone_CM4.elf > Scripts/build/cm4_inspect.txt
+mkdir -p ${SCRIPT_DIR}/build
+arm-none-eabi-objdump -t ${STM32_CM7_ELF_PATH} > ${SCRIPT_DIR}/build/cm7_inspect.txt
+arm-none-eabi-objdump -t ${STM32_CM4_ELF_PATH} > ${SCRIPT_DIR}/build/cm4_inspect.txt
