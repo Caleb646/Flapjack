@@ -76,7 +76,7 @@ FJ_STATIC eSTATUS_t SyncMailBoxWrite (uint32_t mbID, uint8_t const* pBuffer, uin
     if (len > sizeof (MailBox_t) || pBuffer == NULL) {
         return eSTATUS_FAILURE;
     }
-    memcpy ((void*)SyncMailBoxGet (mbID), (void*)pBuffer, len);
+    memcpy (SyncMailBoxGet (mbID), pBuffer, len);
     return eSTATUS_SUCCESS;
 }
 

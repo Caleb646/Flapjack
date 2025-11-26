@@ -174,7 +174,7 @@ eSTATUS_t LoggerRemoveSink (LoggerWriteToSink_t fpSink) {
 
             gLoggerSinks[i] = NULL;
             // Shift remaining sinks down
-            for (uint32_t j = i; j < gCurrentSinkIdx - 1; ++j) {
+            for (uint32_t j = i; j < gCurrentSinkIdx - 1U; ++j) {
                 gLoggerSinks[j] = gLoggerSinks[j + 1];
             }
             --gCurrentSinkIdx;

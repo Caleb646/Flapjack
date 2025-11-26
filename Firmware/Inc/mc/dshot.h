@@ -66,13 +66,12 @@ eSTATUS_t DShotStart (vDShot_t* pDShot);
 eSTATUS_t DShotStop (vDShot_t* pDShot);
 eSTATUS_t DShotWrite (vDShot_t* pDShot, uint16_t motorVal);
 
-#define DSHOT_INIT(pSTATUS, DEVICE_BOARD_CONF)               \
-    do {                                                     \
-        DShotInitConf_t conf = { 0 };                        \
-        conf.motorId         = (DEVICE_BOARD_CONF).deviceId; \
-        conf.motorBoardConf  = (DEVICE_BOARD_CONF).motor;    \
-        *(pSTATUS)           = DShotInit (conf, NULL);       \
-    } while (0)
+#define DSHOT_INIT(DEVICE_BOARD_CONF)                                  \
+    DShotInit (                                                        \
+    (DShotInitConf_t){ .motorId        = (DEVICE_BOARD_CONF).deviceId, \
+                       .motorBoardConf = (DEVICE_BOARD_CONF).motor },  \
+    NULL                                                               \
+    )
 
 #define DSHOT_START(MOTOR_ID)        DShotStart (DShotGetById (MOTOR_ID))
 #define DSHOT_STOP(MOTOR_ID)         DShotStop (DShotGetById (MOTOR_ID))

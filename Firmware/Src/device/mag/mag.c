@@ -14,7 +14,6 @@
 #include <string.h>
 
 
-
 #define MAX_BUFFER_SIZE      12U
 #define NCONTROL_REGISTERS   4U
 #define CONTROL_REG2IDX(REG) ((REG) - MMC5983_INT_CTRL_0_REG)
@@ -217,7 +216,7 @@ eMAG_STATUS_t MagInit (MagInitConf_t conf, Mag_t* pOutMag, BusVTable_t* pBusOver
         pMag->bus = *pBusOverride;
     } else {
         BUS_INIT (&status, device, *pBus, &pMag->bus);
-        GOTO_IF (STATUS_FAIL (status), error, "Failed to initialize MAG bus");
+        GOTO_IF (FJ_FAIL (status), error, "Failed to initialize MAG bus");
     }
 
     GOTO_IF (MagSoftReset (pMag) != eSTATUS_SUCCESS, error, "Failed to soft reset MAG");
@@ -253,9 +252,9 @@ eMAG_STATUS_t MagInit (MagInitConf_t conf, Mag_t* pOutMag, BusVTable_t* pBusOver
         success = MagControlRegWrite (pMag, MMC5983_INT_CTRL_0_REG, flags, true);
         // Configure EXTI
         // status = ExtiInit (*pExti);
-        // GOTO_IF (STATUS_FAIL (status), error, "Failed to initialize MAG EXTI");
+        // GOTO_IF (FJ_FAIL (status), error, "Failed to initialize MAG EXTI");
         // status = ExtiAttachDeviceInterrupt (pExti->extiLine, (void*)pMag, MagUpdateFromINT);
-        // GOTO_IF (STATUS_FAIL (status), error, "Failed to attach MAG EXTI interrupt");
+        // GOTO_IF (FJ_FAIL (status), error, "Failed to attach MAG EXTI interrupt");
     }
 
     pMag->isInitialized = true;

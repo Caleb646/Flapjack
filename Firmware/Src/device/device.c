@@ -29,7 +29,7 @@ eSTATUS_t Device_InitAll (BoardConf_t* pBoardConf) {
     DeviceBoardConf_t* pSerialDebugConf = BoardConfGetDeviceById (eSERIAL_DEBUG_DEVICE_ID);
     if (pSerialDebugConf != NULL) {
         SERIAL_DEBUG_INIT (&status, *pSerialDebugConf);
-        RETURN_IF (STATUS_FAIL (status), status, "Failed to init serial debug");
+        RETURN_IF (FJ_FAIL (status), status, "Failed to init serial debug");
     }
 
     for (uint32_t i = 0; i < pBoardConf->numDevices; ++i) {
@@ -50,12 +50,12 @@ eSTATUS_t Device_InitAll (BoardConf_t* pBoardConf) {
         default:
             if (DEVICE_ID_IS_MOTOR (deviceId) == true) {
                 MOTOR_INIT (&status, *pDevConf);
-                RETURN_IF (STATUS_FAIL (status), status, "Failed to init motor %d", deviceId);
+                RETURN_IF (FJ_FAIL (status), status, "Failed to init motor %d", deviceId);
                 break;
             }
             if (DEVICE_ID_IS_SERVO (deviceId) == true) {
                 SERVO_INIT (&status, *pDevConf);
-                RETURN_IF (STATUS_FAIL (status), status, "Failed to init servo %d", deviceId);
+                RETURN_IF (FJ_FAIL (status), status, "Failed to init servo %d", deviceId);
                 break;
             }
         }
@@ -71,19 +71,19 @@ eSTATUS_t Device_StartAll (void) {
     status = SerialDebugStart (SerialDebugGetMutableActiveDevice ());
     // Flash is allowed to fail
     status = FlashStart (FlashGetMutableActiveDevice ());
-    LOG_ERROR_IF (STATUS_FAIL (status), "Failed to start Flash");
+    LOG_ERROR_IF (FJ_FAIL (status), "Failed to start Flash");
 
     // IMU is required
     status = IMUStart (IMU_GetMutableActiveDevice ());
-    RETURN_IF (STATUS_FAIL (status), status, "Failed to start IMU");
+    RETURN_IF (FJ_FAIL (status), status, "Failed to start IMU");
 
     // Mag is allowed to fail
     status = MagStart (Mag_GetMutableActiveDevice ());
-    LOG_ERROR_IF (STATUS_FAIL (status), "Failed to start Magnetometer");
+    LOG_ERROR_IF (FJ_FAIL (status), "Failed to start Magnetometer");
 
     // GPS is allowed to fail
     status = GPSStart (GPSGetMutableActiveDevice ());
-    LOG_ERROR_IF (STATUS_FAIL (status), "Failed to start GPS");
+    LOG_ERROR_IF (FJ_FAIL (status), "Failed to start GPS");
 
     // NOTE: Leave motors and servos to be started by the motion control (mc) module
 

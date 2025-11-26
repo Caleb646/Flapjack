@@ -9,7 +9,6 @@
 #include <stdint.h>
 
 
-
 typedef uint8_t eTIMER_MODE_t;
 enum {
     eTIMER_MODE_PWM = 0,
@@ -91,21 +90,23 @@ eTIMER_CHANNEL_STATE_t Timer_GetChannelState (Timer_t* pTimer);
                                        (CHAN) == eTIMER_CHANNEL_4_ID ? TIM_FLAG_CC4 : 0)
 #define TIMER_GET_CCIF_INT_FLAG(pTIMER) (__HAL_TIM_GET_FLAG (TIMER_GET_HANDLE (pTIMER), TIMER_GET_CCIF_INT_FLAG_MASK (TIMER_GET_CHANNEL(pTIMER))))
 #define TIMER_CLR_CCIF_INT_FLAG(pTIMER) (__HAL_TIM_CLEAR_FLAG (TIMER_GET_HANDLE (pTIMER), TIMER_GET_CCIF_INT_FLAG_MASK (TIMER_GET_CHANNEL(pTIMER))))
+// clang-format on
 
-#define TIMER_INIT(pSTATUS, DEVICE_ID, MODE, HZ, USING_DMA, DO_AUTO_PRELOAD, TIM_BOARD_CONF) \
-    do {                                                                                     \
-        TimerInitConf_t conf = { 0 };                                                        \
-        conf.deviceId        = (DEVICE_ID);                                                  \
-        conf.mode            = (MODE);                                                       \
-        conf.hzPeriod        = (HZ);                                                         \
-        conf.usingDMA        = (USING_DMA);                                                  \
-        conf.timerBoardConf  = (TIM_BOARD_CONF);                                             \
-        conf.doAutoPreload   = (DO_AUTO_PRELOAD);                                            \
-        *(pSTATUS)           = Timer_Init (conf, NULL);                                      \
-    } while (0)
 
-#define TIMER_INIT_PWM(pSTATUS, DEVICE_ID, TIMER_ID, HZ, TIM_BOARD_CONF) TIMER_INIT ((pSTATUS), (DEVICE_ID), eTIMER_MODE_PWM, (HZ), false, true, (TIM_BOARD_CONF))
-#define TIMER_INIT_PWM_DMA(pSTATUS, DEVICE_ID, TIMER_ID, TIM_BOARD_CONF) TIMER_INIT ((pSTATUS), (DEVICE_ID), eTIMER_MODE_PWM, 0U, true, true, (TIM_BOARD_CONF))
+#define TIMER_INIT(DEVICE_ID, MODE, HZ, USING_DMA, DO_AUTO_PRELOAD, TIM_BOARD_CONF) \
+    Timer_Init (                                                                    \
+    (TimerInitConf_t){ .deviceId       = (DEVICE_ID),                               \
+                       .mode           = (MODE),                                    \
+                       .hzPeriod       = (HZ),                                      \
+                       .usingDMA       = (USING_DMA),                               \
+                       .doAutoPreload  = (DO_AUTO_PRELOAD),                         \
+                       .timerBoardConf = (TIM_BOARD_CONF) },                        \
+    NULL                                                                            \
+    )
+
+// clang-format off
+#define TIMER_INIT_PWM(DEVICE_ID, TIMER_ID, HZ, TIM_BOARD_CONF) TIMER_INIT ((DEVICE_ID), eTIMER_MODE_PWM, (HZ), false, true, (TIM_BOARD_CONF))
+#define TIMER_INIT_PWM_DMA(DEVICE_ID, TIMER_ID, TIM_BOARD_CONF) TIMER_INIT ((DEVICE_ID), eTIMER_MODE_PWM, 0U, true, true, (TIM_BOARD_CONF))
 // #define TIMER_START(pTIMER, pDATA, SIZE) Timer_Start (pTIMER, pDATA, SIZE)
 // #define TIMER_STOP(pTIMER) Timer_Stop (pTIMER)
 // #define TIMER_WRITE(pTIMER, US_UPTIME) Timer_Write (pTIMER, US_UPTIME)

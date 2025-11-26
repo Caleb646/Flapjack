@@ -118,6 +118,8 @@ typedef struct {
     };
 } Vec3f;
 
+#define VEC3F_ZERO() { .x = 0.0F, .y = 0.0F, .z = 0.0F }
+
 typedef struct {
     union {
         float x;
@@ -140,6 +142,8 @@ typedef struct {
         float q4;
     };
 } Vec4f;
+
+#define VEC4F_ZERO()         { .x = 0.0F, .y = 0.0F, .z = 0.0F, .w = 0.0F }
 
 #define MEM_U32_ALIGN4(addr) ((uint32_t)(addr) & ((uint32_t)~0x3U))
 #ifdef UNIT_TEST

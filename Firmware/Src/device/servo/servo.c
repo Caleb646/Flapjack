@@ -140,8 +140,8 @@ eSTATUS_t ServoInit (ServoInitConf_t conf, Servo_t* pOutServo) {
     pServo->maxAngle          = 90.0F;
     pServo->usableMaxAngle    = 25.0F;
 
-    TIMER_INIT_PWM (&status, servoId, timerId, pwmFrequency, *pTimerBoardConf);
-    GOTO_IF (STATUS_FAIL (status), error, "Failed to initialize timer for Servo_t");
+    status = TIMER_INIT_PWM (servoId, timerId, pwmFrequency, *pTimerBoardConf);
+    GOTO_IF (FJ_FAIL (status), error, "Failed to initialize timer for Servo_t");
     pServo->pTimer = Timer_Get_ById (timerId);
 
     if (pLinkedMotorBoardConf != NULL) {

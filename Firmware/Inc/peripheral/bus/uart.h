@@ -42,15 +42,12 @@ eSTATUS_t UARTWrite_Blocking (vUARTBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t c
 eSTATUS_t UARTRead_IT (vUARTBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size);
 eSTATUS_t UARTRegisterCallback (vUARTBus_t* pBus, eDEVICE_ID_t deviceId, BusCallback_t callback);
 eSTATUS_t UARTEnableInterrupts (vUARTBus_t* pBus, uint32_t priority);
+// clang-format on
 
-#define UART_INIT(pSTATUS, DEVICE_BOARD_CONF, UART_BOARD_CONF) \
-    do {                                                       \
-        UARTInitConf_t conf  = { 0 };                          \
-        conf.deviceBoardConf = (DEVICE_BOARD_CONF);            \
-        conf.busBoardConf    = (UART_BOARD_CONF);              \
-        *(pSTATUS)           = UARTInit (conf, NULL);          \
-    } while (0)
+#define UART_INIT(DEVICE_BOARD_CONF, UART_BOARD_CONF) \
+    UARTInit ((UARTInitConf_t){ .deviceBoardConf = (DEVICE_BOARD_CONF), .busBoardConf = (UART_BOARD_CONF) }, NULL)
 
+// clang-format off
 eSTATUS_t UART_READ_BLOCKING(void* pCtx, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size);
 eSTATUS_t UART_WRITE_BLOCKING(void* pCtx, eDEVICE_ID_t deviceId, uint8_t const* pData, size_t size);
 eSTATUS_t UART_READ_IT(void* pCtx, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size);

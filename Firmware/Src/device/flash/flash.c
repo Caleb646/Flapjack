@@ -13,7 +13,6 @@
 #include <string.h>
 
 
-
 #define FLASH_VALID(pFLASH)                                                                       \
     (                                                                                             \
     (pFLASH) != NULL && (pFLASH)->isInitialized == true && (pFLASH)->bus.WriteBlocking != NULL && \
@@ -173,13 +172,13 @@ eSTATUS_t FlashInit (FlashInitConf_t conf, Flash_t* pOutFlash) {
     }
 
     status = FlashReset (pOutFlash);
-    RETURN_IF (STATUS_FAIL (status), status, "Failed to reset flash devices");
+    RETURN_IF (FJ_FAIL (status), status, "Failed to reset flash devices");
 
     uint8_t manufacturerId = 0U;
     uint16_t flashDeviceId = 0U;
     status                 = FlashReadJEDECID (pOutFlash, &manufacturerId, &flashDeviceId);
     success = manufacturerId == W25NO1GW_MANUFACTURER_ID && flashDeviceId == W25NO1GW_DEVICE_ID;
-    if (STATUS_FAIL (status) || success == false) {
+    if (FJ_FAIL (status) || success == false) {
         LOG_ERROR ("Flash Manufacturer ID: 0x%02X", manufacturerId);
         LOG_ERROR ("Flash Device ID: 0x%04X", flashDeviceId);
         goto error;
@@ -226,10 +225,10 @@ eSTATUS_t FlashWrite (vFlash_t* pFlash, uint32_t addr, uint8_t const* pData, uin
         uint32_t bytesToWrite = W25NO1GW_PAGE_WRITABLE_SIZE - columnAddr;
         bytesToWrite = bytesToWrite > (size - bytesWritten) ? (size - bytesWritten) : bytesToWrite;
         eSTATUS_t status = FlashStartProgram (pFlash, columnAddr, &pData[bytesWritten], bytesToWrite);
-        RETURN_IF (STATUS_FAIL (status), status, "Failed to start flash program");
+        RETURN_IF (FJ_FAIL (status), status, "Failed to start flash program");
 
         status = FlashExecuteProgram (pFlash, pageAddr);
-        RETURN_IF (STATUS_FAIL (status), status, "Failed to execute flash program");
+        RETURN_IF (FJ_FAIL (status), status, "Failed to execute flash program");
         bytesWritten += bytesToWrite;
     }
 

@@ -11,10 +11,10 @@ eSTATUS_t MC_InitAll (void) {
     eSTATUS_t status = eSTATUS_SUCCESS;
 
     PID_INIT (&status);
-    RETURN_IF (STATUS_FAIL (status), status, "Failed to init PID");
+    RETURN_IF (FJ_FAIL (status), status, "Failed to init PID");
 
     FILTER_INIT (&status);
-    RETURN_IF (STATUS_FAIL (status), status, "Failed to init filter");
+    RETURN_IF (FJ_FAIL (status), status, "Failed to init filter");
 
     // Let motors and servos be initialized by device module
 
@@ -26,19 +26,17 @@ eSTATUS_t MC_StartAll (void) {
     eSTATUS_t status = eSTATUS_SUCCESS;
 
     status = PIDStart (PID_GetMutableActivePID ());
-    RETURN_IF (STATUS_FAIL (status), status, "Failed to start PID");
+    RETURN_IF (FJ_FAIL (status), status, "Failed to start PID");
 
-    Vec3f startingAttitude = { { 0.0F } };
+    Vec3f startingAttitude = VEC3F_ZERO ();
     status = FilterStart (Filter_GetMutableActiveFilter (), 500U, &startingAttitude);
-    RETURN_IF (STATUS_FAIL (status), status, "Failed to start filter");
+    RETURN_IF (FJ_FAIL (status), status, "Failed to start filter");
 
-    if (FCState_Set_CurrentAttitude (FCState_GetMutableActiveState (), startingAttitude) == false) {
-        LOG_ERROR ("Failed to set starting attitude in FC state");
-        return eSTATUS_FAILURE;
-    }
+    status = FC_SET_CURRENT_ATTITUDE (startingAttitude);
+    RETURN_IF (FJ_FAIL (status), status, "Failed to set starting attitude in FC state");
 
     status = ActuatorsStart ();
-    RETURN_IF (STATUS_FAIL (status), status, "Failed to start actuators");
+    RETURN_IF (FJ_FAIL (status), status, "Failed to start actuators");
 
     return status;
 }

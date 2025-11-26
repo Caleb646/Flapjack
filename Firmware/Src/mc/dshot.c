@@ -161,8 +161,8 @@ static eSTATUS_t DShot_BBInit (vDShot_t* pDShot, DShotInitConf_t conf) {
     bool usingTimer    = (mode == GPIO_MODE_AF_PP);
     if (usingTimer == true) {
 
-        TIMER_INIT_PWM (&status, motorId, timerId, 0U, *pTimerBoardConf);
-        RETURN_IF (STATUS_FAIL (status), status, "Failed to initialize timer for DShot BB");
+        status = TIMER_INIT_PWM (motorId, timerId, 0U, *pTimerBoardConf);
+        RETURN_IF (FJ_FAIL (status), status, "Failed to initialize timer for DShot BB");
 
         pDShot->opMode  = eDSHOT_OP_MODE_BB_WITH_TIMER;
         pDShot->writeFn = DShot_Write_BBWithTimer;
@@ -174,7 +174,7 @@ static eSTATUS_t DShot_BBInit (vDShot_t* pDShot, DShotInitConf_t conf) {
         RETURN_IF (alternate != 0U, eSTATUS_INVALID_ARG, "DShot Bitbang GPIO should not be in alternate function mode");
         // Initialize GPIO in OUTPUT_PP mode
         GPIO_INIT (&status, motorId, *pGPIOBoardConf);
-        RETURN_IF (STATUS_FAIL (status), eSTATUS_FAILURE, "Failed to initialize GPIO for DShot");
+        RETURN_IF (FJ_FAIL (status), eSTATUS_FAILURE, "Failed to initialize GPIO for DShot");
 
         pDShot->opMode  = eDSHOT_OP_MODE_BB_NO_TIMER;
         pDShot->writeFn = DShot_Write_BBNoTimer;
@@ -183,7 +183,7 @@ static eSTATUS_t DShot_BBInit (vDShot_t* pDShot, DShotInitConf_t conf) {
     }
 
     status = DShot_InitTimings (pDShot, conf);
-    RETURN_IF (STATUS_FAIL (status), status, "Failed to initialize DShot timings");
+    RETURN_IF (FJ_FAIL (status), status, "Failed to initialize DShot timings");
 
     return eSTATUS_SUCCESS;
 }
@@ -196,29 +196,24 @@ static eSTATUS_t DShot_DMAInit (vDShot_t* pDShot, DShotInitConf_t conf) {
     TimerBoardConf_t* pTimerBoardConf = motorConf.pTimerBoardConf;
     eTIMER_ID_t timerId               = pTimerBoardConf->timerId;
 
-    TIMER_INIT_PWM_DMA (&status, motorId, timerId, *pTimerBoardConf);
-    RETURN_IF (STATUS_FAIL (status), eSTATUS_FAILURE, "Failed to initialize timer for DShot");
+    status = TIMER_INIT_PWM_DMA (motorId, timerId, *pTimerBoardConf);
+    RETURN_IF (FJ_FAIL (status), eSTATUS_FAILURE, "Failed to initialize timer for DShot");
 
     status = DShot_InitTimings (pDShot, conf);
-    RETURN_IF (STATUS_FAIL (status), status, "Failed to initialize DShot timings");
+    RETURN_IF (FJ_FAIL (status), status, "Failed to initialize DShot timings");
 
     pDShot->opMode  = eDSHOT_OP_MODE_DMA;
     pDShot->writeFn = DShot_Write_DMA;
     pDShot->pTimer  = Timer_Get_ById (timerId);
 
     status = Timer_RegisterCallback (pDShot->pTimer, DShotDMACompleteCallback, eTIMER_CALLBACK_TRANSFER_COMPLETE);
-    RETURN_IF (STATUS_FAIL (status), eSTATUS_FAILURE, "Failed to register timer callback for DShot");
+    RETURN_IF (FJ_FAIL (status), eSTATUS_FAILURE, "Failed to register timer callback for DShot");
     LOG_INFO ("DShot using DMA");
 
     return eSTATUS_SUCCESS;
 }
 
 static eSTATUS_t DShot_Write_DMA (vDShot_t* pDShot, uint16_t motorVal) {
-
-    if (pDShot == NULL) {
-        LOG_ERROR ("Received NULL pointer for DShot handle");
-        return eSTATUS_FAILURE;
-    }
 
     if (Timer_GetChannelState (pDShot->pTimer) == eTIMER_CHANNEL_STATE_BUSY) {
         return eSTATUS_BUSY;
@@ -291,7 +286,7 @@ vDShot_t* DShotGetById (eDEVICE_ID_t deviceId) {
 eSTATUS_t DShotInit (DShotInitConf_t conf, DShot_t* pOutDShot) {
 
     eDEVICE_ID_t motorId = conf.motorId;
-    RETURN_IF (DEVICE_ID_IS_MOTOR (motorId) == false, eSTATUS_FAILURE, "deviceId is not motor");
+    RETURN_IF_NOT (DEVICE_ID_IS_MOTOR (motorId), eSTATUS_FAILURE, "deviceId is not motor");
 
     MotorDeviceConf_t motorConf = conf.motorBoardConf;
 
@@ -343,7 +338,7 @@ error:
 eSTATUS_t DShotStart (vDShot_t* pDShot) {
 
     /* NOTE: Do NOT start PWM timer yet. Let it be started by DShotWrite */
-    RETURN_IF (DSHOT_VALID (pDShot) == false, eSTATUS_INVALID_ARG, "Received invalid DShot handle");
+    RETURN_IF_NOT (DSHOT_VALID (pDShot), eSTATUS_INVALID_ARG, "Received invalid DShot handle");
     if (pDShot->opMode == eDSHOT_OP_MODE_BB_WITH_TIMER) {
         return Timer_Start (pDShot->pTimer, NULL, 0);
     }
@@ -356,7 +351,7 @@ eSTATUS_t DShotStart (vDShot_t* pDShot) {
  */
 eSTATUS_t DShotStop (vDShot_t* pDShot) {
 
-    RETURN_IF (DSHOT_VALID (pDShot) == false, eSTATUS_INVALID_ARG, "Received invalid DShot handle");
+    RETURN_IF_NOT (DSHOT_VALID (pDShot), eSTATUS_INVALID_ARG, "Received invalid DShot handle");
     if (pDShot->opMode == eDSHOT_OP_MODE_BB_WITH_TIMER) {
         return Timer_Stop (pDShot->pTimer);
     }
@@ -365,6 +360,6 @@ eSTATUS_t DShotStop (vDShot_t* pDShot) {
 
 eSTATUS_t DShotWrite (vDShot_t* pDShot, uint16_t motorVal) {
 
-    RETURN_IF (DSHOT_VALID (pDShot) == false, eSTATUS_INVALID_ARG, "Received invalid DShot handle");
+    RETURN_IF_NOT (DSHOT_VALID (pDShot), eSTATUS_INVALID_ARG, "Received invalid DShot handle");
     return pDShot->writeFn (pDShot, motorVal);
 }

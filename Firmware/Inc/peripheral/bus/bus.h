@@ -34,14 +34,15 @@ typedef struct {
 
 eSTATUS_t BusInit (BusInitConf_t conf, BusVTable_t* pOutBusVTable);
 
-#define BUS_INIT(pSTATUS, DEV_BOARD_CONF, BUS_BOARD_CONF, pOUT_BUS_VTABLE) \
-    do {                                                                      \
-        BusInitConf_t conf   = { 0 };                                         \
-        conf.deviceBoardConf = (DEV_BOARD_CONF);                              \
-        conf.busBoardConf    = (BUS_BOARD_CONF);                              \
-        *(pSTATUS)           = BusInit (conf, pOUT_BUS_VTABLE);              \
+// clang-format on
+
+#define BUS_INIT(pSTATUS, DEV_BOARD_CONF, BUS_BOARD_CONF, pOUT_BUS_VTABLE)                                                   \
+    do {                                                                                                                     \
+        *(pSTATUS) =                                                                                                         \
+        BusInit ((BusInitConf_t){ .deviceBoardConf = (DEV_BOARD_CONF), .busBoardConf = (BUS_BOARD_CONF) }, pOUT_BUS_VTABLE); \
     } while (0)
 
+// clang-format off
 #define BUS_READ_BLOCK(BUS_VTABLE, pDATA, SIZE) \
     (BUS_VTABLE).ReadBlocking ((BUS_VTABLE).pCtx, (BUS_VTABLE).deviceId, (pDATA), (SIZE))
 

@@ -8,7 +8,6 @@
 #include <stdint.h>
 
 
-
 #define GPS_SENTENCE_MAX_LENGTH MINMEA_MAX_SENTENCE_LENGTH
 #define GPS_START_BYTE          '$'
 #define GPS_END_BYTE            '\n' // last two bytes are \r\n
@@ -98,10 +97,10 @@ eSTATUS_t GPSInit (GPSInitConf_t conf, GPS_t* pOutGPS) {
     }
 
     BUS_REG_CALLBACK (&status, pGPS->bus, NULL, GPSCallback, eBUS_CALLBACK_ID_RX, 0);
-    GOTO_IF (STATUS_FAIL (status), error, "Failed to register GPS RX callback");
+    GOTO_IF (FJ_FAIL (status), error, "Failed to register GPS RX callback");
 
     BUS_REG_CALLBACK (&status, pGPS->bus, NULL, GPSCallback, eBUS_CALLBACK_ID_ERROR, 0);
-    GOTO_IF (STATUS_FAIL (status), error, "Failed to register GPS ERROR callback");
+    GOTO_IF (FJ_FAIL (status), error, "Failed to register GPS ERROR callback");
 
     pGPS->isInitialized = true;
     return status;

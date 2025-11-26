@@ -52,7 +52,7 @@ eSTATUS_t FCState_Stop (vFCState_t* pState) {
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t FCStateUpdate (vFCState_t const* pNewState, vFCState_t* pOutState) {
+eSTATUS_t FCState_Update (vFCState_t const* pNewState, vFCState_t* pOutState) {
 
     if (FCSTATE_VALID (pNewState) == false) {
         return eSTATUS_FAILURE;

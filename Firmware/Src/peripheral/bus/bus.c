@@ -31,8 +31,8 @@ eSTATUS_t BusInit (BusInitConf_t conf, BusVTable_t* pOutBusVTable) {
 
     if (BUS_ID_IS_SPI (busId)) {
 
-        SPI_INIT (&status, device, bus);
-        if (STATUS_FAIL (status)) {
+        status = SPI_INIT (device, bus);
+        if (FJ_FAIL (status)) {
             return eSTATUS_FAILURE;
         }
 
@@ -54,8 +54,8 @@ eSTATUS_t BusInit (BusInitConf_t conf, BusVTable_t* pOutBusVTable) {
 
     if (BUS_ID_IS_UART (busId)) {
 
-        UART_INIT (&status, device, bus);
-        if (STATUS_FAIL (status)) {
+        status = UART_INIT (device, bus);
+        if (FJ_FAIL (status)) {
             return eSTATUS_FAILURE;
         }
 

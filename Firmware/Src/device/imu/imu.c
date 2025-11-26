@@ -11,7 +11,6 @@
 #include <string.h>
 
 
-
 #define IMU_CHIP_ID            ((uint8_t)0x0043U)
 #define RW_BUFFER_SZ           16U
 #define SPI_DEFAULT_TIMEOUT_MS 100U
@@ -76,7 +75,7 @@ static void IMU_LogFeatStatus (vIMU_t* pIMU) {
 
     IMU_FeatureReg_t featStatus = { 0 };
     eSTATUS_t status            = IMUGetFeatureStatus (pIMU, BMI3_REG_FEATURE_IO1, &featStatus);
-    if (STATUS_FAIL (status)) {
+    if (FJ_FAIL (status)) {
         LOG_ERROR ("Failed to read vIMU_t feature status register");
         return;
     }
@@ -100,7 +99,7 @@ static void IMU_LogDeviceConf (vIMU_t* pIMU) {
     IMUGyroConf gConf = { 0 };
     eSTATUS_t status  = IMUGetConf (pIMU, &aConf, &gConf);
 
-    if (STATUS_FAIL (status)) {
+    if (FJ_FAIL (status)) {
         LOG_ERROR ("Failed to get IMU configuration");
         return;
     }
@@ -184,7 +183,7 @@ FJ_STATIC eSTATUS_t IMUGetFeatureStatus (vIMU_t const* pIMU, uint16_t featureReg
 
     uint8_t pData[2] = { 0 };
     eSTATUS_t status = IMUReadReg (pIMU, featureRegAddr, pData, 2U);
-    if (STATUS_FAIL (status)) {
+    if (FJ_FAIL (status)) {
         LOG_ERROR ("Failed to read IMU feature status register [0x%04X]", featureRegAddr);
         return status;
     }
@@ -338,7 +337,7 @@ FJ_STATIC eSTATUS_t IMUSetAxesRemap (vIMU_t* pIMU, IMUAxesRemapConf remap) {
 
     /* Set the configuration to feature engine register */
     eSTATUS_t status = IMUWriteReg (pIMU, BMI3_REG_FEATURE_DATA_ADDR, addr, 2U);
-    RETURN_IF (STATUS_FAIL (status), status, "Failed to set vIMU_t feature data address for axis remap");
+    RETURN_IF (FJ_FAIL (status), status, "Failed to set vIMU_t feature data address for axis remap");
 
     data = BMI3_SET_BIT_POS0 (data, BMI3_XYZ_AXIS, remap.remap);
     data |= BMI3_SET_BITS (data, BMI3_X_AXIS_SIGN, remap.xDir);
@@ -347,7 +346,7 @@ FJ_STATIC eSTATUS_t IMUSetAxesRemap (vIMU_t* pIMU, IMUAxesRemapConf remap) {
     uint8_t aSend[2] = { data, 0 };
 
     status = IMUWriteReg (pIMU, BMI3_REG_FEATURE_DATA_TX, aSend, 2);
-    RETURN_IF (STATUS_FAIL (status), status, "Failed to set vIMU_t feature data TX for axis remap");
+    RETURN_IF (FJ_FAIL (status), status, "Failed to set vIMU_t feature data TX for axis remap");
 
     /*
      * NOTE: The command to start the axis remap update can be sent without
@@ -355,7 +354,7 @@ FJ_STATIC eSTATUS_t IMUSetAxesRemap (vIMU_t* pIMU, IMUAxesRemapConf remap) {
      * function is only called after an vIMU_t soft reset.
      */
     status = IMUSendCmd (pIMU, BMI3_CMD_AXIS_MAP_UPDATE);
-    RETURN_IF (STATUS_FAIL (status), status, "Failed to send vIMU_t command to update axis remap");
+    RETURN_IF (FJ_FAIL (status), status, "Failed to send vIMU_t command to update axis remap");
 
     int16_t wait = 1000;
     status       = eSTATUS_FAILURE;
@@ -363,7 +362,7 @@ FJ_STATIC eSTATUS_t IMUSetAxesRemap (vIMU_t* pIMU, IMUAxesRemapConf remap) {
 
         IMU_FeatureReg_t featStatus = { 0 };
         status                      = IMUGetFeatureStatus (pIMU, BMI3_REG_FEATURE_IO1, &featStatus);
-        RETURN_IF (STATUS_FAIL (status), status, "Failed to get vIMU_t feature status");
+        RETURN_IF (FJ_FAIL (status), status, "Failed to get vIMU_t feature status");
 
         if (AXIS_REMAP_IS_SUCCESSFUL (featStatus)) {
             LOG_INFO ("vIMU_t axis remap successful");
@@ -372,7 +371,7 @@ FJ_STATIC eSTATUS_t IMUSetAxesRemap (vIMU_t* pIMU, IMUAxesRemapConf remap) {
         HAL_Delay (1);
     }
 
-    if (STATUS_FAIL (status)) {
+    if (FJ_FAIL (status)) {
         LOG_ERROR ("vIMU_t axis remap did not complete in time");
         IMU_LogDeviceErr (pIMU, NULL);
         return status;
@@ -598,7 +597,7 @@ FJ_STATIC eSTATUS_t IMUCalibrate (vIMU_t* pIMU, uint8_t calibSelection, uint8_t 
     IMUAccConf aconf;
     IMUGyroConf gconf;
     eSTATUS_t status = IMUGetConf (pIMU, &aconf, &gconf);
-    RETURN_IF (STATUS_FAIL (status), status, "Failed to get IMU configuration to save before calibration");
+    RETURN_IF (FJ_FAIL (status), status, "Failed to get IMU configuration to save before calibration");
     HAL_Delay (100);
 
     /* Set the ACC config to be what the self calibration expects */
@@ -609,31 +608,31 @@ FJ_STATIC eSTATUS_t IMUCalibrate (vIMU_t* pIMU, uint8_t calibSelection, uint8_t 
     calibAConf.avg        = aconf.avg;
     calibAConf.bw         = aconf.bw;
     status                = IMUSetConf (pIMU, &calibAConf, NULL);
-    RETURN_IF (STATUS_FAIL (status), status, "Failed to set IMU accelerometer configuration for calibration");
+    RETURN_IF (FJ_FAIL (status), status, "Failed to set IMU accelerometer configuration for calibration");
     HAL_Delay (100);
 
     /* Store alt configs and then disable them */
     IMUAccConf altAConf;
     IMUGyroConf altGConf;
     status = IMUGetAltConf (pIMU, &altAConf, &altGConf);
-    GOTO_IF (STATUS_FAIL (status), error, "Failed to get IMU alternate configuration to save before calibration");
+    GOTO_IF (FJ_FAIL (status), error, "Failed to get IMU alternate configuration to save before calibration");
 
     altAConf.mode = eIMU_ACC_MODE_DISABLE;
     altGConf.mode = eIMU_GYRO_MODE_DISABLE;
     status        = IMUSetAltConf (pIMU, &altAConf, &altGConf);
-    GOTO_IF (STATUS_FAIL (status), error, "Failed to disable IMU alternate configuration before calibration");
+    GOTO_IF (FJ_FAIL (status), error, "Failed to disable IMU alternate configuration before calibration");
     HAL_Delay (100);
 
     /* Trigger the self calibration */
     status = IMUSendCmd (pIMU, BMI3_CMD_SELF_CALIB_TRIGGER);
-    GOTO_IF (STATUS_FAIL (status), error, "Failed to send IMU self-calibration trigger command");
+    GOTO_IF (FJ_FAIL (status), error, "Failed to send IMU self-calibration trigger command");
     HAL_Delay (100);
 
     /* Check that the self calibration has started */
     {
         IMU_FeatureReg_t featureStatus = { 0 };
         status = IMUGetFeatureStatus (pIMU, BMI3_REG_FEATURE_IO1, &featureStatus);
-        GOTO_IF (STATUS_FAIL (status), error, "Failed to get IMU feature status");
+        GOTO_IF (FJ_FAIL (status), error, "Failed to get IMU feature status");
 
         if (CALIB_IS_ONGOING (featureStatus) == false) {
             LOG_ERROR ("IMU has not started the self calibration");
@@ -649,7 +648,7 @@ FJ_STATIC eSTATUS_t IMUCalibrate (vIMU_t* pIMU, uint8_t calibSelection, uint8_t 
             HAL_Delay (100);
             IMU_INTStatusReg_t INTStatus = { 0 };
             status                       = IMUGetINTStatus (pIMU, &INTStatus);
-            GOTO_IF (STATUS_FAIL (status), error, "Failed to get IMU interrupt status during self-calibration");
+            GOTO_IF (FJ_FAIL (status), error, "Failed to get IMU interrupt status during self-calibration");
 
             if (INT_STATUS_HAS_ERROR (INTStatus)) {
                 break;
@@ -657,8 +656,8 @@ FJ_STATIC eSTATUS_t IMUCalibrate (vIMU_t* pIMU, uint8_t calibSelection, uint8_t 
         }
 
         IMU_FeatureReg_t featureStatus = { 0 };
-        eSTATUS_t status = IMUGetFeatureStatus (pIMU, BMI3_REG_FEATURE_IO1, &featureStatus);
-        GOTO_IF (STATUS_FAIL (status), error, "Failed to get IMU feature status after self-calibration");
+        status = IMUGetFeatureStatus (pIMU, BMI3_REG_FEATURE_IO1, &featureStatus);
+        GOTO_IF (FJ_FAIL (status), error, "Failed to get IMU feature status after self-calibration");
 
         if (CALIB_IS_SUCCESSFUL (featureStatus) == false) {
             LOG_ERROR ("IMU self-calibration failed");
@@ -812,7 +811,7 @@ eSTATUS_t IMUInit (IMUInitConf_t conf, IMU_t* pOutIMU, BusVTable_t* pBusOverride
         pIMU->bus = *pBusOverride;
     } else {
         BUS_INIT (&status, device, *pBus, &pIMU->bus);
-        GOTO_IF (STATUS_FAIL (status), error, "Failed to init bus for imu");
+        GOTO_IF (FJ_FAIL (status), error, "Failed to init bus for imu");
     }
 
     if (pIMU->bus.ReadBlocking == NULL || pIMU->bus.WriteBlocking == NULL || pIMU->bus.WriteReadBlocking == NULL) {
@@ -824,29 +823,29 @@ eSTATUS_t IMUInit (IMUInitConf_t conf, IMU_t* pOutIMU, BusVTable_t* pBusOverride
      * Soft reset vIMU_t and switch to SPI
      */
     status = IMUSoftReset (pIMU);
-    GOTO_IF (STATUS_FAIL (status), error, "Failed to soft reset imu");
+    GOTO_IF (FJ_FAIL (status), error, "Failed to soft reset imu");
     LOG_INFO ("IMU soft reset successful");
 
     status = IMUSetAxesRemap (pIMU, axesRemapConf);
-    GOTO_IF (STATUS_FAIL (status), error, "Failed to set imu axes remap");
+    GOTO_IF (FJ_FAIL (status), error, "Failed to set imu axes remap");
     LOG_INFO ("Successfully remapped imu axes");
 
     /*
      * Setup the accel and gyro using the provided configurations
      */
     status = IMUSetConf (pIMU, &accConf, &gyroConf);
-    GOTO_IF (STATUS_FAIL (status), error, "Failed to set imu config");
+    GOTO_IF (FJ_FAIL (status), error, "Failed to set imu config");
     LOG_INFO ("IMU configuration successful");
     IMU_LogDeviceConf (pIMU);
 
     uint8_t pChipID[2] = { 0 };
     status             = IMUReadReg (pIMU, BMI3_REG_CHIP_ID, pChipID, 2U);
-    GOTO_IF (STATUS_FAIL (status), error, "Failed to read imu chip id");
+    GOTO_IF (FJ_FAIL (status), error, "Failed to read imu chip id");
     GOTO_IF (pChipID[0] != IMU_CHIP_ID, error, "Unexpected imu chip id");
 
     /* Self Calibrate */
     status = IMUCalibrate (pIMU, BMI3_SC_SENSITIVITY_EN | BMI3_SC_OFFSET_EN, BMI3_SC_APPLY_CORR_EN);
-    GOTO_IF (STATUS_FAIL (status), error, "Failed to self calibrate IMU");
+    GOTO_IF (FJ_FAIL (status), error, "Failed to self calibrate IMU");
     LOG_INFO ("IMU self calibration was successful");
     IMU_LogDeviceConf (pIMU);
 
@@ -899,7 +898,7 @@ eSTATUS_t IMUInit (IMUInitConf_t conf, IMU_t* pOutIMU, BusVTable_t* pBusOverride
     if (pExti != NULL) {
         /* Enable acc, gyro, and temperature - data ready interrupts for pin INT1 */
         status = IMUSetupInterrupts (pIMU);
-        GOTO_IF (STATUS_FAIL (status), error, "Failed to setup imu interrupts");
+        GOTO_IF (FJ_FAIL (status), error, "Failed to setup imu interrupts");
 
         pIMU->usingEXTIInterrupt = true;
     }
@@ -959,21 +958,21 @@ FJ_STATIC bool IMUUpdatefromPolling (vIMU_t* pIMU) {
 
         // IMU_INTStatusReg_t INTStatus = { 0 };
         // status             = IMUGetINTStatus (pIMU, &INTStatus);
-        // RETURN_IF (STATUS_FAIL (status), false, "Failed to read vIMU_t interrupt status register");
+        // RETURN_IF (FJ_FAIL (status), false, "Failed to read vIMU_t interrupt status register");
 
         IMU_SysStatusReg_t SYSStatus = { 0 };
         status                       = IMUGetSysStatus (pIMU, &SYSStatus);
-        RETURN_IF (STATUS_FAIL (status), false, "Failed to read vIMU_t status register");
+        RETURN_IF (FJ_FAIL (status), false, "Failed to read vIMU_t status register");
 
         if (SYS_STATUS_ACCEL_DATA_READY (SYSStatus) && accelRdy == false) {
             status = IMUUpdateRawAccel (pIMU);
-            RETURN_IF (STATUS_FAIL (status), false, "Failed to update accelerometer data");
+            RETURN_IF (FJ_FAIL (status), false, "Failed to update accelerometer data");
             accelRdy = true;
         }
 
         if (SYS_STATUS_GYRO_DATA_READY (SYSStatus) && gyroRdy == false) {
             status = IMUUpdateRawGyro (pIMU);
-            RETURN_IF (STATUS_FAIL (status), false, "Failed to update gyroscope data");
+            RETURN_IF (FJ_FAIL (status), false, "Failed to update gyroscope data");
             gyroRdy = true;
         }
         if (accelRdy && gyroRdy) {
@@ -1011,7 +1010,7 @@ static eSTATUS_t IMUUpdate_ (vIMU_t* pIMU, bool forcePolling, Vec3f* pOutputAcce
     if (success == true) {
         status =
         IMUConvertRaw (pIMU->aconf.range, pIMU->rawAccel, pIMU->gconf.range, pIMU->rawGyro, pOutputAccel, pOutputGyro);
-        RETURN_IF (STATUS_FAIL (status), eSTATUS_FAILURE, "Failed to convert vIMU_t raw data");
+        RETURN_IF (FJ_FAIL (status), eSTATUS_FAILURE, "Failed to convert vIMU_t raw data");
         pIMU->gyroDataUpdated  = false;
         pIMU->accelDataUpdated = false;
     } else {

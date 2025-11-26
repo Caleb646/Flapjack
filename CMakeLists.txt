@@ -90,20 +90,20 @@ if(NOT BUILD_TESTS)
 
     set(FJ_SHARED_CFLAGS
         -std=c11
-        -pedantic
+        #-pedantic
         # -pedantic-errors
         # -Werror
         -Wall
         -Wextra
-        -Waggregate-return
+        #-Waggregate-return
         -Wbad-function-cast
         -Wcast-align
         -Wcast-qual
         -Wfloat-equal
         -Wformat=2
         -Winline
-        -Wmissing-declarations
-        -Wmissing-prototypes
+        #-Wmissing-declarations
+        #-Wmissing-prototypes
         -Wnested-externs
         -Wpointer-arith
         -Wredundant-decls

@@ -12,7 +12,7 @@
 
 #define FILTER_VALID(pF) ((pF) != NULL && (pF)->isInitialized == true)
 
-static SHARED_MEM_SECTION Filter_t gFilter = { 0 };
+static SHARED_MEM_SECTION Filter_t g_Filter = { 0 };
 
 // clang-format off
 #ifndef UNIT_TEST
@@ -77,11 +77,10 @@ bool FilterMadgwickUpdate_6DOF (FilterMadgwick_t* pFilter, Vec3f const* pAccel, 
     float twoSEq_2       = 2.0F * SEq_2;
     float twoSEq_3       = 2.0F * SEq_3;
 
-    norm = sqrtf (a_x * a_x + a_y * a_y + a_z * a_z);
-    if (norm == 0.0F) {
-        return false;
-    }
-    norm = 1.0F / norm;
+    norm = 1.0F / (sqrtf (a_x * a_x + a_y * a_y + a_z * a_z) + 0.001F);
+    // if (norm == 0.0F) {
+    //     return false;
+    // }
     a_x *= norm;
     a_y *= norm;
     a_z *= norm;
@@ -124,7 +123,7 @@ bool FilterMadgwickUpdate_6DOF (FilterMadgwick_t* pFilter, Vec3f const* pAccel, 
     SEq_3 += (SEqDot_omega_3 - (beta * SEqHatDot_3)) * dt;
     SEq_4 += (SEqDot_omega_4 - (beta * SEqHatDot_4)) * dt;
 
-    norm = 1.0F / sqrtf (SEq_1 * SEq_1 + SEq_2 * SEq_2 + SEq_3 * SEq_3 + SEq_4 * SEq_4);
+    norm = 1.0F / (sqrtf (SEq_1 * SEq_1 + SEq_2 * SEq_2 + SEq_3 * SEq_3 + SEq_4 * SEq_4) + 0.001F);
     SEq_1 *= norm;
     SEq_2 *= norm;
     SEq_3 *= norm;
@@ -206,20 +205,20 @@ FilterMadgwickUpdate_9DOF (FilterMadgwick_t* pFilter, Vec3f const* pAccel, Vec3f
     float twom_y      = 2.0F * m_y;
     float twom_z      = 2.0F * m_z;
     // normalise the accelerometer measurement
-    norm = sqrtf (a_x * a_x + a_y * a_y + a_z * a_z);
-    if (norm == 0.0F) {
-        return false;
-    }
-    norm = 1.0F / norm;
+    norm = 1.0F / (sqrtf (a_x * a_x + a_y * a_y + a_z * a_z) + 0.001F);
+    // if (norm == 0.0F) {
+    //     return false;
+    // }
+    // norm = 1.0F / norm;
     a_x *= norm;
     a_y *= norm;
     a_z *= norm;
     // normalise the magnetometer measurement
-    norm = sqrtf (m_x * m_x + m_y * m_y + m_z * m_z);
-    if (norm == 0.0F) {
-        return false;
-    }
-    norm = 1.0F / norm;
+    norm = 1.0F / (sqrtf (m_x * m_x + m_y * m_y + m_z * m_z) + 0.001F);
+    // if (norm == 0.0F) {
+    //     return false;
+    // }
+    // norm = 1.0F / norm;
     m_x *= norm;
     m_y *= norm;
     m_z *= norm;
@@ -254,11 +253,13 @@ FilterMadgwickUpdate_9DOF (FilterMadgwick_t* pFilter, Vec3f const* pAccel, Vec3f
     SEqHatDot_3 = J_12or23 * f_2 - J_33 * f_3 - J_13or22 * f_1 - J_43 * f_4 + J_53 * f_5 + J_63 * f_6;
     SEqHatDot_4 = J_14or21 * f_1 + J_11or24 * f_2 - J_44 * f_4 - J_54 * f_5 + J_64 * f_6;
     // normalise the gradient to estimate direction of the gyroscope error
-    norm = sqrtf (SEqHatDot_1 * SEqHatDot_1 + SEqHatDot_2 * SEqHatDot_2 + SEqHatDot_3 * SEqHatDot_3 + SEqHatDot_4 * SEqHatDot_4);
-    if (norm == 0.0F) {
-        return false;
-    }
-    norm        = 1.0F / norm;
+    norm =
+    1.0F /
+    (sqrtf (SEqHatDot_1 * SEqHatDot_1 + SEqHatDot_2 * SEqHatDot_2 + SEqHatDot_3 * SEqHatDot_3 + SEqHatDot_4 * SEqHatDot_4) + 0.001F);
+    // if (norm == 0.0F) {
+    //     return false;
+    // }
+    // norm        = 1.0F / norm;
     SEqHatDot_1 = SEqHatDot_1 * norm;
     SEqHatDot_2 = SEqHatDot_2 * norm;
     SEqHatDot_3 = SEqHatDot_3 * norm;
@@ -285,11 +286,11 @@ FilterMadgwickUpdate_9DOF (FilterMadgwick_t* pFilter, Vec3f const* pAccel, Vec3f
     SEq_3 += (SEqDot_omega_3 - (beta * SEqHatDot_3)) * dt;
     SEq_4 += (SEqDot_omega_4 - (beta * SEqHatDot_4)) * dt;
     // normalise quaternion
-    norm = sqrtf (SEq_1 * SEq_1 + SEq_2 * SEq_2 + SEq_3 * SEq_3 + SEq_4 * SEq_4);
-    if (norm == 0.0F) {
-        return false;
-    }
-    norm = 1.0F / norm;
+    norm = 1.0F / (sqrtf (SEq_1 * SEq_1 + SEq_2 * SEq_2 + SEq_3 * SEq_3 + SEq_4 * SEq_4) + 0.001F);
+    // if (norm == 0.0F) {
+    //     return false;
+    // }
+    // norm = 1.0F / norm;
     SEq_1 *= norm;
     SEq_2 *= norm;
     SEq_3 *= norm;
@@ -340,15 +341,15 @@ FilterMadgwickWarmUp (FilterMadgwick_t* pFilter, vIMU_t* pIMU, vMag_t* pMag, uin
 
     for (uint32_t i = 0; i < iterations; ++i) {
 
-        Vec3f accel      = { { 0.0F } };
-        Vec3f gyro       = { { 0.0F } };
-        Vec3f mag        = { { 0.0F } };
+        Vec3f accel      = VEC3F_ZERO ();
+        Vec3f gyro       = VEC3F_ZERO ();
+        Vec3f mag        = VEC3F_ZERO ();
         eSTATUS_t status = IMU_Update (pIMU, true, &accel, &gyro);
         RETURN_IF (status != eSTATUS_SUCCESS, false, "Failed to poll IMU");
 
         if (pMag != NULL) {
             status = Mag_Update (pMag, true, &mag);
-            RETURN_IF (status != eSTATUS_SUCCESS, false, "Failed to poll Mag");
+            RETURN_IF (FJ_FAIL (status), false, "Failed to poll Mag");
         }
 
         float dt = ((float)GetMilliseconds () - msStartTime) / 1000.0F; // Convert ms to seconds
@@ -363,7 +364,7 @@ FilterMadgwickWarmUp (FilterMadgwick_t* pFilter, vIMU_t* pIMU, vMag_t* pMag, uin
         } else {
             success = FilterMadgwickUpdate (pFilter, &accel, &gyro, NULL, dt, pOutAttitude);
         }
-        RETURN_IF (success == false, false, "Madgwick update failed");
+        RETURN_IF_NOT (success, false, "Madgwick update failed");
     }
     return true;
 }
@@ -423,14 +424,14 @@ FilterMadgwickUpdate (FilterMadgwick_t* pFilter, Vec3f const* pAccel, Vec3f cons
 
 eSTATUS_t FilterInit (FilterInitConf_t conf, Filter_t* pOut) {
 
-    vFilter_t* pFilter = &gFilter;
+    vFilter_t* pFilter = &g_Filter;
     if (pOut != NULL) {
         pFilter = pOut;
     }
 
     memset ((void*)pFilter, 0, sizeof (vFilter_t));
     bool status = FilterMadgwickInit (conf.madgwickConf, &pFilter->madgwick);
-    RETURN_IF (status != true, eSTATUS_FAILURE, "Failed to init Madgwick filter");
+    RETURN_IF_NOT (status, eSTATUS_FAILURE, "Failed to init Madgwick filter");
 
     pFilter->msLastUpdateTime = GetMilliseconds ();
     pFilter->isInitialized    = true;
@@ -443,13 +444,13 @@ eSTATUS_t FilterInit (FilterInitConf_t conf, Filter_t* pOut) {
  */
 eSTATUS_t FilterStart (vFilter_t* pFilter, uint32_t warmUpIterations, Vec3f* pOutAttitude) {
 
-    if (FILTER_VALID (pFilter) == false) {
+    if (!FILTER_VALID (pFilter)) {
         return eSTATUS_FAILURE;
     }
 
     bool success = true;
     if (pOutAttitude != NULL) {
-        success &= FilterMadgwickWarmUp (&pFilter->madgwick, NULL, NULL, warmUpIterations, pOutAttitude);
+        success = FilterMadgwickWarmUp (&pFilter->madgwick, NULL, NULL, warmUpIterations, pOutAttitude);
     }
 
     return success ? eSTATUS_SUCCESS : eSTATUS_FAILURE;
@@ -457,7 +458,7 @@ eSTATUS_t FilterStart (vFilter_t* pFilter, uint32_t warmUpIterations, Vec3f* pOu
 
 eSTATUS_t FilterStop (vFilter_t* pFilter) {
 
-    if (FILTER_VALID (pFilter) == false) {
+    if (!FILTER_VALID (pFilter)) {
         return eSTATUS_FAILURE;
     }
     return eSTATUS_SUCCESS;
@@ -466,7 +467,7 @@ eSTATUS_t FilterStop (vFilter_t* pFilter) {
 eSTATUS_t
 Filter_Update (vFilter_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyro, Vec3f const* pMag, float dt, Vec3f* pOutput) {
 
-    if (FILTER_VALID (pFilter) == false || pOutput == NULL) {
+    if (!FILTER_VALID (pFilter) || pOutput == NULL) {
         return eSTATUS_FAILURE;
     }
 
@@ -479,16 +480,16 @@ Filter_Update (vFilter_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyro, Vec3
 
 vFilter_t const* FilterGetActiveFilter (void) {
 
-    if (FILTER_VALID (&gFilter) == false) {
+    if (!FILTER_VALID (&g_Filter)) {
         return NULL;
     }
-    return &gFilter;
+    return &g_Filter;
 }
 
 vFilter_t* Filter_GetMutableActiveFilter (void) {
 
-    if (FILTER_VALID (&gFilter) == false) {
+    if (!FILTER_VALID (&g_Filter)) {
         return NULL;
     }
-    return &gFilter;
+    return &g_Filter;
 }

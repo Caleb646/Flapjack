@@ -165,7 +165,7 @@ static eSTATUS_t Timer_DeviceInit (vTimer_t* pTimer, TimerInitConf_t conf) {
     }
 
     eSTATUS_t status = Timer_ClockInit (pTimer, conf);
-    GOTO_IF (STATUS_FAIL (status), error, "Failed to initialize timer clock");
+    GOTO_IF (FJ_FAIL (status), error, "Failed to initialize timer clock");
 
     eTIMER_ID_t timerId = TIMER_GET_ID (pTimer);
     uint32_t autoReload = TIM_AUTORELOAD_PRELOAD_ENABLE;
@@ -187,7 +187,7 @@ static eSTATUS_t Timer_DeviceInit (vTimer_t* pTimer, TimerInitConf_t conf) {
 
     if (conf.mode == eTIMER_MODE_PWM) {
         status = HAL_TIM_PWM_Init (TIMER_GET_HANDLE (pTimer));
-        GOTO_IF (STATUS_FAIL (status), error, "Failed to initialize timer device in PWM mode");
+        GOTO_IF (FJ_FAIL (status), error, "Failed to initialize timer device in PWM mode");
     } else {
         LOG_ERROR ("Unsupported timer mode: %u", (uint16_t)conf.mode);
         goto error;
@@ -204,27 +204,16 @@ error:
 static eSTATUS_t Timer_DMAInit (vTimer_t* pTimer, TimerInitConf_t conf) {
 
     FJ_UNUSED (conf);
-    eSTATUS_t status    = eSTATUS_SUCCESS;
-    eTIMER_ID_t timerId = TIMER_GET_ID (pTimer);
-    bool usingDMA       = pTimer->usingDMA;
-    if (usingDMA == false) {
-        return eSTATUS_FAILURE;
-    }
+    eSTATUS_t status             = eSTATUS_SUCCESS;
+    eTIMER_ID_t timerId          = TIMER_GET_ID (pTimer);
     eDMA_STREAM_ID_t dmaStreamId = eDMA_STREAM_MAX;
-    uint32_t dmaRequestId        = Timer_Get_DMARequestId (timerId);
-    DMA_INIT_TIMER_PWM (&status, dmaRequestId, &dmaStreamId);
+    RETURN_IF_NOT (pTimer->usingDMA, eSTATUS_FAILURE, "Timer DMA initialization called but DMA not requested");
 
-    if (status != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to initialize DMA");
-        return eSTATUS_FAILURE;
-    }
+    status = DMA_INIT_TIM_PWM (Timer_Get_DMARequestId (timerId), &dmaStreamId);
+    RETURN_IF (FJ_FAIL (status), status, "Failed to initialize DMA for Timer");
 
     DMAStream_t* pDMA = DMAGetStreamById (dmaStreamId);
-    if (pDMA == NULL) {
-        LOG_ERROR ("Failed to get DMA stream by ID");
-        return eSTATUS_FAILURE;
-    }
-
+    RETURN_IF_NULL (pDMA, eSTATUS_FAILURE, "Failed to get DMA stream by ID");
     /*
      * Link the DMA handle to the specific capture/compare timer
      * register it is going to be writing to.
@@ -251,7 +240,7 @@ static eSTATUS_t Timer_GPIOInit (vTimer_t* pTimer, TimerInitConf_t conf) {
     eTIMER_ID_t timerId                   = boardConf.timerId;
     GPIOBoardConf_t const* pGPIOBoardConf = boardConf.pGPIOBoardConf;
     GPIO_INIT (&status, timerId, *pGPIOBoardConf);
-    RETURN_IF (STATUS_FAIL (status), status, "Failed to initialize timer GPIO");
+    RETURN_IF (FJ_FAIL (status), status, "Failed to initialize timer GPIO");
 
     return eSTATUS_SUCCESS;
 }
@@ -279,10 +268,10 @@ eSTATUS_t Timer_Init (TimerInitConf_t conf, vTimer_t* pOutTimer) {
     }
 
     status = Timer_BaseInit (pTimer, conf);
-    GOTO_IF (STATUS_FAIL (status), error, "Failed to do base timer initialization");
+    GOTO_IF (FJ_FAIL (status), error, "Failed to do base timer initialization");
 
     status = Timer_DeviceInit (pTimer, conf);
-    GOTO_IF (STATUS_FAIL (status), error, "Failed to initialize timer device");
+    GOTO_IF (FJ_FAIL (status), error, "Failed to initialize timer device");
 
     TIM_OC_InitTypeDef sConfig = { 0 };
     sConfig.OCMode             = TIM_OCMODE_PWM1;
@@ -337,7 +326,7 @@ eSTATUS_t Timer_Start (Timer_t* pTimer, uint32_t const* pData, uint16_t Length) 
             return eSTATUS_INVALID_ARG;
         }
 
-        if (HAL_TIM_PWM_Start_DMA (pHandle, channel, (uint32_t*)pData, Length) != HAL_OK) {
+        if (HAL_TIM_PWM_Start_DMA (pHandle, channel, pData, Length) != HAL_OK) {
             LOG_ERROR ("Failed to start PWM DMA");
             return eSTATUS_FAILURE;
         }

@@ -173,11 +173,11 @@ static eSTATUS_t UARTInitGPIO (vUARTBus_t* pBus, UARTInitConf_t conf) {
     }
 
     GPIO_INIT (&status, deviceId, *pTxBoardConf);
-    if (STATUS_FAIL (status)) {
+    if (FJ_FAIL (status)) {
         return status;
     }
     GPIO_INIT (&status, deviceId, *pRxBoardConf);
-    if (STATUS_FAIL (status)) {
+    if (FJ_FAIL (status)) {
         return status;
     }
     return status;
@@ -284,7 +284,7 @@ eSTATUS_t UARTWrite_Blocking (vUARTBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t c
         return eSTATUS_FAILURE;
     }
 
-    if (HAL_UART_Transmit (&pBus->handle, (uint8_t*)pData, size, HAL_MAX_DELAY) != HAL_OK) {
+    if (HAL_UART_Transmit (&pBus->handle, (uint8_t const*)pData, size, HAL_MAX_DELAY) != HAL_OK) {
         return eSTATUS_FAILURE;
     }
 

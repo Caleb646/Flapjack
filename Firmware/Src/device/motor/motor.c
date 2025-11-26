@@ -15,7 +15,6 @@
 #include <string.h>
 
 
-
 #define MOTOR_VALID(pMOTOR) ((pMOTOR) != NULL && (pMOTOR)->isInitialized == true)
 
 VECTOR_DEFINE_STATIC_SHARED (Motor, Motor_t, MOTOR_COUNT);
@@ -101,8 +100,8 @@ eSTATUS_t MotorInit (MotorInitConf_t conf, Motor_t* pOutMotor) {
     pMotor->curThrottle       = 0.0F;
     pMotor->curTargetThrottle = 0.0F;
 
-    DSHOT_INIT (&status, device);
-    RETURN_IF (STATUS_FAIL (status), eSTATUS_FAILURE, "Failed to initialize DShot for motor ID %u", motorId);
+    status = DSHOT_INIT (device);
+    RETURN_IF (FJ_FAIL (status), eSTATUS_FAILURE, "Failed to initialize DShot for motor ID %u", motorId);
 
     if (pLinkedServoBoardConf != NULL) {
         pMotor->linkedServoId = pLinkedServoBoardConf->deviceId;

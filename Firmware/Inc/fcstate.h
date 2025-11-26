@@ -38,6 +38,7 @@ typedef FCState_t vFCState_t;
 eSTATUS_t FCState_Init (FCStateInitConf_t conf, vFCState_t* pOut);
 eSTATUS_t FCState_Start (vFCState_t* pState);
 eSTATUS_t FCState_Stop (vFCState_t* pState);
+eSTATUS_t FCState_Update (vFCState_t const* pNewState, vFCState_t* pOutState);
 vFCState_t const* FCState_GetActiveState (void);
 vFCState_t* FCState_GetMutableActiveState (void);
 FCState_t FCState_GetCopyOfActiveState (void);

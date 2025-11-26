@@ -54,15 +54,15 @@ FJ_STATIC void Scheduler_CM7_Loop (void) {
 
     eSTATUS_t status      = eSTATUS_SUCCESS;
     FCState_t fcState     = { 0 };
-    Vec3f currentAttitude = { 0.0F };
-    Vec3f targetAttitude  = { 0.0F };
-    Vec3f maxAttitude     = { 0.0F };
-    Vec3f pidAttitude     = { 0.0F };
+    Vec3f currentAttitude = VEC3F_ZERO ();
+    Vec3f targetAttitude  = VEC3F_ZERO ();
+    Vec3f maxAttitude     = VEC3F_ZERO ();
+    Vec3f pidAttitude     = VEC3F_ZERO ();
     float targetThrottle  = 0.0F;
     float dt              = 0.0F;
-    Vec3f accel           = { 0.0F };
-    Vec3f gyro            = { 0.0F };
-    Vec3f mag             = { 0.0F };
+    Vec3f accel           = VEC3F_ZERO ();
+    Vec3f gyro            = VEC3F_ZERO ();
+    Vec3f mag             = VEC3F_ZERO ();
     Vec3f* pMagData       = NULL;
 
     vIMU_t* pIMUDev    = NULL;

@@ -8,7 +8,6 @@
 #include <string.h>
 
 
-
 static SHARED_MEM_SECTION DMAStream_t gDMAStreams[eDMA_STREAM_MAX] = { 0 };
 
 /**
@@ -96,10 +95,7 @@ static eSTATUS_t DMAClockInit (DMAInitConf_t conf, DMAStream_t* pOutStream) {
 
 eSTATUS_t DMAInit (DMAInitConf_t conf, eDMA_STREAM_ID_t* pOutStreamId) {
 
-    if (pOutStreamId == NULL) {
-        LOG_ERROR ("dma config is NULL");
-        return eSTATUS_FAILURE;
-    }
+    RETURN_IF_NULL (pOutStreamId, eSTATUS_FAILURE, "Output stream ID pointer is NULL");
 
     if (conf.direction == DMA_MEMORY_TO_PERIPH && conf.fifoMode == DMA_FIFOMODE_ENABLE) {
         LOG_ERROR ("Direct mode (fifo disabled) has to be used for memory-to-peripheral transfers");
@@ -155,6 +151,7 @@ eSTATUS_t DMAInit (DMAInitConf_t conf, eDMA_STREAM_ID_t* pOutStreamId) {
         goto error;
     }
 
+    *pOutStreamId          = streamId;
     pStream->isInUse       = true;
     pStream->isInitialized = true;
     return eSTATUS_SUCCESS;

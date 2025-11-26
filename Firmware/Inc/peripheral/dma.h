@@ -65,16 +65,15 @@ DMAStream_t* DMAGetStreamById (eDMA_STREAM_ID_t id);
 eSTATUS_t DMAInit (DMAInitConf_t conf, eDMA_STREAM_ID_t* pOutStreamId);
 eSTATUS_t DMAEnableInterrupts (eDMA_STREAM_ID_t streamId, uint32_t priority);
 
-#define DMA_INIT_TIMER_PWM(pSTATUS, DMA_REQUEST_ID, pOUT_DMASTREAM_ID) \
-    do {                                                               \
-        DMAInitConf_t conf = { 0 };                                    \
-        conf.direction     = eDMA_DIRECTION_MEMORY_TO_PERIPH;          \
-        conf.priority      = eDMA_PRIORITY_HIGH;                       \
-        conf.request       = (DMA_REQUEST_ID);                         \
-        conf.transferMode  = DMA_NORMAL;                               \
-        conf.fifoMode      = DMA_FIFOMODE_DISABLE;                     \
-        conf.fifoThreshold = DMA_FIFO_THRESHOLD_FULL;                  \
-        *(pSTATUS)         = DMAInit (conf, pOUT_DMASTREAM_ID);        \
-    } while (0)
+#define DMA_INIT_TIM_PWM(DMA_REQUEST_ID, pOUT_DMASTREAM_ID)            \
+    DMAInit (                                                          \
+    (DMAInitConf_t){ .direction     = eDMA_DIRECTION_MEMORY_TO_PERIPH, \
+                     .priority      = eDMA_PRIORITY_HIGH,              \
+                     .request       = (DMA_REQUEST_ID),                \
+                     .transferMode  = DMA_NORMAL,                      \
+                     .fifoMode      = DMA_FIFOMODE_DISABLE,            \
+                     .fifoThreshold = DMA_FIFO_THRESHOLD_FULL },       \
+    (pOUT_DMASTREAM_ID)                                                \
+    )
 
 #endif /* DMA_H */
