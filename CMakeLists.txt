@@ -14,7 +14,9 @@ if(NOT BUILD_TESTS)
     # stm32_fetch_cube(H7)
     # stm32_find_freertos(FreeRTOS ${FREERTOS_PATH})
 
-    if(NOT DEFINED ${BOARD_CONFIG})
+    message(STATUS "Board config is: ${BOARD_CONFIG}")
+
+    if(NOT BOARD_CONFIG)
         message(FATAL_ERROR "Set the BOARD_CONF environment variable.")
     endif()
 
@@ -85,7 +87,8 @@ if(NOT BUILD_TESTS)
         ${BOARD_CONFIG}
         USE_HAL_DRIVER
         STM32H747xx
-        USE_PWR_LDO_SUPPLY
+        USE_PWR_DIRECT_SMPS_SUPPLY
+        # USE_PWR_LDO_SUPPLY
     )
 
     set(FJ_SHARED_CFLAGS

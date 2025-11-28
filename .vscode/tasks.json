@@ -2,7 +2,24 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "build tests",
+            "label": "Build Dev Board ELFs",
+            "type": "shell",
+            "command": "./Scripts/build.bash DEV_BOARD",
+            // "args": ["./Scripts/build.bash DEV_BOARD"],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        },
+
+        {
+            "label": "Build Unit Tests",
             "type": "shell",
             "command": "cmake --build ./Tests/build --config Debug",
             "group": "build",

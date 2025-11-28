@@ -59,7 +59,7 @@
             "cStandard": "c11",
             "cppStandard": "gnu++17",
             "intelliSenseMode": "gcc-arm",
-            "configurationProvider": "none"
+            "configurationProvider": "ms-vscode.cmake-tools"
         }
     ],
     "version": 4

@@ -4,6 +4,9 @@ CM4/Release/**
 CM7/Release/**
 *.cyclo
 
+**.venv
+**venv
+
 **OLD/**
 **build/**
 **stm32_build/**

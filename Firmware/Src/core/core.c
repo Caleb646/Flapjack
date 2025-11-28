@@ -235,8 +235,8 @@ FJ_STATIC eSTATUS_t SystemClock_Config (void) {
     // TODO: this is fine for DEV board but for custom board SMPS is NOT setup
     // Default power supply on reset should be LDO
 
-    // HAL_PWREx_ConfigSupply (PWR_DIRECT_SMPS_SUPPLY);
-    HAL_PWREx_ConfigSupply (PWR_LDO_SUPPLY);
+    HAL_PWREx_ConfigSupply (PWR_DIRECT_SMPS_SUPPLY);
+    // HAL_PWREx_ConfigSupply (PWR_LDO_SUPPLY);
 
     /** Configure the main internal regulator output voltage
      */

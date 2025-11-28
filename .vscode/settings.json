@@ -6,8 +6,50 @@
     "clang-format.executable": "C:/Program Files (x86)/LLVM_Clang/bin/clang-format",
     // "clang-format.executable": "${Env:CLANG_FORMAT_PATH}",
     // "clang-format.executable": "/usr/bin/clang-format", 
-    
     "workbench.editor.wrapTabs": true,
+    
+    "C_Cpp.codeAnalysis.clangTidy.enabled": true,
+    // "C_Cpp.codeAnalysis.clangTidy.path": "${Env:CLANG_TIDY_PATH}",
+    // "C_Cpp.codeAnalysis.clangTidy.path": "/usr/bin/clang-tidy",
+    "C_Cpp.codeAnalysis.clangTidy.path": "C:/Program Files (x86)/LLVM_Clang/bin/clang-tidy",
+    "C_Cpp.codeAnalysis.clangTidy.args": [
+        "--config-file=${workspaceFolder}/.clang-tidy"
+    ],
+    "C_Cpp.errorSquiggles": "enabled",
+    "cmake.ignoreCMakeListsMissing": true,
+    "git.ignoreLimitWarning": true,
+
+    "terminal.integrated.profiles.windows": {
+        "Flapjack": {
+            "path": "C:\\Program Files\\Git\\bin\\bash.exe",
+            // "args": [
+            //     "-c",
+            //     "source Scripts/config.bash && exec bash"
+            // ],
+            "cwd": "${workspaceFolder}"
+        }
+    },
+    "terminal.integrated.defaultProfile.windows": "Flapjack",
+
+    "memory-view.trackDebuggers": [
+        "stlinkgdbtarget",
+    ],
+
+    
+    // "cmake.cmakePath": "cube-cmake",
+    // "cmake.configureArgs": [
+    //     "-DCMAKE_COMMAND=cube-cmake"
+    // ],
+    // "cmake.preferredGenerators": [
+    //     "Ninja"
+    // ],
+    // "stm32cube-ide-clangd.path": "cube",
+    // "stm32cube-ide-clangd.arguments": [
+    //     "starm-clangd",
+    //     "--query-driver=${env:CUBE_BUNDLE_PATH}/gnu-tools-for-stm32/13.3.1+st.9/bin/arm-none-eabi-gcc.exe",
+    //     "--query-driver=${env:CUBE_BUNDLE_PATH}/gnu-tools-for-stm32/13.3.1+st.9/bin/arm-none-eabi-g++.exe"
+    // ]
+
     "files.associations": {
         "*.s": "arm",
         "*.c": "c",
@@ -58,26 +100,18 @@
         "cmsis_os.h": "c",
         "expected": "c"
     },
-    "C_Cpp.codeAnalysis.clangTidy.enabled": true,
-    // "C_Cpp.codeAnalysis.clangTidy.path": "${Env:CLANG_TIDY_PATH}",
-    // "C_Cpp.codeAnalysis.clangTidy.path": "/usr/bin/clang-tidy",
-    "C_Cpp.codeAnalysis.clangTidy.path": "C:/Program Files (x86)/LLVM_Clang/bin/clang-tidy",
-    "C_Cpp.codeAnalysis.clangTidy.args": [
-        "--config-file=${workspaceFolder}/.clang-tidy"
+    "cmake.cmakePath": "cube-cmake",
+    "cmake.configureArgs": [
+        "-DCMAKE_COMMAND=cube-cmake"
     ],
-    "C_Cpp.errorSquiggles": "enabled",
-    "cmake.ignoreCMakeListsMissing": true,
-    "git.ignoreLimitWarning": true,
-
-    "terminal.integrated.profiles.windows": {
-        "Flapjack": {
-            "path": "C:\\Program Files\\Git\\bin\\bash.exe",
-            "args": [
-                "-c",
-                "source Scripts/config.bash && exec bash"
-            ],
-            "cwd": "${workspaceFolder}"
-        }
-    },
-    "terminal.integrated.defaultProfile.windows": "Flapjack"
+    // "cmake.cmakePath": "cube-cmake",
+    // "cmake.configureArgs": [
+    //     "-DCMAKE_COMMAND=cube-cmake"
+    // ],
+    // "stm32cube-ide-clangd.path": "cube",
+    // "stm32cube-ide-clangd.arguments": [
+    //     "starm-clangd",
+    //     "--query-driver=${env:CUBE_BUNDLE_PATH}/gnu-tools-for-stm32/13.3.1+st.9/bin/arm-none-eabi-gcc.exe",
+    //     "--query-driver=${env:CUBE_BUNDLE_PATH}/gnu-tools-for-stm32/13.3.1+st.9/bin/arm-none-eabi-g++.exe"
+    // ]
 }

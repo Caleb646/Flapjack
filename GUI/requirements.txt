@@ -1,7 +1,10 @@
-pyqt5 
-pyqtgraph 
-numpy
-PyOpenGL_accelerate
-PyOpenGL
-trimesh
-dacite
+colorama==0.4.6
+dacite==1.9.2
+numpy==2.3.5
+PyOpenGL==3.1.10
+PyOpenGL-accelerate==3.1.10
+PyQt5==5.15.11
+PyQt5-Qt5==5.15.2
+PyQt5_sip==12.17.1
+pyqtgraph==0.14.0
+trimesh==4.10.0

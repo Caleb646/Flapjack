@@ -2,6 +2,55 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "type": "stlinkgdbtarget",
+            "request": "launch",
+            "name": "CM7",
+            "origin": "snippet",
+            "cwd": "${workspaceFolder}",
+            // "preBuild": "${command:st-stm32-ide-debug-launch.build}",
+            "preLaunchTask": "Build Dev Board ELFs",
+            "deviceName": "STM32H747BIT6",
+            "deviceCore": "Cortex-M7",
+            "runEntry": "main",
+            "connectUnderReset": true,
+            "serverShared": true,
+            "serverHaltAllCores": true,
+            "imagesAndSymbols": [
+                {
+                    "imageFileName": "${workspaceFolder}/Build/Debug/m4core.elf", // Load CM4 first
+                    "symbolFileName": "${workspaceFolder}/Build/Debug/m4core.elf"
+                },
+                {
+                    "imageFileName": "${workspaceFolder}/Build/Debug/m7core.elf",
+                    "symbolFileName": "${workspaceFolder}/Build/Debug/m7core.elf"
+                }
+            ]
+        },
+
+        // CM4 Symbols Only
+        {
+            "type": "stlinkgdbtarget",
+            "request": "launch",
+            "name": "CM4",
+            "origin": "snippet",
+            "cwd": "${workspaceFolder}",
+            // "preBuild": "${command:st-stm32-ide-debug-launch.build}",
+            "preLaunchTask": "Build Dev Board ELFs",
+            "deviceName": "STM32H747BIT6",
+            "deviceCore": "Cortex-M4",
+            "runEntry": "main",
+            "serverShared": true,
+            "serverReset": "None",
+            "serverPort": "61239",
+            "imagesAndSymbols": [
+                {
+                    "symbolFileName": "${workspaceFolder}/Build/Debug/m4core.elf"
+                }
+            ]
+        },
+
+
+        {
             "name": "Debug Unit Tests",
             "type": "cppvsdbg",
             "request": "launch",
@@ -12,5 +61,14 @@
             "environment": [],
             "preLaunchTask": "build tests"
         }
-    ]
+    ],
+
+    "compounds": [
+    {
+      "name": "Debug Both Cores",
+      "configurations": ["CM7", "CM4"],
+      "preLaunchTask": "Build Dev Board ELFs",
+      "stopAll": true
+    }
+  ],
 }
