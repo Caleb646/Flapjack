@@ -1,36 +1,6 @@
 {
     "configurations": [
         {
-            "name": "Linux WSL DEBUG",
-            "includePath": [
-                "${workspaceFolder}/**",
-                "${workspaceFolder}/CM4",
-                "${workspaceFolder}/CM7",
-                "${workspaceFolder}/Drivers",
-                "${workspaceFolder}/Middlewares"
-            ],
-            "defines": [
-                "DEBUG",
-                "CORE_CM4",
-                "CORE_CM7",
-                "USE_HAL_DRIVER",
-                "STM32H747xx"
-                // "USE_PWR_DIRECT_SMPS_SUPPLY"
-        ],
-            "compilerPath": "C:/arm_none_eabi_14.3.rel1/bin/arm-none-eabi-gcc",
-            "cStandard": "c11",
-            "cppStandard": "gnu++17",
-            "intelliSenseMode": "gcc-arm",
-            "configurationProvider": "none"
-        },
-
-
-
-
-
-
-        
-        {
             "name": "Windows DEBUG",
             "includePath": [
                 "${workspaceFolder}/**",
@@ -55,11 +25,25 @@
                 "DEV_BOARD"
                 // "USE_PWR_DIRECT_SMPS_SUPPLY"
         ],
-            "compilerPath": "${workspaceFolder}/Tools/msys/mingw64/bin/arm-none-eabi-gcc",
+            "compilerPath": "${workspaceFolder}/Tools/msys/mingw64/bin/arm-none-eabi-gcc.exe",
             "cStandard": "c11",
             "cppStandard": "gnu++17",
             "intelliSenseMode": "gcc-arm",
-            "configurationProvider": "ms-vscode.cmake-tools"
+            "configurationProvider": "ms-vscode.cmake-tools",
+            "compilerArgs": [
+                "-mcpu=cortex-m7",
+                "-mthumb",
+                "-mfpu=fpv5-d16",
+                "-mfloat-abi=hard"
+            ],
+            "browse": {
+                "path": [
+                    "${workspaceFolder}",
+                    "${workspaceFolder}/Firmware",
+                    "${workspaceFolder}/Vendor/STM32CubeH7"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            }
         }
     ],
     "version": 4

@@ -2,13 +2,15 @@
 #ifndef _MOCK_MAG_H
 #define _MOCK_MAG_H
 
-#include "unity.h"
 #include "hal_stub.h"
 #include "mag.h"
+#include "unity.h"
+
 
 /* Ignore the following warnings, since we are copying code */
 #if defined(__GNUC__) && !defined(__ICC) && !defined(__TMS470__)
-#if __GNUC__ > 4 || (__GNUC__ == 4 && (__GNUC_MINOR__ > 6 || (__GNUC_MINOR__ == 6 && __GNUC_PATCHLEVEL__ > 0)))
+#if __GNUC__ > 4 || \
+(__GNUC__ == 4 && (__GNUC_MINOR__ > 6 || (__GNUC_MINOR__ == 6 && __GNUC_PATCHLEVEL__ > 0)))
 #pragma GCC diagnostic push
 #endif
 #if !defined(__clang__)
@@ -18,28 +20,33 @@
 #pragma GCC diagnostic ignored "-Wduplicate-decl-specifier"
 #endif
 
-void mock_mag_Init(void);
-void mock_mag_Destroy(void);
-void mock_mag_Verify(void);
+void mock_mag_Init (void);
+void mock_mag_Destroy (void);
+void mock_mag_Verify (void);
 
 
-
-
-#define MagInit_ExpectAndReturn(conf, pOutMag, pBusOverride, cmock_retval) MagInit_CMockExpectAndReturn(__LINE__, conf, pOutMag, pBusOverride, cmock_retval)
-void MagInit_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, MagInitConf_t conf, Mag_t* pOutMag, BusVTable_t* pBusOverride, eMAG_STATUS_t cmock_to_return);
-#define MagStart_ExpectAndReturn(pMag, cmock_retval) MagStart_CMockExpectAndReturn(__LINE__, pMag, cmock_retval)
-void MagStart_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, vMag_t* pMag, eMAG_STATUS_t cmock_to_return);
-#define MagStop_ExpectAndReturn(pMag, cmock_retval) MagStop_CMockExpectAndReturn(__LINE__, pMag, cmock_retval)
-void MagStop_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, vMag_t* pMag, eMAG_STATUS_t cmock_to_return);
-#define Mag_Update_ExpectAndReturn(pMag, forcePolling, pOutput, cmock_retval) Mag_Update_CMockExpectAndReturn(__LINE__, pMag, forcePolling, pOutput, cmock_retval)
-void Mag_Update_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, vMag_t* pMag, bool forcePolling, Vec3f* pOutput, eMAG_STATUS_t cmock_to_return);
-#define MagGetActiveDevice_ExpectAndReturn(cmock_retval) MagGetActiveDevice_CMockExpectAndReturn(__LINE__, cmock_retval)
-void MagGetActiveDevice_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, vMag_t const* cmock_to_return);
-#define Mag_GetMutableActiveDevice_ExpectAndReturn(cmock_retval) Mag_GetMutableActiveDevice_CMockExpectAndReturn(__LINE__, cmock_retval)
-void Mag_GetMutableActiveDevice_CMockExpectAndReturn(UNITY_LINE_TYPE cmock_line, vMag_t* cmock_to_return);
+#define MagInit_ExpectAndReturn(conf, pOutMag, pBusOverride, cmock_retval) \
+    MagInit_CMockExpectAndReturn (__LINE__, conf, pOutMag, pBusOverride, cmock_retval)
+void MagInit_CMockExpectAndReturn (UNITY_LINE_TYPE cmock_line, MagInitConf_t conf, Mag_t* pOutMag, Bus_t* pBusOverride, eMAG_STATUS_t cmock_to_return);
+#define MagStart_ExpectAndReturn(pMag, cmock_retval) \
+    MagStart_CMockExpectAndReturn (__LINE__, pMag, cmock_retval)
+void MagStart_CMockExpectAndReturn (UNITY_LINE_TYPE cmock_line, vMag_t* pMag, eMAG_STATUS_t cmock_to_return);
+#define MagStop_ExpectAndReturn(pMag, cmock_retval) \
+    MagStop_CMockExpectAndReturn (__LINE__, pMag, cmock_retval)
+void MagStop_CMockExpectAndReturn (UNITY_LINE_TYPE cmock_line, vMag_t* pMag, eMAG_STATUS_t cmock_to_return);
+#define Mag_Update_ExpectAndReturn(pMag, forcePolling, pOutput, cmock_retval) \
+    Mag_Update_CMockExpectAndReturn (__LINE__, pMag, forcePolling, pOutput, cmock_retval)
+void Mag_Update_CMockExpectAndReturn (UNITY_LINE_TYPE cmock_line, vMag_t* pMag, bool forcePolling, Vec3f* pOutput, eMAG_STATUS_t cmock_to_return);
+#define MagGetActiveDevice_ExpectAndReturn(cmock_retval) \
+    MagGetActiveDevice_CMockExpectAndReturn (__LINE__, cmock_retval)
+void MagGetActiveDevice_CMockExpectAndReturn (UNITY_LINE_TYPE cmock_line, vMag_t const* cmock_to_return);
+#define Mag_GetMutableActiveDevice_ExpectAndReturn(cmock_retval) \
+    Mag_GetMutableActiveDevice_CMockExpectAndReturn (__LINE__, cmock_retval)
+void Mag_GetMutableActiveDevice_CMockExpectAndReturn (UNITY_LINE_TYPE cmock_line, vMag_t* cmock_to_return);
 
 #if defined(__GNUC__) && !defined(__ICC) && !defined(__TMS470__)
-#if __GNUC__ > 4 || (__GNUC__ == 4 && (__GNUC_MINOR__ > 6 || (__GNUC_MINOR__ == 6 && __GNUC_PATCHLEVEL__ > 0)))
+#if __GNUC__ > 4 || \
+(__GNUC__ == 4 && (__GNUC_MINOR__ > 6 || (__GNUC_MINOR__ == 6 && __GNUC_PATCHLEVEL__ > 0)))
 #pragma GCC diagnostic pop
 #endif
 #endif

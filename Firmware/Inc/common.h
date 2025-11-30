@@ -74,6 +74,7 @@ enum {
     eSTATUS_UNSUPPORTED    = -115,
     eSTATUS_ALREADY_INITED = -114,
     eSTATUS_RETRY          = -113,
+    eSTATUS_NOT_SUPPORTED  = -112,
 
     eSTATUS_SUB_STATUS_START__,
 
@@ -89,6 +90,7 @@ enum {
 #define STATUS_RETRY(STATUS) ((STATUS) == eSTATUS_RETRY)
 #define FJ_OK(STATUS)    STATUS_OK(STATUS)
 #define FJ_FAIL(STATUS)    STATUS_FAIL(STATUS)
+#define FJ_IS_NULL(POINTER) ((POINTER) == NULL)
 
 #define IS_CM7_ME()     (HAL_GetCurrentCPUID() == CM7_CPUID)
 #define IS_CM4_ME()     (HAL_GetCurrentCPUID() == CM4_CPUID)

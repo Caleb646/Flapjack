@@ -5,7 +5,7 @@
 #include "core/core.h"
 #include "core/log/logger.h"
 #include "hal.h"
-#include "peripheral/bus/bus_core.h"
+#include "peripheral/bus/common.h"
 #include "peripheral/gpio.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -13,7 +13,7 @@
 
 #define SPI_VALID(pBUS) ((pBUS) != NULL && (pBUS)->isInitialized == true)
 
-static SHARED_MEM_SECTION SPIBus_t gSPIBusses[SPI_MAX_BUSES] = { 0 };
+static SHARED_MEM_SECTION SPIBus_t g_SPIBusses[SPI_MAX_BUSES] = { 0 };
 
 static SPI_TypeDef* SPIGetInstanceById (eBUS_ID_t busId) {
 
@@ -63,7 +63,7 @@ static FJ_INLINE bool SPIBeginOperation (vSPIBus_t* pBus, eDEVICE_ID_t deviceId)
 
 static FJ_INLINE void SPIEndOperation (vSPIBus_t* pBus) {
 
-    if (pBus->activeOperation.pNss == NULL) {
+    if (FJ_IS_NULL (pBus->activeOperation.pNss)) {
         LOG_ERROR ("SPI bus is not in a transaction");
         return;
     }
@@ -111,9 +111,6 @@ static eSTATUS_t SPIClockInit (vSPIBus_t* pBus, SPIInitConf_t conf) {
     }
     if (busId == eSPI_4_BUS_ID) {
         __HAL_RCC_SPI4_CLK_ENABLE ();
-
-        // uint32_t test = RCC_SPI45CLKSOURCE_PCLK1;
-
         SPI_INIT_CLOCK (&status, eSPI_4_BUS_ID, RCC_PERIPHCLK_SPI4, RCC_SPI45CLKSOURCE_PCLK2);
         return status;
     }
@@ -128,61 +125,36 @@ static eSTATUS_t SPIClockInit (vSPIBus_t* pBus, SPIInitConf_t conf) {
 
 static eSTATUS_t SPIInitGPIO (vSPIBus_t* pBus, SPIInitConf_t conf) {
 
-    eSTATUS_t status = eSTATUS_SUCCESS;
+    eSTATUS_t status          = eSTATUS_SUCCESS;
+    GPIODesc_t* pSck          = BUS_DESC_SPI_GET_SCK (conf.pBusDesc);
+    GPIODesc_t* pMiso         = BUS_DESC_SPI_GET_MISO (conf.pBusDesc);
+    GPIODesc_t* pMosi         = BUS_DESC_SPI_GET_MOSI (conf.pBusDesc);
+    SPIDeviceDesc_t* pDevices = BUS_DESC_SPI_GET_CONNECTED_DEVS (conf.pBusDesc);
+    uint32_t nDevices         = BUS_DESC_SPI_GET_NUM_CONNECTED_DEVS (conf.pBusDesc);
 
-    DeviceBoardConf_t device = conf.deviceBoardConf;
-    /* Let the first device to initialize the spi bus be the owner of all of nss gpio pins */
-    eDEVICE_ID_t firstDeviceId = device.deviceId;
+    RETURN_IF_NULL (pSck, eSTATUS_NULL_ARG, "SPIInitGPIO: NULL SCK pin configuration");
+    RETURN_IF_NULL (pMiso, eSTATUS_NULL_ARG, "SPIInitGPIO: NULL MISO pin configuration");
+    RETURN_IF_NULL (pMosi, eSTATUS_NULL_ARG, "SPIInitGPIO: NULL MOSI pin configuration");
+    RETURN_IF_NULL (pDevices, eSTATUS_NULL_ARG, "SPIInitGPIO: NULL connected devices pointer");
+    RETURN_IF (nDevices == 0, eSTATUS_INVALID_ARG, "SPIInitGPIO: No connected devices configured for SPI bus");
 
-    SPIBoardConf_t bus                 = conf.busBoardConf.SPIBoardConf;
-    SPIDeviceMapping_t const* pDevices = bus.pConnectedDevices;
-    uint8_t nDevices                   = bus.numConnectedDevices;
-    GPIOBoardConf_t const* pSck        = bus.pSckBoardConf;
-    GPIOBoardConf_t const* pMiso       = bus.pMisoBoardConf;
-    GPIOBoardConf_t const* pMosi       = bus.pMosiBoardConf;
+    status = GPIO_INIT (pBus->busId, pSck);
+    RETURN_IF (FJ_FAIL (status), status, "Failed to initialize SPI SCK GPIO");
 
-    if (pDevices == NULL || nDevices == 0 || nDevices > SPI_MAX_DEVICES_PER_BUS) {
-        LOG_ERROR ("No or Beyond Max SPI devices configured for bus");
-        return eSTATUS_FAILURE;
-    }
+    status = GPIO_INIT (pBus->busId, pMiso);
+    RETURN_IF (FJ_FAIL (status), status, "Failed to initialize SPI MISO GPIO");
 
-    if (pSck == NULL || pMiso == NULL || pMosi == NULL) {
-        LOG_ERROR ("SPI bus missing required pin configuration");
-        return eSTATUS_FAILURE;
-    }
-
-    GPIO_INIT (&status, firstDeviceId, *pSck);
-    if (FJ_FAIL (status)) {
-        LOG_ERROR ("Failed to initialize SPI SCK GPIO");
-        return status;
-    }
-
-    GPIO_INIT (&status, firstDeviceId, *pMiso);
-    if (FJ_FAIL (status)) {
-        LOG_ERROR ("Failed to initialize SPI MISO GPIO");
-        return status;
-    }
-
-    GPIO_INIT (&status, firstDeviceId, *pMosi);
-    if (FJ_FAIL (status)) {
-        LOG_ERROR ("Failed to initialize SPI MOSI GPIO");
-        return status;
-    }
+    status = GPIO_INIT (pBus->busId, pMosi);
+    RETURN_IF (FJ_FAIL (status), status, "Failed to initialize SPI MOSI GPIO");
 
     for (uint32_t i = 0; i < nDevices; ++i) {
 
-        eDEVICE_ID_t deviceId       = pDevices[i].deviceId;
-        GPIOBoardConf_t const* pNss = pDevices[i].pNssBoardConf;
-        if (pNss == NULL) {
-            LOG_ERROR ("SPI device missing NSS pin configuration");
-            return eSTATUS_FAILURE;
-        }
+        eDEVICE_ID_t deviceId = SPI_DEV_DESC_GET_ID (&pDevices[i]);
+        GPIODesc_t* pNss      = SPI_DEV_DESC_GET_NSS (&pDevices[i]);
+        RETURN_IF_NULL (pNss, eSTATUS_NULL_ARG, "SPIInitGPIO: NULL NSS pin configuration for device");
 
-        GPIO_INIT (&status, firstDeviceId, *pNss);
-        if (FJ_FAIL (status)) {
-            LOG_ERROR_IF (FJ_FAIL (status), "Failed to initialize SPI NSS GPIO");
-            return status;
-        }
+        status = GPIO_INIT (pBus->busId, pNss);
+        RETURN_IF (FJ_FAIL (status), status, "Failed to initialize SPI NSS GPIO");
 
         pBus->connectedDevices.gpios[i] = GPIOGetIOfromId (pNss->id);
         pBus->connectedDevices.ids[i]   = deviceId;
@@ -194,42 +166,48 @@ static eSTATUS_t SPIInitGPIO (vSPIBus_t* pBus, SPIInitConf_t conf) {
 vSPIBus_t* SPIGetBusById (eBUS_ID_t busId) {
 
     uint32_t busIndex = SPI_BUS_ID_TO_IDX (busId);
-    if (BUS_ID_IS_SPI (busId) == false || busIndex >= SPI_MAX_BUSES) {
+    if (!BUS_ID_IS_SPI (busId) || busIndex >= SPI_MAX_BUSES) {
         LOG_ERROR ("Invalid SPI bus ID");
         return NULL;
     }
-    return &gSPIBusses[busIndex];
+    return &g_SPIBusses[busIndex];
 }
 
 eSTATUS_t SPIInit (SPIInitConf_t conf, vSPIBus_t* pOutBus) {
 
-    DeviceBoardConf_t device = conf.deviceBoardConf;
-    eDEVICE_ID_t deviceId    = device.deviceId;
+    if (FJ_IS_NULL (conf.pBusDesc) || !BUS_DESC_IS_SPI (conf.pBusDesc)) {
+        LOG_ERROR ("SPIInit: NULL or invalid BusDesc_t pointer");
+        return eSTATUS_INVALID_ARG;
+    }
 
-    BusBoardConf_t bus = conf.busBoardConf;
-    eBUS_ID_t busId    = bus.busId;
-    RETURN_IF (BUS_ID_IS_SPI (busId) == false, eSTATUS_FAILURE, "Invalid SPI bus ID");
+    if (FJ_IS_NULL (BUS_DESC_SPI_GET_CONNECTED_DEVS (conf.pBusDesc))) {
+        LOG_ERROR ("SPIInit: NULL connected devices pointer in BusDesc_t");
+        return eSTATUS_INVALID_ARG;
+    }
 
-    SPIBoardConf_t spi = bus.SPIBoardConf;
-    uint16_t speedKHz  = spi.speedKHz;
-    (void)speedKHz;
-    LOG_INFO ("Initializing SPI bus");
+    if (BUS_DESC_SPI_GET_NUM_CONNECTED_DEVS (conf.pBusDesc) == 0) {
+        LOG_ERROR ("SPIInit: No connected devices configured for SPI bus");
+        return eSTATUS_INVALID_ARG;
+    }
 
-    vSPIBus_t* pBus = SPIGetBusById (busId);
+    eSTATUS_t status    = eSTATUS_SUCCESS;
+    BusDesc_t* pBusDesc = conf.pBusDesc;
+    eBUS_ID_t busId     = BUS_DESC_GET_ID (pBusDesc);
+    vSPIBus_t* pBus     = SPIGetBusById (busId);
+
     if (pOutBus != NULL) {
         pBus = pOutBus;
     }
     RETURN_IF_NULL (pBus, eSTATUS_FAILURE, "Failed to get SPI bus by ID");
-
     /* Let the first device to initialize the spi bus setup all of the given nss GPIO pins. */
-    if (pBus->isInitialized == true) {
+    if (pBus->isInitialized) {
         LOG_WARN ("SPI bus %u is already initialized", busId);
-        return eSTATUS_SUCCESS;
+        return eSTATUS_ALREADY_INITED;
     }
 
+    LOG_INFO ("Initializing SPI bus [%u]", busId);
     memset (pBus, 0, sizeof (vSPIBus_t));
     pBus->busId                   = busId;
-    pBus->deviceId                = deviceId;
     pBus->handle.Instance         = SPIGetInstanceById (busId);
     pBus->handle.Init.Mode        = SPI_MODE_MASTER;
     pBus->handle.Init.Direction   = SPI_DIRECTION_2LINES;
@@ -256,20 +234,14 @@ eSTATUS_t SPIInit (SPIInitConf_t conf, vSPIBus_t* pOutBus) {
     pBus->handle.Init.MasterKeepIOState          = SPI_MASTER_KEEP_IO_STATE_DISABLE;
     pBus->handle.Init.IOSwap                     = SPI_IO_SWAP_DISABLE;
 
-    if (SPIClockInit (pBus, conf) != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to initialize SPI clock");
-        goto error;
-    }
+    status = SPIClockInit (pBus, conf);
+    GOTO_IF (FJ_FAIL (status), error, "Failed to initialize SPI clock");
 
-    if (HAL_SPI_Init (&pBus->handle) != HAL_OK) {
-        LOG_ERROR ("Failed to initialize HAL for SPI bus");
-        goto error;
-    }
+    status = HAL_SPI_Init (&pBus->handle);
+    GOTO_IF (FJ_FAIL (status), error, "Failed to initialize HAL for SPI bus");
 
-    if (SPIInitGPIO (pBus, conf) != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to initialize SPI GPIO data pins");
-        goto error;
-    }
+    status = SPIInitGPIO (pBus, conf);
+    GOTO_IF (FJ_FAIL (status), error, "Failed to initialize SPI GPIO");
 
     pBus->isInitialized = true;
     return eSTATUS_SUCCESS;

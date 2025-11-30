@@ -160,23 +160,21 @@ static eSTATUS_t UARTClockInit (eBUS_ID_t busId) {
 
 static eSTATUS_t UARTInitGPIO (vUARTBus_t* pBus, UARTInitConf_t conf) {
 
-    FJ_UNUSED (pBus);
     eSTATUS_t status = eSTATUS_SUCCESS;
+    eBUS_ID_t busId  = pBus->busId;
+    GPIODesc_t* pTx  = BUS_DESC_UART_GET_TX (conf.pBusDesc);
+    GPIODesc_t* pRx  = BUS_DESC_UART_GET_RX (conf.pBusDesc);
 
-    eDEVICE_ID_t deviceId               = conf.deviceBoardConf.deviceId;
-    UARTBoardConf_t boardConf           = conf.busBoardConf.UARTBoardConf;
-    GPIOBoardConf_t const* pTxBoardConf = boardConf.pTxBoardConf;
-    GPIOBoardConf_t const* pRxBoardConf = boardConf.pRxBoardConf;
-
-    if (pTxBoardConf == NULL || pRxBoardConf == NULL) {
-        return eSTATUS_FAILURE;
+    if (FJ_IS_NULL (pTx) || FJ_IS_NULL (pRx)) {
+        return eSTATUS_NULL_ARG;
     }
 
-    GPIO_INIT (&status, deviceId, *pTxBoardConf);
+    status = GPIO_INIT (busId, pTx);
     if (FJ_FAIL (status)) {
         return status;
     }
-    GPIO_INIT (&status, deviceId, *pRxBoardConf);
+
+    status = GPIO_INIT (busId, pRx);
     if (FJ_FAIL (status)) {
         return status;
     }
@@ -194,32 +192,26 @@ vUARTBus_t* UARTGetBusById (eBUS_ID_t busId) {
 
 eSTATUS_t UARTInit (UARTInitConf_t conf, vUARTBus_t* pOutBus) {
 
-    DeviceBoardConf_t device = conf.deviceBoardConf;
-    eDEVICE_ID_t deviceId    = device.deviceId;
-
-    BusBoardConf_t bus = conf.busBoardConf;
-    eBUS_ID_t busId    = bus.busId;
-    if (BUS_ID_IS_UART (busId) == false) {
-        return eSTATUS_FAILURE;
+    if (FJ_IS_NULL (conf.pBusDesc) || !BUS_DESC_IS_UART (conf.pBusDesc)) {
+        return eSTATUS_NULL_ARG;
     }
 
-    UARTBoardConf_t uart = bus.UARTBoardConf;
-    uint32_t baudRate    = uart.baudRate;
-    if (baudRate == 0) {
-        return eSTATUS_FAILURE;
-    }
-
-    vUARTBus_t* pBus = UARTGetBusById (busId);
+    eSTATUS_t status    = eSTATUS_SUCCESS;
+    BusDesc_t* pBusDesc = conf.pBusDesc;
+    eBUS_ID_t busId     = BUS_DESC_GET_ID (pBusDesc);
+    // TODO: configure baudrate
+    // eUART_BAUDRATE_t baudRate = // BUS_DESC_UART_GET_BAUDRATE (pBusDesc);
+    uint32_t baudRate = 115200U;
+    vUARTBus_t* pBus  = UARTGetBusById (busId);
     if (pOutBus != NULL) {
         pBus = pOutBus;
     }
-    if (pBus->isInitialized == true) {
-        return eSTATUS_FAILURE;
+    if (pBus->isInitialized) {
+        return eSTATUS_ALREADY_INITED;
     }
 
     memset (pBus, 0, sizeof (vUARTBus_t));
     pBus->busId                              = busId;
-    pBus->deviceId                           = deviceId;
     pBus->handle.Instance                    = UARTGetInstanceById (busId);
     pBus->handle.Init.BaudRate               = baudRate;
     pBus->handle.Init.WordLength             = UART_WORDLENGTH_8B;
@@ -232,17 +224,14 @@ eSTATUS_t UARTInit (UARTInitConf_t conf, vUARTBus_t* pOutBus) {
     pBus->handle.Init.ClockPrescaler         = UART_PRESCALER_DIV1;
     pBus->handle.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
 
-    if (UARTClockInit (pBus->busId) != eSTATUS_SUCCESS) {
-        goto error;
-    }
+    status = UARTClockInit (busId);
+    GOTO_IF (FJ_FAIL (status), error, "UARTInit: Failed to initialize clock for UART bus ID %u", busId);
 
-    if (HAL_UART_Init (&pBus->handle) != HAL_OK) {
-        goto error;
-    }
+    status = HAL_UART_Init (&pBus->handle);
+    GOTO_IF (FJ_FAIL (status), error, "UARTInit: HAL_UART_Init failed for UART bus ID %u", busId);
 
-    if (UARTInitGPIO (pBus, conf) != eSTATUS_SUCCESS) {
-        goto error;
-    }
+    status = UARTInitGPIO (pBus, conf);
+    GOTO_IF (FJ_FAIL (status), error, "UARTInit: Failed to initialize GPIOs for UART bus ID %u", busId);
 
     if (HAL_UARTEx_SetTxFifoThreshold (&pBus->handle, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK) {
         goto error;
@@ -252,9 +241,10 @@ eSTATUS_t UARTInit (UARTInitConf_t conf, vUARTBus_t* pOutBus) {
         goto error;
     }
 
-    // if (HAL_UARTEx_DisableFifoMode (&pBus->handle) != HAL_OK) {
-    //     goto error;
-    // }
+    // TODO: Enable FIFO mode?
+    if (HAL_UARTEx_DisableFifoMode (&pBus->handle) != HAL_OK) {
+        goto error;
+    }
 
     pBus->isInitialized = true;
     return eSTATUS_SUCCESS;

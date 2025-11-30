@@ -39,7 +39,7 @@ typedef struct {
     uint32_t hzPeriod;
     bool usingDMA;
     bool doAutoPreload;
-    TimerBoardConf_t timerBoardConf;
+    TimerDesc_t timerBoardConf;
 } TimerInitConf_t;
 
 typedef void (*TimerCallback_t) (eTIMER_ID_t timerId);

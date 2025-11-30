@@ -12,13 +12,12 @@
 
 
 typedef struct {
-    DeviceBoardConf_t boardConf;
+    DevDesc_t* pDevDesc;
 } SerialDebugInitConf_t;
 
 typedef struct {
-    eBUS_ID_t busId;
     eDEVICE_ID_t deviceId;
-    BusVTable_t bus;
+    Bus_t bus;
     bool isInitialized;
 } SerialDebug_t;
 
@@ -31,11 +30,6 @@ vSerialDebug_t const* SerialDebugGetActiveDevice (void);
 vSerialDebug_t* SerialDebugGetMutableActiveDevice (void);
 vSerialDebug_t SerialDebugCopyOfActiveDevice (void);
 
-#define SERIAL_DEBUG_INIT(pSTATUS, DEVICE_BOARD_CONF)              \
-    do {                                                           \
-        SerialDebugInitConf_t conf = { 0 };                        \
-        conf.boardConf             = (DEVICE_BOARD_CONF);          \
-        *(pSTATUS)                 = SerialDebugInit (conf, NULL); \
-    } while (0)
+#define SERIAL_DEBUG_INIT(pSTATUS, pDEV_DESC) SerialDebugInit ({ .pDevDesc = (pDEV_DESC) }, NULL);
 
 #endif // DEVICE_SERIAL_SERIAL_H

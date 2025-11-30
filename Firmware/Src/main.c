@@ -16,7 +16,7 @@ int main (void) {
 
         Delay (100); // Wait for CM4 to initialize logger
 
-        if (FJ_FAIL (Device_InitAll (BoardConfGet ()))) {
+        if (FJ_FAIL (Device_InitAll (DeviceTree_Get ()))) {
             CriticalErrorHandler ();
         }
 

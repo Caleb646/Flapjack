@@ -15,7 +15,7 @@
 #include <string.h>
 
 
-#define MOTOR_VALID(pMOTOR) ((pMOTOR) != NULL && (pMOTOR)->isInitialized == true)
+#define MOTOR_VALID(pMOTOR) ((pMOTOR) != NULL && (pMOTOR)->isInitialized)
 
 VECTOR_DEFINE_STATIC_SHARED (Motor, Motor_t, MOTOR_COUNT);
 
@@ -34,29 +34,6 @@ Vector_t* MotorGetAll (void) {
     return MotorVector_GetVector ();
 }
 
-// eSTATUS_t MotorsApply (MotorApplyFn_t fn, void* pContext) {
-
-//     if (fn == NULL) {
-//         LOG_ERROR ("Received NULL function pointer");
-//         return eSTATUS_FAILURE;
-//     }
-
-//     for (uint32_t i = 0; i < MotorVector_Size (); ++i) {
-
-//         Motor_t* pMotor = MotorVector_At (i);
-//         if (MOTOR_VALID (pMotor) == true) {
-//             if (fn (pMotor, pContext) != eSTATUS_SUCCESS) {
-//                 LOG_ERROR (
-//                 "Failed to apply function to motor ID %u",
-//                 pMotor->motorId
-//                 );
-//                 return eSTATUS_FAILURE;
-//             }
-//         }
-//     }
-//     return eSTATUS_SUCCESS;
-// }
-
 eSTATUS_t MotorInit (MotorInitConf_t conf, Motor_t* pOutMotor) {
 
     static bool isVectorInitialized = false;
@@ -68,15 +45,15 @@ eSTATUS_t MotorInit (MotorInitConf_t conf, Motor_t* pOutMotor) {
         isVectorInitialized = true;
     }
 
-    eSTATUS_t status         = eSTATUS_SUCCESS;
-    DeviceBoardConf_t device = conf.boardConf;
-    eDEVICE_ID_t motorId     = device.deviceId;
+    eSTATUS_t status     = eSTATUS_SUCCESS;
+    DeviceDesc_t device  = conf.boardConf;
+    eDEVICE_ID_t motorId = device.deviceId;
     RETURN_IF (DEVICE_ID_IS_MOTOR (motorId) == false, eSTATUS_FAILURE, "Invalid motor ID: %u", motorId);
 
-    MotorDeviceConf_t motorConf              = device.motor;
-    bool usingDMA                            = motorConf.useDMA;
-    TimerBoardConf_t* pTimerBoardConf        = motorConf.pTimerBoardConf;
-    DeviceBoardConf_t* pLinkedServoBoardConf = motorConf.pLinkedServoBoardConf;
+    MotorDesc_t motorConf               = device.motor;
+    bool usingDMA                       = motorConf.useDMA;
+    TimerDesc_t* pTimerBoardConf        = motorConf.pTimerBoardConf;
+    DeviceDesc_t* pLinkedServoBoardConf = motorConf.pLinkedServoBoardConf;
     // uint8_t dshotSpeed                       = motor.dshotSpeed;
     // (void)dshotSpeed;
     float pidRollMix  = motorConf.pidRollMix;

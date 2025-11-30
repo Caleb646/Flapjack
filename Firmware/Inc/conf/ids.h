@@ -98,6 +98,18 @@ enum {
 #define MOTOR_ID_TO_IDX(id)    ((id) - eMOTOR_ID_BEGIN__)
 #define DEVICE_ID_IS_MOTOR(id) ((id) >= eMOTOR_ID_BEGIN__ && (id) < eMOTOR_ID_END__)
 
+typedef uint32_t eDEVICE_FLAGS_t;
+enum {
+    eDEVICE_FLAG_NULL                = 0,
+    eDEVICE_FLAG_USE_DMA_FOR_WRITES  = (1 << 1),
+    eDEVICE_FLAG_USE_DMA_FOR_READS   = (1 << 2),
+    eDEVICE_FLAG_USE_INTS_FOR_WRITES = (1 << 3),
+    eDEVICE_FLAG_USE_INTS_FOR_READS  = (1 << 4),
+};
+
+#define DEVICE_FLAG_IS_SET(FLAGS, FLAG) (((FLAGS) & (FLAG)) != 0)
+
+
 typedef uint8_t eBUS_ID_t;
 enum {
     eNULL_BUS_ID = 0U,
@@ -127,17 +139,51 @@ enum {
     eBUS_ID_MAX
 };
 
-#define BUS_MAX_BUSES          (eBUS_ID_MAX - 1U)
-#define SPI_MAX_BUSES          (eSPI_BUS_ID_END__ - eSPI_BUS_ID_BEGIN__)
-#define UART_MAX_BUSES         (eUART_BUS_ID_END__ - eUART_BUS_ID_BEGIN__)
-#define I2C_MAX_BUSES          (eI2C_BUS_ID_END__ - eI2C_BUS_ID_BEGIN__)
+#define BUS_MAX_BUSES           (eBUS_ID_MAX - 1U)
+#define SPI_MAX_BUSES           (eSPI_BUS_ID_END__ - eSPI_BUS_ID_BEGIN__)
+#define UART_MAX_BUSES          (eUART_BUS_ID_END__ - eUART_BUS_ID_BEGIN__)
+#define I2C_MAX_BUSES           (eI2C_BUS_ID_END__ - eI2C_BUS_ID_BEGIN__)
 
-#define BUS_ID_IS_I2C(ID)      ((ID) >= eI2C_BUS_ID_BEGIN__ && (ID) < eI2C_BUS_ID_END__)
-#define BUS_ID_IS_SPI(ID)      ((ID) >= eSPI_BUS_ID_BEGIN__ && (ID) < eSPI_BUS_ID_END__)
-#define BUS_ID_IS_UART(ID)     ((ID) >= eUART_BUS_ID_BEGIN__ && (ID) < eUART_BUS_ID_END__)
-#define SPI_BUS_ID_TO_IDX(ID)  ((ID) - eSPI_BUS_ID_BEGIN__)
-#define UART_BUS_ID_TO_IDX(ID) ((ID) - eUART_BUS_ID_BEGIN__)
-#define I2C_BUS_ID_TO_IDX(ID)  ((ID) - eI2C_BUS_ID_BEGIN__)
+#define BUS_ID_IS_I2C(ID)       ((ID) >= eI2C_BUS_ID_BEGIN__ && (ID) < eI2C_BUS_ID_END__)
+#define BUS_ID_IS_SPI(ID)       ((ID) >= eSPI_BUS_ID_BEGIN__ && (ID) < eSPI_BUS_ID_END__)
+#define BUS_ID_IS_UART(ID)      ((ID) >= eUART_BUS_ID_BEGIN__ && (ID) < eUART_BUS_ID_END__)
+#define SPI_BUS_ID_TO_IDX(ID)   ((ID) - eSPI_BUS_ID_BEGIN__)
+#define UART_BUS_ID_TO_IDX(ID)  ((ID) - eUART_BUS_ID_BEGIN__)
+#define I2C_BUS_ID_TO_IDX(ID)   ((ID) - eI2C_BUS_ID_BEGIN__)
+
+#define SPI_MAX_DEVICES_PER_BUS 3U
+typedef uint8_t eSPI_SPEED_t;
+enum {
+    eSPI_SPEED_NULL = 0U,
+    eSPI_SPEED_125KHZ,
+    eSPI_SPEED_250KHZ,
+    eSPI_SPEED_500KHZ,
+    eSPI_SPEED_1MHZ,
+    eSPI_SPEED_2MHZ,
+    eSPI_SPEED_4MHZ,
+    eSPI_SPEED_8MHZ,
+    eSPI_SPEED_16MHZ,
+    eSPI_SPEED_32MHZ,
+    eSPI_SPEED_64MHZ,
+    eSPI_SPEED_128MHZ,
+    eSPI_SPEED_256MHZ,
+    eSPI_SPEED_MAX
+};
+
+typedef uint8_t eUART_BAUDRATE_t;
+enum {
+    eUART_BAUDRATE_NULL = 0U,
+    eUART_BAUDRATE_9600,
+    eUART_BAUDRATE_19200,
+    eUART_BAUDRATE_38400,
+    eUART_BAUDRATE_57600,
+    eUART_BAUDRATE_115200,
+    eUART_BAUDRATE_230400,
+    eUART_BAUDRATE_460800,
+    eUART_BAUDRATE_921600,
+    eUART_BAUDRATE_1000000,
+    eUART_BAUDRATE_MAX
+};
 
 typedef uint8_t eTIMER_CHANNEL_ID_t;
 enum {
@@ -210,8 +256,34 @@ enum {
 #define EXTI_ID_VALID(ID)  ((ID) < eEXTI_ID_MAX)
 #define EXTI_ID_TO_IDX(ID) (ID)
 
-typedef uint8_t eDSHOT_TYPE_t;
-enum { eDSHOT_TYPE_150 = 0, eDSHOT_TYPE_300 = 1, eDSHOT_TYPE_600 = 2 };
+typedef uint8_t eDSHOT_SPEED_t;
+enum { eDSHOT_SPEED_NULL, eDSHOT_SPEED_150, eDSHOT_SPEED_300, eDSHOT_SPEED_600, eDSHOT_SPEED_MAX };
 
+typedef uint8_t eDSHOT_TYPE_t;
+enum {
+    eDSHOT_TYPE_NULL = 0U,
+    eDSHOT_TYPE_DMA_TO_TIMER,
+    eDSHOT_TYPE_TIMER_ONLY,
+    eDSHOT_TYPE_BB_ONLY,
+    eDSHOT_TYPE_MAX
+};
+
+#define DSHOT_SPEED_VALID(SPEED) ((SPEED) > eDSHOT_SPEED_NULL && (SPEED) < eDSHOT_SPEED_MAX)
+
+typedef uint8_t ePID_TYPE_t;
+enum { ePID_TYPE_NULL = 0U, ePID_TYPE_ANGLE, ePID_TYPE_RATE, ePID_TYPE_MAX };
+
+#define PID_TYPE_VALID(TYPE) ((TYPE) > ePID_TYPE_NULL && (TYPE) < ePID_TYPE_MAX)
+
+typedef uint8_t eACTUATOR_PROTOCOL_t;
+enum {
+    eACTUATOR_PROTOCOL_NULL = 0U,
+    eACTUATOR_PROTOCOL_PWM,
+    eACTUATOR_PROTOCOL_DSHOT,
+    eACTUATOR_PROTOCOL_MAX
+};
+
+#define ACTUATOR_PROTOCOL_VALID(TYPE) \
+    ((TYPE) > eACTUATOR_PROTOCOL_NULL && (TYPE) < eACTUATOR_PROTOCOL_MAX)
 
 #endif // CONF_IDS_H

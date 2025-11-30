@@ -45,7 +45,7 @@ void GPSCallback (BusCallbackData_t data) {
                 goto error;
             }
 
-            if (BUS_READ_BLOCK (gGPS.bus, &byte, 1) != eSTATUS_SUCCESS) {
+            if (BUS_READ_BLOCK (&gGPS.bus, &byte, 1) != eSTATUS_SUCCESS) {
                 goto error;
             }
 
@@ -60,47 +60,35 @@ void GPSCallback (BusCallbackData_t data) {
 done:
 error:
     gStartByte = 0;
-    BUS_READ_IT (gGPS.bus, (uint8_t*)&gStartByte, 1U);
+    BUS_READ_IT (&gGPS.bus, (uint8_t*)&gStartByte, 1U);
 }
 
 eSTATUS_t GPSInit (GPSInitConf_t conf, GPS_t* pOutGPS) {
 
-    // bool success     = true;
-    eSTATUS_t status = eSTATUS_SUCCESS;
-
-    DeviceBoardConf_t deviceConf = conf.boardConf;
-    eDEVICE_ID_t deviceId        = deviceConf.deviceId;
-    BusBoardConf_t* pBusConf     = deviceConf.generic.pBusBoardConf;
-    if (pBusConf == NULL) {
-        return eSTATUS_NULL_ARG;
+    if (FJ_IS_NULL (conf.pDevDesc) || !BUS_VALID (conf.pBus)) {
+        return eSTATUS_INVALID_ARG;
     }
-
-    eBUS_ID_t busId = pBusConf->busId;
-
-    vGPS_t* pGPS = &gGPS;
+    eSTATUS_t status    = eSTATUS_SUCCESS;
+    DevDesc_t* pDevDesc = conf.pDevDesc;
+    vGPS_t* pGPS        = &gGPS;
     if (pOutGPS != NULL) {
         pGPS = pOutGPS;
     }
 
-    if (pGPS->isInitialized == true) {
-        return eSTATUS_FAILURE;
+    if (pGPS->isInitialized) {
+        return eSTATUS_ALREADY_INITED;
     }
 
     memset (pGPS, 0, sizeof (GPS_t));
-    pGPS->busId    = busId;
-    pGPS->deviceId = deviceId;
+    pGPS->deviceId = DEV_DESC_GET_ID (pDevDesc);
 
-    BUS_INIT (&status, deviceConf, *pBusConf, &pGPS->bus);
+    // TODO: setup callbacks
 
-    if (pGPS->bus.ReadIT == NULL || pGPS->bus.ReadBlocking == NULL || pGPS->bus.RegisterCallback == NULL) {
-        goto error;
-    }
+    // BUS_REG_CALLBACK (&status, pGPS->bus, NULL, GPSCallback, eBUS_CALLBACK_ID_RX, 0);
+    // GOTO_IF (FJ_FAIL (status), error, "Failed to register GPS RX callback");
 
-    BUS_REG_CALLBACK (&status, pGPS->bus, NULL, GPSCallback, eBUS_CALLBACK_ID_RX, 0);
-    GOTO_IF (FJ_FAIL (status), error, "Failed to register GPS RX callback");
-
-    BUS_REG_CALLBACK (&status, pGPS->bus, NULL, GPSCallback, eBUS_CALLBACK_ID_ERROR, 0);
-    GOTO_IF (FJ_FAIL (status), error, "Failed to register GPS ERROR callback");
+    // BUS_REG_CALLBACK (&status, pGPS->bus, NULL, GPSCallback, eBUS_CALLBACK_ID_ERROR, 0);
+    // GOTO_IF (FJ_FAIL (status), error, "Failed to register GPS ERROR callback");
 
     pGPS->isInitialized = true;
     return status;
@@ -112,15 +100,15 @@ error:
 
 eSTATUS_t GPSStart (vGPS_t* pGPS) {
 
-    if (GPS_VALID (pGPS) == false) {
+    if (!GPS_VALID (pGPS)) {
         return eSTATUS_INVALID_ARG;
     }
-    return BUS_READ_IT (pGPS->bus, (uint8_t*)&gStartByte, 1U);
+    return BUS_READ_IT (&pGPS->bus, (uint8_t*)&gStartByte, 1U);
 }
 
 eSTATUS_t GPSUpdate (vGPS_t* pGPS, GPSData_t* pOutData) {
 
-    if (gSentenceReady == false) {
+    if (!gSentenceReady) {
         return eSTATUS_BUSY;
     }
 

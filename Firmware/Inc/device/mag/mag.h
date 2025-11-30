@@ -26,15 +26,15 @@ enum {
 };
 
 typedef struct {
-    DeviceBoardConf_t boardConf;
+    DevDesc_t* pDevDesc;
+    Bus_t* pBus;
 } MagInitConf_t;
 
 typedef struct Mag_s {
     eDEVICE_ID_t deviceId;
-    eBUS_ID_t busId;
+    Bus_t bus;
     Vec3u rawData;
     uint32_t msLastUpdateTime;
-    BusVTable_t bus;
     uint8_t nBusDummyBytes;
     bool isInitialized;
     bool usingEXTIInterrupt;
@@ -43,18 +43,11 @@ typedef struct Mag_s {
 
 typedef Mag_t vMag_t;
 
-eMAG_STATUS_t MagInit (MagInitConf_t conf, Mag_t* pOutMag, BusVTable_t* pBusOverride);
+eMAG_STATUS_t MagInit (MagInitConf_t conf, Mag_t* pOutMag, Bus_t* pBusOverride);
 eMAG_STATUS_t MagStart (vMag_t* pMag);
 eMAG_STATUS_t MagStop (vMag_t* pMag);
 eMAG_STATUS_t Mag_Update (vMag_t* pMag, bool forcePolling, Vec3f* pOutput);
 vMag_t const* MagGetActiveDevice (void);
 vMag_t* Mag_GetMutableActiveDevice (void);
-
-#define MAG_INIT(pSTATUS, DEVICE_BOARD_CONF)                   \
-    do {                                                       \
-        MagInitConf_t magConf = { 0 };                         \
-        magConf.boardConf     = (DEVICE_BOARD_CONF);           \
-        *(pSTATUS)            = MagInit (magConf, NULL, NULL); \
-    } while (0)
 
 #endif // DEVICE_MAG_MAG_H

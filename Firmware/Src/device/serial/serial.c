@@ -10,45 +10,41 @@
 #include <string.h>
 
 
-#define SERIAL_VALID(pSERIAL) \
-    ((pSERIAL) != NULL && (pSERIAL)->isInitialized == true && (pSERIAL)->bus.WriteBlocking != NULL)
+#define SERIAL_VALID(pSERIAL) ((pSERIAL) != NULL && (pSERIAL)->isInitialized)
+
 static SHARED_MEM_SECTION SerialDebug_t g_SerialDebug = { 0 };
 
 static void SerialDebugSink (uint8_t const* pData, uint32_t len) {
 
     if (SERIAL_VALID (&g_SerialDebug)) {
-        BUS_WRITE_BLOCK (g_SerialDebug.bus, pData, len);
+        Bus_Write (&g_SerialDebug.bus, eBUS_OP_MODE_BLOCK, pData, len);
     }
 }
 
 eSTATUS_t SerialDebugInit (SerialDebugInitConf_t conf, SerialDebug_t* pOutSerial) {
 
-    eSTATUS_t status             = eSTATUS_SUCCESS;
-    DeviceBoardConf_t deviceConf = conf.boardConf;
-    eDEVICE_ID_t deviceId        = deviceConf.deviceId;
-    BusBoardConf_t* pBusConf     = deviceConf.generic.pBusBoardConf;
-    if (pBusConf == NULL) {
-        return eSTATUS_FAILURE;
-    }
+    eSTATUS_t status    = eSTATUS_SUCCESS;
+    DevDesc_t* pDevDesc = conf.pDevDesc;
 
-    eBUS_ID_t busId = pBusConf->busId;
+    RETURN_IF_NULL (pDevDesc, eSTATUS_NULL_ARG, "Device description is NULL");
+    RETURN_IF_NOT (DEV_DESC_HAS_BUS (pDevDesc), eSTATUS_INVALID_ARG, "Device description is wrong type");
 
     SerialDebug_t* pSerial = &g_SerialDebug;
     if (pOutSerial != NULL) {
         pSerial = pOutSerial;
     }
 
-    if (pSerial->isInitialized == true) {
-        return eSTATUS_FAILURE;
+    if (pSerial->isInitialized) {
+        return eSTATUS_ALREADY_INITED;
     }
 
     memset (pSerial, 0, sizeof (SerialDebug_t));
-    pSerial->busId    = busId;
-    pSerial->deviceId = deviceId;
+    pSerial->deviceId = DEV_DESC_GET_ID (pDevDesc);
 
-    BUS_INIT (&status, deviceConf, *pBusConf, &pSerial->bus);
+    status = BUS_INIT (pDevDesc, &pSerial->bus);
+    GOTO_IF (FJ_FAIL (status), error, "Failed to init bus for serial debug");
 
-    if (pSerial->bus.WriteBlocking == NULL) {
+    if (!BUS_SUPPORTS_OP (&pSerial->bus, eBUS_OP_DIR_WRITE, eBUS_OP_MODE_BLOCK)) {
         goto error;
     }
 
@@ -62,7 +58,7 @@ error:
 
 eSTATUS_t SerialDebugStart (vSerialDebug_t* pSerial) {
 
-    if (SERIAL_VALID (pSerial) == false) {
+    if (!SERIAL_VALID (pSerial)) {
         return eSTATUS_FAILURE;
     }
     return eSTATUS_SUCCESS;
@@ -70,7 +66,7 @@ eSTATUS_t SerialDebugStart (vSerialDebug_t* pSerial) {
 
 vSerialDebug_t const* SerialDebugGetActiveDevice (void) {
 
-    if (SERIAL_VALID (&g_SerialDebug) == false) {
+    if (!SERIAL_VALID (&g_SerialDebug)) {
         return NULL;
     }
     return &g_SerialDebug;
@@ -78,7 +74,7 @@ vSerialDebug_t const* SerialDebugGetActiveDevice (void) {
 
 vSerialDebug_t* SerialDebugGetMutableActiveDevice (void) {
 
-    if (SERIAL_VALID (&g_SerialDebug) == false) {
+    if (!SERIAL_VALID (&g_SerialDebug)) {
         return NULL;
     }
     return &g_SerialDebug;

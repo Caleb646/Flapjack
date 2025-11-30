@@ -17,16 +17,17 @@
 #include <string.h>
 
 
-eSTATUS_t Device_InitAll (BoardConf_t* pBoardConf) {
+eSTATUS_t Device_InitAll (DeviceTree_t* pDeviceTree) {
 
-    RETURN_IF_NULL (pBoardConf, eSTATUS_FAILURE, "Board configuration is NULL");
+    RETURN_IF_NULL (pDeviceTree, eSTATUS_NULL_ARG, "Device tree is NULL");
     eSTATUS_t status = eSTATUS_SUCCESS;
     /*
      * Setup serial debug first so errors can be logged.
      * TODO: flash maybe should be setup first as well. So if serial debug
      * is not available logs can be written to flash.
      */
-    DeviceBoardConf_t* pSerialDebugConf = BoardConfGetDeviceById (eSERIAL_DEBUG_DEVICE_ID);
+    DevDesc_t* pSerial = DeviceTree_GetDeviceById (eSERIAL_DEBUG_DEVICE_ID);
+    RETURN_IF_NULL (pSerial, eSTATUS_FAILURE, "Serial debug device not found in device tree");
     if (pSerialDebugConf != NULL) {
         SERIAL_DEBUG_INIT (&status, *pSerialDebugConf);
         RETURN_IF (FJ_FAIL (status), status, "Failed to init serial debug");
@@ -34,8 +35,8 @@ eSTATUS_t Device_InitAll (BoardConf_t* pBoardConf) {
 
     for (uint32_t i = 0; i < pBoardConf->numDevices; ++i) {
 
-        DeviceBoardConf_t* pDevConf = pBoardConf->ppDeviceBoardConfs[i];
-        eDEVICE_ID_t deviceId       = pDevConf->deviceId;
+        DeviceDesc_t* pDevConf = pBoardConf->ppDeviceBoardConfs[i];
+        eDEVICE_ID_t deviceId  = pDevConf->deviceId;
         switch (deviceId) {
         case eIMU_DEVICE_ID:
             IMU_INIT (&status, *pDevConf);

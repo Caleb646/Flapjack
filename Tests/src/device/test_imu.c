@@ -13,22 +13,22 @@
 #error "UNIT_TEST should be defined in this file"
 #endif
 
-static GPIOBoardConf_t NssBoardConf  = { GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_0), NULL };
-static GPIOBoardConf_t SckBoardConf  = { GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_1), NULL };
-static GPIOBoardConf_t MisoBoardConf = { GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_2), NULL };
-static GPIOBoardConf_t MosiBoardConf = { GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_3), NULL };
-static GPIOBoardConf_t EXTIGpioConf  = { GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_4), NULL };
-static SPIDeviceMapping_t ConnectedDevices = { .deviceId = eIMU_DEVICE_ID, .pNssBoardConf = &NssBoardConf };
+static GPIODesc_t NssBoardConf  = { GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_0), NULL };
+static GPIODesc_t SckBoardConf  = { GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_1), NULL };
+static GPIODesc_t MisoBoardConf = { GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_2), NULL };
+static GPIODesc_t MosiBoardConf = { GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_3), NULL };
+static GPIODesc_t EXTIGpioConf  = { GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_4), NULL };
+static SPIDeviceDesc_t ConnectedDevices = { .deviceId = eIMU_DEVICE_ID, .pNssBoardConf = &NssBoardConf };
 
-static EXTIBoardConf_t IMUExtiConf = { .extiId = eEXTI_5_ID, .pGPIOBoardConf = &EXTIGpioConf };
+static EXTIDesc_t IMUExtiConf = { .extiId = eEXTI_5_ID, .pGPIOBoardConf = &EXTIGpioConf };
 
-static BusBoardConf_t testBusConf = { .busId        = eSPI_1_BUS_ID,
-                                      .SPIBoardConf = { .pSckBoardConf       = &SckBoardConf,
-                                                        .pMisoBoardConf      = &MisoBoardConf,
-                                                        .pMosiBoardConf      = &MosiBoardConf,
-                                                        .pConnectedDevices   = &ConnectedDevices,
-                                                        .numConnectedDevices = 1U,
-                                                        .speedKHz            = 1000U } };
+static BusDesc_t testBusConf = { .busId        = eSPI_1_BUS_ID,
+                                 .SPIBoardConf = { .pSckBoardConf       = &SckBoardConf,
+                                                   .pMisoBoardConf      = &MisoBoardConf,
+                                                   .pMosiBoardConf      = &MosiBoardConf,
+                                                   .pConnectedDevices   = &ConnectedDevices,
+                                                   .numConnectedDevices = 1U,
+                                                   .speedKHz            = 1000U } };
 
 #define FREE_GPIO()                      \
     do {                                 \

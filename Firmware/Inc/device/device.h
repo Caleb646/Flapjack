@@ -10,7 +10,7 @@
 #include <string.h>
 
 
-eSTATUS_t Device_InitAll (BoardConf_t* pBoardConf);
+eSTATUS_t Device_InitAll (DeviceTree_t* pBoardConf);
 eSTATUS_t Device_StartAll (void);
 
 #endif // DEVICE_DEVICE_H

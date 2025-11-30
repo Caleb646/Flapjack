@@ -20,27 +20,26 @@
 #define SERVO_COUNT (SERVO_MAX_SERVOS)
 
 typedef struct {
-    DeviceBoardConf_t boardConf;
+    DeviceDesc_t boardConf;
 } ServoInitConf_t;
 
 typedef struct Motor_s Motor_t;
 
 typedef struct Servo_s {
-    eDEVICE_ID_t servoId;
-    eDEVICE_ID_t linkedMotorId;
+    // eDEVICE_ID_t servoId;
+    // eDEVICE_ID_t linkedMotorId;
     vTimer_t* pTimer;
     uint32_t usLeftDutyCycle;
     uint32_t usMiddleDutyCycle;
     uint32_t usRightDutyCycle;
     float maxAngle;
     float usableMaxAngle;
-    float pitchMix;
-    float yawMix;
-    float rollMix;
+    // float pitchMix;
+    // float yawMix;
+    // float rollMix;
     // Between -usableMaxAngle angle and +usableMaxAngle angle
     float curAngle;
     float curTargetAngle;
-    bool usingDMA;
     bool isInitialized;
 } Servo_t;
 

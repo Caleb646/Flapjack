@@ -12,7 +12,7 @@
             "deviceName": "STM32H747BIT6",
             "deviceCore": "Cortex-M7",
             "runEntry": "main",
-            "connectUnderReset": true,
+            "connectUnderReset": true, 
             "serverShared": true,
             "serverHaltAllCores": true,
             "imagesAndSymbols": [
@@ -38,7 +38,7 @@
             "preLaunchTask": "Build Dev Board ELFs",
             "deviceName": "STM32H747BIT6",
             "deviceCore": "Cortex-M4",
-            "runEntry": "main",
+            // "runEntry": "main",
             "serverShared": true,
             "serverReset": "None",
             "serverPort": "61239",

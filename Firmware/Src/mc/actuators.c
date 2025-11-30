@@ -13,6 +13,7 @@
 #include <string.h>
 
 
+SHARED_MEM_SECTION ActuatorSystem_t g_ActuatorSystem = { 0 };
 
 #ifndef UNIT_TEST
 // static eSTATUS_t
@@ -99,6 +100,62 @@ FJ_STATIC eSTATUS_t ActuatorsArmMotor (Motor_t* pMotor) {
     //     i += increment;
     // }
     LOG_INFO ("Armed motor ID %u", pMotor->motorId);
+    return eSTATUS_SUCCESS;
+}
+
+FJ_STATIC eSTATUS_t Actuator_MotorInit (ActuatorInitConf_t conf, Actuator_t* pOutActuator) {
+
+    eSTATUS_t status    = eSTATUS_SUCCESS;
+    DevDesc_t* pDevDesc = conf.pDevDesc;
+
+    if (DEV_DESC_IS_PROT_DSHOT (pDevDesc)) {
+        // clang-format off
+        status = DShotInit ((DShotInitConf_t){.pDevDesc = pDevDesc}, NULL);
+        RETURN_IF(FJ_FAIL(status), status, "Failed to init dshot for motor ID %u", DEV_DESC_GET_ID(pDevDesc));
+        // clang-format on
+    } else {
+        LOG_ERROR ("Unsupported motor protocol");
+        return eSTATUS_INVALID_ARG;
+    }
+    return eSTATUS_SUCCESS;
+}
+
+eSTATUS_t Actuator_Init (ActuatorInitConf_t conf, Actuator_t* pOutActuator) {
+
+    if (FJ_IS_NULL (conf.pDevDesc) || !DEV_DESC_IS_ACTDEV (conf.pDevDesc)) {
+        LOG_ERROR ("Invalid argument(s) to Actuator_Init");
+        return eSTATUS_INVALID_ARG;
+    }
+
+    DevDesc_t* pDevDesc       = conf.pDevDesc;
+    eDEVICE_ID_t deviceId     = DEV_DESC_GET_ID (pDevDesc);
+    DevDesc_t* pLinkedDevDesc = DEV_DESC_GET_ACTDEV_LINKED (pDevDesc);
+    Actuator_t* pActuator     = NULL;
+
+    if (DEVICE_ID_IS_MOTOR (deviceId)) {
+        pActuator = &g_ActuatorSystem.pMotors[g_ActuatorSystem.motorCount++];
+    } else if (DEVICE_ID_IS_SERVO (deviceId)) {
+        pActuator = &g_ActuatorSystem.pServos[g_ActuatorSystem.servoCount++];
+    } else {
+        LOG_ERROR ("Device ID %u is not a valid actuator device ID", deviceId);
+        return eSTATUS_INVALID_ARG;
+    }
+
+    PIDDesc_t* pPidDesc         = DEV_DESC_GET_PID_DESC (pDevDesc);
+    ActProtDesc_t* pActProtDesc = DEV_DESC_GET_PROT_DESC (pDevDesc);
+    if (FJ_IS_NULL (pPidDesc) || FJ_IS_NULL (pActProtDesc)) {
+        LOG_ERROR ("Actuator device ID %u missing PID or protocol descriptor", deviceId);
+        return eSTATUS_INVALID_ARG;
+    }
+
+    memset (pActuator, 0, sizeof (Actuator_t));
+    pActuator->actId       = deviceId;
+    pActuator->pidDesc     = *pPidDesc;
+    pActuator->actProtDesc = *pActProtDesc;
+    if (pLinkedDevDesc != NULL) {
+        pActuator->linkedActId = DEV_DESC_GET_ID (pLinkedDevDesc);
+    }
+
     return eSTATUS_SUCCESS;
 }
 

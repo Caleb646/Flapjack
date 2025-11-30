@@ -8,13 +8,13 @@
 #include <string.h>
 
 typedef struct {
-    DeviceBoardConf_t boardConf;
+    DevDesc_t* pDevDesc;
+    Bus_t* pBus;
 } FlashInitConf_t;
 
 typedef struct {
-    eBUS_ID_t busId;
     eDEVICE_ID_t deviceId;
-    BusVTable_t bus;
+    Bus_t bus;
     bool isInitialized;
 } Flash_t;
 

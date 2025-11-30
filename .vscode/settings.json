@@ -1,16 +1,17 @@
 {
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "xaver.clang-format",
-    //"C_Cpp.formatting": "clangFormat",
-    // "C_Cpp.clang_format_path": "C:/Program Files (x86)/LLVM_Clang/bin/clang-format",
     "clang-format.executable": "C:/Program Files (x86)/LLVM_Clang/bin/clang-format",
-    // "clang-format.executable": "${Env:CLANG_FORMAT_PATH}",
-    // "clang-format.executable": "/usr/bin/clang-format", 
     "workbench.editor.wrapTabs": true,
-    
+
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "C_Cpp.default.compilerPath": "${workspaceFolder}/Tools/msys/mingw64/bin/arm-none-eabi-gcc.exe",
+    "C_Cpp.default.cStandard": "c11",
+    "C_Cpp.default.cppStandard": "gnu++17",
+    "C_Cpp.default.intelliSenseMode": "gcc-arm",
+    "C_Cpp.intelliSenseEngine": "default",
+    "C_Cpp.enhancedColorization": "enabled",
     "C_Cpp.codeAnalysis.clangTidy.enabled": true,
-    // "C_Cpp.codeAnalysis.clangTidy.path": "${Env:CLANG_TIDY_PATH}",
-    // "C_Cpp.codeAnalysis.clangTidy.path": "/usr/bin/clang-tidy",
     "C_Cpp.codeAnalysis.clangTidy.path": "C:/Program Files (x86)/LLVM_Clang/bin/clang-tidy",
     "C_Cpp.codeAnalysis.clangTidy.args": [
         "--config-file=${workspaceFolder}/.clang-tidy"
@@ -98,7 +99,20 @@
         "stm32h7xx_hal_gpio.h": "c",
         "stm32h747xx.h": "c",
         "cmsis_os.h": "c",
-        "expected": "c"
+        "expected": "c",
+        "cstdint": "c",
+        "bitset": "c",
+        "rope": "c",
+        "slist": "c",
+        "format": "c",
+        "span": "c",
+        "stacktrace": "c",
+        "regex": "c",
+        "valarray": "c",
+        "flat_map": "c",
+        "flat_set": "c",
+        "cfg.h": "c",
+        "any": "c"
     },
     "cmake.cmakePath": "cube-cmake",
     "cmake.configureArgs": [

@@ -13,27 +13,23 @@
 #include <string.h>
 
 
-#define FLASH_VALID(pFLASH)                                                                       \
-    (                                                                                             \
-    (pFLASH) != NULL && (pFLASH)->isInitialized == true && (pFLASH)->bus.WriteBlocking != NULL && \
-    (pFLASH)->bus.ReadBlocking != NULL && (pFLASH)->bus.WriteReadBlocking != NULL &&              \
-    (pFLASH)->bus.TransactionsBlocking != NULL                                                    \
-    )
+#define FLASH_VALID(pFLASH) \
+    ((pFLASH) != NULL && (pFLASH)->isInitialized && BUS_VALID (&(pFLASH)->bus))
 
 static SHARED_MEM_SECTION Flash_t g_Flash = { 0 };
 
 FJ_STATIC FJ_INLINE eSTATUS_t FlashRead_ (vFlash_t* pFlash, uint8_t* pRx, uint32_t size) {
-    return BUS_READ_BLOCK (pFlash->bus, pRx, size);
+    return BUS_READ_BLOCK (&pFlash->bus, pRx, size);
 }
 
 // clang-format off
 FJ_STATIC FJ_INLINE eSTATUS_t FlashWrite_ (vFlash_t* pFlash, uint8_t const* pTx, uint32_t size) {
-    return BUS_WRITE_BLOCK (pFlash->bus, pTx, size);
+    return BUS_WRITE_BLOCK (&pFlash->bus, pTx, size);
 }
 
 FJ_STATIC FJ_INLINE eSTATUS_t FlashWriteRead (vFlash_t* pFlash, uint8_t const* pTx, uint8_t* pRx, uint32_t size) {
     // clang-format on
-    return BUS_WRITE_READ_BLOCK (pFlash->bus, pTx, pRx, size);
+    return BUS_WRITE_READ_BLOCK (&pFlash->bus, pTx, pRx, size);
 }
 
 FJ_STATIC uint8_t FlashReadStatusReg (vFlash_t* pFlash, uint8_t regAddr) {
@@ -69,24 +65,24 @@ FJ_STATIC FJ_INLINE bool FlashCheckWriteInProgress (vFlash_t* pFlash) {
 }
 
 // clang-format off
-FJ_STATIC FJ_INLINE bool FlashWaitWriteInProgress (vFlash_t* pFlash, uint32_t timeout) {
+FJ_STATIC FJ_INLINE eSTATUS_t FlashWaitWriteInProgress (vFlash_t* pFlash, uint32_t timeout) {
     // clang-format on
     while (FlashCheckWriteInProgress (pFlash) && timeout-- > 0U) {
         DelayMicroseconds (1U);
     }
-    return timeout > 0U ? true : false;
+    return timeout > 0U ? eSTATUS_SUCCESS : eSTATUS_TIMEOUT;
 }
 
-FJ_STATIC FJ_INLINE bool FlashWriteEnable (vFlash_t* pFlash) {
+FJ_STATIC FJ_INLINE eSTATUS_t FlashWriteEnable (vFlash_t* pFlash) {
 
     uint8_t cmd = W25NO1GW_INSTR_WRITE_EN;
-    return FlashWrite_ (pFlash, &cmd, 1U) == eSTATUS_SUCCESS;
+    return FlashWrite_ (pFlash, &cmd, 1U);
 }
 
 FJ_STATIC eSTATUS_t FlashReset (vFlash_t* pFlash) {
 
-    bool success = FlashWaitWriteInProgress (pFlash, 1000U);
-    RETURN_IF (success == false, eSTATUS_TIMEOUT, "timeout waiting for flash not busy");
+    eSTATUS_t status = FlashWaitWriteInProgress (pFlash, 1000U);
+    RETURN_IF (FJ_FAIL (status), status, "timeout waiting for flash not busy");
 
     // uint8_t cmd = W25NO1GW_INSTR_DEV_RESET;
     // eSTATUS_t status = FlashWrite_ (pFlash, &cmd, 1);
@@ -98,24 +94,24 @@ FJ_STATIC eSTATUS_t FlashReset (vFlash_t* pFlash) {
 // clang-format off
 FJ_STATIC eSTATUS_t FlashStartProgram (vFlash_t* pFlash, uint16_t columnAddr, uint8_t const* pData, uint32_t size) {
     // clang-format on
-
     if (size > W25NO1GW_PAGE_WRITABLE_SIZE) {
         return eSTATUS_FAILURE;
     }
 
-    if (FlashWaitWriteInProgress (pFlash, 1000U) == false) {
-        return eSTATUS_TIMEOUT;
-    }
+    eSTATUS_t status = eSTATUS_SUCCESS;
 
-    if (FlashWriteEnable (pFlash) == false) {
-        return eSTATUS_FAILURE;
-    }
-    eSTATUS_t status     = eSTATUS_SUCCESS;
+    status = FlashWaitWriteInProgress (pFlash, 1000U);
+    RETURN_IF (FJ_FAIL (status), status, "timeout waiting for flash not busy");
+
+    status = FlashWriteEnable (pFlash);
+    RETURN_IF (FJ_FAIL (status), status, "Failed to enable flash write");
+
     uint8_t upperColAddr = (uint8_t)(((uint32_t)columnAddr >> 8U) & 0xFFU);
     uint8_t lowerColAddr = (uint8_t)(columnAddr & 0xFFU);
     uint8_t startCmd[]   = { W25NO1GW_INSTR_PROGRAM_DATA_LOAD, upperColAddr, lowerColAddr };
-    BUS_TRANSACTIONS_2WRITES (&status, pFlash->bus, startCmd, sizeof (startCmd), pData, size);
-    return status;
+    BUS_CREATE_TRANSACTIONS (transactions, 2U) = { BUS_CREATE_WRITE_TRANSACTION (startCmd, sizeof (startCmd)),
+                                                   BUS_CREATE_WRITE_TRANSACTION (pData, size) };
+    return BUS_DO_TRANSACTIONS_BLOCK (&pFlash->bus, transactions, 2U);
 }
 
 FJ_STATIC eSTATUS_t FlashExecuteProgram (vFlash_t* pFlash, uint16_t pageAddr) {
@@ -139,37 +135,24 @@ static void FlashDebugSink (uint8_t const* pData, uint32_t len) {
 
 eSTATUS_t FlashInit (FlashInitConf_t conf, Flash_t* pOutFlash) {
 
-    bool success     = true;
-    eSTATUS_t status = eSTATUS_SUCCESS;
-
-    DeviceBoardConf_t deviceConf = conf.boardConf;
-    eDEVICE_ID_t deviceId        = deviceConf.deviceId;
-    BusBoardConf_t* pBusConf     = deviceConf.generic.pBusBoardConf;
-    if (pBusConf == NULL) {
-        return eSTATUS_FAILURE;
+    if (FJ_IS_NULL (conf.pDevDesc) || !BUS_VALID (conf.pBus)) {
+        return eSTATUS_INVALID_ARG;
     }
 
-    eBUS_ID_t busId = pBusConf->busId;
-
-    vFlash_t* pFlash = &g_Flash;
+    eSTATUS_t status    = eSTATUS_SUCCESS;
+    DevDesc_t* pDevDesc = conf.pDevDesc;
+    vFlash_t* pFlash    = &g_Flash;
     if (pOutFlash != NULL) {
         pFlash = pOutFlash;
     }
 
-    if (pFlash->isInitialized == true) {
-        return eSTATUS_FAILURE;
+    if (pFlash->isInitialized) {
+        return eSTATUS_ALREADY_INITED;
     }
 
     memset (pFlash, 0, sizeof (Flash_t));
-    pFlash->busId    = busId;
-    pFlash->deviceId = deviceId;
-
-    BUS_INIT (&status, deviceConf, *pBusConf, &pFlash->bus);
-
-    if (pFlash->bus.WriteBlocking == NULL || pFlash->bus.ReadBlocking == NULL ||
-        pFlash->bus.WriteReadBlocking == NULL || pFlash->bus.TransactionsBlocking == NULL) {
-        goto error;
-    }
+    pFlash->deviceId = DEV_DESC_GET_ID (pDevDesc);
+    pFlash->bus      = *conf.pBus;
 
     status = FlashReset (pOutFlash);
     RETURN_IF (FJ_FAIL (status), status, "Failed to reset flash devices");
@@ -177,8 +160,7 @@ eSTATUS_t FlashInit (FlashInitConf_t conf, Flash_t* pOutFlash) {
     uint8_t manufacturerId = 0U;
     uint16_t flashDeviceId = 0U;
     status                 = FlashReadJEDECID (pOutFlash, &manufacturerId, &flashDeviceId);
-    success = manufacturerId == W25NO1GW_MANUFACTURER_ID && flashDeviceId == W25NO1GW_DEVICE_ID;
-    if (FJ_FAIL (status) || success == false) {
+    if (FJ_FAIL (status) || !(manufacturerId == W25NO1GW_MANUFACTURER_ID && flashDeviceId == W25NO1GW_DEVICE_ID)) {
         LOG_ERROR ("Flash Manufacturer ID: 0x%02X", manufacturerId);
         LOG_ERROR ("Flash Device ID: 0x%04X", flashDeviceId);
         goto error;
@@ -195,7 +177,7 @@ error:
 
 eSTATUS_t FlashStart (vFlash_t* pFlash) {
 
-    if (FLASH_VALID (pFlash) == false) {
+    if (!FLASH_VALID (pFlash)) {
         return eSTATUS_FAILURE;
     }
 
@@ -204,7 +186,7 @@ eSTATUS_t FlashStart (vFlash_t* pFlash) {
 
 eSTATUS_t FlashWrite (vFlash_t* pFlash, uint32_t addr, uint8_t const* pData, uint32_t size, uint32_t* pBytesWritten) {
 
-    if (FLASH_VALID (pFlash) == false) {
+    if (!FLASH_VALID (pFlash)) {
         return eSTATUS_FAILURE;
     }
 
@@ -240,7 +222,7 @@ eSTATUS_t FlashWrite (vFlash_t* pFlash, uint32_t addr, uint8_t const* pData, uin
 
 vFlash_t const* FlashGetActiveDevice (void) {
 
-    if (FLASH_VALID (&g_Flash) == false) {
+    if (!FLASH_VALID (&g_Flash)) {
         return NULL;
     }
     return &g_Flash;
@@ -248,7 +230,7 @@ vFlash_t const* FlashGetActiveDevice (void) {
 
 vFlash_t* FlashGetMutableActiveDevice (void) {
 
-    if (FLASH_VALID (&g_Flash) == false) {
+    if (!FLASH_VALID (&g_Flash)) {
         return NULL;
     }
     return &g_Flash;

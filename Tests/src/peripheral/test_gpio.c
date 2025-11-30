@@ -95,11 +95,11 @@ void test_GPIO_ownership_tracking (void) {
     TEST_ASSERT_EQUAL (eDEVICE_ID_NULL, pIO->ownerId);
 
     // Create a test GPIO configuration with minimal setup
-    GPIOBoardConf_t test_config = { .id   = test_gpio,
-                                    .conf = { .mode      = 0x1, // Output mode
-                                              .pull      = 0x0, // No pull
-                                              .speed     = 0x0, // Low speed
-                                              .alternate = 0 } };
+    GPIODesc_t test_config = { .id   = test_gpio,
+                               .conf = { .mode      = 0x1, // Output mode
+                                         .pull      = 0x0, // No pull
+                                         .speed     = 0x0, // Low speed
+                                         .alternate = 0 } };
 
     // Initialize GPIO with device1 - should succeed
     eSTATUS_t result = GPIOInit (device1, test_config);
@@ -136,11 +136,11 @@ void test_GPIO_multiple_allocations (void) {
 
     // Allocate all GPIOs
     for (uint8_t i = 0; i < num_gpios; i++) {
-        GPIOBoardConf_t config = { .id   = gpios[i],
-                                   .conf = { .mode      = 0x1, // Output mode
-                                             .pull      = 0x0, // No pull
-                                             .speed     = 0x0, // Low speed
-                                             .alternate = 0 } };
+        GPIODesc_t config = { .id   = gpios[i],
+                              .conf = { .mode      = 0x1, // Output mode
+                                        .pull      = 0x0, // No pull
+                                        .speed     = 0x0, // Low speed
+                                        .alternate = 0 } };
 
         eSTATUS_t result = GPIOInit (devices[i], config);
         TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result);

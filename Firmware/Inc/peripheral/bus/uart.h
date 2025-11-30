@@ -4,7 +4,7 @@
 #include "conf/conf.h"
 #include "core/core.h"
 #include "hal.h"
-#include "peripheral/bus/bus_core.h"
+#include "peripheral/bus/common.h"
 #include "peripheral/gpio.h"
 
 
@@ -19,8 +19,7 @@ enum {
 };
 
 typedef struct {
-    DeviceBoardConf_t deviceBoardConf;
-    BusBoardConf_t busBoardConf;
+    BusDesc_t* pBusDesc;
 } UARTInitConf_t;
 
 typedef struct {
@@ -44,15 +43,6 @@ eSTATUS_t UARTRegisterCallback (vUARTBus_t* pBus, eDEVICE_ID_t deviceId, BusCall
 eSTATUS_t UARTEnableInterrupts (vUARTBus_t* pBus, uint32_t priority);
 // clang-format on
 
-#define UART_INIT(DEVICE_BOARD_CONF, UART_BOARD_CONF) \
-    UARTInit ((UARTInitConf_t){ .deviceBoardConf = (DEVICE_BOARD_CONF), .busBoardConf = (UART_BOARD_CONF) }, NULL)
-
-// clang-format off
-eSTATUS_t UART_READ_BLOCKING(void* pCtx, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size);
-eSTATUS_t UART_WRITE_BLOCKING(void* pCtx, eDEVICE_ID_t deviceId, uint8_t const* pData, size_t size);
-eSTATUS_t UART_READ_IT(void* pCtx, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size);
-eSTATUS_t UART_REGISTER_CALLBACK(void* pCtx, eDEVICE_ID_t deviceId, BusCallback_t callback);
-
-// clang-format on
+#define UART_INIT(pBUSDESC) UARTInit ((UARTInitConf_t){ .pBusDesc = (pBUSDESC) }, NULL)
 
 #endif // PERIPHS_UART_H

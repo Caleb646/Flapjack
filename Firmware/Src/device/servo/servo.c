@@ -105,18 +105,18 @@ eSTATUS_t ServoInit (ServoInitConf_t conf, Servo_t* pOutServo) {
         isVectorInitialized = true;
     }
 
-    eSTATUS_t status             = eSTATUS_SUCCESS;
-    DeviceBoardConf_t deviceConf = conf.boardConf;
-    eDEVICE_ID_t servoId         = deviceConf.deviceId;
+    eSTATUS_t status        = eSTATUS_SUCCESS;
+    DeviceDesc_t deviceConf = conf.boardConf;
+    eDEVICE_ID_t servoId    = deviceConf.deviceId;
     RETURN_IF (DEVICE_ID_IS_SERVO (servoId) == false, eSTATUS_FAILURE, "Invalid servo ID: %u", servoId);
 
-    ServoDeviceConf_t servoConf       = deviceConf.servo;
-    TimerBoardConf_t* pTimerBoardConf = servoConf.pTimerBoardConf;
+    ServoDeviceConf_t servoConf  = deviceConf.servo;
+    TimerDesc_t* pTimerBoardConf = servoConf.pTimerBoardConf;
     RETURN_IF_NULL (pTimerBoardConf, eSTATUS_FAILURE, "ServoInit: pTimerBoardConf is NULL");
-    eTIMER_ID_t timerId                      = pTimerBoardConf->timerId;
-    DeviceBoardConf_t* pLinkedMotorBoardConf = servoConf.pLinkedMotorBoardConf;
+    eTIMER_ID_t timerId                 = pTimerBoardConf->timerId;
+    DeviceDesc_t* pLinkedMotorBoardConf = servoConf.pLinkedMotorBoardConf;
 
-    uint32_t pwmFrequency = servoConf.pwmFrequency;
+    uint32_t pwmFrequency = servoConf.pwmFreq;
     float pidRollMix      = servoConf.pidRollMix;
     float pidPitchMix     = servoConf.pidPitchMix;
     float pidYawMix       = servoConf.pidYawMix;

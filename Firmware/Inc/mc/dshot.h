@@ -17,21 +17,17 @@
 #define DSHOT_MAX_THROTTLE    2047U
 #define DSHOT_RANGE           (DSHOT_MAX_THROTTLE - DSHOT_MIN_THROTTLE)
 
-typedef uint8_t eDSHOT_OP_MODE_t;
-enum { eDSHOT_OP_MODE_BB_NO_TIMER = 0, eDSHOT_OP_MODE_BB_WITH_TIMER = 1, eDSHOT_OP_MODE_DMA = 2 };
-
 typedef struct DShot_s DShot_t;
 typedef DShot_t vDShot_t;
 typedef eSTATUS_t (*DShot_Write_Fn_t) (vDShot_t* pDShot, uint16_t motorVal);
 
 typedef struct {
-    eDEVICE_ID_t motorId;
-    MotorDeviceConf_t motorBoardConf;
+    DevDesc_t* pDevDesc;
 } DShotInitConf_t;
 
 typedef struct DShot_s {
     eDSHOT_TYPE_t dshotType;
-    eDSHOT_OP_MODE_t opMode;
+    eDSHOT_SPEED_t dshotSpeed;
     eDEVICE_ID_t deviceId;
 
     union {
@@ -65,13 +61,6 @@ eSTATUS_t DShotInit (DShotInitConf_t conf, DShot_t* pOutDShot);
 eSTATUS_t DShotStart (vDShot_t* pDShot);
 eSTATUS_t DShotStop (vDShot_t* pDShot);
 eSTATUS_t DShotWrite (vDShot_t* pDShot, uint16_t motorVal);
-
-#define DSHOT_INIT(DEVICE_BOARD_CONF)                                  \
-    DShotInit (                                                        \
-    (DShotInitConf_t){ .motorId        = (DEVICE_BOARD_CONF).deviceId, \
-                       .motorBoardConf = (DEVICE_BOARD_CONF).motor },  \
-    NULL                                                               \
-    )
 
 #define DSHOT_START(MOTOR_ID)        DShotStart (DShotGetById (MOTOR_ID))
 #define DSHOT_STOP(MOTOR_ID)         DShotStop (DShotGetById (MOTOR_ID))

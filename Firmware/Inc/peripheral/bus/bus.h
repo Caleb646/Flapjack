@@ -4,77 +4,95 @@
 #include "conf/board.h"
 #include "conf/ids.h"
 #include "core/core.h"
-#include "peripheral/bus/bus_core.h"
+#include "peripheral/bus/common.h"
 #include "peripheral/bus/i2c.h"
 #include "peripheral/bus/spi.h"
 #include "peripheral/bus/uart.h"
 #include <stdbool.h>
 #include <stdint.h>
 
+typedef uint32_t eBUS_OP_MODE_t;
+enum {
+    eBUS_OP_MODE_NULL  = 0U,
+    eBUS_OP_MODE_BLOCK = 1U,
+    eBUS_OP_MODE_IT    = 2U,
+    eBUS_OP_MODE_DMA   = 3U
+};
 
-// clang-format off
+typedef uint32_t eBUS_OP_DIR_t;
+enum {
+    eBUS_OP_DIR_NULL        = 0U,
+    eBUS_OP_DIR_READ        = (1U << 0U),
+    eBUS_OP_DIR_WRITE       = (1U << 4U),
+    eBUS_OP_DIR_WRITE_READ  = (1U << 8U),
+    eBUS_OP_DIR_TRANSACTION = (1U << 12U)
+};
 
-#define BUS_VTABLE_VALID(pVTable) (pVTable != NULL && pVTable->pCtx != NULL)
+typedef uint32_t eBUS_TYPE_t;
+enum {
+    eBUS_TYPE_NULL = 0U,
+    eBUS_TYPE_I2C  = (1 << 2U),
+    eBUS_TYPE_SPI  = (1 << 3U),
+    eBUS_TYPE_UART = (1 << 4U)
+};
+
+
+#define BUS_MAKE_TYPE_ID(TYPE, MODE) ((uint32_t)(TYPE) | (uint32_t)(MODE))
+#define BUS_MAKE_OP_ID(DIR, MODE)    ((uint32_t)(DIR) << (uint32_t)(MODE))
+#define BUS_SUPPORTS_OP(pBUS, DIR, MODE) \
+    (((pBUS)->supportedOps & BUS_MAKE_OP_ID ((DIR), (MODE))) != 0U)
 
 typedef struct {
-    BusReadFn_t ReadBlocking;
-    BusReadFn_t ReadIT;
-    BusWriteFn_t WriteBlocking;
-    BusWriteReadFn_t WriteReadBlocking;
-    BusTransactionsFn_t TransactionsBlocking;
-    BusRegisterCallbackFn_t RegisterCallback;
+    // BusReadFn_t ReadBlocking;
+    // BusReadFn_t ReadIT;
+    // BusWriteFn_t WriteBlocking;
+    // BusWriteReadFn_t WriteReadBlocking;
+    // BusTransactionsFn_t TransactionsBlocking;
+    // BusRegisterCallbackFn_t RegisterCallback;
     eDEVICE_ID_t deviceId;
-    void* pCtx; // spi, i2c, uart bus
-} BusVTable_t;
+    eBUS_ID_t busId;
+    eBUS_TYPE_t busType;
+    uint32_t supportedOps; // eBUS_OP_MODE_t | eBUS_OP_DIR_t
+    void* pCtx;            // spi, i2c, uart bus
+    bool isInitialized;
+} Bus_t;
+
+#define BUS_IS_SPI(pBUS)  (BUS_ID_IS_SPI ((pBUS)->busId))
+#define BUS_IS_UART(pBUS) (BUS_ID_IS_UART ((pBUS)->busId))
+#define BUS_VALID(pBUS)   ((pBUS) != NULL && (pBUS)->isInitialized && (pBUS)->pCtx != NULL)
 
 typedef struct {
-    DeviceBoardConf_t deviceBoardConf;
-    BusBoardConf_t busBoardConf;
+    DevDesc_t* pDevDesc;
 } BusInitConf_t;
 
-eSTATUS_t BusInit (BusInitConf_t conf, BusVTable_t* pOutBusVTable);
+eSTATUS_t Bus_Init (BusInitConf_t conf, Bus_t* pOutBus);
+eSTATUS_t Bus_Read (Bus_t* pBus, eBUS_OP_MODE_t opMode, uint8_t* pData, size_t size);
+eSTATUS_t Bus_Write (Bus_t* pBus, eBUS_OP_MODE_t opMode, uint8_t const* pData, size_t size);
+eSTATUS_t Bus_WriteRead (Bus_t* pBus, eBUS_OP_MODE_t opMode, uint8_t const* pTxData, uint8_t* pRxData, size_t size);
+eSTATUS_t Bus_Transactions (Bus_t* pBus, eBUS_OP_MODE_t opMode, BusTransaction_t* pTransactions, size_t nTransactions);
+eSTATUS_t Bus_RegisterCallback (Bus_t* pBus, BusCallback_t callback);
 
-// clang-format on
+#define BUS_INIT(pDEV_DESC, pOUT_BUS_VTABLE) \
+    Bus_Init ((BusInitConf_t){ .pDevDesc = (pDEV_DESC) }, pOUT_BUS_VTABLE)
 
-#define BUS_INIT(pSTATUS, DEV_BOARD_CONF, BUS_BOARD_CONF, pOUT_BUS_VTABLE)                                                   \
-    do {                                                                                                                     \
-        *(pSTATUS) =                                                                                                         \
-        BusInit ((BusInitConf_t){ .deviceBoardConf = (DEV_BOARD_CONF), .busBoardConf = (BUS_BOARD_CONF) }, pOUT_BUS_VTABLE); \
-    } while (0)
+#define BUS_READ_BLOCK(pBUS, pDATA, SIZE)  Bus_Read ((pBUS), eBUS_OP_MODE_BLOCK, (pDATA), (SIZE))
+#define BUS_READ_IT(pBUS, pDATA, SIZE)     Bus_Read ((pBUS), eBUS_OP_MODE_IT, (pDATA), (SIZE))
 
-// clang-format off
-#define BUS_READ_BLOCK(BUS_VTABLE, pDATA, SIZE) \
-    (BUS_VTABLE).ReadBlocking ((BUS_VTABLE).pCtx, (BUS_VTABLE).deviceId, (pDATA), (SIZE))
+#define BUS_WRITE_BLOCK(pBUS, pDATA, SIZE) Bus_Write ((pBUS), eBUS_OP_MODE_BLOCK, (pDATA), (SIZE))
+#define BUS_WRITE_READ_BLOCK(pBUS, pTX_DATA, pRX_DATA, SIZE) \
+    Bus_WriteRead ((pBUS), eBUS_OP_MODE_BLOCK, (pTX_DATA), (pRX_DATA), (SIZE))
 
-#define BUS_READ_IT(BUS_VTABLE, pDATA, SIZE) \
-    (BUS_VTABLE).ReadIT ((BUS_VTABLE).pCtx, (BUS_VTABLE).deviceId, (pDATA), (SIZE))
+#define BUS_CREATE_TRANSACTIONS(NAME, NUMBER_OF_TRANSACTIONS) \
+    BusTransaction_t NAME[NUMBER_OF_TRANSACTIONS]
 
-#define BUS_WRITE_BLOCK(BUS_VTABLE, pDATA, SIZE) \
-    (BUS_VTABLE).WriteBlocking ((BUS_VTABLE).pCtx, (BUS_VTABLE).deviceId, (pDATA), (SIZE))
+#define BUS_CREATE_TRANSACTION(pTX, TX_SIZE, pRX, RX_SIZE) \
+    { .pTxData = (pTX), .txSize = (TX_SIZE), .pRxData = (pRX), .rxSize = (RX_SIZE) }
 
-#define BUS_WRITE_READ_BLOCK(BUS_VTABLE, pTX_DATA, pRX_DATA, SIZE) \
-    (BUS_VTABLE).WriteReadBlocking ((BUS_VTABLE).pCtx, (BUS_VTABLE).deviceId, (pTX_DATA), (pRX_DATA), (SIZE))
+#define BUS_CREATE_WRITE_TRANSACTION(pTX, TX_SIZE) \
+    { .pTxData = (pTX), .txSize = (TX_SIZE), .pRxData = NULL, .rxSize = 0U }
 
-// clang-format on
-
-#define BUS_TRANSACTIONS_2WRITES(pSTATUS, BUS_VTABLE, pTX1, TX1_SIZE, pTX2, TX2_SIZE)                 \
-    do {                                                                                              \
-        BusTransaction_t trans[2U] = { 0 };                                                           \
-        trans[0].pTxData           = (pTX1);                                                          \
-        trans[0].txSize            = (TX1_SIZE);                                                      \
-        trans[0].pRxData           = NULL;                                                            \
-        trans[0].rxSize            = 0;                                                               \
-        trans[1].pTxData           = (pTX2);                                                          \
-        trans[1].txSize            = (TX2_SIZE);                                                      \
-        trans[1].pRxData           = NULL;                                                            \
-        trans[1].rxSize            = 0;                                                               \
-        if ((BUS_VTABLE).TransactionsBlocking == NULL) {                                              \
-            *(pSTATUS) = eSTATUS_NULL_ARG;                                                            \
-            break;                                                                                    \
-        }                                                                                             \
-        *(pSTATUS) =                                                                                  \
-        (BUS_VTABLE).TransactionsBlocking ((BUS_VTABLE).pCtx, (BUS_VTABLE).deviceId, &trans[0U], 2U); \
-    } while (0)
+#define BUS_DO_TRANSACTIONS_BLOCK(pBUS, pTRANSACTIONS, N_TRANSACTIONS) \
+    Bus_Transactions ((pBUS), eBUS_OP_MODE_BLOCK, (pTRANSACTIONS), (N_TRANSACTIONS))
 
 // Takes in a variable amount of sub callback ids
 #define BUS_REG_CALLBACK(pSTATUS, BUS_VTABLE, pUSER_DATA, CALLBACK, CALLBACK_ID, ...)              \

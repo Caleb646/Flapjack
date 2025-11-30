@@ -11,7 +11,8 @@
 
 
 typedef struct {
-    DeviceBoardConf_t boardConf;
+    DevDesc_t* pDevDesc;
+    Bus_t* pBus;
 } GPSInitConf_t;
 
 typedef struct {
@@ -26,9 +27,8 @@ typedef struct {
 } GPSData_t;
 
 typedef struct {
-    eBUS_ID_t busId;
     eDEVICE_ID_t deviceId;
-    BusVTable_t bus;
+    Bus_t bus;
     bool isInitialized;
 } GPS_t;
 

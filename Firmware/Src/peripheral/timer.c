@@ -124,11 +124,11 @@ static eSTATUS_t Timer_BaseInit (vTimer_t* pTimer, TimerInitConf_t conf) {
 
     RETURN_IF (pTimer->isTimerInitialized == true, eSTATUS_FAILURE, "Timer already initialized");
 
-    TimerBoardConf_t boardConf = conf.timerBoardConf;
-    eTIMER_ID_t timerId        = boardConf.timerId;
-    eDEVICE_ID_t deviceId      = conf.deviceId;
-    eTIMER_MODE_t mode         = conf.mode;
-    bool usingDMA              = conf.usingDMA;
+    TimerDesc_t boardConf = conf.timerBoardConf;
+    eTIMER_ID_t timerId   = boardConf.timerId;
+    eDEVICE_ID_t deviceId = conf.deviceId;
+    eTIMER_MODE_t mode    = conf.mode;
+    bool usingDMA         = conf.usingDMA;
 
     memset (pTimer, 0, sizeof (vTimer_t));
     pTimer->deviceId = deviceId;
@@ -235,10 +235,10 @@ static eSTATUS_t Timer_DMAInit (vTimer_t* pTimer, TimerInitConf_t conf) {
 static eSTATUS_t Timer_GPIOInit (vTimer_t* pTimer, TimerInitConf_t conf) {
 
     FJ_UNUSED (pTimer);
-    eSTATUS_t status                      = eSTATUS_SUCCESS;
-    TimerBoardConf_t boardConf            = conf.timerBoardConf;
-    eTIMER_ID_t timerId                   = boardConf.timerId;
-    GPIOBoardConf_t const* pGPIOBoardConf = boardConf.pGPIOBoardConf;
+    eSTATUS_t status                 = eSTATUS_SUCCESS;
+    TimerDesc_t boardConf            = conf.timerBoardConf;
+    eTIMER_ID_t timerId              = boardConf.timerId;
+    GPIODesc_t const* pGPIOBoardConf = boardConf.pGPIOBoardConf;
     GPIO_INIT (&status, timerId, *pGPIOBoardConf);
     RETURN_IF (FJ_FAIL (status), status, "Failed to initialize timer GPIO");
 
@@ -257,10 +257,10 @@ vTimer_t* Timer_Get_ById (eTIMER_ID_t timerId) {
 
 eSTATUS_t Timer_Init (TimerInitConf_t conf, vTimer_t* pOutTimer) {
 
-    eSTATUS_t status           = eSTATUS_SUCCESS;
-    TimerBoardConf_t boardConf = conf.timerBoardConf;
-    eTIMER_ID_t timerId        = boardConf.timerId;
-    bool usingDMA              = conf.usingDMA;
+    eSTATUS_t status      = eSTATUS_SUCCESS;
+    TimerDesc_t boardConf = conf.timerBoardConf;
+    eTIMER_ID_t timerId   = boardConf.timerId;
+    bool usingDMA         = conf.usingDMA;
 
     vTimer_t* pTimer = Timer_Get_ById (timerId);
     if (pOutTimer != NULL) {

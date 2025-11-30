@@ -1,0 +1,9 @@
+#ifndef STM32H747I_DISCO_H
+#define STM32H747I_DISCO_H
+
+#define BOARD_NAME "STM32H747I-DISCO"
+
+#define USE_SPI_1
+
+
+#endif // STM32H747I_DISCO_H

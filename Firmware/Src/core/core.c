@@ -1,6 +1,7 @@
 #include "core/core.h"
 #include "common.h"
 #include "hal.h"
+#include "peripheral/gpio.h"
 #include <string.h>
 
 float ge_ScaledSystemCoreClock = 0.0F;
@@ -86,7 +87,11 @@ eSTATUS_t Core_Init (void) {
             return eSTATUS_FAILURE;
         }
 
-        if (FJ_FAIL (BoardConfInit ())) {
+        if (FJ_FAIL (GPIOSystemInit ())) {
+            return eSTATUS_FAILURE;
+        }
+
+        if (FJ_FAIL (DeviceTree_Init ())) {
             return eSTATUS_FAILURE;
         }
 
