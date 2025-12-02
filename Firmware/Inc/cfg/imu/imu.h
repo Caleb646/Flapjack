@@ -7,22 +7,21 @@
 
 #include "targets/target.h"
 
+#include "cfg/bus/bus.h"
+
 
 typedef struct {
-
     uint8_t devId;
-    uint8_t busId;
-    uint8_t busType; //
-    uint8_t spiNssGpioId;
+
+    BusDeviceCfg_t busCfg;
+
     uint8_t extiGpioId;
-    uint8_t i2cAddress;
 
     uint8_t alignment;
     uint8_t sampleRateHz;
-
 } IMUCfg_t;
 
-CFG_DECLARE_ARRAY (IMUCfg_t, IMUCfg, MAX_IMUS);
+CFG_DECLARE_ARRAY (IMUCfg_t, IMUCfg, TARG_MAX_IMUS);
 
 #define IMU_CFG_INIT(DEV_ID, ALIGNMENT, SAMPLE_RATE_HZ)                        \
     IMUCfg_GetMutable (DEV_ID_TO_CFG_ID (DEV_ID))->devId        = (DEV_ID);    \

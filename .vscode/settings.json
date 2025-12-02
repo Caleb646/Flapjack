@@ -112,7 +112,8 @@
         "flat_map": "c",
         "flat_set": "c",
         "cfg.h": "c",
-        "any": "c"
+        "any": "c",
+        "bus_defs.h": "c"
     },
     "cmake.cmakePath": "cube-cmake",
     "cmake.configureArgs": [
