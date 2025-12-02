@@ -5,10 +5,12 @@
 
 #include "drivers/bus/bus_defs.h"
 
+#include "drivers/io/gpio_defs.h"
+
 typedef struct {
-    uint8_t busId;
-    uint8_t busType; // eBUS_TYPE_t
-    uint8_t spiNssGpioId;
+    eBUS_DEV_ID_t busId;
+    eBUS_TYPE_t busType;
+    eGPIO_ID_t spiNssGpioId;
     uint8_t i2cAddress;
 } BusDeviceCfg_t;
 
