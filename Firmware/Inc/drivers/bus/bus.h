@@ -11,6 +11,6 @@
 
 // eSTATUS_t Plat_Bus_SPIInit (eSPI_DEV_ID_t spiDevId, BusDeviceSPI_t* pOutSpiBusDevice);
 
-eSTATUS_t Bus_Init (BusDeviceCfg_t busDeviceCfg, BusDevice_t* pOutBusDevice);
+eSTATUS_t Bus_Init (BusDeviceCfg_t* pBusDeviceCfg, BusDevice_t* pOutBusDevice);
 
 #endif

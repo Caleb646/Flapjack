@@ -9,17 +9,46 @@
 
 #include "drivers/io/gpio_defs.h"
 
+#include "drivers/sensors/inertial/inertial.h"
+
 #include "targets/target.h"
 
-typedef struct InertialCfg_s {
-    uint8_t id;
+#if !defined(TARG_MAX_ACCS) || !defined(TARG_MAX_GYROS) || !defined(TARG_MAX_MAGS)
+#error "TARG_MAX_ACCS, TARG_MAX_GYROS, and TARG_MAX_MAGS must be defined in target.h"
+#endif
+
+#if TARG_MAX_ACCS < 1 || TARG_MAX_GYROS < 1 || TARG_MAX_MAGS < 1
+#error "TARG_MAX_ACCS, TARG_MAX_GYROS, and TARG_MAX_MAGS must be at least 1"
+#endif
+
+typedef struct AccCfg_s {
+    INER_TYPE_t type;
     BusDeviceCfg_t busCfg;
     eGPIO_ID_t extiGpioId;
     uint8_t alignment;
-    uint8_t sampleRateHz;
-} InertialCfg_t;
+    uint16_t sampleRateHz;
+} AccCfg_t;
 
-CFG_DECLARE_ARRAY (InertialCfg_t, InertialCfg, TARG_MAX_IMUS * 3U);
+typedef struct GyroCfg_s {
+    INER_TYPE_t type;
+    BusDeviceCfg_t busCfg;
+    eGPIO_ID_t extiGpioId;
+    uint8_t alignment;
+    uint16_t sampleRateHz;
+} GyroCfg_t;
+
+typedef struct MagCfg_s {
+    INER_TYPE_t type;
+    BusDeviceCfg_t busCfg;
+    eGPIO_ID_t extiGpioId;
+    uint8_t alignment;
+    uint16_t sampleRateHz;
+} MagCfg_t;
+
+
+CFG_DECLARE (AccCfg_t, AccCfg);
+CFG_DECLARE (GyroCfg_t, GyroCfg);
+CFG_DECLARE (MagCfg_t, MagCfg);
 
 #define I_INERTIAL_CFG_GET(IDX)     InertialCfg_GetMutable (IDX)
 #define I_INERTIAL_CFG_INIT(DEV_ID) I_INERTIAL_CFG_GET (DEV_ID_TO_CFG_ID (DEV_ID))->id = (DEV_ID)
