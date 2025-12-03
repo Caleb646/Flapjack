@@ -154,6 +154,12 @@ typedef struct {
 #define SHARED_MEM_SECTION __attribute__ ((section (".shared_mem")))
 #endif
 
+extern uint32_t __SHARED_MEM_START__;
+extern uint32_t __SHARED_MEM_MALLOC_START__;
+extern uint32_t __SHARED_MEM_END__;
+
+void* Alloc_SharedMem (size_t size);
+
 void CriticalErrorHandler (void);
 
 int32_t clipi32 (int32_t v, int32_t lower, int32_t upper);

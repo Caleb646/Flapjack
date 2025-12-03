@@ -184,7 +184,10 @@ SECTIONS
     __SHARED_MEM_START__ = .;
     KEEP(*(SORT_BY_NAME(.shared_mem*)))
     . = ALIGN(4);
+    __SHARED_MEM_MALLOC_START__ = .;
+    . = . + 2048;
     __SHARED_MEM_END__ = .;
+    ASSERT(__SHARED_MEM_END__ <= (0x38000000 + 64K), "Error: shared memory overrun");
   } >RAM_D3
 
   /* Remove information from the compiler libraries */

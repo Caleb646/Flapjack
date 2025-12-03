@@ -5,18 +5,25 @@
 
 #include "common.h"
 
-typedef uint8_t NAV_SENSOR_ID_t;
+#include "drivers/bus/bus_defs.h"
+
+typedef uint8_t INERTIAL_DEVICE_ID_t;
 enum {
-    NAV_SENSOR_ID_NULL = 0,
+    INERTIAL_DEVICE_ID_NULL = 0,
 
-    NAV_SENSOR_ID_ACC_1 = 1,
-    NAV_SENSOR_ID_GYR_1 = 2,
-    NAV_SENSOR_ID_MAG_1 = 3,
+    INERTIAL_DEVICE_ID_ACC_1 = 1,
+    INERTIAL_DEVICE_ID_GYR_1 = 2,
+    INERTIAL_DEVICE_ID_MAG_1 = 3,
 
-    NAV_SENSOR_ID_IMU_1 = NAV_SENSOR_ID_ACC_1,
+    INERTIAL_DEVICE_ID_IMU_1 = INERTIAL_DEVICE_ID_ACC_1,
 
-    NAV_SENSOR_ID_MARG_1 = NAV_SENSOR_ID_ACC_1,
+    INERTIAL_DEVICE_ID_MARG_1 = INERTIAL_DEVICE_ID_ACC_1,
+};
 
+typedef uint8_t INERTIAL_INTERFACE_ID_t;
+enum {
+    INERTIAL_INTERFACE_ID_NULL   = 0,
+    INERTIAL_INTERFACE_ID_BMI323 = 1,
 };
 
 typedef struct ACCDevice_s ACCDevice_t;
@@ -24,7 +31,7 @@ typedef struct GYRODevice_s GYRODevice_t;
 typedef struct IMUDevice_s IMUDevice_t;
 typedef struct MARGDevice_s MARGDevice_t;
 
-typedef struct NavSensorVtable_s {
+typedef struct InertialDeviceVtable_s {
 
     union {
         void (*fnAccInit) (ACCDevice_t*);
@@ -47,7 +54,20 @@ typedef struct NavSensorVtable_s {
         void (*fnMARGCalibrate) (MARGDevice_t*);
     };
 
-} NavSensorVtable_t;
+} InertialDeviceVtable_t;
+
+typedef struct InertialDevice_s {
+    INERTIAL_DEVICE_ID_t inertialId;
+    INERTIAL_INTERFACE_ID_t interfaceId;
+    BusDevice_t busDevice;
+    InertialDeviceVtable_t vtbl;
+} InertialDevice_t;
+
+typedef uint8_t CNS_ID_t;
+enum {
+    CNS_ID_NULL    = 0,
+    CNS_ID_PRIMARY = 1,
+};
 
 
 #endif // DRIVERS_SENSORS_CNS_DEFS_H

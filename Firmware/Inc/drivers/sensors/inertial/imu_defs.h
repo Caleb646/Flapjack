@@ -10,17 +10,9 @@
 
 #include "drivers/bus/bus_defs.h"
 
-typedef uint8_t IMU_INTERFACE_ID_t;
-enum {
-    IMU_INTERFACE_ID_NULL = 0,
-
-    IMU_INTERFACE_BMI323 = 1,
-};
 
 typedef struct IMUDevice_s {
-    NAV_SENSOR_ID_t sensorId;
-    IMU_INTERFACE_ID_t interfaceId;
-    BusDevice_t* pBusDevice;
+    InertialDevice_t inertial;
     IACCDevice_t acc;
     IGYRODevice_t gyro;
 } IMUDevice_t;

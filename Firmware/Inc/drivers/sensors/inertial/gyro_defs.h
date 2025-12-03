@@ -7,12 +7,6 @@
 
 #include "drivers/bus/bus_defs.h"
 
-typedef uint8_t GYRO_INTERFACE_ID_t;
-enum {
-    GYRO_INTERFACE_ID_NULL = 0,
-
-    // GYRO_INTERFACE_BMI323 = 1,
-};
 
 typedef struct IGYRODevice_s {
     float scaleFactor;
@@ -20,9 +14,7 @@ typedef struct IGYRODevice_s {
 } IGYRODevice_t;
 
 typedef struct GYRODevice_s {
-    NAV_SENSOR_ID_t sensorId;
-    GYRO_INTERFACE_ID_t interfaceId;
-    BusDevice_t busDevice;
+    InertialDevice_t inertial;
     IGYRODevice_t i;
 } GYRODevice_t;
 

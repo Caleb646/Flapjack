@@ -1,8 +1,32 @@
-#include "common.h"
-#include "hal.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+
+#include "common.h"
+#include "hal.h"
+
+#include "targets/target.h"
+
+
+uint32_t __SHARED_MEM_START__;
+uint32_t __SHARED_MEM_MALLOC_START__;
+uint32_t __SHARED_MEM_END__;
+static uint8_t* g_pCurrentAlloc TARG_SHARED_MEM_SECTION = NULL;
+
+void* Alloc_SharedMem (size_t size) {
+
+    if (!g_pCurrentAlloc) {
+        g_pCurrentAlloc = (uint8_t*)&__SHARED_MEM_MALLOC_START__;
+    }
+
+    uintptr_t mem = MEM_U32_ALIGN4 (((uintptr_t)g_pCurrentAlloc) + 3U);
+    if ((mem + size) > (uintptr_t)&__SHARED_MEM_END__) {
+        return NULL;
+    }
+
+    g_pCurrentAlloc = (uint8_t*)(mem + size);
+    return (void*)mem;
+}
 
 void CriticalErrorHandler (void) {
 

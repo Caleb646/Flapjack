@@ -5,8 +5,8 @@
 #include <string.h>
 
 float ge_ScaledSystemCoreClock = 0.0F;
-extern uint32_t __SHARED_MEM_START__;
-extern uint32_t __SHARED_MEM_END__;
+// extern uint32_t __SHARED_MEM_START__;
+// extern uint32_t __SHARED_MEM_END__;
 
 FJ_STATIC eSTATUS_t Init_HAL_SysTickTimer (uint32_t tickPriority);
 FJ_STATIC eSTATUS_t Init_HAL_Timer (TIM_TypeDef* pTimer, uint32_t tickPriority);
