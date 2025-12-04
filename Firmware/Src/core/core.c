@@ -83,6 +83,24 @@ eSTATUS_t Core_Init (void) {
             return eSTATUS_FAILURE;
         }
 
+        RCC_PeriphCLKInitTypeDef RCC_PeriphClkInit = { 0 };
+        // select clock source for uart peripherals
+        RCC_PeriphClkInit.PeriphClockSelection  = RCC_PERIPHCLK_USART16 | RCC_PERIPHCLK_USART234578;
+        RCC_PeriphClkInit.Usart16ClockSelection = RCC_USART16CLKSOURCE_D2PCLK2;
+        RCC_PeriphClkInit.Usart234578ClockSelection = RCC_USART234578CLKSOURCE_D2PCLK1;
+        HAL_RCCEx_PeriphCLKConfig (&RCC_PeriphClkInit);
+        // select clock source for spi peripherals
+        RCC_PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_SPI123 | RCC_PERIPHCLK_SPI45; // | RCC_PERIPHCLK_SPI6;
+        RCC_PeriphClkInit.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
+        RCC_PeriphClkInit.Spi45ClockSelection  = RCC_SPI45CLKSOURCE_PCLK2;
+        // RCC_PeriphClkInit.Spi6ClockSelection   = RCC_SPI6CLKSOURCE_D3PCLK1;
+        HAL_RCCEx_PeriphCLKConfig (&RCC_PeriphClkInit);
+        // select clock source for i2c peripherals
+        RCC_PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_I2C123 | RCC_PERIPHCLK_I2C4;
+        RCC_PeriphClkInit.I2c123ClockSelection = RCC_I2C123CLKSOURCE_D2PCLK1;
+        RCC_PeriphClkInit.I2c4ClockSelection   = RCC_I2C4CLKSOURCE_D3PCLK1;
+        HAL_RCCEx_PeriphCLKConfig (&RCC_PeriphClkInit);
+
         if (FJ_FAIL (ZeroSharedMemory ())) {
             return eSTATUS_FAILURE;
         }

@@ -20,6 +20,7 @@
                 "CORE_CM4",
                 "CORE_CM7",
                 "USE_HAL_DRIVER",
+                "USE_FULL_LL_DRIVER",
                 "STM32H747xx",
                 "__GNUC__",
                 "DEV_BOARD"

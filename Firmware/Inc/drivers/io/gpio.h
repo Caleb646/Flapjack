@@ -11,11 +11,11 @@
 
 #include "platform/platform.h"
 
-
 FJ_STATIC_ASSERT (PLAT_GPIO_MAX_PORTS < 16, "GPIO id will overflow if more than 15 ports");
 
 DRIVER_DECLARE_ARRAY (GPIO_t, GPIOs, PLAT_GPIO_MAX_PORTS* PLAT_GPIO_MAX_PINS);
 
+eSTATUS_t Plat_GPIO_SystemInit (void);
 GPIO_t* Plat_GPIO_Init (eGPIO_ID_t gpioId, uint8_t ownerId, GPIOCfg_t cfg, uint32_t af);
 GPIO_t* Plat_GPIO_GetIO (eGPIO_ID_t gpioId);
 GPIO_TypeDef* Plat_GPIO_GetPort (GPIO_t* pIO);
@@ -23,6 +23,10 @@ uint16_t Plat_GPIO_GetPin (GPIO_t* pIO);
 void Plat_GPIO_Write (GPIO_t* pIO, eGPIO_STATE_t state);
 void Plat_GPIO_SetHigh (GPIO_t* pIO);
 void Plat_GPIO_SetLow (GPIO_t* pIO);
+
+static inline eSTATUS_t GPIO_SystemInit (void) {
+    return Plat_GPIO_SystemInit ();
+}
 
 static inline GPIO_t* GPIO_Init (eGPIO_ID_t gpioId, uint8_t ownerId, GPIOCfg_t cfg, uint32_t af) {
     return Plat_GPIO_Init (gpioId, ownerId, cfg, af);

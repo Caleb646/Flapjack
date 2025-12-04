@@ -5,7 +5,7 @@
 
 #include "cfg/cfg.h"
 
-#include "cfg/bus/bus.h"
+#include "drivers/bus/bus_defs.h"
 
 #include "drivers/io/gpio_defs.h"
 

@@ -31,33 +31,63 @@ eSTATUS_t SPI_Init (BusDeviceCfg_t* pCfg, BusDeviceSPI_t* pOutBusDeviceSpi) {
     }
     pOutBusDeviceSpi->pNSS = pNSS;
     pOutBusDeviceSpi->pDev = pDev;
+    GPIO_SetHigh (pOutBusDeviceSpi->pNSS);
 
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t SPI_Write (BusDeviceSPI_t* pBusDeviceSpi, uint8_t const* pTx, uint32_t size) {
+eSTATUS_t SPI_WriteRead_Block (BusDeviceSPI_t* pBusDeviceSpi, uint8_t const* pTx, uint8_t* pRx, uint32_t size) {
 
-    if (!pBusDeviceSpi || !pBusDeviceSpi->pDev) {
+    if (!pBusDeviceSpi) {
         return eSTATUS_NULL_ARG;
     }
-    return Plat_SPI_Write (pBusDeviceSpi->pDev, pTx, size);
+    GPIO_SetLow (pBusDeviceSpi->pNSS);
+    eSTATUS_t status = Plat_SPI_WriteRead_Block (pBusDeviceSpi->pDev, pTx, pRx, size);
+    GPIO_SetHigh (pBusDeviceSpi->pNSS);
+    return status;
 }
 
-eSTATUS_t SPI_Read (BusDeviceSPI_t* pBusDeviceSpi, uint8_t* pRx, uint32_t size) {
+eSTATUS_t SPI_WriteRegister (BusDeviceSPI_t* pBusDeviceSpi, uint8_t reg, uint8_t const* pData, uint32_t len) {
 
-    if (!pBusDeviceSpi || !pBusDeviceSpi->pDev) {
+    if (!pBusDeviceSpi) {
         return eSTATUS_NULL_ARG;
     }
-    return Plat_SPI_Read (pBusDeviceSpi->pDev, pRx, size);
+
+    GPIO_SetLow (pBusDeviceSpi->pNSS);
+    reg &= 0x7FU; // clear read bit
+    eSTATUS_t status  = Plat_SPI_WriteRead_Block (pBusDeviceSpi->pDev, &reg, NULL, 1U);
+    eSTATUS_t status2 = Plat_SPI_WriteRead_Block (pBusDeviceSpi->pDev, pData, NULL, len);
+    GPIO_SetHigh (pBusDeviceSpi->pNSS);
+    if (FJ_FAIL (status) || FJ_FAIL (status2)) {
+        return eSTATUS_FAILURE;
+    }
+    return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t SPI_WriteRead (BusDeviceSPI_t* pBusDeviceSpi, uint8_t const* pTx, uint8_t* pRx, uint32_t size) {
+eSTATUS_t SPI_ReadRegister (BusDeviceSPI_t* pBusDeviceSpi, uint8_t reg, uint8_t* pData, uint32_t len) {
 
-    if (!pBusDeviceSpi || !pBusDeviceSpi->pDev) {
+    if (!pBusDeviceSpi) {
         return eSTATUS_NULL_ARG;
     }
-    return Plat_SPI_WriteRead (pBusDeviceSpi->pDev, pTx, pRx, size);
+
+    GPIO_SetLow (pBusDeviceSpi->pNSS);
+    reg |= 0x80U; // set read bit
+    eSTATUS_t status  = Plat_SPI_WriteRead_Block (pBusDeviceSpi->pDev, &reg, NULL, 1U);
+    eSTATUS_t status2 = Plat_SPI_WriteRead_Block (pBusDeviceSpi->pDev, NULL, pData, len);
+    GPIO_SetHigh (pBusDeviceSpi->pNSS);
+    if (FJ_FAIL (status) || FJ_FAIL (status2)) {
+        return eSTATUS_FAILURE;
+    }
+    return eSTATUS_SUCCESS;
 }
 
 void SPI_Wait (BusDeviceSPI_t* pBusDeviceSpi) {
+
+    if (!pBusDeviceSpi) {
+        return;
+    }
+
+    while (Plat_SPI_IsBusy (pBusDeviceSpi->pDev)) {
+        // wait
+    }
 }

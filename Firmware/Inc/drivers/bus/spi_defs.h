@@ -16,11 +16,10 @@ enum {
 
 #define SPI_DEV_ID_TO_INDEX(DEV_ID) ((DEV_ID) - 1U)
 
-
-struct SPI_Typedef;
+typedef struct SPI_TypeDef;
 typedef struct SPIDevice_s {
     eSPI_DEV_ID_t devId;
-    struct SPI_Typedef* pInstance;
+    SPI_TypeDef* pInstance;
 } SPIDevice_t;
 
 
