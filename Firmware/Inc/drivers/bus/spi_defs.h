@@ -14,6 +14,8 @@ enum {
     eSPI_DEV_ID_6,
 };
 
+#define SPI_DEV_ID_TO_INDEX(DEV_ID) ((DEV_ID) - 1U)
+
 
 struct SPI_Typedef;
 typedef struct SPIDevice_s {
