@@ -51,6 +51,7 @@ SPIDevice_t* Plat_SPI_Init (eSPI_DEV_ID_t devId, BusDeviceCfg_t* pCfg) {
         return pDev;
     }
 
+    // invalid gpio ids are zero
     if (!pCfg->spiSckGpioId || !pCfg->spiMisoGpioId || !pCfg->spiMosiGpioId) {
         return NULL;
     }
