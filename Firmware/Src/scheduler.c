@@ -8,6 +8,18 @@
 #include "mc/mc.h"
 #include <stdbool.h>
 
+#include "aero/flight.h"
+#include "aero/task.h"
+
+//
+static Task_t g_Tasks[5] = { 0U };
+
+void Task_UpdateInertialSensors (void* pArg) {
+
+    // Acc_Update (Flight_GetActive_AccDevice (), 0.0F, false, NULL);
+    // Gyro_Update (Flight_GetActive_GyroDevice (), 0.0F, false, NULL);
+    // Mag_Update (Flight_GetActive_MagDevice (), 0.0F, false, NULL);
+}
 
 FJ_STATIC void Scheduler_CM4_Loop (void) {
 

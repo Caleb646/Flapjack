@@ -49,6 +49,36 @@ typedef struct BmiSensorAltConf_s {
     };
 } BmiSensorAltConf_t;
 
+typedef struct BmiFeat_s {
+    union {
+        uint16_t raw;
+        struct {
+            uint16_t err : 4;
+            uint16_t scStComplete : 1;
+            uint16_t gyroSelfCalibComplete : 1;
+            uint16_t selfTestRes : 1;
+            uint16_t sampleRateErr : 1;
+            uint16_t res1 : 2;
+            uint16_t axisRemapComplete : 1;
+            uint16_t sysState : 2;
+            uint16_t res2 : 3;
+        };
+    };
+} BmiFeat_t;
+
+typedef struct BmiIntStatus_s {
+    union {
+        uint16_t raw;
+        struct {
+            uint16_t unused : 10;
+            uint16_t errStatus : 1;
+            uint16_t drdyTemp : 1;
+            uint16_t drdyGyro : 1;
+            uint16_t drdyAccel : 1;
+        };
+    };
+} BmiIntStatus_t;
+
 FJ_STATIC eSTATUS_t Bmi323_SendCmd (BusDeviceSPI_t* pBusDeviceSpi, uint16_t cmd) {
 
     uint8_t pRegData[2] = { cmd & BMI3_SET_LOW_BYTE, (cmd & BMI3_SET_HIGH_BYTE) >> 8U };
@@ -111,15 +141,13 @@ FJ_STATIC eSTATUS_t Bmi323_SoftReset (BusDeviceSPI_t* pBusDeviceSpi) {
 FJ_STATIC eSTATUS_t Bmi323_RemapAxes (BusDeviceSPI_t* pBusDeviceSpi, uint8_t remap) {
 
     uint8_t addr[2] = { BMI3_BASE_ADDR_AXIS_REMAP, 0 };
-    uint8_t data    = 0;
-
     /* Set the configuration to feature engine register */
     eSTATUS_t status = SPI_WriteRegister (pBusDeviceSpi, BMI3_REG_FEATURE_DATA_ADDR, addr, 2U);
     RETURN_IF (FJ_FAIL (status), status, "Failed to set bmi323 feature data address for axis remap");
     DelayMicroseconds (2);
 
-    uint8_t aSend[2] = { data, 0 };
-    status           = SPI_WriteRegister (pBusDeviceSpi, BMI3_REG_FEATURE_DATA_TX, aSend, 2);
+    uint8_t aSend[2] = { remap, 0 };
+    status           = SPI_WriteRegister (pBusDeviceSpi, BMI3_REG_FEATURE_DATA_TX, aSend, 2U);
     RETURN_IF (FJ_FAIL (status), status, "Failed to set bmi323 feature data TX for axis remap");
     DelayMicroseconds (2);
 
@@ -135,17 +163,13 @@ FJ_STATIC eSTATUS_t Bmi323_RemapAxes (BusDeviceSPI_t* pBusDeviceSpi, uint8_t rem
     status       = eSTATUS_FAILURE;
     while (wait-- > 0) {
 
-        uint8_t pData[2] = { 0 };
-        status           = SPI_ReadRegister (pBusDeviceSpi, BMI3_REG_FEATURE_IO1, pData, 2);
+        BmiFeat_t featStatus = { 0 };
+        status = SPI_ReadRegister (pBusDeviceSpi, BMI3_REG_FEATURE_IO1, (uint8_t*)&featStatus.raw, 2U);
         RETURN_IF (FJ_FAIL (status), status, "Failed to get bmi323 feature status");
         // clang-format off
-        uint16_t temp        = BUF_TO_U16 (pData);
-        uint16_t errorStatus = (temp & BMI3_ERROR_STATUS_MASK) >> __builtin_ctz (BMI3_ERROR_STATUS_MASK);
-        uint16_t sysState    = (temp & BMI3_STATE_MASK) >> __builtin_ctz (BMI3_STATE_MASK);
-        uint16_t axisMapComp = (temp & BMI3_AXIS_MAP_COMPLETE_MASK) >> __builtin_ctz (BMI3_AXIS_MAP_COMPLETE_MASK);
-        if (errorStatus == eBMI3_FEAT_ERROR_NO_ERROR && 
-            sysState == eBMI3_FEAT_STATE_SYS_IN_FEAT_MODE && 
-            axisMapComp == eBMI3_FEAT_AXIS_MAP_COMPLETE) {
+        if (featStatus.err == eBMI3_FEAT_ERROR_NO_ERROR && 
+            featStatus.sysState == eBMI3_FEAT_STATE_SYS_IN_FEAT_MODE && 
+            featStatus.axisRemapComplete == eBMI3_FEAT_AXIS_MAP_COMPLETE) {
             LOG_INFO ("bmi323 axis remap successful");
             return eSTATUS_SUCCESS;
         }
@@ -203,16 +227,13 @@ FJ_STATIC eSTATUS_t Bmi323_Calibrate (BusDeviceSPI_t* pBusDeviceSpi) {
         }
     }
 
-    uint16_t featureStatus = 0;
-    status = SPI_ReadRegister (pBusDeviceSpi, BMI3_REG_FEATURE_IO1, (uint8_t*)&featureStatus, 2);
+    BmiFeat_t featStatus = { 0 };
+    status = SPI_ReadRegister (pBusDeviceSpi, BMI3_REG_FEATURE_IO1, (uint8_t*)&featStatus.raw, 2);
     GOTO_IF (FJ_FAIL (status), error, "Failed to get bmi323 feature status after self-calibration");
     // clang-format off
-    uint16_t errorStatus = (featureStatus & BMI3_ERROR_STATUS_MASK) >> __builtin_ctz (BMI3_ERROR_STATUS_MASK);
-    uint16_t sysState    = (featureStatus & BMI3_STATE_MASK) >> __builtin_ctz (BMI3_STATE_MASK);
-    uint16_t calibStatus = (featureStatus & BMI3_SC_ST_COMPLETE_MASK) >> __builtin_ctz (BMI3_SC_ST_COMPLETE_MASK);
-    if (errorStatus != eBMI3_FEAT_ERROR_NO_ERROR || 
-        sysState != eBMI3_FEAT_STATE_SYS_IN_FEAT_MODE || 
-        calibStatus != eBMI3_FEAT_CALIB_COMPLETE) {
+    if (featStatus.err != eBMI3_FEAT_ERROR_NO_ERROR || 
+        featStatus.sysState != eBMI3_FEAT_STATE_SYS_IN_FEAT_MODE || 
+        featStatus.scStComplete != eBMI3_FEAT_CALIB_COMPLETE) {
         LOG_ERROR ("bmi323 self-calibration failed");
         goto error;
     }
@@ -228,6 +249,65 @@ error:
     SPI_WriteRegister (pBusDeviceSpi, BMI3_REG_ALT_GYR_CONF, (uint8_t*)&altGyroConf.raw, 2);
     DelayMicroseconds (2);
     return status;
+}
+
+FJ_STATIC bool Bmi323_IsAccDataReady (BusDeviceSPI_t* pBusDeviceSpi) {
+
+    BmiIntStatus_t intStatus = { 0 };
+    SPI_ReadRegister (pBusDeviceSpi, BMI3_REG_INT_STATUS_INT1, (uint8_t*)&(intStatus.raw), 2);
+    return intStatus.drdyAccel != 0;
+}
+
+FJ_STATIC bool Bmi323_IsGyroDataReady (BusDeviceSPI_t* pBusDeviceSpi) {
+
+    BmiIntStatus_t intStatus = { 0 };
+    SPI_ReadRegister (pBusDeviceSpi, BMI3_REG_INT_STATUS_INT1, (uint8_t*)&(intStatus.raw), 2);
+    return intStatus.drdyGyro != 0;
+}
+
+
+FJ_STATIC eSTATUS_t Bmi323_ReadAccData (ACCDevice_t* pAccDevice, bool forcePolling, int16_t* pOutData) {
+
+    if (!pAccDevice || !pAccDevice->pBusDevice || !pOutData) {
+        return eSTATUS_NULL_ARG;
+    }
+
+    uint16_t timeout = 10000U; // 50 ms timeout
+    while (forcePolling && !Bmi323_IsAccDataReady (&(pAccDevice->pBusDevice->spi)) && timeout-- > 0) {
+        DelayMicroseconds (5);
+    }
+
+    uint8_t pData[6] = { 0 };
+    eSTATUS_t status = SPI_ReadRegister (&(pAccDevice->pBusDevice->spi), BMI3_REG_ACC_DATA_X, pData, 6U);
+    RETURN_IF (FJ_FAIL (status), status, "Failed to read bmi323 accelerometer data");
+
+    pOutData[0] = (int16_t)((uint16_t)pData[0] | ((uint16_t)pData[1] << 8U));
+    pOutData[1] = (int16_t)((uint16_t)pData[2] | ((uint16_t)pData[3] << 8U));
+    pOutData[2] = (int16_t)((uint16_t)pData[4] | ((uint16_t)pData[5] << 8U));
+
+    return eSTATUS_SUCCESS;
+}
+
+FJ_STATIC eSTATUS_t Bmi323_ReadGyroData (GYRODevice_t* pGyroDevice, bool forcePolling, int16_t* pOutData) {
+
+    if (!pGyroDevice || !pGyroDevice->pBusDevice || !pOutData) {
+        return eSTATUS_NULL_ARG;
+    }
+
+    uint16_t timeout = 10000U; // 50 ms timeout
+    while (forcePolling && !Bmi323_IsGyroDataReady (&(pGyroDevice->pBusDevice->spi)) && timeout-- > 0) {
+        DelayMicroseconds (5);
+    }
+
+    uint8_t pData[6] = { 0 };
+    eSTATUS_t status = SPI_ReadRegister (&(pGyroDevice->pBusDevice->spi), BMI3_REG_GYR_DATA_X, pData, 6U);
+    RETURN_IF (FJ_FAIL (status), status, "Failed to read bmi323 gyroscope data");
+
+    pOutData[0] = (int16_t)((uint16_t)pData[0] | ((uint16_t)pData[1] << 8U));
+    pOutData[1] = (int16_t)((uint16_t)pData[2] | ((uint16_t)pData[3] << 8U));
+    pOutData[2] = (int16_t)((uint16_t)pData[4] | ((uint16_t)pData[5] << 8U));
+
+    return eSTATUS_SUCCESS;
 }
 
 FJ_STATIC eSTATUS_t Bmi323_Init (BusDeviceSPI_t* pBusDeviceSpi) {
@@ -255,7 +335,7 @@ FJ_STATIC eSTATUS_t Bmi323_Init (BusDeviceSPI_t* pBusDeviceSpi) {
     conf.bw              = BMI3_ACC_BW_ODR_HALF;
     conf.avg             = BMI3_ACC_AVG16;
     conf.mode            = BMI3_ACC_MODE_HIGH_PERF;
-    status               = SPI_WriteRegister (pBusDeviceSpi, BMI3_REG_ACC_CONF, &conf.raw, 2);
+    status               = SPI_WriteRegister (pBusDeviceSpi, BMI3_REG_ACC_CONF, &conf.raw, 2U);
     RETURN_IF (FJ_FAIL (status), status, "Failed to set bmi323 accelerometer config");
     LOG_INFO ("bmi323 accelerometer configuration successful");
 
@@ -265,7 +345,7 @@ FJ_STATIC eSTATUS_t Bmi323_Init (BusDeviceSPI_t* pBusDeviceSpi) {
     conf.bw    = BMI3_GYR_BW_ODR_HALF;
     conf.avg   = BMI3_GYR_AVG16;
     conf.mode  = BMI3_GYR_MODE_HIGH_PERF;
-    status     = SPI_WriteRegister (pBusDeviceSpi, BMI3_REG_GYR_CONF, &conf.raw, 2);
+    status     = SPI_WriteRegister (pBusDeviceSpi, BMI3_REG_GYR_CONF, &conf.raw, 2U);
     RETURN_IF (FJ_FAIL (status), status, "Failed to set bmi323 gyroscope config");
     LOG_INFO ("bmi323 gyroscope configuration successful");
 
@@ -274,7 +354,6 @@ FJ_STATIC eSTATUS_t Bmi323_Init (BusDeviceSPI_t* pBusDeviceSpi) {
     RETURN_IF (FJ_FAIL (status), status, "Failed to read imu chip id");
     RETURN_IF (pChipID[0] != BMI323_CHIP_ID, eSTATUS_INVALID_ARG, "Unexpected imu chip id");
 
-    /* Self Calibrate */
     status = Bmi323_Calibrate (pBusDeviceSpi);
     RETURN_IF (FJ_FAIL (status), status, "Failed to self calibrate bmi323");
     LOG_INFO ("bmi323 self calibration was successful");
@@ -295,16 +374,24 @@ eSTATUS_t Bmi323_InitAcc (AccCfg_t* pAccCfg, ACCDevice_t* pOutAccDevice) {
     }
 
     if (pAccCfg->type != INER_INTERFACE_ID_BMI323) {
-        LOG_ERROR ("Bmi323_InitAcc: Invalid accelerometer type %d", pAccCfg->type);
+        LOG_ERROR ("Invalid accelerometer type %d", pAccCfg->type);
         return eSTATUS_INVALID_ARG;
     }
 
     if (pAccCfg->busCfg.busType != eBUS_TYPE_SPI) {
-        LOG_ERROR ("Bmi323_InitAcc: Invalid bus type %d, only SPI is supported", pAccCfg->busCfg.busType);
+        LOG_ERROR ("Invalid bus type %d, only SPI is supported", pAccCfg->busCfg.busType);
         return eSTATUS_INVALID_ARG;
     }
 
-    return Bmi323_Init (&pOutAccDevice->pBusDevice->spi);
+    eSTATUS_t status = Bmi323_Init (&pOutAccDevice->pBusDevice->spi);
+    RETURN_IF (FJ_FAIL (status), status, "Failed to initialize bmi323 accelerometer");
+    // NOTE: scale factor is hardcoded for 2G range and 16-bit resolution
+    pOutAccDevice->scaleFactor  = (2.0F * 9.81F) / 32768.0F;
+    pOutAccDevice->sampleRateHz = 400;
+
+    pOutAccDevice->vtbl.fnAccReadData = Bmi323_ReadAccData;
+
+    return status;
 }
 
 eSTATUS_t Bmi323_InitGyro (GyroCfg_t* pGyroCfg, GYRODevice_t* pOutGyroDevice) {
@@ -314,14 +401,22 @@ eSTATUS_t Bmi323_InitGyro (GyroCfg_t* pGyroCfg, GYRODevice_t* pOutGyroDevice) {
     }
 
     if (pGyroCfg->type != INER_INTERFACE_ID_BMI323) {
-        LOG_ERROR ("Bmi323_InitGyro: Invalid gyroscope type %d", pGyroCfg->type);
+        LOG_ERROR ("Invalid gyroscope type %d", pGyroCfg->type);
         return eSTATUS_INVALID_ARG;
     }
 
     if (pGyroCfg->busCfg.busType != eBUS_TYPE_SPI) {
-        LOG_ERROR ("Bmi323_InitGyro: Invalid bus type %d, only SPI is supported", pGyroCfg->busCfg.busType);
+        LOG_ERROR ("Invalid bus type %d, only SPI is supported", pGyroCfg->busCfg.busType);
         return eSTATUS_INVALID_ARG;
     }
 
-    return Bmi323_Init (&pOutGyroDevice->pBusDevice->spi);
+    eSTATUS_t status = Bmi323_Init (&pOutGyroDevice->pBusDevice->spi);
+    RETURN_IF (FJ_FAIL (status), status, "Failed to initialize bmi323 gyroscope");
+    // NOTE: scale factor is hardcoded for 250 dps range and 16-bit resolution
+    pOutGyroDevice->scaleFactor  = 250.0F / 32768.0F;
+    pOutGyroDevice->sampleRateHz = 400;
+
+    pOutGyroDevice->vtbl.fnGyroReadData = Bmi323_ReadGyroData;
+
+    return status;
 }

@@ -110,7 +110,7 @@ FJ_STATIC eSTATUS_t Inertial_InterfaceInit (INER_INTERFACE_ID_t id, INER_TYPE_t 
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t Inertial_Init (void) {
+eSTATUS_t Init_Inertials (void) {
 
     AccCfg_t* pAccCfg   = AccCfg_GetMutable ();
     GyroCfg_t* pGyroCfg = GyroCfg_GetMutable ();
@@ -137,13 +137,4 @@ eSTATUS_t Inertial_Init (void) {
 
 error:
     return status;
-}
-
-eSTATUS_t Acc_Update (float dt, bool forcePolling, Vec3f* pOutAcc) {
-}
-
-eSTATUS_t Gyro_Update (float dt, bool forcePolling, Vec3f* pOutGyro) {
-}
-
-eSTATUS_t Mag_Update (float dt, bool forcePolling, Vec3f* pOutMag) {
 }
