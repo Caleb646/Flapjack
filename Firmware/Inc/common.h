@@ -34,9 +34,14 @@
 #define DEG2RAD(x)                  (((float)(x)) * 0.017453292519943295F) // (π / 180)
 #define RAD2DEG(x)                  (((float)(x)) * 57.29577951308232F)    // (180 / π)
 
-#define BUF_TO_U16(BUF)             ((uint16_t)(((uint32_t)(BUF)[1] << 8U) | (uint16_t)(BUF)[0]))
+#define U16_TO_BUF(VALUE, pBUF)                         \
+    do {                                                \
+        (pBUF)[0] = (uint8_t)((VALUE) & 0xFFU);         \
+        (pBUF)[1] = (uint8_t)(((VALUE) >> 8U) & 0xFFU); \
+    } while (0)
+#define BUF_TO_U16(BUF)   ((uint16_t)(((uint32_t)(BUF)[1] << 8U) | (uint16_t)(BUF)[0]))
 
-#define ARRAY_SIZE(ARRAY)           (sizeof (ARRAY) / sizeof ((ARRAY)[0]))
+#define ARRAY_SIZE(ARRAY) (sizeof (ARRAY) / sizeof ((ARRAY)[0]))
 
 #define FOR_EACH(TYPE, ARRAY) \
     for (TYPE* pElement = &((ARRAY)[0]); pElement <= &((ARRAY)[ARRAY_SIZE (ARRAY) - 1U]); ++pElement)
