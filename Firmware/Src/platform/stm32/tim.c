@@ -52,36 +52,45 @@ void Stm32_Tim_IRQHandler (eTIM_DEVICE_ID_t devId) {
         Stm32_Tim_IRQHandler (eTIM_##TIM_DEV_NUM##_DEVICE_ID); \
     }
 
+// TODO: Fix interrupt handler names
+TIM_DEF_INTERRUPT_HANDLER (1);
+TIM_DEF_INTERRUPT_HANDLER (2);
 TIM_DEF_INTERRUPT_HANDLER (5);
+// TIM8_CC_IRQHandler
 TIM_DEF_INTERRUPT_HANDLER (8);
+// TIM8_BRK_TIM12_IRQHandler
 TIM_DEF_INTERRUPT_HANDLER (12);
+// TIM8_UP_TIM13_IRQHandler
 TIM_DEF_INTERRUPT_HANDLER (13);
 
 TimHwCfg_t Plat_Tim_Get_DeviceHwCfg (eTIM_ID_t timId) {
 
+    // __HAL_RCC_TIM2_CLK_ENABLE();
     switch (TIM_ID_TO_DEVICE_ID (timId)) {
-    // case eTIM_1_DEVICE_ID: return (TimHwCfg_t){ .instance = TIM1, .irqNum = TIM1_CC_IRQn };
-    // case eTIM_2_DEVICE_ID: return (TimHwCfg_t){ .instance = TIM2, .irqNum = TIM2_IRQn };
-    // case eTIM_3_DEVICE_ID: return (TimHwCfg_t){ .instance = TIM3, .irqNum = TIM3_IRQn };
-    // case eTIM_4_DEVICE_ID: return (TimHwCfg_t){ .instance = TIM4, .irqNum = TIM4_IRQn };
+    case eTIM_1_DEVICE_ID:
+        return (TimHwCfg_t){ .pInstance     = TIM1,
+                             .pRccEnableReg = &RCC->APB2ENR,
+                             .rccEnableMsk  = RCC_APB2ENR_TIM1EN,
+                             .gpioAf        = GPIO_AF1_TIM1,
+                             .irqNum        = TIM1_UP_IRQn };
+    case eTIM_2_DEVICE_ID:
+        return (TimHwCfg_t){ .pInstance     = TIM2,
+                             .pRccEnableReg = &RCC->APB1LENR,
+                             .rccEnableMsk  = RCC_APB1LENR_TIM2EN,
+                             .gpioAf        = GPIO_AF1_TIM2,
+                             .irqNum        = TIM2_IRQn };
     case eTIM_5_DEVICE_ID:
         return (TimHwCfg_t){ .pInstance     = TIM5,
                              .pRccEnableReg = &RCC->APB1LENR,
                              .rccEnableMsk  = RCC_APB1LENR_TIM5EN,
                              .gpioAf        = GPIO_AF2_TIM5,
                              .irqNum        = TIM5_IRQn };
-
     case eTIM_8_DEVICE_ID:
         return (TimHwCfg_t){ .pInstance     = TIM8,
                              .pRccEnableReg = &RCC->APB2ENR,
                              .rccEnableMsk  = RCC_APB2ENR_TIM8EN,
                              .gpioAf        = GPIO_AF3_TIM8,
                              .irqNum        = TIM8_UP_TIM13_IRQn };
-
-    // case eTIM_9_DEVICE_ID: return (TimHwCfg_t){ .instance = TIM9, .irqNum = TIM1_BRK_TIM9_IRQn };
-    // case eTIM_10_DEVICE_ID: return (TimHwCfg_t){ .instance = TIM10, .irqNum = TIM1_UP_TIM10_IRQn };
-    // case eTIM_11_DEVICE_ID:
-    // return (TimHwCfg_t){ .instance = TIM11, .irqNum = TIM1_TRG_COM_TIM11_IRQn };
     case eTIM_12_DEVICE_ID:
         return (TimHwCfg_t){ .pInstance     = TIM12,
                              .pRccEnableReg = &RCC->APB1LENR,
@@ -97,9 +106,38 @@ TimHwCfg_t Plat_Tim_Get_DeviceHwCfg (eTIM_ID_t timId) {
                              .gpioAf        = GPIO_AF9_TIM13,
                              // TIM_8 update interrupt and TIM_13 global interrupt
                              .irqNum = TIM8_UP_TIM13_IRQn };
-    // case eTIM_14_DEVICE_ID:
-    // return (TimHwCfg_t){ .instance = TIM14, .irqNum = TIM8_TRG_COM_TIM14_IRQn };
     default: return (TimHwCfg_t){ 0 };
+    }
+}
+
+TimDmaReqMap_t Plat_Tim_Get_DmaReqMap (eTIM_ID_t timId) {
+
+    switch (TIM_ID_TO_DEVICE_ID (timId)) {
+    case eTIM_1_DEVICE_ID:
+        return (TimDmaReqMap_t){ .cc1    = DMA_REQUEST_TIM1_CH1,
+                                 .cc2    = DMA_REQUEST_TIM1_CH2,
+                                 .cc3    = DMA_REQUEST_TIM1_CH3,
+                                 .cc4    = DMA_REQUEST_TIM1_CH4,
+                                 .update = DMA_REQUEST_TIM1_UP };
+    case eTIM_2_DEVICE_ID:
+        return (TimDmaReqMap_t){ .cc1    = DMA_REQUEST_TIM2_CH1,
+                                 .cc2    = DMA_REQUEST_TIM2_CH2,
+                                 .cc3    = DMA_REQUEST_TIM2_CH3,
+                                 .cc4    = DMA_REQUEST_TIM2_CH4,
+                                 .update = DMA_REQUEST_TIM2_UP };
+    case eTIM_5_DEVICE_ID:
+        return (TimDmaReqMap_t){ .cc1    = DMA_REQUEST_TIM5_CH1,
+                                 .cc2    = DMA_REQUEST_TIM5_CH2,
+                                 .cc3    = DMA_REQUEST_TIM5_CH3,
+                                 .cc4    = DMA_REQUEST_TIM5_CH4,
+                                 .update = DMA_REQUEST_TIM5_UP };
+    case eTIM_8_DEVICE_ID:
+        return (TimDmaReqMap_t){ .cc1    = DMA_REQUEST_TIM8_CH1,
+                                 .cc2    = DMA_REQUEST_TIM8_CH2,
+                                 .cc3    = DMA_REQUEST_TIM8_CH3,
+                                 .cc4    = DMA_REQUEST_TIM8_CH4,
+                                 .update = DMA_REQUEST_TIM8_UP };
+    default: return (TimDmaReqMap_t){ 0 };
     }
 }
 
@@ -234,7 +272,7 @@ TimBaseDevice_t* Plat_Tim_InitBaseDevice (eTIM_ID_t timId, TimCfg_t* pTimCfg) {
     // Enable rcc clock
     *(hwCfg.pRccEnableReg) |= hwCfg.rccEnableMsk;
     DelayMicroseconds (1);
-
+    // pTimBaseDev->id                            = TIM_ID_TO_DEVICE_ID (timId);
     pTimBaseDev->handle.Instance               = hwCfg.pInstance;
     pTimBaseDev->handle.Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
     pTimBaseDev->handle.Init.CounterMode       = TIM_COUNTERMODE_UP;

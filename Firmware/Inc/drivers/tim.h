@@ -17,6 +17,7 @@
 DRIVER_DECLARE_ARRAY (TimBaseDevice_t*, TimBaseDevices, TARG_MAX_TIMS);
 
 TimHwCfg_t Plat_Tim_Get_DeviceHwCfg (eTIM_ID_t timId);
+TimDmaReqMap_t Plat_Tim_Get_DmaReqMap (eTIM_ID_t timId);
 void Plat_Tim_SetPrescaler (TimDevice_t* pTimDev, uint32_t prescaler);
 void Plat_Tim_SetPeriod (TimDevice_t* pTimDev, uint32_t period);
 void Plat_Tim_SetCC (TimDevice_t* pTimDev, uint32_t pulseWidth);
@@ -83,6 +84,12 @@ static inline uint32_t Tim_GetInterruptFlag (TimDevice_t* pTimDev, eTIM_INTERRUP
     return Plat_Tim_GetInterruptFlag (pTimDev, flag);
 }
 
+static inline TimDmaReqMap_t Tim_Get_DmaReqMap (eTIM_ID_t timId) {
+    return Plat_Tim_Get_DmaReqMap (timId);
+}
+
+bool Tim_HasDmaSupport (eTIM_ID_t timId);
+eTIM_DEVICE_ID_t Tim_Alloc (bool supportsDma);
 bool Tim_IsInterruptFlagSet (TimDevice_t* pTimDev, eTIM_INTERRUPT_FLAG_t flag);
 void Tim_SetupPWMPeriod (TimDevice_t* pTimDev, uint32_t targetClkHz, uint32_t targetHz);
 eSTATUS_t Tim_Init (TimCfg_t* pTimCfg, TimDevice_t* pOutTimDev);

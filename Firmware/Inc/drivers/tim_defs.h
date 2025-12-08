@@ -77,6 +77,7 @@ typedef struct TimCfg_s {
     uint8_t irqPriority;
 } TimCfg_t;
 
+
 typedef struct TimHwCfg_s {
     TIM_TypeDef* pInstance;
     volatile uint32_t* pRccEnableReg;
@@ -85,7 +86,16 @@ typedef struct TimHwCfg_s {
     uint8_t irqNum;
 } TimHwCfg_t;
 
+typedef struct TimDmaReqMap_s {
+    uint8_t cc1;
+    uint8_t cc2;
+    uint8_t cc3;
+    uint8_t cc4;
+    uint8_t update;
+} TimDmaReqMap_t;
+
 typedef struct TimBaseDevice_s {
+    // eTIM_DEVICE_ID_t id;
     TIM_HandleTypeDef handle;
 } TimBaseDevice_t;
 

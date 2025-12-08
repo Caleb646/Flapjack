@@ -17,6 +17,31 @@
 
 DRIVER_DEFINE_ARRAY (TimBaseDevice_t*, TimBaseDevices, TARG_MAX_TIMS);
 
+bool Tim_HasDmaSupport (eTIM_ID_t timId) {
+    TimDmaReqMap_t dmaReqMap = Tim_Get_DmaReqMap (timId);
+    return (!dmaReqMap.cc1 && !dmaReqMap.cc2 && !dmaReqMap.cc3 && !dmaReqMap.cc4 && !dmaReqMap.update);
+}
+
+eTIM_DEVICE_ID_t Tim_Alloc (bool supportsDma) {
+    for (eTIM_DEVICE_ID_t devId = eTIM_1_DEVICE_ID; devId <= TARG_MAX_TIMS; devId += 8) {
+        TimBaseDevice_t** ppTimBaseDev = TimBaseDevices_GetMutable (TIM_DEV_ID_TO_INDEX (devId));
+        if (!ppTimBaseDev) {
+            continue;
+        }
+
+        if (*ppTimBaseDev != NULL) {
+            continue;
+        }
+
+        if (supportsDma && !Tim_HasDmaSupport (devId)) {
+            continue;
+        }
+
+        return devId;
+    }
+    return eTIM_NULL_DEVICE_ID;
+}
+
 bool Tim_IsInterruptFlagSet (TimDevice_t* pTimDev, eTIM_INTERRUPT_FLAG_t flag) {
     return (Tim_GetInterruptFlag (pTimDev, flag) != 0);
 }
