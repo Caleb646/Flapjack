@@ -25,6 +25,7 @@ void* Alloc_SharedMem (size_t size) {
     }
 
     g_pCurrentAlloc = (uint8_t*)(mem + size);
+    memset ((void*)mem, 0, size);
     return (void*)mem;
 }
 

@@ -27,16 +27,38 @@ typedef struct SPIHardware_s {
     uint8_t afOpts[PLAT_SPI_MAX_PIN_SEL];
 } SPIHardware_t;
 
-static SPIHardware_t g_SPIHw[PLAT_SPI_MAX_DEVS] = {
+// TODO: this should be shared between cm4 and cm7
+// Shared memory gets zeroed out regardless of the default value.
+// So this setup should be done at runtime.
+// static SPIHardware_t g_SPIHw[PLAT_SPI_MAX_DEVS] = {
 
-    [SPI_DEV_ID_TO_INDEX (eSPI_DEV_ID_2)] = { .pInstance = SPI2,
-                                              .pRcc      = &(RCC->APB1LENR),
-                                              .rccMask   = RCC_APB1LENR_SPI2EN,
-                                              .sckOpts   = { PLAT_GPIO_ID_MAKE (A, 12) },
-                                              .misoOpts  = { PLAT_GPIO_ID_MAKE (C, 2) },
-                                              .mosiOpts  = { PLAT_GPIO_ID_MAKE (C, 3) },
-                                              .afOpts    = { GPIO_AF5_SPI2 } }, // eSPI_DEV_ID_2
-};
+//     [SPI_DEV_ID_TO_INDEX (eSPI_DEV_ID_2)] = { .pInstance = SPI2,
+//                                               .pRcc      = &(RCC->APB1LENR),
+//                                               .rccMask   = RCC_APB1LENR_SPI2EN,
+//                                               .sckOpts   = { PLAT_GPIO_ID_MAKE (A, 12) },
+//                                               .misoOpts  = { PLAT_GPIO_ID_MAKE (C, 2) },
+//                                               .mosiOpts  = { PLAT_GPIO_ID_MAKE (C, 3) },
+//                                               .afOpts    = { GPIO_AF5_SPI2 } }, // eSPI_DEV_ID_2
+// };
+
+FJ_STATIC SPIHardware_t Get_SPI_HwById (eSPI_DEV_ID_t devId) {
+
+    switch (devId) {
+    // case eSPI_DEV_ID_1: return { 0 };
+    case eSPI_DEV_ID_2:
+        return (SPIHardware_t){ .pInstance = SPI2,
+                                .pRcc      = &(RCC->APB1LENR),
+                                .rccMask   = RCC_APB1LENR_SPI2EN,
+                                .sckOpts   = { PLAT_GPIO_ID_MAKE (A, 12) },
+                                .misoOpts  = { PLAT_GPIO_ID_MAKE (C, 2) },
+                                .mosiOpts  = { PLAT_GPIO_ID_MAKE (C, 3) },
+                                .afOpts    = { GPIO_AF5_SPI2 } };
+    // case eSPI_DEV_ID_3: return g_SPIHw[SPI_DEV_ID_TO_INDEX (eSPI_DEV_ID_3)];
+    // case eSPI_DEV_ID_4: return g_SPIHw[SPI_DEV_ID_TO_INDEX (eSPI_DEV_ID_4)];
+    // case eSPI_DEV_ID_5: return g_SPIHw[SPI_DEV_ID_TO_INDEX (eSPI_DEV_ID_5)];
+    default: return (SPIHardware_t){ 0 };
+    }
+}
 
 void SPI1_IRQHandler (void) {
     // TODO
@@ -60,9 +82,9 @@ void SPI5_IRQHandler (void) {
 
 SPIDevice_t* Plat_SPI_Init (eSPI_DEV_ID_t devId, BusDeviceCfg_t* pCfg) {
 
-    SPIDevice_t* pDev  = SPIDevices_GetMutable (SPI_DEV_ID_TO_INDEX (devId));
-    SPIHardware_t* pHw = &g_SPIHw[SPI_DEV_ID_TO_INDEX (devId)];
-    if (!pDev || !pHw->pInstance) {
+    SPIDevice_t* pDev = SPIDevices_GetMutable (SPI_DEV_ID_TO_INDEX (devId));
+    SPIHardware_t hw  = Get_SPI_HwById (devId);
+    if (!pDev || !hw.pInstance) {
         return NULL;
     }
 
@@ -77,16 +99,16 @@ SPIDevice_t* Plat_SPI_Init (eSPI_DEV_ID_t devId, BusDeviceCfg_t* pCfg) {
     }
 
     // enable rcc spi clock
-    *(pHw->pRcc) |= pHw->rccMask;
+    *(hw.pRcc) |= hw.rccMask;
     bool found = false;
     for (uint32_t i = 0; i < PLAT_SPI_MAX_PIN_SEL; ++i) {
         // clang-format off
-        if (pCfg->spiSckGpioId == pHw->sckOpts[i] &&
-            pCfg->spiMisoGpioId == pHw->misoOpts[i] &&
-            pCfg->spiMosiGpioId == pHw->mosiOpts[i]) {
-            GPIO_t* pSCK  = GPIO_Init (pCfg->spiSckGpioId, pCfg->busId, PLAT_GPIO_CFG_AF_PP_NOPULL, pHw->afOpts[i]);
-            GPIO_t* pMISO = GPIO_Init (pCfg->spiMisoGpioId, pCfg->busId, PLAT_GPIO_CFG_AF_PP_NOPULL, pHw->afOpts[i]);
-            GPIO_t* pMOSI = GPIO_Init (pCfg->spiMosiGpioId, pCfg->busId, PLAT_GPIO_CFG_AF_PP_NOPULL, pHw->afOpts[i]);
+        if (pCfg->spiSckGpioId == hw.sckOpts[i] &&
+            pCfg->spiMisoGpioId == hw.misoOpts[i] &&
+            pCfg->spiMosiGpioId == hw.mosiOpts[i]) {
+            GPIO_t* pSCK  = GPIO_Init (pCfg->spiSckGpioId, pCfg->busId, PLAT_GPIO_CFG_AF_PP_NOPULL, hw.afOpts[i]);
+            GPIO_t* pMISO = GPIO_Init (pCfg->spiMisoGpioId, pCfg->busId, PLAT_GPIO_CFG_AF_PP_NOPULL, hw.afOpts[i]);
+            GPIO_t* pMOSI = GPIO_Init (pCfg->spiMosiGpioId, pCfg->busId, PLAT_GPIO_CFG_AF_PP_NOPULL, hw.afOpts[i]);
             if (!pSCK || !pMISO || !pMOSI) {
                 return NULL;
             }
@@ -119,7 +141,7 @@ SPIDevice_t* Plat_SPI_Init (eSPI_DEV_ID_t devId, BusDeviceCfg_t* pCfg) {
     LL_SPI_Init (pDev->pInstance, &defaultInit);
 
     pDev->devId     = devId;
-    pDev->pInstance = pHw->pInstance;
+    pDev->pInstance = hw.pInstance;
     return pDev;
 }
 

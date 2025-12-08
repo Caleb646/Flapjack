@@ -7,7 +7,11 @@
 
 #include "aero/flight.h"
 
+#include "drivers/motor.h"
+
 #include "drivers/sensors/inertial/inertial.h"
+
+#include "cfg/motor.h"
 
 
 ACCDevice_t* Flight_GetActive_AccDevice (void) {
@@ -82,4 +86,30 @@ eSTATUS_t Mag_Update (MAGDevice_t* pMagDevice, float dt, bool forcePolling, Vec3
     // pOutMag->z = (float)rawData[2] * pMagDevice->scaleFactor;
     return eSTATUS_NOT_SUPPORTED;
     // return eSTATUS_SUCCESS;
+}
+
+eSTATUS_t Init_Motion (void) {
+
+    eSTATUS_t status = eSTATUS_SUCCESS;
+
+    for (uint32_t i = 0; i < MotionCfgs_GetSize (); ++i) {
+
+        MotorCfg_t* pMotorCfg = MotorCfgs_GetMutable (i);
+        MotorDevice_t* pMotor = MotorDevices_GetMutable (i);
+        status                = Motor_Init (pMotorCfg, pMotor);
+        RETURN_IF (FJ_FAIL (status), status, "Failed to initialize motor ID %d", pMotorCfg->id);
+    }
+
+    for (uint32_t i = 0; i < ServoCfgs_GetSize (); ++i) {
+
+        ServoCfg_t* pServoCfg = ServoCfgs_GetMutable (i);
+        ServoDevice_t* pServo = ServoDevices_GetMutable (i);
+        status                = Servo_Init (pServoCfg, pServo);
+        RETURN_IF (FJ_FAIL (status), status, "Failed to initialize servo ID %d", pServoCfg->id);
+    }
+
+    return eSTATUS_SUCCESS;
+}
+
+eSTATUS_t Motion_Update (Vec3f* const pidAtt, float targetThrottle, float dt) {
 }

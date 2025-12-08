@@ -18,5 +18,8 @@ eSTATUS_t Acc_Update (ACCDevice_t* pAccDevice, float dt, bool forcePolling, Vec3
 eSTATUS_t Gyro_Update (GYRODevice_t* pGyroDevice, float dt, bool forcePolling, Vec3f* pOutGyro);
 eSTATUS_t Mag_Update (MAGDevice_t* pMagDevice, float dt, bool forcePolling, Vec3f* pOutMag);
 
+eSTATUS_t Init_Motion (void);
+eSTATUS_t Motion_Update (Vec3f* const pidAtt, float targetThrottle, float dt);
+
 
 #endif // AERO_FLIGHT_H

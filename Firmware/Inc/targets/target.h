@@ -7,6 +7,7 @@
 #define TARG_MAX_GYROS          1
 #define TARG_MAX_MAGS           1
 #define TARG_MAX_GPS            1
+#define TARG_MAX_TIMS           16
 
 #define TARG_SHARED_MEM_SECTION __attribute__ ((section (".shared_mem")))
 
