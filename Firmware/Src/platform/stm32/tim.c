@@ -34,12 +34,12 @@ static uint32_t const g_InterruptFlagsMap[] = { [eTIM_INTERRUPT_FLAG_UPDATE]  = 
 
 void Stm32_Tim_IRQHandler (eTIM_DEVICE_ID_t devId) {
 
-    TimBaseDevice_t** ppTimBaseDev = TimBaseDevices_GetMutable (devId);
+    TimDevice_t** ppTimBaseDev = TimDevices_GetMutable (devId);
     if (!ppTimBaseDev) {
         return;
     }
 
-    TimBaseDevice_t* pTimBaseDev = *ppTimBaseDev;
+    TimDevice_t* pTimBaseDev = *ppTimBaseDev;
     if (!pTimBaseDev) {
         return;
     }
@@ -63,10 +63,10 @@ TIM_DEF_INTERRUPT_HANDLER (12);
 // TIM8_UP_TIM13_IRQHandler
 TIM_DEF_INTERRUPT_HANDLER (13);
 
-TimHwCfg_t Plat_Tim_Get_DeviceHwCfg (eTIM_ID_t timId) {
+TimHwCfg_t Plat_TimDev_Get_HwCfg (eTIM_DEVICE_ID_t timId) {
 
     // __HAL_RCC_TIM2_CLK_ENABLE();
-    switch (TIM_ID_TO_DEVICE_ID (timId)) {
+    switch (timId) {
     case eTIM_1_DEVICE_ID:
         return (TimHwCfg_t){ .pInstance     = TIM1,
                              .pRccEnableReg = &RCC->APB2ENR,
@@ -110,9 +110,9 @@ TimHwCfg_t Plat_Tim_Get_DeviceHwCfg (eTIM_ID_t timId) {
     }
 }
 
-TimDmaReqMap_t Plat_Tim_Get_DmaReqMap (eTIM_ID_t timId) {
+TimDmaReqMap_t Plat_TimDev_Get_DmaReqMap (eTIM_DEVICE_ID_t timId) {
 
-    switch (TIM_ID_TO_DEVICE_ID (timId)) {
+    switch (timId) {
     case eTIM_1_DEVICE_ID:
         return (TimDmaReqMap_t){ .cc1    = DMA_REQUEST_TIM1_CH1,
                                  .cc2    = DMA_REQUEST_TIM1_CH2,
@@ -141,77 +141,77 @@ TimDmaReqMap_t Plat_Tim_Get_DmaReqMap (eTIM_ID_t timId) {
     }
 }
 
-void Plat_Tim_SetPrescaler (TimDevice_t* pTimDev, uint32_t prescaler) {
+void Plat_TimDev_SetPrescaler (TimDevice_t* pTimDev, uint32_t prescaler) {
 
-    if (!pTimDev || !pTimDev->pTimBaseDev) {
+    if (!pTimDev) {
         return;
     }
-    __HAL_TIM_SET_PRESCALER (&(pTimDev->pTimBaseDev->handle), prescaler);
+    __HAL_TIM_SET_PRESCALER (&(pTimDev->handle), prescaler);
 }
 
-void Plat_Tim_SetPeriod (TimDevice_t* pTimDev, uint32_t period) {
+void Plat_TimDev_SetPeriod (TimDevice_t* pTimDev, uint32_t period) {
 
-    if (!pTimDev || !pTimDev->pTimBaseDev) {
+    if (!pTimDev) {
         return;
     }
-    __HAL_TIM_SET_AUTORELOAD (&(pTimDev->pTimBaseDev->handle), period);
+    __HAL_TIM_SET_AUTORELOAD (&(pTimDev->handle), period);
 }
 
-void Plat_Tim_SetCC (TimDevice_t* pTimDev, uint32_t pulseWidth) {
+void Plat_TimDev_SetCC (TimChannel_t* pTimChan, uint32_t pulseWidth) {
 
-    if (!pTimDev || !pTimDev->pTimBaseDev) {
+    if (!pTimChan || !pTimChan->pTimBaseDev) {
         return;
     }
-    __HAL_TIM_SET_COMPARE (&(pTimDev->pTimBaseDev->handle), TIM_ID_TO_HAL_CHAN (pTimDev->id), pulseWidth);
+    __HAL_TIM_SET_COMPARE (&(pTimChan->pTimBaseDev->handle), TIM_ID_TO_HAL_CHAN (pTimChan->chanId), pulseWidth);
 }
 
-void Plat_Tim_SetCNT (TimDevice_t* pTimDev, uint32_t count) {
+void Plat_TimDev_SetCNT (TimDevice_t* pTimDev, uint32_t count) {
 
-    if (!pTimDev || !pTimDev->pTimBaseDev) {
+    if (!pTimDev) {
         return;
     }
-    __HAL_TIM_SET_COUNTER (&(pTimDev->pTimBaseDev->handle), count);
+    __HAL_TIM_SET_COUNTER (&(pTimDev->handle), count);
 }
 
-uint32_t Plat_Tim_GetPrescaler (TimDevice_t* pTimDev) {
+uint32_t Plat_TimDev_GetPrescaler (TimDevice_t* pTimDev) {
 
-    if (!pTimDev || !pTimDev->pTimBaseDev) {
+    if (!pTimDev) {
         return 0;
     }
-    return __HAL_TIM_GET_PRESCALER (&(pTimDev->pTimBaseDev->handle));
+    return __HAL_TIM_GET_PRESCALER (&(pTimDev->handle));
 }
 
-uint32_t Plat_Tim_GetPeriod (TimDevice_t* pTimDev) {
+uint32_t Plat_TimDev_GetPeriod (TimDevice_t* pTimDev) {
 
-    if (!pTimDev || !pTimDev->pTimBaseDev) {
+    if (!pTimDev) {
         return 0;
     }
-    return __HAL_TIM_GET_AUTORELOAD (&(pTimDev->pTimBaseDev->handle));
+    return __HAL_TIM_GET_AUTORELOAD (&(pTimDev->handle));
 }
 
-uint32_t Plat_Tim_GetCC (TimDevice_t* pTimDev) {
+uint32_t Plat_TimDev_GetCC (TimChannel_t* pTimChan) {
 
-    if (!pTimDev || !pTimDev->pTimBaseDev) {
+    if (!pTimChan || !pTimChan->pTimBaseDev) {
         return 0;
     }
-    return __HAL_TIM_GET_COMPARE (&(pTimDev->pTimBaseDev->handle), TIM_ID_TO_HAL_CHAN (pTimDev->id));
+    return __HAL_TIM_GET_COMPARE (&(pTimChan->pTimBaseDev->handle), TIM_ID_TO_HAL_CHAN (pTimChan->chanId));
 }
 
-uint32_t Plat_Tim_GetCNT (TimDevice_t* pTimDev) {
+uint32_t Plat_TimDev_GetCNT (TimDevice_t* pTimDev) {
 
-    if (!pTimDev || !pTimDev->pTimBaseDev) {
+    if (!pTimDev) {
         return 0;
     }
-    return __HAL_TIM_GET_COUNTER (&(pTimDev->pTimBaseDev->handle));
+    return __HAL_TIM_GET_COUNTER (&(pTimDev->handle));
 }
 
-uint32_t Plat_Tim_GetClkFreqHz (TimDevice_t* pTimDev) {
+uint32_t Plat_TimDev_GetClkFreqHz (TimDevice_t* pTimDev) {
 
-    if (!pTimDev || !pTimDev->pTimBaseDev) {
+    if (!pTimDev) {
         return 0;
     }
 
-    uint32_t clkDiv = __HAL_TIM_GET_CLOCKDIVISION (&(pTimDev->pTimBaseDev->handle));
+    uint32_t clkDiv = __HAL_TIM_GET_CLOCKDIVISION (&(pTimDev->handle));
     uint32_t clk    = HAL_RCC_GetPCLK1Freq ();
     if (clkDiv != TIM_CLOCKDIVISION_DIV1) {
         clk *= 2;
@@ -219,55 +219,56 @@ uint32_t Plat_Tim_GetClkFreqHz (TimDevice_t* pTimDev) {
     return clk;
 }
 
-void Plat_Tim_SetInterruptEnabled (TimDevice_t* pTimDev, eTIM_INTERRUPT_FLAG_t flag, bool enabled) {
+void Plat_TimDev_SetInterruptEnabled (TimDevice_t* pTimDev, eTIM_INTERRUPT_FLAG_t flag, bool enabled) {
 
-    if (!pTimDev || !pTimDev->pTimBaseDev) {
+    if (!pTimDev) {
         return;
     }
 
     if (enabled) {
-        __HAL_TIM_ENABLE_IT (&(pTimDev->pTimBaseDev->handle), g_InterruptFlagsMap[flag]);
+        __HAL_TIM_ENABLE_IT (&(pTimDev->handle), g_InterruptFlagsMap[flag]);
     } else {
-        __HAL_TIM_DISABLE_IT (&(pTimDev->pTimBaseDev->handle), g_InterruptFlagsMap[flag]);
+        __HAL_TIM_DISABLE_IT (&(pTimDev->handle), g_InterruptFlagsMap[flag]);
     }
 }
 
-void Plat_Tim_ClearInterruptFlag (TimDevice_t* pTimDev, eTIM_INTERRUPT_FLAG_t flag) {
+void Plat_TimDev_ClearInterruptFlag (TimDevice_t* pTimDev, eTIM_INTERRUPT_FLAG_t flag) {
 
-    if (!pTimDev || !pTimDev->pTimBaseDev) {
+    if (!pTimDev) {
         return;
     }
-    __HAL_TIM_CLEAR_FLAG (&(pTimDev->pTimBaseDev->handle), g_InterruptFlagsMap[flag]);
+    __HAL_TIM_CLEAR_FLAG (&(pTimDev->handle), g_InterruptFlagsMap[flag]);
 }
 
-uint32_t Plat_Tim_GetInterruptFlag (TimDevice_t* pTimDev, eTIM_INTERRUPT_FLAG_t flag) {
+uint32_t Plat_TimDev_GetInterruptFlag (TimDevice_t* pTimDev, eTIM_INTERRUPT_FLAG_t flag) {
 
-    if (!pTimDev || !pTimDev->pTimBaseDev) {
+    if (!pTimDev) {
         return 0;
     }
-    return __HAL_TIM_GET_FLAG (&(pTimDev->pTimBaseDev->handle), g_InterruptFlagsMap[flag]);
+    return __HAL_TIM_GET_FLAG (&(pTimDev->handle), g_InterruptFlagsMap[flag]);
 }
 
-TimBaseDevice_t* Plat_Tim_InitBaseDevice (eTIM_ID_t timId, TimCfg_t* pTimCfg) {
+TimDevice_t* Plat_TimDev_Init (eTIM_DEVICE_ID_t devId, TimCfg_t const* pTimCfg) {
 
-    TimBaseDevice_t** ppTimDevHandle = TimBaseDevices_GetMutable (TIM_ID_TO_DEVICE_INDEX (timId));
+    TimDevice_t** ppTimDevHandle = TimDevices_GetMutable (TIM_DEV_ID_TO_INDEX (devId));
     if (!ppTimDevHandle) {
         return NULL;
     }
 
-    TimBaseDevice_t* pTimBaseDev = *ppTimDevHandle;
+    TimDevice_t* pTimBaseDev = *ppTimDevHandle;
     if (pTimBaseDev) {
         return pTimBaseDev;
     }
 
-    pTimBaseDev = Alloc_SharedMem (sizeof (TimBaseDevice_t));
+    pTimBaseDev = Alloc_SharedMem (sizeof (TimDevice_t));
     if (!pTimBaseDev) {
         return NULL;
     }
 
-    TimHwCfg_t hwCfg = Plat_Tim_Get_DeviceHwCfg (timId);
-    RETURN_IF_NULL (hwCfg.pRccEnableReg, NULL, "Invalid timer device ID: %u", timId);
-    RETURN_IF_NULL (hwCfg.pInstance, NULL, "Invalid timer device ID: %u", timId);
+    *ppTimDevHandle  = pTimBaseDev;
+    TimHwCfg_t hwCfg = Plat_TimDev_Get_HwCfg (devId);
+    RETURN_IF_NULL (hwCfg.pRccEnableReg, NULL, "Invalid timer device ID: %u", devId);
+    RETURN_IF_NULL (hwCfg.pInstance, NULL, "Invalid timer device ID: %u", devId);
 
     // Enable rcc clock
     *(hwCfg.pRccEnableReg) |= hwCfg.rccEnableMsk;
@@ -283,21 +284,21 @@ TimBaseDevice_t* Plat_Tim_InitBaseDevice (eTIM_ID_t timId, TimCfg_t* pTimCfg) {
 
     // deinitialize first in case it was previously initialized
     if (HAL_TIM_PWM_DeInit (&(pTimBaseDev->handle)) != HAL_OK) {
-        LOG_ERROR ("Failed to de-initialize timer device handle for TIM ID: %u", timId);
+        LOG_ERROR ("Failed to de-initialize timer device handle for TIM ID: %u", devId);
         return NULL;
     }
 
     if (HAL_TIM_PWM_Init (&(pTimBaseDev->handle)) != HAL_OK) {
-        LOG_ERROR ("Failed to initialize timer device handle for TIM ID: %u", timId);
+        LOG_ERROR ("Failed to initialize timer device handle for TIM ID: %u", devId);
         return NULL;
     }
 
     return pTimBaseDev;
 }
 
-eSTATUS_t Plat_Tim_InitCC (TimDevice_t* pTimDev) {
+eSTATUS_t Plat_TimChan_InitCC (TimChannel_t* pChannel) {
 
-    if (!pTimDev || !pTimDev->pTimBaseDev) {
+    if (!pChannel || !pChannel->pTimBaseDev) {
         return eSTATUS_NULL_ARG;
     }
 
@@ -310,39 +311,39 @@ eSTATUS_t Plat_Tim_InitCC (TimDevice_t* pTimDev) {
     sConfigOC.OCNIdleState       = TIM_OCNIDLESTATE_RESET;
     sConfigOC.OCIdleState        = TIM_OCIDLESTATE_RESET;
     // clang-format off
-    uint32_t halChannel = TIM_ID_TO_HAL_CHAN(pTimDev->id);
-    HAL_StatusTypeDef halStatus = HAL_TIM_PWM_ConfigChannel (&(pTimDev->pTimBaseDev->handle), &sConfigOC, halChannel);
+    uint32_t halChannel = TIM_ID_TO_HAL_CHAN(pChannel->devId);
+    HAL_StatusTypeDef halStatus = HAL_TIM_PWM_ConfigChannel (&(pChannel->pTimBaseDev->handle), &sConfigOC, halChannel);
     // clang-format on
 
     if (halStatus != HAL_OK) {
-        LOG_ERROR ("Failed to configure timer channel for timer id: %u", pTimDev->id);
+        LOG_ERROR ("Failed to configure timer channel for timer id: %u", pChannel->devId);
         return eSTATUS_FAILURE;
     }
 
-    HAL_NVIC_SetPriority (pTimDev->irqNum, pTimDev->irqPriority, pTimDev->irqPriority);
-    HAL_NVIC_EnableIRQ (pTimDev->irqNum);
+    HAL_NVIC_SetPriority (pChannel->irqNum, pChannel->irqPriority, pChannel->irqPriority);
+    HAL_NVIC_EnableIRQ (pChannel->irqNum);
 
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t Plat_Tim_Start (TimDevice_t* pTimDev, uint8_t const* pData, uint32_t size) {
+eSTATUS_t Plat_TimChan_Start (TimChannel_t* pChannel, uint8_t const* pData, uint32_t size) {
 
-    if (!pTimDev || !pTimDev->pTimBaseDev) {
+    if (!pChannel || !pChannel->pTimBaseDev) {
         return eSTATUS_NULL_ARG;
     }
     HAL_StatusTypeDef status = HAL_OK;
-    status = HAL_TIM_PWM_Start (&(pTimDev->pTimBaseDev->handle), TIM_ID_TO_HAL_CHAN (pTimDev->id));
+    status = HAL_TIM_PWM_Start (&(pChannel->pTimBaseDev->handle), TIM_ID_TO_HAL_CHAN (pChannel->chanId));
     RETURN_IF (status != HAL_OK, eSTATUS_FAILURE, "Failed to start timer PWM for timer");
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t Plat_Tim_Stop (TimDevice_t* pTimDev) {
+eSTATUS_t Plat_TimChan_Stop (TimChannel_t* pChannel) {
 
-    if (!pTimDev || !pTimDev->pTimBaseDev) {
+    if (!pChannel || !pChannel->pTimBaseDev) {
         return eSTATUS_NULL_ARG;
     }
     HAL_StatusTypeDef status = HAL_OK;
-    status = HAL_TIM_PWM_Stop (&(pTimDev->pTimBaseDev->handle), TIM_ID_TO_HAL_CHAN (pTimDev->id));
+    status = HAL_TIM_PWM_Stop (&(pChannel->pTimBaseDev->handle), TIM_ID_TO_HAL_CHAN (pChannel->chanId));
     RETURN_IF (status != HAL_OK, eSTATUS_FAILURE, "Failed to stop timer PWM for timer");
     return eSTATUS_SUCCESS;
 }

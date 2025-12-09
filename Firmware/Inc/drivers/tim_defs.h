@@ -24,23 +24,26 @@ enum {
 typedef uint8_t eTIM_DEVICE_ID_t;
 enum {
     eTIM_NULL_DEVICE_ID = 0,
-    eTIM_1_DEVICE_ID    = 8,
-    eTIM_2_DEVICE_ID    = eTIM_1_DEVICE_ID + 8,
-    eTIM_3_DEVICE_ID    = eTIM_2_DEVICE_ID + 8,
-    eTIM_4_DEVICE_ID    = eTIM_3_DEVICE_ID + 8,
-    eTIM_5_DEVICE_ID    = eTIM_4_DEVICE_ID + 8,
-    eTIM_8_DEVICE_ID    = eTIM_5_DEVICE_ID + 8,
-    eTIM_9_DEVICE_ID    = eTIM_8_DEVICE_ID + 8,
-    eTIM_10_DEVICE_ID   = eTIM_9_DEVICE_ID + 8,
-    eTIM_11_DEVICE_ID   = eTIM_10_DEVICE_ID + 8,
-    eTIM_12_DEVICE_ID   = eTIM_11_DEVICE_ID + 8,
-    eTIM_13_DEVICE_ID   = eTIM_12_DEVICE_ID + 8,
-    eTIM_14_DEVICE_ID   = eTIM_13_DEVICE_ID + 8
+    eTIM_1_DEVICE_ID,  // = 8,
+    eTIM_2_DEVICE_ID,  // + 8,
+    eTIM_3_DEVICE_ID,  // + 8,
+    eTIM_4_DEVICE_ID,  // + 8,
+    eTIM_5_DEVICE_ID,  // + 8,
+    eTIM_8_DEVICE_ID,  // + 8,
+    eTIM_9_DEVICE_ID,  // + 8,
+    eTIM_10_DEVICE_ID, // + 8,
+    eTIM_11_DEVICE_ID, //  + 8,
+    eTIM_12_DEVICE_ID, //  + 8,
+    eTIM_13_DEVICE_ID, //  + 8,
+    eTIM_14_DEVICE_ID, //  + 8
+    eTIM_15_DEVICE_ID, //  + 8
+    eTIM_16_DEVICE_ID  //  + 8
 };
 
-#define TIM_DEV_ID_TO_INDEX(DEV_ID) (((DEV_ID) / 8U) - 1U)
+// #define TIM_DEV_ID_TO_INDEX(DEV_ID)     (((DEV_ID) / 8U) - 1U)
+#define TIM_DEV_ID_TO_INDEX(DEV_ID)     ((DEV_ID) - 1U)
 
-typedef uint8_t eTIM_ID_t;
+// typedef uint8_t eTIM_ID_t;
 
 #define TIM_ID_MAKE(DEV_ID, CHAN_ID)    (eTIM_##DEV_ID##_DEVICE_ID | eTIM_CHANNEL_##CHAN_ID##_ID)
 #define TIM_ID_TO_DEVICE_INDEX(TIM_ID)  (TIM_DEV_ID_TO_INDEX ((TIM_ID) & ~0b111))
@@ -71,7 +74,8 @@ enum {
 };
 
 typedef struct TimCfg_s {
-    eTIM_ID_t id;
+    eTIM_DEVICE_ID_t devId;
+    eTIM_CHAN_ID_t chanId;
     eGPIO_ID_t gpioId;
     eTIM_MODE_TYPE_t modeType;
     uint8_t irqPriority;
@@ -94,17 +98,18 @@ typedef struct TimDmaReqMap_s {
     uint8_t update;
 } TimDmaReqMap_t;
 
-typedef struct TimBaseDevice_s {
+typedef struct TimDevice_s {
     // eTIM_DEVICE_ID_t id;
     TIM_HandleTypeDef handle;
-} TimBaseDevice_t;
+} TimDevice_t;
 
-typedef struct TimDevice_s {
-    eTIM_ID_t id;
+typedef struct TimChannel_s {
+    eTIM_DEVICE_ID_t devId;
+    eTIM_CHAN_ID_t chanId;
     eTIM_MODE_TYPE_t modeType;
     uint8_t irqNum;
     uint8_t irqPriority;
-    TimBaseDevice_t* pTimBaseDev;
-} TimDevice_t;
+    TimDevice_t* pTimBaseDev;
+} TimChannel_t;
 
 #endif // DRIVERS_TIM_DEFS_H
