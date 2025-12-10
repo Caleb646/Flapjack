@@ -21,6 +21,7 @@ typedef struct DmaHwCfg_s {
 } DmaHwCfg_t;
 
 typedef struct DmaDevice_s {
+    DMA_TypeDef* pDev;
     DMA_HandleTypeDef handle;
 } DmaDevice_t;
 
@@ -57,7 +58,11 @@ DmaDevice_t* Plat_Dma_AllocDevice (DmaCfg_t const* pDmaCfg) {
     }
 
     DmaDevice_t** ppDmaDevice = &g_DmaDevices[g_DmaAllocated];
-    *ppDmaDevice              = Alloc_SharedMem (sizeof (DmaDevice_t));
+
+    if (!(*ppDmaDevice)) {
+        *ppDmaDevice = Alloc_SharedMem (sizeof (DmaDevice_t));
+    }
+
     if (!(*ppDmaDevice)) {
         return NULL;
     }
@@ -70,6 +75,7 @@ DmaDevice_t* Plat_Dma_AllocDevice (DmaCfg_t const* pDmaCfg) {
     *(hwCfg.pClkEnableReg) |= hwCfg.clkEnableMsk;
     // TODO: let dma cfg influence init params
     memset (*ppDmaDevice, 0, sizeof (DmaDevice_t));
+    (*ppDmaDevice)->pDev                            = hwCfg.pDev;
     (*ppDmaDevice)->handle.Instance                 = hwCfg.pStream;
     (*ppDmaDevice)->handle.Init.Request             = DMA_REQUEST_MEM2MEM;
     (*ppDmaDevice)->handle.Init.Priority            = DMA_PRIORITY_HIGH;
@@ -96,4 +102,37 @@ DmaDevice_t* Plat_Dma_AllocDevice (DmaCfg_t const* pDmaCfg) {
 
     ++g_DmaAllocated;
     return *ppDmaDevice;
+}
+
+eSTATUS_t Plat_Dma_SetDeviceTransferCfg (DmaDevice_t* pDmaDevice, uint32_t srcAddr, uint32_t dstAddr, size_t size) {
+
+    if (!pDmaDevice || !pDmaDevice->handle.Instance) {
+        return eSTATUS_NULL_ARG;
+    }
+
+    /* Clear the DMAMUX synchro overrun flag */
+    DMA_HandleTypeDef* hdma        = &(pDmaDevice->handle);
+    hdma->DMAmuxChannelStatus->CFR = hdma->DMAmuxChannelStatusMask;
+    if (hdma->DMAmuxRequestGen != 0U) {
+        /* Clear the DMAMUX request generator overrun flag */
+        hdma->DMAmuxRequestGenStatus->RGCFR = hdma->DMAmuxRequestGenStatusMask;
+    }
+
+    DMA_Base_Registers* regs_dma   = (DMA_Base_Registers*)hdma->StreamBaseAddress;
+    BDMA_Base_Registers* regs_bdma = (BDMA_Base_Registers*)hdma->StreamBaseAddress;
+
+    return 0;
+}
+
+void Plat_Dma_SetDeviceEnabled (DmaDevice_t* pDmaDevice, bool enable) {
+
+    if (!pDmaDevice || !pDmaDevice->handle.Instance) {
+        return;
+    }
+
+    if (enable) {
+        __HAL_DMA_ENABLE (&(pDmaDevice->handle));
+    } else {
+        __HAL_DMA_DISABLE (&(pDmaDevice->handle));
+    }
 }

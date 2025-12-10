@@ -15,7 +15,8 @@ enum {
 };
 
 typedef struct DmaCfg_s {
-    uint32_t unused;
+    eDMA_TRANSFER_TYPE_t transferType;
+    uint32_t requestId;
 } DmaCfg_t;
 
 typedef struct DmaDevice_s DmaDevice_t;
