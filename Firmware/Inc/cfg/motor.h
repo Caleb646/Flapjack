@@ -14,32 +14,21 @@
 
 #include "drivers/motor.h"
 
-typedef struct MotorCfg_s {
-    eMOTOR_ID_t id;
-    eMOTION_PROT_TYPE_t protType;
-    eSERVO_ID_t linkedServoId;
+typedef struct MotorsCfg_s {
+    eGPIO_ID_t gpios[TARG_MAX_MOTORS];
+    Vec3f mixes[TARG_MAX_MOTORS];
+    eMOTOR_PROT_t protType;
+    eSERVO_ID_t linkedServoIds[TARG_MAX_MOTORS];
+} MotorsCfg_t;
 
-    eGPIO_ID_t gpio;
-    TimCfg_t timCfg;
+typedef struct ServosCfg_s {
+    eGPIO_ID_t gpios[TARG_MAX_SERVOS];
+    Vec3f mixes[TARG_MAX_SERVOS];
+    eMOTOR_PROT_t protType;
+    eMOTOR_ID_t linkedMotorIds[TARG_MAX_SERVOS];
+} ServosCfg_t;
 
-    // float maxRPM;
-    // float polePairs;
-    // bool sensorless;
-} MotorCfg_t;
-
-typedef struct ServoCfg_s {
-    eSERVO_ID_t id;
-    eMOTION_PROT_TYPE_t protType;
-    eMOTOR_ID_t linkedMotorId;
-
-    eGPIO_ID_t gpio;
-    TimCfg_t timCfg;
-    // float maxRPM;
-    // float polePairs;
-    // bool sensorless;
-} ServoCfg_t;
-
-CFG_DECLARE_ARRAY (MotorCfg_t, MotorCfgs, TARG_MAX_MOTORS);
-CFG_DECLARE_ARRAY (ServoCfg_t, ServoCfgs, TARG_MAX_SERVOS);
+CFG_DECLARE (MotorsCfg_t, MotorsCfg);
+CFG_DECLARE (ServosCfg_t, ServosCfg);
 
 #endif // CFG_MOTION_H

@@ -6,18 +6,17 @@
 
 #include "common.h"
 
-#include "drivers/driver.h"
-
-#include "drivers/io/gpio_defs.h"
-
-#include "drivers/tim_defs.h"
-
-typedef uint8_t eMOTION_PROT_TYPE_t;
+typedef uint8_t eMOTOR_PROT_t;
 enum {
     eMOTION_PROT_TYPE_NULL = 0,
-    eMOTION_PROT_TYPE_DSHOT,
+
+    I_eMOTION_PROT_TYPE_DSHOT,
+    eMOTION_PROT_TYPE_DSHOT_150,
+
     eMOTION_PROT_TYPE_PWM,
 };
+
+#define MOTOR_PROT_IS_DSHOT(PROT_TYPE) ((PROT_TYPE) == eMOTION_PROT_TYPE_DSHOT_150)
 
 typedef uint8_t eMOTOR_ID_t;
 enum {
@@ -49,48 +48,18 @@ enum {
 
 #define SERVO_ID_TO_INDEX(SERVO_ID) ((SERVO_ID) - 1U)
 
-// typedef struct ServoDevice_s ServoDevice_t;
+typedef struct Dshot_s Dshot_t;
+typedef struct Motors_s Motors_t;
+typedef struct Servos_s Servos_t;
 
-// typedef struct MotorDevice_s {
-//     eMOTOR_ID_t id;
-//     eMOTION_PROT_TYPE_t protType;
-//     ServoDevice_t* pLinkedServoDev;
-//     bool isDeviceInitialized;
-// } MotorDevice_t;
+typedef struct MotorProtVtbl_s {
+    union {
+        eSTATUS_t (*fnUpdateMotors) (float const* pThrottles, uint32_t nThrottles);
+        eSTATUS_t (*fnUpdateServos) (float const* pAngles, uint32_t nAngles);
+    };
+} MotorProtVtbl_t;
 
-typedef struct Motors_s {
-    float outputs[TARG_MAX_MOTORS];
-    uint8_t nMotors;
-} Motors_t;
-
-typedef struct Servos_s {
-    float outputs[TARG_MAX_SERVOS];
-    uint8_t nServos;
-} Servos_t;
-
-// typedef struct ServoDevice_s {
-//     eSERVO_ID_t id;
-//     eMOTION_PROT_TYPE_t protType;
-//     MotorDevice_t* pLinkedMotorDev;
-//     bool isDeviceInitialized;
-// } ServoDevice_t;
-
-// typedef struct MotionControl_s {
-//     MotorDevice_t motors[TARG_MAX_MOTORS];
-//     ServoDevice_t servos[TARG_MAX_SERVOS];
-//     void (*fnMixerUpdate) (float dt);
-//     uint8_t nMotors;
-//     uint8_t nServos;
-// } MotionControl_t;
-
-
-DRIVER_DECLARE (Motors_t, Motors);
-DRIVER_DECLARE (Servos_t, Servos);
-
-typedef struct MotorCfg_s MotorCfg_t;
-uint8_t Motor_GetNumMotors (void);
-
-typedef struct ServoCfg_s ServoCfg_t;
-uint8_t Servo_GetNumServos (void);
+eSTATUS_t Motors_Init (void);
+eSTATUS_t Servos_Init (void);
 
 #endif // DRIVERS_MOTION_H

@@ -36,6 +36,22 @@ static inline GPIO_t* GPIO_GetIO (eGPIO_ID_t gpioId) {
     return Plat_GPIO_GetIO (gpioId);
 }
 
+static inline GPIO_TypeDef* GPIO_GetPort (GPIO_t* pIO) {
+    return Plat_GPIO_GetPort (pIO);
+}
+
+static inline uint16_t GPIO_GetPin (GPIO_t* pIO) {
+    return Plat_GPIO_GetPin (pIO);
+}
+
+static inline uint32_t GPIO_GetPortIndex (eGPIO_ID_t gpioId) {
+    return PLAT_GPIO_ID_TO_PORT_INDEX (gpioId);
+}
+
+static inline uint32_t GPIO_GetPinIndex (eGPIO_ID_t gpioId) {
+    return PLAT_GPIO_ID_TO_PIN_INDEX (gpioId);
+}
+
 static inline void GPIO_Write (GPIO_t* pIO, eGPIO_STATE_t state) { // ? pin : (pin << 16U);
     Plat_GPIO_Write (pIO, state);
 }

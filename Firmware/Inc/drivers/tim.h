@@ -33,7 +33,7 @@ uint32_t Plat_TimDev_GetClkFreqHz (TimDevice_t* pTimDev);
 void Plat_TimDev_SetInterruptEnabled (TimDevice_t* pTimDev, eTIM_INTERRUPT_FLAG_t flag, bool enabled);
 void Plat_TimDev_ClearInterruptFlag (TimDevice_t* pTimDev, eTIM_INTERRUPT_FLAG_t flag);
 uint32_t Plat_TimDev_GetInterruptFlag (TimDevice_t* pTimDev, eTIM_INTERRUPT_FLAG_t flag);
-TimDevice_t* Plat_TimDev_Init (eTIM_DEVICE_ID_t timId, TimCfg_t const* pTimCfg);
+eSTATUS_t Plat_TimDev_Init (TimDevice_t* pOutTimDev);
 
 eSTATUS_t Plat_TimChan_InitCC (TimChannel_t* pChannel);
 eSTATUS_t Plat_TimChan_Start (TimChannel_t* pChannel, uint8_t const* pData, uint32_t size);
@@ -91,13 +91,23 @@ static inline TimDmaReqMap_t TimDev_Get_DmaReqMap (eTIM_DEVICE_ID_t timId) {
     return Plat_TimDev_Get_DmaReqMap (timId);
 }
 
-bool TimDev_HasDmaSupport (eTIM_DEVICE_ID_t timId);
-eTIM_DEVICE_ID_t TimDev_FindAvailable (bool supportsDma);
-bool TimDev_IsInterruptFlagSet (TimDevice_t* pTimDev, eTIM_INTERRUPT_FLAG_t flag);
-void TimDev_SetupPWMPeriod (TimDevice_t* pTimDev, uint32_t targetClkHz, uint32_t targetHz);
+static inline eTIM_DEVICE_ID_t TimDev_GetID (TimDevice_t* pTimDev) {
 
-static inline TimDevice_t* TimDev_Init (eTIM_DEVICE_ID_t devId, TimCfg_t const* pTimCfg) {
-    return Plat_TimDev_Init (devId, pTimCfg);
+    if (!pTimDev) {
+        return eTIM_NULL_DEVICE_ID;
+    }
+    return pTimDev->id;
+}
+
+bool TimDev_HasDmaSupport (eTIM_DEVICE_ID_t timId);
+TimDevice_t* TimDev_AllocByCaps (bool supportsDma);
+TimDevice_t* TimDev_AllocById (eTIM_DEVICE_ID_t devId);
+bool TimDev_IsInterruptFlagSet (TimDevice_t* pTimDev, eTIM_INTERRUPT_FLAG_t flag);
+void TimDev_SetPWMPeriod (TimDevice_t* pTimDev, uint32_t targetClkHz, uint32_t targetHz);
+void TimDev_SetBestClkAndPeriod (TimDevice_t* pTimDev, uint32_t targetHz);
+
+static inline eSTATUS_t TimDev_InitDefault (TimDevice_t* pOutTimDev) {
+    return Plat_TimDev_Init (pOutTimDev);
 }
 eSTATUS_t TimChan_Init (TimCfg_t const* pTimCfg, TimChannel_t* pOutTimChan);
 

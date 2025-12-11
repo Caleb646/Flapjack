@@ -21,5 +21,7 @@ typedef struct DmaCfg_s {
 
 typedef struct DmaDevice_s DmaDevice_t;
 
+typedef void (*fnDmaIrqHandler_t) (DmaDevice_t* pDmaDevice, void* pCtx);
+
 
 #endif // DRIVERS_DMA_DEFS_H

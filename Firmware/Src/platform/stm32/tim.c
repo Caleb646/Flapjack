@@ -248,52 +248,39 @@ uint32_t Plat_TimDev_GetInterruptFlag (TimDevice_t* pTimDev, eTIM_INTERRUPT_FLAG
     return __HAL_TIM_GET_FLAG (&(pTimDev->handle), g_InterruptFlagsMap[flag]);
 }
 
-TimDevice_t* Plat_TimDev_Init (eTIM_DEVICE_ID_t devId, TimCfg_t const* pTimCfg) {
+eSTATUS_t Plat_TimDev_Init (TimDevice_t* pOutTimDev) {
 
-    TimDevice_t** ppTimDevHandle = TimDevices_GetMutable (TIM_DEV_ID_TO_INDEX (devId));
-    if (!ppTimDevHandle) {
-        return NULL;
+    if (!pOutTimDev) {
+        return eSTATUS_NULL_ARG;
     }
 
-    TimDevice_t* pTimBaseDev = *ppTimDevHandle;
-    if (pTimBaseDev) {
-        return pTimBaseDev;
-    }
-
-    pTimBaseDev = Alloc_SharedMem (sizeof (TimDevice_t));
-    if (!pTimBaseDev) {
-        return NULL;
-    }
-
-    *ppTimDevHandle  = pTimBaseDev;
-    TimHwCfg_t hwCfg = Plat_TimDev_Get_HwCfg (devId);
-    RETURN_IF_NULL (hwCfg.pRccEnableReg, NULL, "Invalid timer device ID: %u", devId);
-    RETURN_IF_NULL (hwCfg.pInstance, NULL, "Invalid timer device ID: %u", devId);
+    TimHwCfg_t hwCfg = Plat_TimDev_Get_HwCfg (pOutTimDev->id);
+    RETURN_IF_NULL (hwCfg.pRccEnableReg, NULL, "Invalid timer device ID: %u", pOutTimDev->id);
+    RETURN_IF_NULL (hwCfg.pInstance, NULL, "Invalid timer device ID: %u", pOutTimDev->id);
 
     // Enable rcc clock
     *(hwCfg.pRccEnableReg) |= hwCfg.rccEnableMsk;
     DelayMicroseconds (1);
-    // pTimBaseDev->id                            = TIM_ID_TO_DEVICE_ID (timId);
-    pTimBaseDev->handle.Instance               = hwCfg.pInstance;
-    pTimBaseDev->handle.Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
-    pTimBaseDev->handle.Init.CounterMode       = TIM_COUNTERMODE_UP;
-    pTimBaseDev->handle.Init.Period            = 0xFFFF;
-    pTimBaseDev->handle.Init.Prescaler         = 0;
-    pTimBaseDev->handle.Init.RepetitionCounter = 0;
-    pTimBaseDev->handle.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+    pOutTimDev->handle.Instance               = hwCfg.pInstance;
+    pOutTimDev->handle.Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
+    pOutTimDev->handle.Init.CounterMode       = TIM_COUNTERMODE_UP;
+    pOutTimDev->handle.Init.Period            = 0xFFFF;
+    pOutTimDev->handle.Init.Prescaler         = 0;
+    pOutTimDev->handle.Init.RepetitionCounter = 0;
+    pOutTimDev->handle.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
 
     // deinitialize first in case it was previously initialized
-    if (HAL_TIM_PWM_DeInit (&(pTimBaseDev->handle)) != HAL_OK) {
-        LOG_ERROR ("Failed to de-initialize timer device handle for TIM ID: %u", devId);
-        return NULL;
+    if (HAL_TIM_PWM_DeInit (&(pOutTimDev->handle)) != HAL_OK) {
+        LOG_ERROR ("Failed to de-initialize timer device handle for TIM ID: %u", pOutTimDev->id);
+        return eSTATUS_FAILURE;
     }
 
-    if (HAL_TIM_PWM_Init (&(pTimBaseDev->handle)) != HAL_OK) {
-        LOG_ERROR ("Failed to initialize timer device handle for TIM ID: %u", devId);
-        return NULL;
+    if (HAL_TIM_PWM_Init (&(pOutTimDev->handle)) != HAL_OK) {
+        LOG_ERROR ("Failed to initialize timer device handle for TIM ID: %u", pOutTimDev->id);
+        return eSTATUS_FAILURE;
     }
 
-    return pTimBaseDev;
+    return eSTATUS_SUCCESS;
 }
 
 eSTATUS_t Plat_TimChan_InitCC (TimChannel_t* pChannel) {

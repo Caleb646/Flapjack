@@ -14,9 +14,9 @@
 #define DMA_MAX_DEVICES 8U
 
 typedef struct {
-    __IO uint32_t ISR; /*!< DMA interrupt status register */
-    __IO uint32_t Reserved0;
-    __IO uint32_t IFCR; /*!< DMA interrupt flag clear register */
+    volatile uint32_t ISR; /*!< DMA interrupt status register */
+    volatile uint32_t Reserved0;
+    volatile uint32_t IFCR; /*!< DMA interrupt flag clear register */
 } DMA_Base_Registers;
 
 typedef struct DmaHwCfg_s {
@@ -32,7 +32,7 @@ typedef struct DmaDevice_s {
     DMA_TypeDef* pDev;
     DMA_HandleTypeDef handle;
     void* pCtx;
-    void (*fnIrqHandler) (DmaDevice_t* pDmaDevice, void* pCtx);
+    fnDmaIrqHandler_t fnIrqHandler;
 } DmaDevice_t;
 
 static TARG_SHARED_MEM_SECTION DmaDevice_t* g_DmaDevices[DMA_MAX_DEVICES] = { 0 };
@@ -120,54 +120,71 @@ DmaHwCfg_t Stm32_Dma_GetHwCfg (uint32_t index) {
     return dmaHwCfg;
 }
 
-
-DmaDevice_t* Plat_Dma_AllocDevice (DmaCfg_t const* pDmaCfg) {
-
-    if (!pDmaCfg || g_DmaAllocated >= DMA_MAX_DEVICES) {
-        return NULL;
-    }
+DmaDevice_t* Plat_Dma_Alloc (void) {
 
     DmaDevice_t** ppDmaDevice = &g_DmaDevices[g_DmaAllocated];
-
     if (!(*ppDmaDevice)) {
         *ppDmaDevice = Alloc_SharedMem (sizeof (DmaDevice_t));
     }
 
-    if (!(*ppDmaDevice)) {
-        return NULL;
+    ++g_DmaAllocated;
+    return *ppDmaDevice;
+}
+
+
+eSTATUS_t Plat_Dma_Init (DmaCfg_t const* pCfg, DmaDevice_t* pOutDmaDevice) {
+
+    if (!pCfg || g_DmaAllocated >= DMA_MAX_DEVICES) {
+        return eSTATUS_INVALID_ARG;
     }
 
     DmaHwCfg_t hwCfg = Stm32_Dma_GetHwCfg (g_DmaAllocated);
     if (!hwCfg.pDev || !hwCfg.pStream) {
-        return NULL;
+        return eSTATUS_FAILURE;
     }
 
     *(hwCfg.pClkEnableReg) |= hwCfg.clkEnableMsk;
     // TODO: let dma cfg influence init params
-    memset (*ppDmaDevice, 0, sizeof (DmaDevice_t));
-    (*ppDmaDevice)->pDev                            = hwCfg.pDev;
-    (*ppDmaDevice)->handle.Instance                 = hwCfg.pStream;
-    (*ppDmaDevice)->handle.Init.Request             = DMA_REQUEST_MEM2MEM;
-    (*ppDmaDevice)->handle.Init.Priority            = DMA_PRIORITY_HIGH;
-    (*ppDmaDevice)->handle.Init.Direction           = DMA_MEMORY_TO_MEMORY;
-    (*ppDmaDevice)->handle.Init.PeriphInc           = DMA_PINC_DISABLE;
-    (*ppDmaDevice)->handle.Init.MemInc              = DMA_MINC_ENABLE;
-    (*ppDmaDevice)->handle.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
-    (*ppDmaDevice)->handle.Init.MemDataAlignment    = DMA_MDATAALIGN_WORD;
-    (*ppDmaDevice)->handle.Init.Mode                = DMA_NORMAL;
+    memset (pOutDmaDevice, 0, sizeof (DmaDevice_t));
+    pOutDmaDevice->pDev                            = hwCfg.pDev;
+    pOutDmaDevice->handle.Instance                 = hwCfg.pStream;
+    pOutDmaDevice->handle.Init.Request             = DMA_REQUEST_MEM2MEM;
+    pOutDmaDevice->handle.Init.Priority            = DMA_PRIORITY_HIGH;
+    pOutDmaDevice->handle.Init.Direction           = DMA_MEMORY_TO_MEMORY;
+    pOutDmaDevice->handle.Init.PeriphInc           = DMA_PINC_DISABLE;
+    pOutDmaDevice->handle.Init.MemInc              = DMA_MINC_ENABLE;
+    pOutDmaDevice->handle.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
+    pOutDmaDevice->handle.Init.MemDataAlignment    = DMA_MDATAALIGN_WORD;
+    pOutDmaDevice->handle.Init.Mode                = DMA_NORMAL;
     /*
      * When it is configured in direct mode ***(FIFO disabled)***, to
      * transfer data in memory-to-peripheral mode, the DMA preloads only
      * one data from the memory to the internal FIFO to ensure an immediate
      * data transfer as soon as a DMA request is triggered by a peripheral.
      */
-    (*ppDmaDevice)->handle.Init.FIFOMode      = DMA_FIFOMODE_DISABLE;
-    (*ppDmaDevice)->handle.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
-    (*ppDmaDevice)->handle.Init.MemBurst      = DMA_MBURST_SINGLE;
-    (*ppDmaDevice)->handle.Init.PeriphBurst   = DMA_PBURST_SINGLE;
+    pOutDmaDevice->handle.Init.FIFOMode      = DMA_FIFOMODE_ENABLE;
+    pOutDmaDevice->handle.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
+    pOutDmaDevice->handle.Init.MemBurst      = DMA_MBURST_SINGLE;
+    pOutDmaDevice->handle.Init.PeriphBurst   = DMA_PBURST_SINGLE;
 
-    if (HAL_DMA_Init (&((*ppDmaDevice)->handle)) != HAL_OK) {
-        return NULL;
+    if (pCfg->requestId != 0U) {
+        pOutDmaDevice->handle.Init.Request = pCfg->requestId;
+        // direct mode for peripheral transfers
+        pOutDmaDevice->handle.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
+
+        switch (pCfg->transferType) {
+        case eDMA_TRANSFER_TYPE_MEM_TO_PERIPH:
+            pOutDmaDevice->handle.Init.Direction = DMA_MEMORY_TO_PERIPH;
+            break;
+        case eDMA_TRANSFER_TYPE_PERIPH_TO_MEM:
+            pOutDmaDevice->handle.Init.Direction = DMA_PERIPH_TO_MEMORY;
+            break;
+        default: return eSTATUS_FAILURE;
+        }
+    }
+
+    if (HAL_DMA_Init (&(pOutDmaDevice->handle)) != HAL_OK) {
+        return eSTATUS_FAILURE;
     }
 
     // TODO: let dma cfg influence irq priority
@@ -175,27 +192,24 @@ DmaDevice_t* Plat_Dma_AllocDevice (DmaCfg_t const* pDmaCfg) {
     HAL_NVIC_EnableIRQ (hwCfg.irqNum);
 
     ++g_DmaAllocated;
-    return *ppDmaDevice;
+    return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t
-Plat_Dma_RegisterCallback (DmaDevice_t* pDmaDevice, void (*fnIrqHandler) (DmaDevice_t* pDmaDevice, void* pCtx), void* pCtx) {
+void Plat_Dma_RegisterCallback (DmaDevice_t* pDmaDevice, fnDmaIrqHandler_t fnIrqHandler, void* pCtx) {
 
-    if (!pDmaDevice) {
-        return eSTATUS_NULL_ARG;
+    if (!pDmaDevice || !fnIrqHandler) {
+        return;
     }
 
     pDmaDevice->fnIrqHandler = fnIrqHandler;
     pDmaDevice->pCtx         = pCtx;
-    return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t Plat_Dma_SetDeviceTransferCfg (DmaDevice_t* pDmaDevice, uint32_t srcAddr, uint32_t dstAddr, size_t size) {
+void Plat_Dma_SetDeviceTransferCfg (DmaDevice_t* pDmaDevice, uint32_t srcAddr, uint32_t dstAddr, size_t size) {
 
     if (!pDmaDevice || !pDmaDevice->handle.Instance) {
-        return eSTATUS_NULL_ARG;
+        return;
     }
-
 
     /* Clear the DMAMUX synchro overrun flag */
     DMA_HandleTypeDef* hdma        = &(pDmaDevice->handle);
@@ -226,8 +240,6 @@ eSTATUS_t Plat_Dma_SetDeviceTransferCfg (DmaDevice_t* pDmaDevice, uint32_t srcAd
         /* Configure DMA Stream destination address */
         ((DMA_Stream_TypeDef*)hdma->Instance)->M0AR = dstAddr;
     }
-
-    return eSTATUS_SUCCESS;
 }
 
 void Plat_Dma_SetDeviceEnabled (DmaDevice_t* pDmaDevice, bool enable) {

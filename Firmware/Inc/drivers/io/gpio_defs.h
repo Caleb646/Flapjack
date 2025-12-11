@@ -24,6 +24,8 @@ enum {
     eGPIO_PINID_15   = 16U
 };
 
+#define GPIO_PIN_ID_TO_INDEX(PIN_ID) ((PIN_ID) - 1U)
+
 typedef uint8_t eGPIO_PORTID_t;
 enum {
     eGPIO_PORTID_NULL = 0U,
@@ -39,6 +41,8 @@ enum {
     eGPIO_PORTID_J    = 10U,
     eGPIO_PORTID_K    = 11U
 };
+
+#define GPIO_PORT_ID_TO_INDEX(PORT_ID) ((PORT_ID) - 1U)
 
 typedef uint8_t eGPIO_ID_t;
 

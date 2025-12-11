@@ -99,7 +99,7 @@ typedef struct TimDmaReqMap_s {
 } TimDmaReqMap_t;
 
 typedef struct TimDevice_s {
-    // eTIM_DEVICE_ID_t id;
+    eTIM_DEVICE_ID_t id;
     TIM_HandleTypeDef handle;
 } TimDevice_t;
 

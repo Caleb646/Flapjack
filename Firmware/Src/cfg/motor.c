@@ -6,5 +6,5 @@
 
 #include "targets/target.h"
 
-CFG_DEFINE_ARRAY (MotorCfg_t, MotorCfgs, TARG_MAX_MOTORS);
-CFG_DEFINE_ARRAY (ServoCfg_t, ServoCfgs, TARG_MAX_SERVOS);
+CFG_DEFINE (MotorsCfg_t, MotorsCfg);
+CFG_DEFINE (ServosCfg_t, ServosCfg);
