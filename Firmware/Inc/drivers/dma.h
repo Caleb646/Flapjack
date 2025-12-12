@@ -10,15 +10,15 @@
 
 #include "drivers/tim_defs.h"
 
-DmaDevice_t* Plat_Dma_Alloc (void);
+DmaDevice_t* Plat_Dma_GetFree (void);
 eSTATUS_t Plat_Dma_Init (DmaCfg_t const* pCfg, DmaDevice_t* pOutDmaDevice);
 void Plat_Dma_RegisterCallback (DmaDevice_t* pDmaDevice, fnDmaIrqHandler_t fnIrqHandler, void* pCtx);
 void Plat_Dma_SetDeviceTransferCfg (DmaDevice_t* pDmaDevice, uint32_t srcAddr, uint32_t dstAddr, size_t size);
 void Plat_Dma_SetDeviceEnabled (DmaDevice_t* pDmaDevice, bool enable);
 void Plat_Dma_SetInterruptsEnabled (DmaDevice_t* pDmaDevice, bool enable);
 
-static inline DmaDevice_t* Dma_Alloc (void) {
-    return Plat_Dma_Alloc ();
+static inline DmaDevice_t* Dma_GetFreeDevice (void) {
+    return Plat_Dma_GetFree ();
 }
 
 eSTATUS_t Dma_InitForMemToMem (DmaDevice_t* pOutDmaDevice);

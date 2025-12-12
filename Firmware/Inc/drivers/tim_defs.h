@@ -88,6 +88,7 @@ typedef struct TimHwCfg_s {
     uint32_t rccEnableMsk;
     uint8_t gpioAf;
     uint8_t irqNum;
+    uint8_t channelGpioIds[4U];
 } TimHwCfg_t;
 
 typedef struct TimDmaReqMap_s {

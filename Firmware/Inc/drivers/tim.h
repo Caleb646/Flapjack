@@ -100,8 +100,8 @@ static inline eTIM_DEVICE_ID_t TimDev_GetID (TimDevice_t* pTimDev) {
 }
 
 bool TimDev_HasDmaSupport (eTIM_DEVICE_ID_t timId);
-TimDevice_t* TimDev_AllocByCaps (bool supportsDma);
-TimDevice_t* TimDev_AllocById (eTIM_DEVICE_ID_t devId);
+TimDevice_t* TimDev_GetByCaps (bool supportsDma);
+TimDevice_t* TimDev_GetById (eTIM_DEVICE_ID_t devId);
 bool TimDev_IsInterruptFlagSet (TimDevice_t* pTimDev, eTIM_INTERRUPT_FLAG_t flag);
 void TimDev_SetPWMPeriod (TimDevice_t* pTimDev, uint32_t targetClkHz, uint32_t targetHz);
 void TimDev_SetBestClkAndPeriod (TimDevice_t* pTimDev, uint32_t targetHz);

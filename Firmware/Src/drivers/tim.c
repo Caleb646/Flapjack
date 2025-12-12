@@ -22,25 +22,20 @@ bool TimDev_HasDmaSupport (eTIM_DEVICE_ID_t timId) {
     return (!dmaReqMap.cc1 && !dmaReqMap.cc2 && !dmaReqMap.cc3 && !dmaReqMap.cc4 && !dmaReqMap.update);
 }
 
-TimDevice_t* TimDev_AllocByCaps (bool supportsDma) {
+TimDevice_t* TimDev_GetByCaps (bool supportsDma) {
 
     for (eTIM_DEVICE_ID_t devId = eTIM_1_DEVICE_ID; devId <= TARG_MAX_TIMS; ++devId) {
-
-        TimDevice_t** ppTimBaseDev = TimDevices_GetMutable (TIM_DEV_ID_TO_INDEX (devId));
-        if (!ppTimBaseDev || *ppTimBaseDev) {
-            continue;
-        }
 
         if (supportsDma && !TimDev_HasDmaSupport (devId)) {
             continue;
         }
 
-        return TimDev_AllocById (devId);
+        return TimDev_GetById (devId);
     }
     return NULL;
 }
 
-TimDevice_t* TimDev_AllocById (eTIM_DEVICE_ID_t devId) {
+TimDevice_t* TimDev_GetById (eTIM_DEVICE_ID_t devId) {
 
     TimDevice_t** ppTimBaseDev = TimDevices_GetMutable (TIM_DEV_ID_TO_INDEX (devId));
     if (*ppTimBaseDev) {
@@ -53,15 +48,6 @@ TimDevice_t* TimDev_AllocById (eTIM_DEVICE_ID_t devId) {
     }
 
     return *ppTimBaseDev;
-}
-
-TimDevice_t* TimDev_GetOrAllocById (eTIM_DEVICE_ID_t devId) {
-
-    TimDevice_t** ppTimBaseDev = TimDevices_GetMutable (TIM_DEV_ID_TO_INDEX (devId));
-    if (*ppTimBaseDev) {
-        return *ppTimBaseDev;
-    }
-    return TimDev_AllocById (devId);
 }
 
 bool TimDev_IsInterruptFlagSet (TimDevice_t* pTimDev, eTIM_INTERRUPT_FLAG_t flag) {
@@ -117,7 +103,7 @@ eSTATUS_t TimChan_Init (TimCfg_t const* pTimCfg, TimChannel_t* pOutTimChan) {
         return eSTATUS_NULL_ARG;
     }
 
-    TimDevice_t* pTimBaseDev = TimDev_GetOrAllocById (pTimCfg->devId);
+    TimDevice_t* pTimBaseDev = TimDev_GetById (pTimCfg->devId);
     eSTATUS_t status         = Plat_TimDev_Init (pTimBaseDev);
     RETURN_IF (FJ_FAIL (status), status, "Failed to initialize platform timer device");
 

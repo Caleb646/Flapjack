@@ -63,16 +63,20 @@ TIM_DEF_INTERRUPT_HANDLER (12);
 // TIM8_UP_TIM13_IRQHandler
 TIM_DEF_INTERRUPT_HANDLER (13);
 
+// TODO add gpio ids for each channel
 TimHwCfg_t Plat_TimDev_Get_HwCfg (eTIM_DEVICE_ID_t timId) {
 
     // __HAL_RCC_TIM2_CLK_ENABLE();
     switch (timId) {
     case eTIM_1_DEVICE_ID:
-        return (TimHwCfg_t){ .pInstance     = TIM1,
-                             .pRccEnableReg = &RCC->APB2ENR,
-                             .rccEnableMsk  = RCC_APB2ENR_TIM1EN,
-                             .gpioAf        = GPIO_AF1_TIM1,
-                             .irqNum        = TIM1_UP_IRQn };
+        return (TimHwCfg_t){
+            .pInstance     = TIM1,
+            .pRccEnableReg = &RCC->APB2ENR,
+            .rccEnableMsk  = RCC_APB2ENR_TIM1EN,
+            .gpioAf        = GPIO_AF1_TIM1,
+            .irqNum        = TIM1_UP_IRQn,
+            // .channelGpioIds = { GPIO_ID_MAKE(), eGPIO_ID_PA9, eGPIO_ID_PA10, eGPIO_ID_PA11 }
+        };
     case eTIM_2_DEVICE_ID:
         return (TimHwCfg_t){ .pInstance     = TIM2,
                              .pRccEnableReg = &RCC->APB1LENR,

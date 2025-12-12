@@ -120,7 +120,7 @@ DmaHwCfg_t Stm32_Dma_GetHwCfg (uint32_t index) {
     return dmaHwCfg;
 }
 
-DmaDevice_t* Plat_Dma_Alloc (void) {
+DmaDevice_t* Plat_Dma_GetFree (void) {
 
     DmaDevice_t** ppDmaDevice = &g_DmaDevices[g_DmaAllocated];
     if (!(*ppDmaDevice)) {

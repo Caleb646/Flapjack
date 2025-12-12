@@ -19,6 +19,7 @@ typedef struct MotorsCfg_s {
     Vec3f mixes[TARG_MAX_MOTORS];
     eMOTOR_PROT_t protType;
     eSERVO_ID_t linkedServoIds[TARG_MAX_MOTORS];
+    uint8_t nMotors;
 } MotorsCfg_t;
 
 typedef struct ServosCfg_s {
@@ -26,6 +27,8 @@ typedef struct ServosCfg_s {
     Vec3f mixes[TARG_MAX_SERVOS];
     eMOTOR_PROT_t protType;
     eMOTOR_ID_t linkedMotorIds[TARG_MAX_SERVOS];
+    float maxAngleDeg;
+    uint8_t nServos;
 } ServosCfg_t;
 
 CFG_DECLARE (MotorsCfg_t, MotorsCfg);
