@@ -27,18 +27,18 @@
 #define DSHOT_NBITS           16U
 #define DMA_BUFFER_SIZE_BYTES ((DSHOT_NBITS * sizeof (uint32_t)) * DSHOT_DMA_GPIO_STATES)
 
-static TARG_SHARED_MEM_SECTION TimDevice_t* gp_Timer = { 0 }; // s// [DSHOT_MAX_PORTS]  = { 0 };
-static TARG_SHARED_MEM_SECTION int8_t volatile g_FramesInFlight = { 0 }; // s// [DSHOT_MAX_PORTS]  = { 0 };
+static TARG_SHARED_MEM_BSS_SECTION TimDevice_t* gp_Timer = { 0 }; // s// [DSHOT_MAX_PORTS]  = { 0 };
+static TARG_SHARED_MEM_BSS_SECTION int8_t volatile g_FramesInFlight = { 0 }; // s// [DSHOT_MAX_PORTS] = { 0 };
 
-static TARG_SHARED_MEM_SECTION uint8_t g_PortsInUse                   = { 0 };
-static TARG_SHARED_MEM_SECTION uint8_t g_MotorToPort[TARG_MAX_MOTORS] = { 0 };
-static TARG_SHARED_MEM_SECTION GPIO_t* gp_Ports[DSHOT_MAX_PORTS]      = { 0 };
+static TARG_SHARED_MEM_BSS_SECTION uint8_t g_PortsInUse                   = { 0 };
+static TARG_SHARED_MEM_BSS_SECTION uint8_t g_MotorToPort[TARG_MAX_MOTORS] = { 0 };
+static TARG_SHARED_MEM_BSS_SECTION GPIO_t* gp_Ports[DSHOT_MAX_PORTS]      = { 0 };
 
-static TARG_SHARED_MEM_SECTION DmaDevice_t* gp_DmaDevs[DSHOT_MAX_PORTS] = { 0 };
-static TARG_SHARED_MEM_SECTION uint32_t* gp_DmaBuffers[DSHOT_MAX_PORTS] = { 0 };
+static TARG_SHARED_MEM_BSS_SECTION DmaDevice_t* gp_DmaDevs[DSHOT_MAX_PORTS] = { 0 };
+static TARG_SHARED_MEM_BSS_SECTION uint32_t* gp_DmaBuffers[DSHOT_MAX_PORTS] = { 0 };
 
-static TARG_SHARED_MEM_SECTION uint8_t g_ClrBitPos[TARG_MAX_MOTORS] = { 0 };
-static TARG_SHARED_MEM_SECTION uint8_t g_SetBitPos[TARG_MAX_MOTORS] = { 0 };
+static TARG_SHARED_MEM_BSS_SECTION uint8_t g_ClrBitPos[TARG_MAX_MOTORS] = { 0 };
+static TARG_SHARED_MEM_BSS_SECTION uint8_t g_SetBitPos[TARG_MAX_MOTORS] = { 0 };
 
 static void Stm32_Dshot_DmaCallback (DmaDevice_t* pDmaDevice, void* pCtx) {
 

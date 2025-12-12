@@ -48,8 +48,8 @@ typedef struct Servos_s {
     ServoDesc_t descs[TARG_MAX_SERVOS];
 } Servos_t;
 
-static TARG_SHARED_MEM_SECTION Motors_t g_Motors = { 0 };
-static TARG_SHARED_MEM_SECTION Servos_t g_Servos = { 0 };
+static TARG_SHARED_MEM_BSS_SECTION Motors_t g_Motors = { 0 };
+static TARG_SHARED_MEM_BSS_SECTION Servos_t g_Servos = { 0 };
 
 extern eSTATUS_t Plat_Dshot_Init (MotorsCfg_t const* pCfg, MotorProtVtbl_t* pOutVtbl);
 

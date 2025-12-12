@@ -37,17 +37,18 @@ TimDevice_t* TimDev_GetByCaps (bool supportsDma) {
 
 TimDevice_t* TimDev_GetById (eTIM_DEVICE_ID_t devId) {
 
-    TimDevice_t** ppTimBaseDev = TimDevices_GetMutable (TIM_DEV_ID_TO_INDEX (devId));
-    if (*ppTimBaseDev) {
-        return NULL; // Already allocated
+    TimDevice_t** ppTimDev = TimDevices_GetMutable (devId);
+    if (!ppTimDev) {
+        return NULL;
     }
 
-    *ppTimBaseDev = Alloc_SharedMem (sizeof (TimDevice_t));
-    if (*ppTimBaseDev) {
-        (*ppTimBaseDev)->id = devId;
+    if (*ppTimDev) {
+        (*ppTimDev)->id = devId;
+        return *ppTimDev;
     }
 
-    return *ppTimBaseDev;
+    *ppTimDev = Alloc_SharedMem (sizeof (TimDevice_t));
+    return *ppTimDev;
 }
 
 bool TimDev_IsInterruptFlagSet (TimDevice_t* pTimDev, eTIM_INTERRUPT_FLAG_t flag) {
@@ -107,15 +108,15 @@ eSTATUS_t TimChan_Init (TimCfg_t const* pTimCfg, TimChannel_t* pOutTimChan) {
     eSTATUS_t status         = Plat_TimDev_Init (pTimBaseDev);
     RETURN_IF (FJ_FAIL (status), status, "Failed to initialize platform timer device");
 
-    TimHwCfg_t hwCfg = Plat_TimDev_Get_HwCfg (pTimCfg->devId);
-    if (!GPIO_Init (pTimCfg->gpioId, pTimCfg->chanId, PLAT_GPIO_CFG_TIM_PWM, hwCfg.gpioAf)) {
+    TimHwCfg_t* pHwCfg = Plat_TimDev_Get_HwCfg (pTimCfg->devId);
+    if (!GPIO_Init (pTimCfg->gpioId, pTimCfg->chanId, PLAT_GPIO_CFG_TIM_PWM, pHwCfg->gpioAf)) {
         return eSTATUS_FAILURE;
     }
 
     pOutTimChan->devId       = pTimCfg->devId;
     pOutTimChan->chanId      = pTimCfg->chanId;
     pOutTimChan->modeType    = pTimCfg->modeType;
-    pOutTimChan->irqNum      = hwCfg.irqNum;
+    pOutTimChan->irqNum      = pHwCfg->irqNum;
     pOutTimChan->irqPriority = pTimCfg->irqPriority;
     pOutTimChan->pTimBaseDev = pTimBaseDev;
 

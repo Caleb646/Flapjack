@@ -8,6 +8,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "targets/target.h"
+
 #ifdef UNIT_TEST
 #define FJ_INLINE
 #define FJ_STATIC
@@ -42,7 +44,6 @@
 #define FOR_EACH(TYPE, ARRAY) \
     for (TYPE* pElement = &((ARRAY)[0]); pElement <= &((ARRAY)[ARRAY_SIZE (ARRAY) - 1U]); ++pElement)
 #define FOR_EACH_CONST(TYPE, ARRAY)                   FOR_EACH (TYPE const, ARRAY)
-
 
 #define OR_0()                                        0U
 #define OR_1(a)                                       (a)
@@ -146,19 +147,14 @@ typedef struct {
     };
 } Vec4f;
 
-#define VEC4F_ZERO()         { .x = 0.0F, .y = 0.0F, .z = 0.0F, .w = 0.0F }
-
-#define MEM_U32_ALIGN4(addr) ((uint32_t)(addr) & ((uint32_t)~0x3U))
-#ifdef UNIT_TEST
-#define SHARED_MEM_SECTION
-#else
-#define SHARED_MEM_SECTION __attribute__ ((section (".shared_mem")))
-#endif
-
-extern uint32_t __SHARED_MEM_START__;
-extern uint32_t __SHARED_MEM_MALLOC_START__;
-extern uint32_t __SHARED_MEM_END__;
-
+#define VEC4F_ZERO() { .x = 0.0F, .y = 0.0F, .z = 0.0F, .w = 0.0F }
+// clang-format off
+#define MEM_U32_ALIGN4(addr)                  ((uint32_t)(addr) & ((uint32_t)~0x3U))
+#define DEFINE_STATIC_SHARED_BSS(TYPE, NAME)  static TYPE NAME TARG_SHARED_MEM_BSS_SECTION
+#define DEFINE_STATIC_SHARED_DATA(TYPE, NAME) static TYPE NAME TARG_SHARED_MEM_DATA_SECTION
+#define DEFINE_STATIC_SHARED_BSS_ARRAY(TYPE, NAME, SIZE) static TYPE NAME[SIZE] TARG_SHARED_MEM_BSS_SECTION
+#define DEFINE_STATIC_SHARED_DATA_ARRAY(TYPE, NAME, SIZE) static TYPE NAME[SIZE] TARG_SHARED_MEM_DATA_SECTION
+// clang-format on
 void* Alloc_SharedMem (size_t size);
 
 void CriticalErrorHandler (void);

@@ -16,8 +16,8 @@
 
 DRIVER_DECLARE_ARRAY (TimDevice_t*, TimDevices, TARG_MAX_TIMS);
 
-TimHwCfg_t Plat_TimDev_Get_HwCfg (eTIM_DEVICE_ID_t timId);
-TimDmaReqMap_t Plat_TimDev_Get_DmaReqMap (eTIM_DEVICE_ID_t timId);
+TimHwCfg_t* Plat_TimDev_Get_HwCfg (eTIM_DEVICE_ID_t devId);
+TimDmaReqMap_t Plat_TimDev_Get_DmaReqMap (eTIM_DEVICE_ID_t devId);
 void Plat_TimDev_SetPrescaler (TimDevice_t* pTimDev, uint32_t prescaler);
 void Plat_TimDev_SetPeriod (TimDevice_t* pTimDev, uint32_t period);
 void Plat_TimDev_SetCNT (TimDevice_t* pTimDev, uint32_t count);

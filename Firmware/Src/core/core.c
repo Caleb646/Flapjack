@@ -5,13 +5,16 @@
 #include <string.h>
 
 float ge_ScaledSystemCoreClock = 0.0F;
-// extern uint32_t __SHARED_MEM_START__;
-// extern uint32_t __SHARED_MEM_END__;
+extern uint32_t __SHARED_MEM_BSS_START__;
+extern uint32_t __SHARED_MEM_BSS_END__;
+extern uint32_t __SHARED_MEM_DATA_START__;
+extern uint32_t __SHARED_MEM_DATA_END__;
+extern uint32_t __SHARED_MEM_DATA_FLASH_START__;
 
 FJ_STATIC eSTATUS_t Init_HAL_SysTickTimer (uint32_t tickPriority);
 FJ_STATIC eSTATUS_t Init_HAL_Timer (TIM_TypeDef* pTimer, uint32_t tickPriority);
 FJ_STATIC eSTATUS_t SystemClock_Config (void);
-FJ_STATIC eSTATUS_t ZeroSharedMemory (void);
+FJ_STATIC eSTATUS_t SharedMem_Init (void);
 FJ_STATIC void DWT_Init (void);
 FJ_STATIC bool SanityCheckTimers (void);
 
@@ -101,7 +104,7 @@ eSTATUS_t Core_Init (void) {
         RCC_PeriphClkInit.I2c4ClockSelection   = RCC_I2C4CLKSOURCE_D3PCLK1;
         HAL_RCCEx_PeriphCLKConfig (&RCC_PeriphClkInit);
 
-        if (FJ_FAIL (ZeroSharedMemory ())) {
+        if (FJ_FAIL (SharedMem_Init ())) {
             return eSTATUS_FAILURE;
         }
 
@@ -310,9 +313,16 @@ FJ_STATIC eSTATUS_t SystemClock_Config (void) {
     return eSTATUS_SUCCESS;
 }
 
-FJ_STATIC eSTATUS_t ZeroSharedMemory (void) {
+FJ_STATIC eSTATUS_t SharedMem_Init (void) {
 
-    memset (&__SHARED_MEM_START__, 0, &__SHARED_MEM_END__ - &__SHARED_MEM_START__);
+    memset (&__SHARED_MEM_BSS_START__, 0, &__SHARED_MEM_BSS_END__ - &__SHARED_MEM_BSS_START__);
+
+    uint32_t const dataStart      = (uint32_t)(&__SHARED_MEM_DATA_START__);
+    uint32_t const dataEnd        = (uint32_t)(&__SHARED_MEM_DATA_END__);
+    uint32_t const dataSize       = dataEnd - dataStart;
+    uint32_t const dataFlashStart = (uint32_t)(&__SHARED_MEM_DATA_FLASH_START__);
+
+    memcpy ((void*)dataStart, (void*)dataFlashStart, dataSize);
     return eSTATUS_SUCCESS;
 }
 

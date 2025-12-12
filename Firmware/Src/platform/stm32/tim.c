@@ -11,7 +11,7 @@
 #include "drivers/io/gpio.h"
 #include "drivers/io/gpio_defs.h"
 
-#include "platform/stm32/platform.h"
+#include "platform/platform.h"
 
 #define TIM_ID_TO_HAL_CHAN(TIM_ID)                                         \
     (                                                                      \
@@ -31,16 +31,47 @@ static uint32_t const g_InterruptFlagsMap[] = { [eTIM_INTERRUPT_FLAG_UPDATE]  = 
                                                 [eTIM_INTERRUPT_FLAG_BREAK]   = TIM_FLAG_BREAK,
                                                 [eTIM_INTERRUPT_FLAG_COM]     = TIM_FLAG_COM };
 
+static TARG_SHARED_MEM_DATA_SECTION TimHwCfg_t g_TimHwCfgs[] = { { .id        = eTIM_1_DEVICE_ID,
+                                                                   .pInstance = TIM1,
+                                                                   .pRccEnableReg = &RCC->APB2ENR,
+                                                                   .rccEnableMsk = RCC_APB2ENR_TIM1EN,
+                                                                   .gpioAf = GPIO_AF1_TIM1,
+                                                                   .irqNum = TIM1_UP_IRQn },
+                                                                 { .id        = eTIM_2_DEVICE_ID,
+                                                                   .pInstance = TIM2,
+                                                                   .pRccEnableReg = &RCC->APB1LENR,
+                                                                   .rccEnableMsk = RCC_APB1LENR_TIM2EN,
+                                                                   .gpioAf = GPIO_AF1_TIM2,
+                                                                   .irqNum = TIM2_IRQn },
+                                                                 { .id        = eTIM_5_DEVICE_ID,
+                                                                   .pInstance = TIM5,
+                                                                   .pRccEnableReg = &RCC->APB1LENR,
+                                                                   .rccEnableMsk = RCC_APB1LENR_TIM5EN,
+                                                                   .gpioAf = GPIO_AF2_TIM5,
+                                                                   .irqNum = TIM5_IRQn },
+                                                                 { .id        = eTIM_8_DEVICE_ID,
+                                                                   .pInstance = TIM8,
+                                                                   .pRccEnableReg = &RCC->APB2ENR,
+                                                                   .rccEnableMsk = RCC_APB2ENR_TIM8EN,
+                                                                   .gpioAf = GPIO_AF3_TIM8,
+                                                                   .irqNum = TIM8_UP_TIM13_IRQn },
+                                                                 { .id        = eTIM_12_DEVICE_ID,
+                                                                   .pInstance = TIM12,
+                                                                   .pRccEnableReg = &RCC->APB1LENR,
+                                                                   .rccEnableMsk = RCC_APB1LENR_TIM12EN,
+                                                                   .gpioAf = GPIO_AF2_TIM12,
+                                                                   .irqNum = TIM8_BRK_TIM12_IRQn },
+                                                                 { .id        = eTIM_13_DEVICE_ID,
+                                                                   .pInstance = TIM13,
+                                                                   .pRccEnableReg = &RCC->APB1LENR,
+                                                                   .rccEnableMsk = RCC_APB1LENR_TIM13EN,
+                                                                   .gpioAf = GPIO_AF9_TIM13,
+                                                                   .irqNum = TIM8_UP_TIM13_IRQn } };
 
 void Stm32_Tim_IRQHandler (eTIM_DEVICE_ID_t devId) {
 
-    TimDevice_t** ppTimBaseDev = TimDevices_GetMutable (devId);
-    if (!ppTimBaseDev) {
-        return;
-    }
-
-    TimDevice_t* pTimBaseDev = *ppTimBaseDev;
-    if (!pTimBaseDev) {
+    TimDevice_t* pTimBaseDev = TimDev_GetById (devId);
+    if (!pTimBaseDev || !pTimBaseDev->handle.Instance) {
         return;
     }
 
@@ -64,54 +95,14 @@ TIM_DEF_INTERRUPT_HANDLER (12);
 TIM_DEF_INTERRUPT_HANDLER (13);
 
 // TODO add gpio ids for each channel
-TimHwCfg_t Plat_TimDev_Get_HwCfg (eTIM_DEVICE_ID_t timId) {
+TimHwCfg_t* Plat_TimDev_Get_HwCfg (eTIM_DEVICE_ID_t devId) {
 
-    // __HAL_RCC_TIM2_CLK_ENABLE();
-    switch (timId) {
-    case eTIM_1_DEVICE_ID:
-        return (TimHwCfg_t){
-            .pInstance     = TIM1,
-            .pRccEnableReg = &RCC->APB2ENR,
-            .rccEnableMsk  = RCC_APB2ENR_TIM1EN,
-            .gpioAf        = GPIO_AF1_TIM1,
-            .irqNum        = TIM1_UP_IRQn,
-            // .channelGpioIds = { GPIO_ID_MAKE(), eGPIO_ID_PA9, eGPIO_ID_PA10, eGPIO_ID_PA11 }
-        };
-    case eTIM_2_DEVICE_ID:
-        return (TimHwCfg_t){ .pInstance     = TIM2,
-                             .pRccEnableReg = &RCC->APB1LENR,
-                             .rccEnableMsk  = RCC_APB1LENR_TIM2EN,
-                             .gpioAf        = GPIO_AF1_TIM2,
-                             .irqNum        = TIM2_IRQn };
-    case eTIM_5_DEVICE_ID:
-        return (TimHwCfg_t){ .pInstance     = TIM5,
-                             .pRccEnableReg = &RCC->APB1LENR,
-                             .rccEnableMsk  = RCC_APB1LENR_TIM5EN,
-                             .gpioAf        = GPIO_AF2_TIM5,
-                             .irqNum        = TIM5_IRQn };
-    case eTIM_8_DEVICE_ID:
-        return (TimHwCfg_t){ .pInstance     = TIM8,
-                             .pRccEnableReg = &RCC->APB2ENR,
-                             .rccEnableMsk  = RCC_APB2ENR_TIM8EN,
-                             .gpioAf        = GPIO_AF3_TIM8,
-                             .irqNum        = TIM8_UP_TIM13_IRQn };
-    case eTIM_12_DEVICE_ID:
-        return (TimHwCfg_t){ .pInstance     = TIM12,
-                             .pRccEnableReg = &RCC->APB1LENR,
-                             .rccEnableMsk  = RCC_APB1LENR_TIM12EN,
-                             .gpioAf        = GPIO_AF2_TIM12,
-                             // TIM_8 brk interrupt and TIM_12 global interrupt
-                             .irqNum = TIM8_BRK_TIM12_IRQn };
-
-    case eTIM_13_DEVICE_ID:
-        return (TimHwCfg_t){ .pInstance     = TIM13,
-                             .pRccEnableReg = &RCC->APB1LENR,
-                             .rccEnableMsk  = RCC_APB1LENR_TIM13EN,
-                             .gpioAf        = GPIO_AF9_TIM13,
-                             // TIM_8 update interrupt and TIM_13 global interrupt
-                             .irqNum = TIM8_UP_TIM13_IRQn };
-    default: return (TimHwCfg_t){ 0 };
+    for (uint32_t i = 0; i < sizeof (g_TimHwCfgs) / sizeof (g_TimHwCfgs[0]); ++i) {
+        if (g_TimHwCfgs[i].id == devId) {
+            return &g_TimHwCfgs[i];
+        }
     }
+    return NULL;
 }
 
 TimDmaReqMap_t Plat_TimDev_Get_DmaReqMap (eTIM_DEVICE_ID_t timId) {
@@ -182,7 +173,7 @@ uint32_t Plat_TimDev_GetPrescaler (TimDevice_t* pTimDev) {
     if (!pTimDev) {
         return 0;
     }
-    return __HAL_TIM_GET_PRESCALER (&(pTimDev->handle));
+    return pTimDev->handle.Instance->PSC;
 }
 
 uint32_t Plat_TimDev_GetPeriod (TimDevice_t* pTimDev) {
@@ -258,14 +249,14 @@ eSTATUS_t Plat_TimDev_Init (TimDevice_t* pOutTimDev) {
         return eSTATUS_NULL_ARG;
     }
 
-    TimHwCfg_t hwCfg = Plat_TimDev_Get_HwCfg (pOutTimDev->id);
-    RETURN_IF_NULL (hwCfg.pRccEnableReg, NULL, "Invalid timer device ID: %u", pOutTimDev->id);
-    RETURN_IF_NULL (hwCfg.pInstance, NULL, "Invalid timer device ID: %u", pOutTimDev->id);
+    TimHwCfg_t* pHwCfg = Plat_TimDev_Get_HwCfg (pOutTimDev->id);
+    RETURN_IF_NULL (pHwCfg->pRccEnableReg, NULL, "Invalid timer device ID: %u", pOutTimDev->id);
+    RETURN_IF_NULL (pHwCfg->pInstance, NULL, "Invalid timer device ID: %u", pOutTimDev->id);
 
     // Enable rcc clock
-    *(hwCfg.pRccEnableReg) |= hwCfg.rccEnableMsk;
+    *(pHwCfg->pRccEnableReg) |= pHwCfg->rccEnableMsk;
     DelayMicroseconds (1);
-    pOutTimDev->handle.Instance               = hwCfg.pInstance;
+    pOutTimDev->handle.Instance               = pHwCfg->pInstance;
     pOutTimDev->handle.Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
     pOutTimDev->handle.Init.CounterMode       = TIM_COUNTERMODE_UP;
     pOutTimDev->handle.Init.Period            = 0xFFFF;

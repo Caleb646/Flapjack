@@ -164,17 +164,27 @@ SECTIONS
     . = ALIGN(8);
   } >RAM
 
-  .shared_mem (NOLOAD) :
+    .shared_mem_bss (NOLOAD) :
   {
     . = ALIGN(4);
-    __SHARED_MEM_START__ = .;
-    KEEP(*(SORT_BY_NAME(.shared_mem*)))
+    __SHARED_MEM_BSS_START__ = .;
+    KEEP(*(SORT_BY_NAME(.shared_mem_bss*)))
     . = ALIGN(4);
-    __SHARED_MEM_MALLOC_START__ = .;
-    . = . + 2048;
-    __SHARED_MEM_END__ = .;
-    ASSERT(__SHARED_MEM_END__ <= (0x38000000 + 64K), "Error: shared memory overrun");
-  } >RAM_D3
+    __SHARED_MEM_BSS_END__ = .;
+    ASSERT(__SHARED_MEM_BSS_END__ <= (0x38000000 + 64K), "Error: shared memory overrun");
+  } >RAM_D3 /* >RAM_D3 */
+
+  .shared_mem_data :
+  {
+    . = ALIGN(4);
+    __SHARED_MEM_DATA_START__ = .;
+    KEEP(*(SORT_BY_NAME(.shared_mem_data*)))
+    . = ALIGN(4);
+    __SHARED_MEM_DATA_END__ = .;
+    ASSERT(__SHARED_MEM_DATA_END__ <= (0x38000000 + 64K), "Error: shared memory overrun");
+  } >RAM_D3 AT> FLASH /* >RAM_D3 */
+
+  __SHARED_MEM_DATA_FLASH_START__ = LOADADDR(.shared_mem_data);
 
   /* Remove information from the standard libraries */
   /DISCARD/ :

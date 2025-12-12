@@ -7,25 +7,22 @@
 
 #include "targets/target.h"
 
-
-uint32_t __SHARED_MEM_START__;
-uint32_t __SHARED_MEM_MALLOC_START__;
-uint32_t __SHARED_MEM_END__;
-static uint8_t* g_pCurrentAlloc TARG_SHARED_MEM_SECTION = NULL;
+#define SHARED_MEM_SIZE 2048U
+DEFINE_STATIC_SHARED_BSS_ARRAY (uint8_t, g_SharedMem, SHARED_MEM_SIZE);
+DEFINE_STATIC_SHARED_BSS (uint8_t*, gp_CurSharedMem);
 
 void* Alloc_SharedMem (size_t size) {
 
-    if (!g_pCurrentAlloc) {
-        g_pCurrentAlloc = (uint8_t*)&__SHARED_MEM_MALLOC_START__;
+    if (!gp_CurSharedMem) {
+        gp_CurSharedMem = g_SharedMem;
     }
 
-    uintptr_t mem = MEM_U32_ALIGN4 (((uintptr_t)g_pCurrentAlloc) + 3U);
-    if ((mem + size) > (uintptr_t)&__SHARED_MEM_END__) {
+    uintptr_t mem = MEM_U32_ALIGN4 (((uintptr_t)gp_CurSharedMem) + 3U);
+    if ((mem + size) > SHARED_MEM_SIZE) {
         return NULL;
     }
 
-    g_pCurrentAlloc = (uint8_t*)(mem + size);
-    memset ((void*)mem, 0, size);
+    gp_CurSharedMem = (uint8_t*)(mem + size);
     return (void*)mem;
 }
 

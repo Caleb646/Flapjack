@@ -83,6 +83,7 @@ typedef struct TimCfg_s {
 
 
 typedef struct TimHwCfg_s {
+    eTIM_DEVICE_ID_t id;
     TIM_TypeDef* pInstance;
     volatile uint32_t* pRccEnableReg;
     uint32_t rccEnableMsk;
