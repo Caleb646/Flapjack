@@ -14,34 +14,34 @@
 #include "cfg/motor.h"
 
 
-ACCDevice_t* Flight_GetActive_AccDevice (void) {
+AccDevice_t* Flight_GetActive_AccDevice (void) {
     return AccDevice_GetMutable ();
 }
 
-GYRODevice_t* Flight_GetActive_GyroDevice (void) {
+GyroDevice_t* Flight_GetActive_GyroDevice (void) {
     return GyroDevice_GetMutable ();
 }
 
-MAGDevice_t* Flight_GetActive_MagDevice (void) {
+MagDevice_t* Flight_GetActive_MagDevice (void) {
     return MagDevice_GetMutable ();
 }
 
 bool Flight_HasAcc (void) {
-    ACCDevice_t* pAccDevice = Flight_GetActive_AccDevice ();
+    AccDevice_t* pAccDevice = Flight_GetActive_AccDevice ();
     return (pAccDevice != NULL) && (pAccDevice->pBusDevice != NULL);
 }
 
 bool Flight_HasGyro (void) {
-    GYRODevice_t* pGyroDevice = Flight_GetActive_GyroDevice ();
+    GyroDevice_t* pGyroDevice = Flight_GetActive_GyroDevice ();
     return (pGyroDevice != NULL) && (pGyroDevice->pBusDevice != NULL);
 }
 
 bool Flight_HasMag (void) {
-    MAGDevice_t* pMagDevice = Flight_GetActive_MagDevice ();
+    MagDevice_t* pMagDevice = Flight_GetActive_MagDevice ();
     return (pMagDevice != NULL) && (pMagDevice->pBusDevice != NULL);
 }
 
-eSTATUS_t Acc_Update (ACCDevice_t* pAccDevice, float dt, bool forcePolling, Vec3f* pOutAcc) {
+eSTATUS_t Acc_Update (AccDevice_t* pAccDevice, float dt, bool forcePolling, Vec3f* pOutAcc) {
 
     if (!pAccDevice || !pAccDevice->vtbl.fnAccReadData || !pOutAcc) {
         return eSTATUS_NULL_ARG;
@@ -56,7 +56,7 @@ eSTATUS_t Acc_Update (ACCDevice_t* pAccDevice, float dt, bool forcePolling, Vec3
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t Gyro_Update (GYRODevice_t* pGyroDevice, float dt, bool forcePolling, Vec3f* pOutGyro) {
+eSTATUS_t Gyro_Update (GyroDevice_t* pGyroDevice, float dt, bool forcePolling, Vec3f* pOutGyro) {
 
     if (!pGyroDevice || !pGyroDevice->vtbl.fnGyroReadData || !pOutGyro) {
         return eSTATUS_NULL_ARG;
@@ -71,7 +71,7 @@ eSTATUS_t Gyro_Update (GYRODevice_t* pGyroDevice, float dt, bool forcePolling, V
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t Mag_Update (MAGDevice_t* pMagDevice, float dt, bool forcePolling, Vec3f* pOutMag) {
+eSTATUS_t Mag_Update (MagDevice_t* pMagDevice, float dt, bool forcePolling, Vec3f* pOutMag) {
 
     if (!pMagDevice || !pMagDevice->vtbl.fnMagReadData || !pOutMag) {
         return eSTATUS_NULL_ARG;

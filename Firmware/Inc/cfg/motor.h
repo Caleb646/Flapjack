@@ -4,34 +4,30 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "targets/target.h"
-
-#include "cfg/cfg.h"
-
-#include "drivers/io/gpio_defs.h"
-
-#include "drivers/tim_defs.h"
-
 #include "drivers/motor.h"
 
-typedef struct MotorsCfg_s {
-    eGPIO_ID_t gpios[TARG_MAX_MOTORS];
-    Vec3f mixes[TARG_MAX_MOTORS];
-    eMOTOR_PROT_t protType;
-    eSERVO_ID_t linkedServoIds[TARG_MAX_MOTORS];
-    uint8_t nMotors;
-} MotorsCfg_t;
+static inline void Cfg_Motor_Init (eMOTOR_ID_t motorId, eGPIO_ID_t gpioId) {
+    MotorsCfg_GetMutable ()->gpios[MOTOR_ID_TO_INDEX (motorId)] = gpioId;
+    MotorsCfg_GetMutable ()->nMotors++;
+}
 
-typedef struct ServosCfg_s {
-    eGPIO_ID_t gpios[TARG_MAX_SERVOS];
-    Vec3f mixes[TARG_MAX_SERVOS];
-    eMOTOR_PROT_t protType;
-    eMOTOR_ID_t linkedMotorIds[TARG_MAX_SERVOS];
-    float maxAngleDeg;
-    uint8_t nServos;
-} ServosCfg_t;
+#define CFG_MOTOR_INIT(MOTOR_ID, GPIO_ID)                                       \
+    do {                                                                        \
+        MotorsCfg_GetMutable ()->gpios[MOTOR_ID_TO_INDEX (MOTOR_ID)] = GPIO_ID; \
+        MotorsCfg_GetMutable ()->nMotors++;                                     \
+    } while (0)
 
-CFG_DECLARE (MotorsCfg_t, MotorsCfg);
-CFG_DECLARE (ServosCfg_t, ServosCfg);
+#define CFG_MOTOR_SET_MIX(MOTOR_ID, PITCH_MIX, ROLL_MIX, YAW_MIX)                       \
+    do {                                                                                \
+        MotorsCfg_GetMutable ()->mixes[MOTOR_ID_TO_INDEX (MOTOR_ID)].pitch = PITCH_MIX; \
+        MotorsCfg_GetMutable ()->mixes[MOTOR_ID_TO_INDEX (MOTOR_ID)].roll  = ROLL_MIX;  \
+        MotorsCfg_GetMutable ()->mixes[MOTOR_ID_TO_INDEX (MOTOR_ID)].yaw   = YAW_MIX;   \
+    } while (0)
+
+#define CFG_MOTOR_LINK_SERVO(MOTOR_ID, SERVO_ID)                                           \
+    do {                                                                                   \
+        MotorsCfg_GetMutable ()->linkedServoIds[MOTOR_ID_TO_INDEX (MOTOR_ID)]  = SERVO_ID; \
+        ServosCfg_GetMutable ()->linkedMotorsIds[SERVO_ID_TO_INDEX (SERVO_ID)] = MOTOR_ID; \
+    } while (0)
 
 #endif // CFG_MOTION_H

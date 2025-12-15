@@ -15,14 +15,7 @@ enum { eBUS_TYPE_NULL = 0, eBUS_TYPE_SPI, eBUS_TYPE_I2C };
 typedef struct {
     eBUS_DEV_ID_t busId;
     eBUS_TYPE_t busType;
-
-    eGPIO_ID_t spiSckGpioId;
-    eGPIO_ID_t spiMisoGpioId;
-    eGPIO_ID_t spiMosiGpioId;
     eGPIO_ID_t spiNssGpioId;
-
-    eGPIO_ID_t i2cSclGpioId;
-    eGPIO_ID_t i2cSdaGpioId;
     uint8_t i2cAddress;
 } BusDeviceCfg_t;
 

@@ -5,6 +5,8 @@
 
 #include "common.h"
 
+#include "cfg/cfg.h"
+
 #include "drivers/bus/bus_defs.h"
 
 eSTATUS_t Bus_Init (BusDeviceCfg_t* pBusDeviceCfg, BusDevice_t* pOutBusDevice);

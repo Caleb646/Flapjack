@@ -266,7 +266,7 @@ FJ_STATIC bool Bmi323_IsGyroDataReady (BusDeviceSPI_t* pBusDeviceSpi) {
 }
 
 
-FJ_STATIC eSTATUS_t Bmi323_ReadAccData (ACCDevice_t* pAccDevice, bool forcePolling, int16_t* pOutData) {
+FJ_STATIC eSTATUS_t Bmi323_ReadAccData (AccDevice_t* pAccDevice, bool forcePolling, int16_t* pOutData) {
 
     if (!pAccDevice || !pAccDevice->pBusDevice || !pOutData) {
         return eSTATUS_NULL_ARG;
@@ -288,7 +288,7 @@ FJ_STATIC eSTATUS_t Bmi323_ReadAccData (ACCDevice_t* pAccDevice, bool forcePolli
     return eSTATUS_SUCCESS;
 }
 
-FJ_STATIC eSTATUS_t Bmi323_ReadGyroData (GYRODevice_t* pGyroDevice, bool forcePolling, int16_t* pOutData) {
+FJ_STATIC eSTATUS_t Bmi323_ReadGyroData (GyroDevice_t* pGyroDevice, bool forcePolling, int16_t* pOutData) {
 
     if (!pGyroDevice || !pGyroDevice->pBusDevice || !pOutData) {
         return eSTATUS_NULL_ARG;
@@ -367,7 +367,7 @@ FJ_STATIC eSTATUS_t Bmi323_Init (BusDeviceSPI_t* pBusDeviceSpi) {
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t Bmi323_InitAcc (AccCfg_t* pAccCfg, ACCDevice_t* pOutAccDevice) {
+eSTATUS_t Bmi323_InitAcc (AccCfg_t* pAccCfg, AccDevice_t* pOutAccDevice) {
 
     if (!pAccCfg || !pOutAccDevice || !pOutAccDevice->pBusDevice) {
         return eSTATUS_NULL_ARG;
@@ -394,7 +394,7 @@ eSTATUS_t Bmi323_InitAcc (AccCfg_t* pAccCfg, ACCDevice_t* pOutAccDevice) {
     return status;
 }
 
-eSTATUS_t Bmi323_InitGyro (GyroCfg_t* pGyroCfg, GYRODevice_t* pOutGyroDevice) {
+eSTATUS_t Bmi323_InitGyro (GyroCfg_t* pGyroCfg, GyroDevice_t* pOutGyroDevice) {
 
     if (!pGyroCfg || !pOutGyroDevice || !pOutGyroDevice->pBusDevice) {
         return eSTATUS_NULL_ARG;

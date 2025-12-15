@@ -17,9 +17,28 @@
 
 DRIVER_DEFINE_ARRAY (TimDevice_t*, TimDevices, TARG_MAX_TIMS);
 
+TimHwCfg_t* TimDev_Get_HwCfg (eTIM_DEVICE_ID_t devId) {
+
+    for (uint32_t i = 0; i < e_nTimHwCfgs; ++i) {
+        if (e_TimHwCfgs[i].id == devId) {
+            return &e_TimHwCfgs[i];
+        }
+    }
+    return NULL;
+}
+
+TimDmaReqMap_t* TimDev_Get_DmaReqMap (eTIM_DEVICE_ID_t devId) {
+
+    for (uint32_t i = 0; i < e_nTimDmaReqMaps; ++i) {
+        if (e_TimDmaReqMaps[i].id == devId) {
+            return &e_TimDmaReqMaps[i];
+        }
+    }
+    return NULL;
+}
+
 bool TimDev_HasDmaSupport (eTIM_DEVICE_ID_t timId) {
-    TimDmaReqMap_t dmaReqMap = TimDev_Get_DmaReqMap (timId);
-    return (!dmaReqMap.cc1 && !dmaReqMap.cc2 && !dmaReqMap.cc3 && !dmaReqMap.cc4 && !dmaReqMap.update);
+    return TimDev_Get_DmaReqMap (timId) != NULL;
 }
 
 TimDevice_t* TimDev_GetByCaps (bool supportsDma) {
@@ -42,12 +61,18 @@ TimDevice_t* TimDev_GetById (eTIM_DEVICE_ID_t devId) {
         return NULL;
     }
 
+    // already allocated
     if (*ppTimDev) {
-        (*ppTimDev)->id = devId;
         return *ppTimDev;
     }
 
     *ppTimDev = Alloc_SharedMem (sizeof (TimDevice_t));
+    // failed to allocate
+    if (!*ppTimDev) {
+        return NULL;
+    }
+
+    (*ppTimDev)->id = devId;
     return *ppTimDev;
 }
 
@@ -68,7 +93,7 @@ void TimDev_SetPWMPeriod (TimDevice_t* pTimDev, uint32_t targetClkHz, uint32_t t
     TimDev_SetPeriod (pTimDev, period);
 }
 
-void TimDev_SetBestClkAndPeriod (TimDevice_t* pTimDev, uint32_t targetHz) {
+void TimDev_GetBestClkAndPeriod (TimDevice_t* pTimDev, uint32_t targetHz, uint32_t* pOutPrescaler, uint32_t* pOutPeriod) {
 
     if (!pTimDev || !targetHz) {
         return;
@@ -94,33 +119,58 @@ void TimDev_SetBestClkAndPeriod (TimDevice_t* pTimDev, uint32_t targetHz) {
             }
         }
     }
+    if (pOutPrescaler) {
+        *pOutPrescaler = bestPrescaler;
+    }
+    if (pOutPeriod) {
+        *pOutPeriod = bestPeriod;
+    }
+}
+
+void TimDev_SetBestClkAndPeriod (TimDevice_t* pTimDev, uint32_t targetHz) {
+
+    uint32_t bestPrescaler = 0U;
+    uint32_t bestPeriod    = 0U;
+    TimDev_GetBestClkAndPeriod (pTimDev, targetHz, &bestPrescaler, &bestPeriod);
     TimDev_SetPrescaler (pTimDev, bestPrescaler);
     TimDev_SetPeriod (pTimDev, bestPeriod);
 }
 
-eSTATUS_t TimChan_Init (TimCfg_t const* pTimCfg, TimChannel_t* pOutTimChan) {
+TimId_u TimChan_GetByGpioId (eGPIO_ID_t gpioId) {
 
-    if (!pTimCfg || !pOutTimChan) {
+    for (uint32_t i = 0; i < e_nTimHwCfgs; ++i) {
+        for (uint32_t chanIdx = 0; chanIdx < 4U; ++chanIdx) {
+            if (e_TimHwCfgs[i].channelGpioIds[chanIdx] == gpioId) {
+                return (TimId_u){ .chanId = TIM_CHAN_INDEX_TO_ID (chanIdx), .devId = e_TimHwCfgs[i].id };
+            }
+        }
+    }
+    return (TimId_u){ .chanId = eTIM_CHANNEL_NULL_ID, .devId = eTIM_NULL_DEVICE_ID };
+}
+
+eSTATUS_t TimChan_InitCC (eGPIO_ID_t gpioId, TimChannel_t* pOutTimChan) {
+
+    if (!gpioId || !pOutTimChan) {
         return eSTATUS_NULL_ARG;
     }
 
-    TimDevice_t* pTimBaseDev = TimDev_GetById (pTimCfg->devId);
-    eSTATUS_t status         = Plat_TimDev_Init (pTimBaseDev);
-    RETURN_IF (FJ_FAIL (status), status, "Failed to initialize platform timer device");
-
-    TimHwCfg_t* pHwCfg = Plat_TimDev_Get_HwCfg (pTimCfg->devId);
-    if (!GPIO_Init (pTimCfg->gpioId, pTimCfg->chanId, PLAT_GPIO_CFG_TIM_PWM, pHwCfg->gpioAf)) {
+    eSTATUS_t status = eSTATUS_SUCCESS;
+    TimId_u timId    = TimChan_GetByGpioId (gpioId);
+    if (timId.devId == eTIM_NULL_DEVICE_ID || timId.chanId == eTIM_CHANNEL_NULL_ID) {
         return eSTATUS_FAILURE;
     }
 
-    pOutTimChan->devId       = pTimCfg->devId;
-    pOutTimChan->chanId      = pTimCfg->chanId;
-    pOutTimChan->modeType    = pTimCfg->modeType;
-    pOutTimChan->irqNum      = pHwCfg->irqNum;
-    pOutTimChan->irqPriority = pTimCfg->irqPriority;
-    pOutTimChan->pTimBaseDev = pTimBaseDev;
+    TimChanCfg_t chanCfg = {
+        .id     = timId.chanId,
+        .gpioId = gpioId,
+        .devCfg = {
+            .id          = timId.devId,
+            .modeType    = eTIM_MODE_PWM,
+            .irqPriority = 7U,
+        },
+    };
 
-    eSTATUS_t status = Plat_TimChan_InitCC (pOutTimChan);
+    status = Plat_TimChan_Init (&chanCfg, pOutTimChan);
     RETURN_IF (FJ_FAIL (status), status, "Failed to initialize platform timer CC");
 
     return eSTATUS_SUCCESS;

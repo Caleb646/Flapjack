@@ -60,7 +60,7 @@ FJ_STATIC bool Mmc5983_IsMagDataReady (BusDeviceSPI_t* pBusDeviceSpi) {
     return false;
 }
 
-FJ_STATIC eSTATUS_t Mmc5983_ReadMagData (MAGDevice_t* pMagDevice, bool forcePolling, int16_t* pOutData) {
+FJ_STATIC eSTATUS_t Mmc5983_ReadMagData (MagDevice_t* pMagDevice, bool forcePolling, int16_t* pOutData) {
 
     if (!pMagDevice || !pMagDevice->pBusDevice || !pOutData) {
         return eSTATUS_NULL_ARG;
@@ -139,7 +139,7 @@ error:
     return status;
 }
 
-eSTATUS_t Mmc5983_InitMag (MagCfg_t* pMagCfg, MAGDevice_t* pOutMagDevice) {
+eSTATUS_t Mmc5983_InitMag (MagCfg_t* pMagCfg, MagDevice_t* pOutMagDevice) {
 
     if (!pMagCfg || !pOutMagDevice || !pOutMagDevice->pBusDevice) {
         return eSTATUS_NULL_ARG;

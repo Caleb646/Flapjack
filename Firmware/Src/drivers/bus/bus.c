@@ -2,6 +2,8 @@
 
 #include "common.h"
 
+#include "cfg/cfg.h"
+
 #include "drivers/bus/bus.h"
 #include "drivers/bus/bus_defs.h"
 #include "drivers/bus/spi.h"

@@ -14,10 +14,12 @@
 #define FJ_INLINE
 #define FJ_STATIC
 #define FJ_UNUSED_FN_DECL
+#define FJ_TESTABLE
 #else
 #define FJ_INLINE         inline
 #define FJ_STATIC         static
 #define FJ_UNUSED_FN_DECL __attribute__ ((unused))
+#define FJ_TESTABLE       FJ_STATIC
 #endif
 
 #define FJ_UNUSED(x)                (void)(x)
@@ -150,6 +152,8 @@ typedef struct {
 #define VEC4F_ZERO() { .x = 0.0F, .y = 0.0F, .z = 0.0F, .w = 0.0F }
 // clang-format off
 #define MEM_U32_ALIGN4(addr)                  ((uint32_t)(addr) & ((uint32_t)~0x3U))
+#define FJ_DECLARE_SHARED(TYPE, NAME)      extern TYPE NAME TARG_SHARED_MEM_DATA_SECTION
+#define FJ_DEFINE_SHARED(TYPE, NAME)       TYPE NAME TARG_SHARED_MEM_DATA_SECTION
 #define DEFINE_STATIC_SHARED_BSS(TYPE, NAME)  static TYPE NAME TARG_SHARED_MEM_BSS_SECTION
 #define DEFINE_STATIC_SHARED_DATA(TYPE, NAME) static TYPE NAME TARG_SHARED_MEM_DATA_SECTION
 #define DEFINE_STATIC_SHARED_BSS_ARRAY(TYPE, NAME, SIZE) static TYPE NAME[SIZE] TARG_SHARED_MEM_BSS_SECTION

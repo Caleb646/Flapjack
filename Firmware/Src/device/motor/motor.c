@@ -50,7 +50,7 @@ eSTATUS_t MotorInit (MotorInitConf_t conf, Motor_t* pOutMotor) {
     eDEVICE_ID_t motorId = device.deviceId;
     RETURN_IF (DEVICE_ID_IS_MOTOR (motorId) == false, eSTATUS_FAILURE, "Invalid motor ID: %u", motorId);
 
-    MotorDesc_t motorConf               = device.motor;
+    MotorView_t motorConf               = device.motor;
     bool usingDMA                       = motorConf.useDMA;
     TimerDesc_t* pTimerBoardConf        = motorConf.pTimerBoardConf;
     DeviceDesc_t* pLinkedServoBoardConf = motorConf.pLinkedServoBoardConf;

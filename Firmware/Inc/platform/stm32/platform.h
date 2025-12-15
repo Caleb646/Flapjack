@@ -8,6 +8,8 @@
 #define PLAT_SPI_MAX_DEVS          5U
 #define PLAT_SPI_MAX_PIN_SEL       1U
 
+#define PLAT_I2C_MAX_DEVS          2U
+
 #define PLAT_GPIO_PORT_START_ADDR  GPIOA_BASE
 #define PLAT_GPIO_MAX_PORTS        11U
 #define PLAT_GPIO_PORT_BYTE_OFFSET 0x400UL

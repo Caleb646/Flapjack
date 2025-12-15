@@ -6,6 +6,8 @@
 
 #include "common.h"
 
+#include "cfg/cfg.h"
+
 #include "drivers/driver.h"
 
 #include "drivers/bus/bus_defs.h"
@@ -23,61 +25,92 @@ enum {
 typedef uint8_t INER_INTERFACE_ID_t;
 enum { INER_INTERFACE_ID_NULL = 0, INER_INTERFACE_ID_BMI323, INER_INTERFACE_ID_MMC5983 };
 
-typedef struct ACCDevice_s ACCDevice_t;
-typedef struct GYRODevice_s GYRODevice_t;
-typedef struct MAGDevice_s MAGDevice_t;
+typedef struct AccCfg_s {
+    INER_TYPE_t type;
+    INER_INTERFACE_ID_t interfaceType;
+    BusDeviceCfg_t busCfg;
+    eGPIO_ID_t extiGpioId;
+    uint8_t alignment;
+    uint16_t sampleRateHz;
+} AccCfg_t;
+
+typedef struct GyroCfg_s {
+    INER_TYPE_t type;
+    INER_INTERFACE_ID_t interfaceType;
+    BusDeviceCfg_t busCfg;
+    eGPIO_ID_t extiGpioId;
+    uint8_t alignment;
+    uint16_t sampleRateHz;
+} GyroCfg_t;
+
+typedef struct MagCfg_s {
+    INER_TYPE_t type;
+    INER_INTERFACE_ID_t interfaceType;
+    BusDeviceCfg_t busCfg;
+    eGPIO_ID_t extiGpioId;
+    uint8_t alignment;
+    uint16_t sampleRateHz;
+} MagCfg_t;
+
+CFG_DECLARE (AccCfg_t, AccCfg);
+CFG_DECLARE (GyroCfg_t, GyroCfg);
+CFG_DECLARE (MagCfg_t, MagCfg);
+
+typedef struct AccDevice_s AccDevice_t;
+typedef struct GyroDevice_s GyroDevice_t;
+typedef struct MagDevice_s MagDevice_t;
 
 typedef struct InertialDeviceVtable_s {
 
     union {
-        void (*fnAccInit) (ACCDevice_t*);
-        void (*fnGyroInit) (GYRODevice_t*);
-        void (*fnMagInit) (MAGDevice_t*);
+        void (*fnAccInit) (AccDevice_t*);
+        void (*fnGyroInit) (GyroDevice_t*);
+        void (*fnMagInit) (MagDevice_t*);
     };
 
     union {
-        eSTATUS_t (*fnAccReadData) (ACCDevice_t*, bool forcePolling, int16_t* pOutData);
-        eSTATUS_t (*fnGyroReadData) (GYRODevice_t*, bool forcePolling, int16_t* pOutData);
-        eSTATUS_t (*fnMagReadData) (MAGDevice_t*, bool forcePolling, int16_t* pOutData);
+        eSTATUS_t (*fnAccReadData) (AccDevice_t*, bool forcePolling, int16_t* pOutData);
+        eSTATUS_t (*fnGyroReadData) (GyroDevice_t*, bool forcePolling, int16_t* pOutData);
+        eSTATUS_t (*fnMagReadData) (MagDevice_t*, bool forcePolling, int16_t* pOutData);
     };
 
     union {
-        void (*fnAccCalibrate) (ACCDevice_t*);
-        void (*fnGyroCalibrate) (GYRODevice_t*);
-        void (*fnMagCalibrate) (MAGDevice_t*);
+        void (*fnAccCalibrate) (AccDevice_t*);
+        void (*fnGyroCalibrate) (GyroDevice_t*);
+        void (*fnMagCalibrate) (MagDevice_t*);
     };
 
 } InertialDeviceVtable_t;
 
-typedef struct ACCDevice_s {
+typedef struct AccDevice_s {
     InertialDeviceVtable_t vtbl;
     BusDevice_t* pBusDevice;
     float scaleFactor;
     uint16_t sampleRateHz;
-} ACCDevice_t;
+} AccDevice_t;
 
-typedef struct GYRODevice_s {
+typedef struct GyroDevice_s {
     InertialDeviceVtable_t vtbl;
     BusDevice_t* pBusDevice;
     float scaleFactor;
     uint16_t sampleRateHz;
-} GYRODevice_t;
+} GyroDevice_t;
 
-typedef struct MAGDevice_s {
+typedef struct MagDevice_s {
     InertialDeviceVtable_t vtbl;
     BusDevice_t* pBusDevice;
     float scaleFactor;
     uint16_t sampleRateHz;
-} MAGDevice_t;
+} MagDevice_t;
 
-DRIVER_DECLARE (ACCDevice_t, AccDevice);
-DRIVER_DECLARE (GYRODevice_t, GyroDevice);
-DRIVER_DECLARE (MAGDevice_t, MagDevice);
+DRIVER_DECLARE (AccDevice_t, AccDevice);
+DRIVER_DECLARE (GyroDevice_t, GyroDevice);
+DRIVER_DECLARE (MagDevice_t, MagDevice);
 
 eSTATUS_t Init_Inertials (void);
-// eSTATUS_t Acc_Update (ACCDevice_t* pAccDevice, float dt, bool forcePolling, Vec3f* pOutAcc);
-// eSTATUS_t Gyro_Update (GYRODevice_t* pGyroDevice, float dt, bool forcePolling, Vec3f* pOutGyro);
-// eSTATUS_t Mag_Update (MAGDevice_t* pMagDevice, float dt, bool forcePolling, Vec3f* pOutMag);
+// eSTATUS_t Acc_Update (AccDevice_t* pAccDevice, float dt, bool forcePolling, Vec3f* pOutAcc);
+// eSTATUS_t Gyro_Update (GyroDevice_t* pGyroDevice, float dt, bool forcePolling, Vec3f* pOutGyro);
+// eSTATUS_t Mag_Update (MagDevice_t* pMagDevice, float dt, bool forcePolling, Vec3f* pOutMag);
 
 
 #endif // DRIVERS_SENSORS_INERTIAL_H

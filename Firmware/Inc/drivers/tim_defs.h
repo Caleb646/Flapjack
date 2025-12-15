@@ -8,6 +8,8 @@
 
 #include "drivers/io/gpio_defs.h"
 
+#define ONE_MHZ 1000000U
+
 typedef uint8_t eTIM_CHAN_ID_t;
 enum {
     eTIM_CHANNEL_NULL_ID = 0,
@@ -19,7 +21,8 @@ enum {
 
 };
 
-#define TIM_CHAN_ID_TO_INDEX(CHAN_ID) ((CHAN_ID) - 1U)
+#define TIM_CHAN_ID_TO_INDEX(CHAN_ID)    ((CHAN_ID) - 1U)
+#define TIM_CHAN_INDEX_TO_ID(CHAN_INDEX) ((CHAN_INDEX) + 1U)
 
 typedef uint8_t eTIM_DEVICE_ID_t;
 enum {
@@ -41,9 +44,16 @@ enum {
 };
 
 // #define TIM_DEV_ID_TO_INDEX(DEV_ID)     (((DEV_ID) / 8U) - 1U)
-#define TIM_DEV_ID_TO_INDEX(DEV_ID)     ((DEV_ID) - 1U)
+#define TIM_DEV_ID_TO_INDEX(DEV_ID) ((DEV_ID) - 1U)
 
-// typedef uint8_t eTIM_ID_t;
+typedef union {
+    uint16_t reserved;
+    struct {
+        uint8_t devId;
+        uint8_t chanId : 3;
+    };
+} TimId_u;
+
 
 #define TIM_ID_MAKE(DEV_ID, CHAN_ID)    (eTIM_##DEV_ID##_DEVICE_ID | eTIM_CHANNEL_##CHAN_ID##_ID)
 #define TIM_ID_TO_DEVICE_INDEX(TIM_ID)  (TIM_DEV_ID_TO_INDEX ((TIM_ID) & ~0b111))
@@ -66,6 +76,7 @@ enum {
 typedef uint8_t eTIM_MODE_TYPE_t;
 enum {
     eTIM_MODE_NULL = 0,
+    eTIM_MODE_BASE,
     eTIM_MODE_PWM,
     eTIM_MODE_OC,
     eTIM_MODE_IC,
@@ -73,13 +84,17 @@ enum {
     eTIM_MODE_ENCODER
 };
 
-typedef struct TimCfg_s {
-    eTIM_DEVICE_ID_t devId;
-    eTIM_CHAN_ID_t chanId;
-    eGPIO_ID_t gpioId;
+typedef struct TimDevCfg_s {
+    eTIM_DEVICE_ID_t id;
     eTIM_MODE_TYPE_t modeType;
     uint8_t irqPriority;
-} TimCfg_t;
+} TimDevCfg_t;
+
+typedef struct TimChanCfg_s {
+    eTIM_CHAN_ID_t id;
+    eGPIO_ID_t gpioId;
+    TimDevCfg_t devCfg;
+} TimChanCfg_t;
 
 
 typedef struct TimHwCfg_s {
@@ -93,6 +108,7 @@ typedef struct TimHwCfg_s {
 } TimHwCfg_t;
 
 typedef struct TimDmaReqMap_s {
+    eTIM_DEVICE_ID_t id;
     uint8_t cc1;
     uint8_t cc2;
     uint8_t cc3;
@@ -103,6 +119,7 @@ typedef struct TimDmaReqMap_s {
 typedef struct TimDevice_s {
     eTIM_DEVICE_ID_t id;
     TIM_HandleTypeDef handle;
+    bool isInitialized;
 } TimDevice_t;
 
 typedef struct TimChannel_s {

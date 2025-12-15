@@ -80,7 +80,7 @@ void SPI5_IRQHandler (void) {
     // TODO
 }
 
-SPIDevice_t* Plat_SPI_Init (eSPI_DEV_ID_t devId, BusDeviceCfg_t* pCfg) {
+SPIDevice_t* Plat_SPI_Init (eSPI_DEV_ID_t devId) {
 
     SPIDevice_t* pDev = SPIDevices_GetMutable (SPI_DEV_ID_TO_INDEX (devId));
     SPIHardware_t hw  = Get_SPI_HwById (devId);
@@ -93,22 +93,52 @@ SPIDevice_t* Plat_SPI_Init (eSPI_DEV_ID_t devId, BusDeviceCfg_t* pCfg) {
         return pDev;
     }
 
+    eGPIO_ID_t sck = 0, miso = 0, mosi = 0;
+    switch (devId) {
+    case eSPI_DEV_ID_1:
+        sck  = TARG_SPI_1_SCK;
+        miso = TARG_SPI_1_MISO;
+        mosi = TARG_SPI_1_MOSI;
+        break;
+    case eSPI_DEV_ID_2:
+        sck  = TARG_SPI_2_SCK;
+        miso = TARG_SPI_2_MISO;
+        mosi = TARG_SPI_2_MOSI;
+        break;
+    case eSPI_DEV_ID_3:
+        sck  = TARG_SPI_3_SCK;
+        miso = TARG_SPI_3_MISO;
+        mosi = TARG_SPI_3_MOSI;
+        break;
+    case eSPI_DEV_ID_4:
+        sck  = TARG_SPI_4_SCK;
+        miso = TARG_SPI_4_MISO;
+        mosi = TARG_SPI_4_MOSI;
+        break;
+    case eSPI_DEV_ID_5:
+        sck  = TARG_SPI_5_SCK;
+        miso = TARG_SPI_5_MISO;
+        mosi = TARG_SPI_5_MOSI;
+        break;
+    }
+
     // invalid gpio ids are zero
-    if (!pCfg->spiSckGpioId || !pCfg->spiMisoGpioId || !pCfg->spiMosiGpioId) {
+    if (!sck || !miso || !mosi) {
         return NULL;
     }
 
     // enable rcc spi clock
     *(hw.pRcc) |= hw.rccMask;
     bool found = false;
+    // find the alternate function mapping that matches the configured pins
     for (uint32_t i = 0; i < PLAT_SPI_MAX_PIN_SEL; ++i) {
         // clang-format off
-        if (pCfg->spiSckGpioId == hw.sckOpts[i] &&
-            pCfg->spiMisoGpioId == hw.misoOpts[i] &&
-            pCfg->spiMosiGpioId == hw.mosiOpts[i]) {
-            GPIO_t* pSCK  = GPIO_Init (pCfg->spiSckGpioId, pCfg->busId, PLAT_GPIO_CFG_AF_PP_NOPULL, hw.afOpts[i]);
-            GPIO_t* pMISO = GPIO_Init (pCfg->spiMisoGpioId, pCfg->busId, PLAT_GPIO_CFG_AF_PP_NOPULL, hw.afOpts[i]);
-            GPIO_t* pMOSI = GPIO_Init (pCfg->spiMosiGpioId, pCfg->busId, PLAT_GPIO_CFG_AF_PP_NOPULL, hw.afOpts[i]);
+        if (sck == hw.sckOpts[i] &&
+            miso == hw.misoOpts[i] &&
+            mosi == hw.mosiOpts[i]) {
+            GPIO_t* pSCK  = GPIO_Init (sck, devId, PLAT_GPIO_CFG_AF_PP_NOPULL, hw.afOpts[i]);
+            GPIO_t* pMISO = GPIO_Init (miso, devId, PLAT_GPIO_CFG_AF_PP_NOPULL, hw.afOpts[i]);
+            GPIO_t* pMOSI = GPIO_Init (mosi, devId, PLAT_GPIO_CFG_AF_PP_NOPULL, hw.afOpts[i]);
             if (!pSCK || !pMISO || !pMOSI) {
                 return NULL;
             }

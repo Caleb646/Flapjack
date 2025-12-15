@@ -3,6 +3,8 @@
 
 #include "common.h"
 
+#include "cfg/cfg.h"
+
 #include "core/core.h"
 
 #include "drivers/driver.h"
@@ -12,15 +14,17 @@
 
 #include "drivers/sensors/inertial/inertial.h"
 
-#include "cfg/sensors/sensor.h"
+extern eSTATUS_t Bmi323_InitAcc (AccCfg_t* pAccCfg, AccDevice_t* pOutAccDevice);
+extern eSTATUS_t Bmi323_InitGyro (GyroCfg_t* pGyroCfg, GyroDevice_t* pOutGyroDevice);
+extern eSTATUS_t Mmc5983_InitMag (MagCfg_t* pMagCfg, MagDevice_t* pOutMagDevice);
 
-extern eSTATUS_t Bmi323_InitAcc (AccCfg_t* pAccCfg, ACCDevice_t* pOutAccDevice);
-extern eSTATUS_t Bmi323_InitGyro (GyroCfg_t* pGyroCfg, GYRODevice_t* pOutGyroDevice);
-extern eSTATUS_t Mmc5983_InitMag (MagCfg_t* pMagCfg, MAGDevice_t* pOutMagDevice);
+CFG_DEFINE (AccCfg_t, AccCfg);
+CFG_DEFINE (GyroCfg_t, GyroCfg);
+CFG_DEFINE (MagCfg_t, MagCfg);
 
-DRIVER_DEFINE (ACCDevice_t, AccDevice);
-DRIVER_DEFINE (GYRODevice_t, GyroDevice);
-DRIVER_DEFINE (MAGDevice_t, MagDevice);
+DRIVER_DEFINE (AccDevice_t, AccDevice);
+DRIVER_DEFINE (GyroDevice_t, GyroDevice);
+DRIVER_DEFINE (MagDevice_t, MagDevice);
 
 FJ_STATIC FJ_INLINE bool IsMARG (AccCfg_t* pAccCfg, GyroCfg_t* pGyroCfg, MagCfg_t* pMagCfg) {
     return (pAccCfg->type == pGyroCfg->type) && (pAccCfg->type == pMagCfg->type);
@@ -32,11 +36,11 @@ FJ_STATIC FJ_INLINE bool IsIMU (AccCfg_t* pAccCfg, GyroCfg_t* pGyroCfg) {
 
 FJ_STATIC eSTATUS_t Inertial_BaseInit (
 AccCfg_t* pAccCfg,
-ACCDevice_t* pOutAccDevice,
+AccDevice_t* pOutAccDevice,
 GyroCfg_t* pGyroCfg,
-GYRODevice_t* pOutGyroDevice,
+GyroDevice_t* pOutGyroDevice,
 MagCfg_t* pMagCfg,
-MAGDevice_t* pOutMagDevice
+MagDevice_t* pOutMagDevice
 ) {
 
     eSTATUS_t status = eSTATUS_SUCCESS;
@@ -95,13 +99,13 @@ FJ_STATIC eSTATUS_t Inertial_InterfaceInit (INER_INTERFACE_ID_t id, INER_TYPE_t 
     switch (id) {
     case INER_INTERFACE_ID_BMI323:
         switch (type) {
-        case INER_TYPE_ACC: return Bmi323_InitAcc ((AccCfg_t*)pCfg, (ACCDevice_t*)pOutDevice);
-        case INER_TYPE_GYR: return Bmi323_InitGyro ((GyroCfg_t*)pCfg, (GYRODevice_t*)pOutDevice);
+        case INER_TYPE_ACC: return Bmi323_InitAcc ((AccCfg_t*)pCfg, (AccDevice_t*)pOutDevice);
+        case INER_TYPE_GYR: return Bmi323_InitGyro ((GyroCfg_t*)pCfg, (GyroDevice_t*)pOutDevice);
         default: return eSTATUS_FAILURE;
         }
     case INER_INTERFACE_ID_MMC5983:
         switch (type) {
-        case INER_TYPE_MAG: return Mmc5983_InitMag ((MagCfg_t*)pCfg, (MAGDevice_t*)pOutDevice);
+        case INER_TYPE_MAG: return Mmc5983_InitMag ((MagCfg_t*)pCfg, (MagDevice_t*)pOutDevice);
         default: return eSTATUS_FAILURE;
         }
     default: return eSTATUS_FAILURE;
@@ -116,22 +120,22 @@ eSTATUS_t Init_Inertials (void) {
     GyroCfg_t* pGyroCfg = GyroCfg_GetMutable ();
     MagCfg_t* pMagCfg   = MagCfg_GetMutable ();
 
-    ACCDevice_t* pAccDevice   = AccDevice_GetMutable ();
-    GYRODevice_t* pGyroDevice = GyroDevice_GetMutable ();
-    MAGDevice_t* pMagDevice   = MagDevice_GetMutable ();
+    AccDevice_t* pAccDevice   = AccDevice_GetMutable ();
+    GyroDevice_t* pGyroDevice = GyroDevice_GetMutable ();
+    MagDevice_t* pMagDevice   = MagDevice_GetMutable ();
 
     eSTATUS_t status = eSTATUS_SUCCESS;
     status = Inertial_BaseInit (pAccCfg, pAccDevice, pGyroCfg, pGyroDevice, pMagCfg, pMagDevice);
     GOTO_IF (FJ_FAIL (status), error, "Failed to init inertials base");
 
-    status = Inertial_InterfaceInit (pAccCfg->type, INER_TYPE_ACC, pAccCfg, pAccDevice);
+    status = Inertial_InterfaceInit (pAccCfg->interfaceType, INER_TYPE_ACC, pAccCfg, pAccDevice);
     GOTO_IF (FJ_FAIL (status), error, "Failed to init ACC interface");
 
-    status = Inertial_InterfaceInit (pGyroCfg->type, INER_TYPE_GYR, pGyroCfg, pGyroDevice);
+    status = Inertial_InterfaceInit (pGyroCfg->interfaceType, INER_TYPE_GYR, pGyroCfg, pGyroDevice);
     GOTO_IF (FJ_FAIL (status), error, "Failed to init GYRO interface");
 
     if (TARG_MAX_MAGS > 0) {
-        status = Inertial_InterfaceInit (pMagCfg->type, INER_TYPE_MAG, pMagCfg, pMagDevice);
+        status = Inertial_InterfaceInit (pMagCfg->interfaceType, INER_TYPE_MAG, pMagCfg, pMagDevice);
         GOTO_IF (FJ_FAIL (status), error, "Failed to init MAG interface");
     }
 

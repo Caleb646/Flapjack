@@ -15,7 +15,7 @@
 
 DRIVER_DECLARE_ARRAY (SPIDevice_t, SPIDevices, PLAT_SPI_MAX_DEVS);
 
-SPIDevice_t* Plat_SPI_Init (eSPI_DEV_ID_t devId, BusDeviceCfg_t* pCfg);
+SPIDevice_t* Plat_SPI_Init (eSPI_DEV_ID_t devId);
 eSTATUS_t Plat_SPI_WriteRead_Block (SPIDevice_t* pDev, uint8_t const* pTx, uint8_t* pRx, uint32_t size);
 bool Plat_SPI_IsBusy (SPIDevice_t* pDev);
 

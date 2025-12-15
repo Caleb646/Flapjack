@@ -9,6 +9,28 @@
 #define TARG_MAX_GPS                 1
 #define TARG_MAX_TIMS                16
 
+#define TARG_NONE                    0U
+
+#define TARG_SPI_1_SCK               TARG_NONE
+#define TARG_SPI_1_MISO              TARG_NONE
+#define TARG_SPI_1_MOSI              TARG_NONE
+
+#define TARG_SPI_2_SCK               TARG_NONE
+#define TARG_SPI_2_MISO              TARG_NONE
+#define TARG_SPI_2_MOSI              TARG_NONE
+
+#define TARG_SPI_3_SCK               TARG_NONE
+#define TARG_SPI_3_MISO              TARG_NONE
+#define TARG_SPI_3_MOSI              TARG_NONE
+
+#define TARG_SPI_4_SCK               TARG_NONE
+#define TARG_SPI_4_MISO              TARG_NONE
+#define TARG_SPI_4_MOSI              TARG_NONE
+
+#define TARG_SPI_5_SCK               TARG_NONE
+#define TARG_SPI_5_MISO              TARG_NONE
+#define TARG_SPI_5_MOSI              TARG_NONE
+
 #define TARG_SHARED_MEM_BSS_SECTION  __attribute__ ((section (".shared_mem_bss")))
 #define TARG_SHARED_MEM_DATA_SECTION __attribute__ ((section (".shared_mem_data")))
 

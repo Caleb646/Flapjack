@@ -163,7 +163,7 @@ eSTATUS_t Plat_Dshot_Init (MotorsCfg_t const* pCfg, MotorProtVtbl_t* pOutVtbl) {
     }
 
     gp_Timer = TimDev_GetByCaps (true);
-    if (TimDev_InitDefault (gp_Timer) != eSTATUS_SUCCESS) {
+    if (TimDev_InitBase (gp_Timer) != eSTATUS_SUCCESS) {
         return eSTATUS_FAILURE;
     }
     TimDev_SetBestClkAndPeriod (gp_Timer, 434782U); // 434,782 Hz update rate for 2.3us bit time for DSHOT150
@@ -178,7 +178,7 @@ eSTATUS_t Plat_Dshot_Init (MotorsCfg_t const* pCfg, MotorProtVtbl_t* pOutVtbl) {
         }
 
         gp_DmaDevs[i] = Dma_GetFreeDevice ();
-        if (Dma_InitForMemToGpio (TimDev_GetID (gp_Timer), gp_DmaDevs[i]) != eSTATUS_SUCCESS) {
+        if (Dma_InitForMemToGpio (TimDev_GetId (gp_Timer), gp_DmaDevs[i]) != eSTATUS_SUCCESS) {
             return eSTATUS_FAILURE;
         }
         Dma_RegisterCallback (gp_DmaDevs[i], Stm32_Dshot_DmaCallback, NULL);

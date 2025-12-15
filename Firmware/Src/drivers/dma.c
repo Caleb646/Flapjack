@@ -27,10 +27,10 @@ eSTATUS_t Dma_InitForMemToGpio (eTIM_DEVICE_ID_t timDevId, DmaDevice_t* pOutDmaD
     if (!TimDev_HasDmaSupport (timDevId)) {
         return eSTATUS_FAILURE;
     }
-    TimDmaReqMap_t dmaReqMap = TimDev_Get_DmaReqMap (timDevId);
-    DmaCfg_t dmaCfg          = { 0 };
-    dmaCfg.transferType      = eDMA_TRANSFER_TYPE_MEM_TO_PERIPH;
-    dmaCfg.requestId         = dmaReqMap.update;
+    TimDmaReqMap_t* pDmaReqMap = TimDev_Get_DmaReqMap (timDevId);
+    DmaCfg_t dmaCfg            = { 0 };
+    dmaCfg.transferType        = eDMA_TRANSFER_TYPE_MEM_TO_PERIPH;
+    dmaCfg.requestId           = pDmaReqMap->update;
 
     return Plat_Dma_Init (&dmaCfg, pOutDmaDevice);
 }

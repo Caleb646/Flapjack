@@ -6,6 +6,8 @@
 
 #include "common.h"
 
+#include "cfg/cfg.h"
+
 typedef uint8_t eMOTOR_PROT_t;
 enum {
     eMOTION_PROT_TYPE_NULL = 0,
@@ -21,8 +23,13 @@ enum {
 typedef uint8_t eMOTOR_ID_t;
 enum {
     eMOTOR_ID_NULL = 0,
+
     eMOTOR_1_ID,
+    eMOTOR_LEFT_ID = eMOTOR_1_ID,
+
     eMOTOR_2_ID,
+    eMOTOR_RIGHT_ID = eMOTOR_2_ID,
+
     eMOTOR_3_ID,
     eMOTOR_4_ID,
     eMOTOR_5_ID,
@@ -36,26 +43,78 @@ enum {
 typedef uint8_t eSERVO_ID_t;
 enum {
     eSERVO_ID_NULL = 0,
+
     eSERVO_1_ID,
+    eSERVO_LEFT_MOTOR_ID = eSERVO_1_ID,
+
     eSERVO_2_ID,
+    eSERVO_RIGHT_MOTOR_ID = eSERVO_2_ID,
+
     eSERVO_3_ID,
+    eSERVO_LEFT_AILERON_ID = eSERVO_3_ID,
+
     eSERVO_4_ID,
+    eSERVO_RIGHT_AILERON_ID = eSERVO_4_ID,
+
     eSERVO_5_ID,
+    eSERVO_RUDDER_ID = eSERVO_5_ID,
+
     eSERVO_6_ID,
+    eSERVO_ELEVATOR_ID = eSERVO_6_ID,
+
     eSERVO_7_ID,
     eSERVO_8_ID
 };
 
 #define SERVO_ID_TO_INDEX(SERVO_ID) ((SERVO_ID) - 1U)
+#define SERVO_DEF_PERIOD_HZ         (50U)
+#define SERVO_DEF_DC_LEFT_US        (1000U)
+#define SERVO_DEF_DC_MIDDLE_US      (1500U)
+#define SERVO_DEF_DC_RIGHT_US       (2000U)
 
-typedef struct Dshot_s Dshot_t;
-typedef struct Motors_s Motors_t;
-typedef struct Servos_s Servos_t;
+typedef struct MotorsCfg_s {
+    eGPIO_ID_t gpios[TARG_MAX_MOTORS];
+    eMOTOR_PROT_t protType;
+    uint8_t nMotors;
+} MotorsCfg_t;
+
+typedef struct ServosCfg_s {
+    eGPIO_ID_t gpios[TARG_MAX_SERVOS];
+    uint8_t nServos;
+} ServosCfg_t;
+
+CFG_DECLARE (MotorsCfg_t, MotorsCfg);
+CFG_DECLARE (ServosCfg_t, ServosCfg);
+
+// typedef struct ServoView_s ServoView_t;
+
+// typedef struct MotorView_s {
+//     Vec3f* pMixes;
+//     float* pThrottle;
+//     ServoView_t* pLinkedServo;
+// } MotorView_t;
+
+typedef struct MotorsDevice_s {
+    MotorProtVtbl_t vtbl;
+} MotorsDevice_t;
+
+// typedef struct ServoView_s {
+//     Vec3f* pMixes;
+//     float* pAngle;
+//     float* pMaxAngleDeg;
+//     bool isLinked;
+// } ServoView_t;
+
+// typedef struct ServosDevice_s {
+//     MotorProtVtbl_t vtbl;
+//     float outputs[TARG_MAX_SERVOS];
+//     ServoView_t views[TARG_MAX_SERVOS];
+// } ServosDevice_t;
 
 typedef struct MotorProtVtbl_s {
     union {
         eSTATUS_t (*fnUpdateMotors) (float const* pThrottles, uint32_t nThrottles);
-        eSTATUS_t (*fnUpdateServos) (float const* pAngles, uint32_t nAngles);
+        // eSTATUS_t (*fnUpdateServos) (float const* pAngles, uint32_t nAngles);
     };
 } MotorProtVtbl_t;
 

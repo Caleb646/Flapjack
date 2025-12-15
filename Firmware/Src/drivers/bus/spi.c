@@ -20,7 +20,7 @@ eSTATUS_t SPI_Init (BusDeviceCfg_t* pCfg, BusDeviceSPI_t* pOutBusDeviceSpi) {
         return eSTATUS_NULL_ARG;
     }
 
-    SPIDevice_t* pDev = Plat_SPI_Init (pCfg->busId, pCfg);
+    SPIDevice_t* pDev = Plat_SPI_Init (pCfg->busId);
     if (!pDev) {
         return eSTATUS_FAILURE;
     }
