@@ -22,9 +22,10 @@ CFG_DEFINE (AccCfg_t, AccCfg);
 CFG_DEFINE (GyroCfg_t, GyroCfg);
 CFG_DEFINE (MagCfg_t, MagCfg);
 
-DRIVER_DEFINE (AccDevice_t, AccDevice);
-DRIVER_DEFINE (GyroDevice_t, GyroDevice);
-DRIVER_DEFINE (MagDevice_t, MagDevice);
+FJ_DEFINE_SHARED (AccDevice_t, e_AccDevice);
+FJ_DEFINE_SHARED (GyroDevice_t, e_GyroDevice);
+FJ_DEFINE_SHARED (MagDevice_t, e_MagDevice);
+
 
 FJ_STATIC FJ_INLINE bool IsMARG (AccCfg_t* pAccCfg, GyroCfg_t* pGyroCfg, MagCfg_t* pMagCfg) {
     return (pAccCfg->type == pGyroCfg->type) && (pAccCfg->type == pMagCfg->type);

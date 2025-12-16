@@ -103,9 +103,9 @@ typedef struct MagDevice_s {
     uint16_t sampleRateHz;
 } MagDevice_t;
 
-DRIVER_DECLARE (AccDevice_t, AccDevice);
-DRIVER_DECLARE (GyroDevice_t, GyroDevice);
-DRIVER_DECLARE (MagDevice_t, MagDevice);
+FJ_DECLARE_SHARED (AccDevice_t, e_AccDevice);
+FJ_DECLARE_SHARED (GyroDevice_t, e_GyroDevice);
+FJ_DECLARE_SHARED (MagDevice_t, e_MagDevice);
 
 eSTATUS_t Init_Inertials (void);
 // eSTATUS_t Acc_Update (AccDevice_t* pAccDevice, float dt, bool forcePolling, Vec3f* pOutAcc);
