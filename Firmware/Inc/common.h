@@ -101,6 +101,14 @@ enum {
 
 // clang-format on
 
+typedef uint8_t AXIS_IDX_t;
+enum {
+    AXIS_IDX_ROLL = 0,
+    AXIS_IDX_PITCH,
+    AXIS_IDX_YAW,
+    AXIS_IDX_COUNT,
+};
+
 typedef struct {
     int32_t x, y, z;
 } Vec3i;
@@ -183,6 +191,7 @@ extern float ge_ScaledSystemCoreClock;
     }
 #define F_DELAY_MICROSECONDS(US_FLOAT) DELAY_CYCLES (US_TO_CYCLES (US_FLOAT))
 
+#define US_TO_SECONDS(US)              ((float)(US) / 1000000.0F)
 uint32_t GetMilliseconds (void);
 uint32_t GetMicroseconds (void);
 void Delay (uint32_t ms);

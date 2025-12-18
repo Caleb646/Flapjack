@@ -16,7 +16,6 @@
 #include <string.h>
 
 
-
 #define PID_VALID(pPID) ((pPID) != NULL && (pPID)->isInitialized == true)
 
 static SHARED_MEM_SECTION vPID_t gPID = { 0 };

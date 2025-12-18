@@ -8,7 +8,19 @@
 
 #include "cfg/cfg.h"
 
-typedef struct Madgwick_s Madgwick_t;
+typedef struct Madgwick_s {
+    // estimated orientation quaternion elements with initial conditions
+    Vec4f qEst;
+    // gyro bias error
+    Vec3f gbias;
+    // Gamma_t (γt)
+    float beta;
+    float zeta;
+    // reference direction of flux in earth frame
+    float bx;
+    float bz;
+    uint32_t usLastUpdate;
+} Madgwick_t;
 
 typedef struct FlightCfg_s {
     float gyroMeasureErrorDegs;
@@ -18,21 +30,31 @@ typedef struct FlightCfg_s {
     float bz;
 } FlightCfg_t;
 
-typedef struct Flight_s {
-    Vec3f attitude;
-    float altitude;
-    Madgwick_t* pMadgwick;
-} Flight_t;
+typedef struct FlightData_s {
+    float currentAttitude[AXIS_IDX_COUNT];
+    float targetAttitude[AXIS_IDX_COUNT];
+
+    float currentAltitude;
+    float targetAltitude;
+
+    float currentThrottle;
+    float targetThrottle;
+
+    union {
+        Madgwick_t madgwick;
+    };
+} FlightData_t;
 
 CFG_DECLARE (FlightCfg_t, FlightCfg);
-FJ_DECLARE_SHARED (Flight_t, e_Flight);
+FJ_DECLARE_SHARED (FlightData_t, e_FlightData);
 
-static inline Vec3f* Attitude_GetMutable (void) {
-    return &e_Flight.attitude;
+static inline FlightData_t const* FlightData_Get (void) {
+    return &e_FlightData;
 }
-eSTATUS_t Attitude_Init (bool doWarmUp);
-eSTATUS_t Attitude_Update (float dt);
+eSTATUS_t FlightData_Init (bool doWarmUp);
 
-eSTATUS_t Altitude_Update (float dt);
+eSTATUS_t Attitude_Update (uint32_t usCurrentTime);
+
+eSTATUS_t Altitude_Update (uint32_t usCurrentTime);
 
 #endif // AERO_FLIGHT_H

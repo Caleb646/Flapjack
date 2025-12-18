@@ -14,27 +14,17 @@ CFG_DEFINE (FlightCfg_t, FlightCfg) = {
     .gyroMeasureDriftDegs = 0.0F,
 };
 
-FJ_DEFINE_SHARED (Flight_t, e_Flight);
+FJ_DEFINE_SHARED (FlightData_t, e_FlightData);
 
-typedef struct Madgwick_s {
-    // estimated orientation quaternion elements with initial conditions
-    Vec4f qEst;
-    // gyro bias error
-    Vec3f gbias;
-    // Gamma_t (γt)
-    float beta;
-    float zeta;
-    // reference direction of flux in earth frame
-    float bx;
-    float bz;
-} Madgwick_t;
-
-typedef eSTATUS_t (*Madgwick_Update_fn) (Madgwick_t* pMadgwick, Vec3f const* pAccel, Vec3f const* pGyro, Vec3f const* pMag, float dt);
+typedef eSTATUS_t (*MadgwickUpdate_fn) (Madgwick_t* pMadgwick, Vec3f const* pAccel, Vec3f const* pGyro, Vec3f const* pMag, uint32_t usCurrentTime);
 
 FJ_TESTABLE eSTATUS_t
-Madgwick_Update_6DOF (Madgwick_t* pMadgwick, Vec3f const* pAccel, Vec3f const* pGyroDegs, Vec3f const* pUnused, float dt) {
+Madgwick_Update_6DOF (Madgwick_t* pMadgwick, Vec3f const* pAccel, Vec3f const* pGyroDegs, Vec3f const* pUnused, uint32_t usCurrentTime) {
 
     FJ_UNUSED (pUnused);
+
+    float dt                = US_TO_SECONDS (usCurrentTime - pMadgwick->usLastUpdate);
+    pMadgwick->usLastUpdate = usCurrentTime;
 
     // convert degrees per second to radians per second
     float a_x  = pAccel->x;
@@ -135,7 +125,10 @@ Madgwick_Update_6DOF (Madgwick_t* pMadgwick, Vec3f const* pAccel, Vec3f const* p
 }
 
 FJ_TESTABLE eSTATUS_t
-Madgwick_Update_9DOF (Madgwick_t* pMadgwick, Vec3f const* pAccel, Vec3f const* pGyro, Vec3f const* pMag, float dt) {
+Madgwick_Update_9DOF (Madgwick_t* pMadgwick, Vec3f const* pAccel, Vec3f const* pGyro, Vec3f const* pMag, uint32_t usCurrentTime) {
+
+    float dt                = US_TO_SECONDS (usCurrentTime - pMadgwick->usLastUpdate);
+    pMadgwick->usLastUpdate = usCurrentTime;
 
     float SEq_1 = pMadgwick->qEst.q1;
     float SEq_2 = pMadgwick->qEst.q2;
@@ -322,23 +315,24 @@ Madgwick_Update_9DOF (Madgwick_t* pMadgwick, Vec3f const* pAccel, Vec3f const* p
     return eSTATUS_SUCCESS;
 }
 
-FJ_TESTABLE void Madgwick_QuatToEuler (Vec4f const* pQuat, Vec3f* pOutEuler) {
+FJ_TESTABLE void Madgwick_QuatToEuler (Vec4f const* pQuat, float outEuler[AXIS_IDX_COUNT]) {
 
     float q1 = pQuat->q1;
     float q2 = pQuat->q2;
     float q3 = pQuat->q3;
     float q4 = pQuat->q4;
 
-    pOutEuler->yaw = RAD2DEG (atan2f (2.0F * q2 * q3 - 2.0F * q1 * q4, 2.0F * q1 * q1 + 2.0F * q2 * q2 - 1));
-    pOutEuler->pitch = RAD2DEG (-asinf (2.0F * q2 * q4 + 2.0F * q1 * q3));
-    pOutEuler->roll =
+    outEuler[AXIS_IDX_YAW] =
+    RAD2DEG (atan2f (2.0F * q2 * q3 - 2.0F * q1 * q4, 2.0F * q1 * q1 + 2.0F * q2 * q2 - 1));
+    outEuler[AXIS_IDX_PITCH] = RAD2DEG (-asinf (2.0F * q2 * q4 + 2.0F * q1 * q3));
+    outEuler[AXIS_IDX_ROLL] =
     RAD2DEG (atan2f (2.0F * q3 * q4 - 2.0F * q1 * q2, 2.0F * q1 * q1 + 2.0F * q4 * q4 - 1.0F));
 }
 
 FJ_TESTABLE eSTATUS_t Madgwick_WarmUp (Madgwick_t* pMadgwick, uint32_t iterations, Vec3f* pOutAttitude) {
 
-    float msStartTime           = (float)GetMilliseconds ();
-    Madgwick_Update_fn fnUpdate = Madgwick_Update_6DOF;
+    uint32_t usStartTime       = GetMicroseconds ();
+    MadgwickUpdate_fn fnUpdate = Madgwick_Update_6DOF;
     if (Mag_IsAvailable ()) {
         fnUpdate = Madgwick_Update_9DOF;
     }
@@ -348,21 +342,16 @@ FJ_TESTABLE eSTATUS_t Madgwick_WarmUp (Madgwick_t* pMadgwick, uint32_t iteration
         Gyro_Update (true);
         Mag_Update (true);
 
-        float dt = ((float)GetMilliseconds () - msStartTime) / 1000.0F; // Convert ms to seconds
-        if (dt <= 0.0F) {
-            continue;
-        }
-
         fnUpdate (
         pMadgwick,
         &Acc_GetMutable ()->filteredData,
         &Gyro_GetMutable ()->filteredData,
         &Mag_GetMutable ()->filteredData,
-        dt
+        usStartTime
         );
 
         Madgwick_QuatToEuler (&pMadgwick->qEst, pOutAttitude);
-        msStartTime = (float)GetMilliseconds ();
+        usStartTime = GetMicroseconds ();
     }
     return eSTATUS_SUCCESS;
 }
@@ -377,48 +366,38 @@ FJ_TESTABLE eSTATUS_t Madgwick_Init (FlightCfg_t const* pCfg, Madgwick_t* pOut) 
     pOut->qEst.q2              = 0.0F;
     pOut->qEst.q3              = 0.0F;
     pOut->qEst.q4              = 0.0F;
+    pOut->usLastUpdate         = GetMicroseconds ();
     return true;
 }
 
-eSTATUS_t Attitude_Init (bool doWarmUp) {
+eSTATUS_t FlightData_Init (bool doWarmUp) {
 
-    Madgwick_t* pMadgwick = Alloc_SharedMem (sizeof (Madgwick_t));
-    RETURN_IF_NULL (pMadgwick, eSTATUS_FAILURE, "Failed to allocate Madgwick filter");
-
-    eSTATUS_t status = Madgwick_Init (FlightCfg_Get (), pMadgwick);
-    RETURN_IF (FJ_FAIL (status), status, "Madgwick filter initialization failed");
-
-    e_Flight.pMadgwick = pMadgwick;
+    RETURN_IF (FJ_FAIL (Madgwick_Init (FlightCfg_Get (), &e_FlightData.madgwick)), eSTATUS_FAILURE, "Madgwick filter initialization failed");
     if (doWarmUp) {
-        Vec3f initialAttitude = { 0 };
-        status                = Madgwick_WarmUp (pMadgwick, 500, &initialAttitude);
-        RETURN_IF (FJ_FAIL (status), status, "Madgwick filter warm-up failed");
-        e_Flight.attitude = initialAttitude;
+        RETURN_IF (FJ_FAIL (Madgwick_WarmUp (&e_FlightData.madgwick, 500, &e_FlightData.currentAttitude)), eSTATUS_FAILURE, "Madgwick filter warm-up failed");
     }
 
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t Attitude_Update (float dt) {
+eSTATUS_t Attitude_Update (uint32_t usCurrentTime) {
 
-    if (!e_Flight.pMadgwick) {
-        return eSTATUS_FAILURE;
-    }
-    Madgwick_t* pMadgwick       = e_Flight.pMadgwick;
-    Madgwick_Update_fn fnUpdate = Madgwick_Update_6DOF;
+    // TODO should update target attitude here as well
+
+    MadgwickUpdate_fn fnUpdate = Madgwick_Update_6DOF;
     if (Mag_IsAvailable ()) {
         fnUpdate = Madgwick_Update_9DOF;
     }
 
     eSTATUS_t status = fnUpdate (
-    pMadgwick,
+    &e_FlightData.madgwick,
     &Acc_GetMutable ()->filteredData,
     &Gyro_GetMutable ()->filteredData,
     &Mag_GetMutable ()->filteredData,
-    dt
+    usCurrentTime
     );
 
     RETURN_IF (FJ_FAIL (status), status, "Attitude update failed");
-    Madgwick_QuatToEuler (&pMadgwick->qEst, &e_Flight.attitude);
+    Madgwick_QuatToEuler (&e_FlightData.madgwick.qEst, e_FlightData.currentAttitude);
     return eSTATUS_SUCCESS;
 }
