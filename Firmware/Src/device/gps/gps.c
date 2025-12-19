@@ -36,7 +36,7 @@ void GPSCallback (BusCallbackData_t data) {
         gSentenceReady              = false;
         gSentence[gSentenceIndex++] = gStartByte;
 
-        // eSTATUS_t status = eSTATUS_SUCCESS;
+        // eSTATUS_t status = eSTATUS_OK;
         uint32_t timeout = 1000U;
         uint8_t byte     = 0;
         while (timeout-- > 0) {
@@ -45,7 +45,7 @@ void GPSCallback (BusCallbackData_t data) {
                 goto error;
             }
 
-            if (BUS_READ_BLOCK (&gGPS.bus, &byte, 1) != eSTATUS_SUCCESS) {
+            if (BUS_READ_BLOCK (&gGPS.bus, &byte, 1) != eSTATUS_OK) {
                 goto error;
             }
 
@@ -68,7 +68,7 @@ eSTATUS_t GPSInit (GPSInitConf_t conf, GPS_t* pOutGPS) {
     if (FJ_IS_NULL (conf.pDevDesc) || !BUS_VALID (conf.pBus)) {
         return eSTATUS_INVALID_ARG;
     }
-    eSTATUS_t status    = eSTATUS_SUCCESS;
+    eSTATUS_t status    = eSTATUS_OK;
     DevDesc_t* pDevDesc = conf.pDevDesc;
     vGPS_t* pGPS        = &gGPS;
     if (pOutGPS != NULL) {
@@ -123,7 +123,7 @@ eSTATUS_t GPSUpdate (vGPS_t* pGPS, GPSData_t* pOutData) {
         if (minmea_parse_rmc (&rmc, (char const*)gSentenceCopy)) {
 
         } else {
-            return eSTATUS_FAILURE;
+            return eSTATUS_FAIL;
         }
         break;
     }
@@ -132,7 +132,7 @@ eSTATUS_t GPSUpdate (vGPS_t* pGPS, GPSData_t* pOutData) {
         if (minmea_parse_gga (&gga, (char const*)gSentenceCopy)) {
 
         } else {
-            return eSTATUS_FAILURE;
+            return eSTATUS_FAIL;
         }
         break;
     }
@@ -140,19 +140,19 @@ eSTATUS_t GPSUpdate (vGPS_t* pGPS, GPSData_t* pOutData) {
         struct minmea_sentence_gsv frame;
         if (minmea_parse_gsv (&frame, (char const*)gSentenceCopy)) {
         } else {
-            return eSTATUS_FAILURE;
+            return eSTATUS_FAIL;
         }
     } break;
     case MINMEA_SENTENCE_GST: {
         struct minmea_sentence_gst frame;
         if (minmea_parse_gst (&frame, (char const*)gSentenceCopy)) {
         } else {
-            return eSTATUS_FAILURE;
+            return eSTATUS_FAIL;
         }
     } break;
     default: return eSTATUS_UNSUPPORTED;
     }
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 vGPS_t const* GPSGetActiveDevice (void) {

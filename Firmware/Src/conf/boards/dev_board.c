@@ -84,5 +84,5 @@ eSTATUS_t DeviceTree_InitImpl (DeviceTree_t* pOutDeviceTree) {
 
     pOutDeviceTree->ppDeviceDescs = g_DeviceDescs;
     pOutDeviceTree->numDevices    = sizeof (g_DeviceDescs) / sizeof (g_DeviceDescs[0]);
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }

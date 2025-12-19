@@ -33,29 +33,29 @@ eSTATUS_t FCState_Init (FCStateInitConf_t conf, vFCState_t* pOut) {
     pState->maxAttitude     = (Vec3f){ { 45.0F }, { 45.0F }, { 180.0F } };
     pState->targetThrottle  = MOTOR_STARTUP_THROTTLE; // between 0 and 1
     pState->isInitialized   = true;
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t FCState_Start (vFCState_t* pState) {
 
     if (FCSTATE_VALID (pState) == false) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t FCState_Stop (vFCState_t* pState) {
 
     if (FCSTATE_VALID (pState) == false) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t FCState_Update (vFCState_t const* pNewState, vFCState_t* pOutState) {
 
     if (FCSTATE_VALID (pNewState) == false) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     if (pOutState == NULL) {
@@ -63,7 +63,7 @@ eSTATUS_t FCState_Update (vFCState_t const* pNewState, vFCState_t* pOutState) {
     }
 
     *pOutState = *pNewState;
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 vFCState_t const* FCState_GetActiveState (void) {
@@ -93,49 +93,49 @@ FCState_t FCState_GetCopyOfActiveState (void) {
 eSTATUS_t FCState_Set_OpState (vFCState_t* pState, eOP_STATE_t newOpState) {
 
     if (FCSTATE_VALID (pState) == false) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
     pState->opState = newOpState;
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t FCState_Set_CurrentAttitude (vFCState_t* pState, Vec3f newCurrentAttitude) {
 
     if (FCSTATE_VALID (pState) == false) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
     pState->currentAttitude = newCurrentAttitude;
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t FCState_Set_TargetAttitude (vFCState_t* pState, Vec3f newTargetAttitude) {
 
     if (FCSTATE_VALID (pState) == false) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
     pState->targetAttitude = newTargetAttitude;
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t FCState_Set_MaxAttitude (vFCState_t* pState, Vec3f newMaxAttitude) {
 
     if (FCSTATE_VALID (pState) == false) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
     pState->maxAttitude = newMaxAttitude;
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t FCState_Set_TargetThrottle (vFCState_t* pState, float newThrottle) {
 
     if (FCSTATE_VALID (pState) == false) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
     if (newThrottle < 0.0F || newThrottle > 1.0F) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
     pState->targetThrottle = newThrottle;
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 char const* OpStateToChar (eOP_STATE_t opState) {

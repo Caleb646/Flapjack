@@ -43,14 +43,14 @@ static uint32_t g_ProcessID = 1;
 //     if (timeout <= 0) {
 //         // __enable_irq ();
 //         portENABLE_INTERRUPTS ();
-//         return eSTATUS_FAILURE;
+//         return eSTATUS_FAIL;
 //     }
 //     /*
 //      * Ensure enter critical stores/loads are completed
 //      */
 //     // __DMB ();
 // #endif
-//     return eSTATUS_SUCCESS;
+//     return eSTATUS_OK;
 // }
 
 // static void Queue_ExitCritical (Queue_t const* pQueue) {
@@ -64,14 +64,14 @@ static uint32_t g_ProcessID = 1;
 eSTATUS_t QueueInit (Queue_t* pQueue, void* pBuffer, uint16_t capacity, uint16_t elementSize, bool isShared) {
 
     if (pQueue == NULL || pBuffer == NULL || capacity == 0 || elementSize == 0) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
     memset (pQueue, 0, sizeof (Queue_t));
     memset (pBuffer, 0, (uint32_t)capacity * (uint32_t)elementSize);
     // Check if capacity is a power of 2
     if ((capacity & (capacity - 1U)) != 0U) {
         // Not a power of 2
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     pQueue->pData       = pBuffer;
@@ -83,12 +83,12 @@ eSTATUS_t QueueInit (Queue_t* pQueue, void* pBuffer, uint16_t capacity, uint16_t
 
     if (isShared == true) {
         if ((g_ProcessID + 1U) > 256U) {
-            return eSTATUS_FAILURE;
+            return eSTATUS_FAIL;
         }
         pQueue->processID = g_ProcessID++;
     }
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 // eSTATUS_t
@@ -97,16 +97,16 @@ eSTATUS_t QueueInit (Queue_t* pQueue, void* pBuffer, uint16_t capacity, uint16_t
 //     /* Add 3 for potential 4 byte alignment */
 //     uint32_t totalSize = sizeof (Queue_t) + 3U + (uint32_t)capacity *
 //     (uint32_t)elementSize; if (totalSize > memorySize) {
-//         return eSTATUS_FAILURE;
+//         return eSTATUS_FAIL;
 //     }
 
 //     void* pQueueBuffer =
 //     (void*)MEM_U32_ALIGN4 ((uint32_t)pMemoryStart + sizeof (Queue_t));
 //     if (QueueInit ((Queue_t*)pMemoryStart, pQueueBuffer, capacity, elementSize, true) !=
-//         eSTATUS_SUCCESS) {
-//         return eSTATUS_FAILURE;
+//         eSTATUS_OK) {
+//         return eSTATUS_FAIL;
 //     }
-//     return eSTATUS_SUCCESS;
+//     return eSTATUS_OK;
 // }
 
 bool QueueIsEmpty (Queue_t const* pQueue) {
@@ -139,11 +139,11 @@ uint16_t QueueGetCapacity (Queue_t const* pQueue) {
 
 eSTATUS_t Queue_Push (Queue_t* pQueue, void const* pElement) {
     if (pQueue == NULL || pElement == NULL) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     if (QueueIsFull (pQueue)) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     // Calculate the memory location for the tail element
@@ -163,8 +163,8 @@ eSTATUS_t Queue_Push (Queue_t* pQueue, void const* pElement) {
      * where 1 core pushes & pops while another core pushes & pops
      */
     // if (IS_QUEUE_SHARED (pQueue) == true) {
-    //     if (Queue_EnterCritical (pQueue) != eSTATUS_SUCCESS) {
-    //         return eSTATUS_FAILURE;
+    //     if (Queue_EnterCritical (pQueue) != eSTATUS_OK) {
+    //         return eSTATUS_FAIL;
     //     }
     //     pQueue->count++;
     //     Queue_ExitCritical (pQueue);
@@ -174,16 +174,16 @@ eSTATUS_t Queue_Push (Queue_t* pQueue, void const* pElement) {
 
     pQueue->count++;
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t Queue_Pop (Queue_t* pQueue, void* pOutElement) {
     if (pQueue == NULL || pOutElement == NULL) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     if (QueueIsEmpty (pQueue)) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     // Calculate the memory location for the head element
@@ -203,8 +203,8 @@ eSTATUS_t Queue_Pop (Queue_t* pQueue, void* pOutElement) {
      * where 1 core pushes & pops while another core pushes & pops
      */
     // if (IS_QUEUE_SHARED (pQueue) == true) {
-    //     if (Queue_EnterCritical (pQueue) != eSTATUS_SUCCESS) {
-    //         return eSTATUS_FAILURE;
+    //     if (Queue_EnterCritical (pQueue) != eSTATUS_OK) {
+    //         return eSTATUS_FAIL;
     //     }
     //     pQueue->count--;
     //     Queue_ExitCritical (pQueue);
@@ -214,16 +214,16 @@ eSTATUS_t Queue_Pop (Queue_t* pQueue, void* pOutElement) {
 
     pQueue->count--;
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t Queue_Peek (Queue_t const* pQueue, void* pOutElement) {
     if (pQueue == NULL || pOutElement == NULL) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     if (QueueIsEmpty (pQueue)) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     // Calculate the memory location for the head element
@@ -233,7 +233,7 @@ eSTATUS_t Queue_Peek (Queue_t const* pQueue, void* pOutElement) {
     // Copy the element from the head position without removing it
     memcpy (pOutElement, pHeadLocation, pQueue->elementSize);
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 void Queue_Clear (Queue_t* pQueue) {

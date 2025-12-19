@@ -79,11 +79,11 @@ eSTATUS_t Core_Init (void) {
         }
 
         if (HAL_Init () != HAL_OK) {
-            return eSTATUS_FAILURE;
+            return eSTATUS_FAIL;
         }
 
         if (FJ_FAIL (SystemClock_Config ())) {
-            return eSTATUS_FAILURE;
+            return eSTATUS_FAIL;
         }
 
         RCC_PeriphCLKInitTypeDef RCC_PeriphClkInit = { 0 };
@@ -105,15 +105,15 @@ eSTATUS_t Core_Init (void) {
         HAL_RCCEx_PeriphCLKConfig (&RCC_PeriphClkInit);
 
         if (FJ_FAIL (SharedMem_Init ())) {
-            return eSTATUS_FAILURE;
+            return eSTATUS_FAIL;
         }
 
         if (FJ_FAIL (GPIOSystemInit ())) {
-            return eSTATUS_FAILURE;
+            return eSTATUS_FAIL;
         }
 
         if (FJ_FAIL (DeviceTree_Init ())) {
-            return eSTATUS_FAILURE;
+            return eSTATUS_FAIL;
         }
 
     } else {
@@ -132,15 +132,15 @@ eSTATUS_t Core_Init (void) {
     // Scale by 10Mhz for fDelayMicroseconds function
     ge_ScaledSystemCoreClock = (float)SystemCoreClock / 10000000.0F;
     if (SanityCheckTimers () == false) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
-    if (SyncInit () != eSTATUS_SUCCESS) {
-        return eSTATUS_FAILURE;
+    if (SyncInit () != eSTATUS_OK) {
+        return eSTATUS_FAIL;
     }
 
-    if (LoggerInit () != eSTATUS_SUCCESS) {
-        return eSTATUS_FAILURE;
+    if (LoggerInit () != eSTATUS_OK) {
+        return eSTATUS_FAIL;
     }
 
     if (IS_CM7_ME ()) {
@@ -156,14 +156,14 @@ eSTATUS_t Core_Init (void) {
         }
     }
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 FJ_UNUSED_FN_DECL FJ_STATIC eSTATUS_t Init_HAL_SysTickTimer (uint32_t tickPriority) {
 
     FJ_UNUSED (tickPriority);
 
-    return eSTATUS_FAILURE;
+    return eSTATUS_FAIL;
 
     // The below sets up the HAL to use the SysTick ARM core timer, but when FREERTOS is
     // used, FREERTOS takes over the SysTick timer. So the HAL needs to use another seperate timer.
@@ -211,7 +211,7 @@ FJ_STATIC eSTATUS_t Init_HAL_Timer (TIM_TypeDef* pTimer, uint32_t tickPriority) 
         }
 
     } else {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     /* Get clock configuration */
@@ -248,7 +248,7 @@ FJ_STATIC eSTATUS_t Init_HAL_Timer (TIM_TypeDef* pTimer, uint32_t tickPriority) 
     }
 
     /* Return function status */
-    return eSTATUS_FAILURE;
+    return eSTATUS_FAIL;
 }
 
 FJ_STATIC eSTATUS_t SystemClock_Config (void) {
@@ -291,7 +291,7 @@ FJ_STATIC eSTATUS_t SystemClock_Config (void) {
     RCC_OscInitStruct.PLL.PLLVCOSEL       = RCC_PLL1VCOWIDE;
     RCC_OscInitStruct.PLL.PLLFRACN        = 0;
     if (HAL_RCC_OscConfig (&RCC_OscInitStruct) != HAL_OK) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     /** Initializes the CPU, AHB and APB buses clocks
@@ -307,10 +307,10 @@ FJ_STATIC eSTATUS_t SystemClock_Config (void) {
     RCC_ClkInitStruct.APB4CLKDivider = RCC_APB4_DIV1;
 
     if (HAL_RCC_ClockConfig (&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
     HAL_RCC_MCOConfig (RCC_MCO1, RCC_MCO1SOURCE_HSI, RCC_MCODIV_1);
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 FJ_STATIC eSTATUS_t SharedMem_Init (void) {
@@ -323,7 +323,7 @@ FJ_STATIC eSTATUS_t SharedMem_Init (void) {
     uint32_t const dataFlashStart = (uint32_t)(&__SHARED_MEM_DATA_FLASH_START__);
 
     memcpy ((void*)dataStart, (void*)dataFlashStart, dataSize);
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 FJ_STATIC void DWT_Init (void) {

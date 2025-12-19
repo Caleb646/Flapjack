@@ -43,7 +43,7 @@ void tearDown (void) {
 void test_VectorInit_ValidParameters (void) {
     eSTATUS_t result = Vector_Init (&test_vector_uint8, test_buffer_uint8, 8, sizeof (uint8_t), false);
 
-    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result);
+    TEST_ASSERT_EQUAL (eSTATUS_OK, result);
     TEST_ASSERT_EQUAL (8, Vector_Capacity (&test_vector_uint8));
     TEST_ASSERT_EQUAL (0, Vector_Size (&test_vector_uint8));
     TEST_ASSERT_TRUE (Vector_IsEmpty (&test_vector_uint8));
@@ -54,23 +54,23 @@ void test_VectorInit_ValidParameters (void) {
 void test_VectorInit_SharedVector (void) {
     eSTATUS_t result = Vector_Init (&test_vector_uint8, test_buffer_uint8, 8, sizeof (uint8_t), true);
 
-    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result);
+    TEST_ASSERT_EQUAL (eSTATUS_OK, result);
     TEST_ASSERT_EQUAL (1, test_vector_uint8.processID); // Shared
 }
 
 void test_VectorInit_NullVector (void) {
     eSTATUS_t result = Vector_Init (NULL, test_buffer_uint8, 8, sizeof (uint8_t), false);
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, result);
 }
 
 void test_VectorInit_NullBuffer (void) {
     eSTATUS_t result = Vector_Init (&test_vector_uint8, NULL, 8, sizeof (uint8_t), false);
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, result);
 }
 
 void test_VectorInit_ZeroElementSize (void) {
     eSTATUS_t result = Vector_Init (&test_vector_uint8, test_buffer_uint8, 8, 0, false);
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, result);
 }
 
 // Test basic vector operations
@@ -80,7 +80,7 @@ void test_VectorPushBack_ValidElement (void) {
     uint8_t value    = 42;
     eSTATUS_t result = Vector_PushBack (&test_vector_uint8, &value);
 
-    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result);
+    TEST_ASSERT_EQUAL (eSTATUS_OK, result);
     TEST_ASSERT_EQUAL (1, Vector_Size (&test_vector_uint8));
     TEST_ASSERT_FALSE (Vector_IsEmpty (&test_vector_uint8));
     TEST_ASSERT_FALSE (Vector_IsFull (&test_vector_uint8));
@@ -93,14 +93,14 @@ void test_VectorPushBack_ValidElement (void) {
 void test_VectorPushBack_NullVector (void) {
     uint8_t value    = 42;
     eSTATUS_t result = Vector_PushBack (NULL, &value);
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, result);
 }
 
 void test_VectorPushBack_NullElement (void) {
     Vector_Init (&test_vector_uint8, test_buffer_uint8, 8, sizeof (uint8_t), false);
 
     eSTATUS_t result = Vector_PushBack (&test_vector_uint8, NULL);
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, result);
 }
 
 void test_VectorPushBack_FullVector (void) {
@@ -108,12 +108,12 @@ void test_VectorPushBack_FullVector (void) {
 
     uint8_t value1 = 1, value2 = 2, value3 = 3;
 
-    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, Vector_PushBack (&test_vector_uint8, &value1));
-    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, Vector_PushBack (&test_vector_uint8, &value2));
+    TEST_ASSERT_EQUAL (eSTATUS_OK, Vector_PushBack (&test_vector_uint8, &value1));
+    TEST_ASSERT_EQUAL (eSTATUS_OK, Vector_PushBack (&test_vector_uint8, &value2));
     TEST_ASSERT_TRUE (Vector_IsFull (&test_vector_uint8));
 
     // Should fail when full
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, Vector_PushBack (&test_vector_uint8, &value3));
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, Vector_PushBack (&test_vector_uint8, &value3));
     TEST_ASSERT_EQUAL (2, Vector_Size (&test_vector_uint8));
 }
 
@@ -127,7 +127,7 @@ void test_VectorPopBack_ValidVector (void) {
     uint8_t poppedValue;
     eSTATUS_t result = Vector_PopBack (&test_vector_uint8, &poppedValue);
 
-    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result);
+    TEST_ASSERT_EQUAL (eSTATUS_OK, result);
     TEST_ASSERT_EQUAL (value, poppedValue);
     TEST_ASSERT_EQUAL (0, Vector_Size (&test_vector_uint8));
     TEST_ASSERT_TRUE (Vector_IsEmpty (&test_vector_uint8));
@@ -136,7 +136,7 @@ void test_VectorPopBack_ValidVector (void) {
 void test_VectorPopBack_NullVector (void) {
     uint8_t poppedValue;
     eSTATUS_t result = Vector_PopBack (NULL, &poppedValue);
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, result);
 }
 
 void test_VectorPopBack_EmptyVector (void) {
@@ -144,7 +144,7 @@ void test_VectorPopBack_EmptyVector (void) {
 
     uint8_t poppedValue;
     eSTATUS_t result = Vector_PopBack (&test_vector_uint8, &poppedValue);
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, result);
 }
 
 void test_VectorPopBack_NullOutElement (void) {
@@ -155,7 +155,7 @@ void test_VectorPopBack_NullOutElement (void) {
 
     // Should succeed even with null output element
     eSTATUS_t result = Vector_PopBack (&test_vector_uint8, NULL);
-    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result);
+    TEST_ASSERT_EQUAL (eSTATUS_OK, result);
     TEST_ASSERT_EQUAL (0, Vector_Size (&test_vector_uint8));
 }
 
@@ -245,7 +245,7 @@ void test_VectorInsert_ValidIndex (void) {
     uint8_t insertValue = 20;
     eSTATUS_t result    = Vector_Insert (&test_vector_uint8, 1, &insertValue);
 
-    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result);
+    TEST_ASSERT_EQUAL (eSTATUS_OK, result);
     TEST_ASSERT_EQUAL (3, Vector_Size (&test_vector_uint8));
 
     uint8_t* pElement = (uint8_t*)Vector_At (&test_vector_uint8, 1);
@@ -264,7 +264,7 @@ void test_VectorInsert_AtEnd (void) {
     uint8_t value2   = 20;
     eSTATUS_t result = Vector_Insert (&test_vector_uint8, 1, &value2);
 
-    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result);
+    TEST_ASSERT_EQUAL (eSTATUS_OK, result);
     TEST_ASSERT_EQUAL (2, Vector_Size (&test_vector_uint8));
 
     uint8_t* pBack = (uint8_t*)Vector_Back (&test_vector_uint8);
@@ -277,13 +277,13 @@ void test_VectorInsert_InvalidParameters (void) {
     uint8_t value = 42;
 
     // Null vector
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, Vector_Insert (NULL, 0, &value));
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, Vector_Insert (NULL, 0, &value));
 
     // Null element
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, Vector_Insert (&test_vector_uint8, 0, NULL));
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, Vector_Insert (&test_vector_uint8, 0, NULL));
 
     // Index out of bounds
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, Vector_Insert (&test_vector_uint8, 5, &value));
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, Vector_Insert (&test_vector_uint8, 5, &value));
 }
 
 void test_VectorInsert_FullVector (void) {
@@ -294,7 +294,7 @@ void test_VectorInsert_FullVector (void) {
     Vector_PushBack (&test_vector_uint8, &value2);
 
     eSTATUS_t result = Vector_Insert (&test_vector_uint8, 1, &value3);
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, result);
 }
 
 // Test Vector_Erase
@@ -309,7 +309,7 @@ void test_VectorErase_ValidIndex (void) {
     uint8_t erasedValue;
     eSTATUS_t result = Vector_Erase (&test_vector_uint8, 1, &erasedValue);
 
-    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result);
+    TEST_ASSERT_EQUAL (eSTATUS_OK, result);
     TEST_ASSERT_EQUAL (20, erasedValue);
     TEST_ASSERT_EQUAL (2, Vector_Size (&test_vector_uint8));
 
@@ -324,7 +324,7 @@ void test_VectorErase_NullOutElement (void) {
     Vector_PushBack (&test_vector_uint8, &value);
 
     eSTATUS_t result = Vector_Erase (&test_vector_uint8, 0, NULL);
-    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result);
+    TEST_ASSERT_EQUAL (eSTATUS_OK, result);
     TEST_ASSERT_EQUAL (0, Vector_Size (&test_vector_uint8));
 }
 
@@ -337,10 +337,10 @@ void test_VectorErase_InvalidParameters (void) {
     uint8_t erasedValue;
 
     // Null vector
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, Vector_Erase (NULL, 0, &erasedValue));
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, Vector_Erase (NULL, 0, &erasedValue));
 
     // Index out of bounds
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, Vector_Erase (&test_vector_uint8, 5, &erasedValue));
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, Vector_Erase (&test_vector_uint8, 5, &erasedValue));
 }
 
 // Test Vector_Clear
@@ -376,7 +376,7 @@ void test_VectorResize_GrowWithFill (void) {
     uint8_t fillValue = 99;
     eSTATUS_t result  = Vector_Resize (&test_vector_uint8, 5, &fillValue);
 
-    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result);
+    TEST_ASSERT_EQUAL (eSTATUS_OK, result);
     TEST_ASSERT_EQUAL (5, Vector_Size (&test_vector_uint8));
 
     // Check original elements
@@ -399,7 +399,7 @@ void test_VectorResize_Shrink (void) {
 
     eSTATUS_t result = Vector_Resize (&test_vector_uint8, 2, NULL);
 
-    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result);
+    TEST_ASSERT_EQUAL (eSTATUS_OK, result);
     TEST_ASSERT_EQUAL (2, Vector_Size (&test_vector_uint8));
 
     TEST_ASSERT_EQUAL (10, *(uint8_t*)Vector_At (&test_vector_uint8, 0));
@@ -412,10 +412,10 @@ void test_VectorResize_InvalidParameters (void) {
     uint8_t fillValue = 99;
 
     // Null vector
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, Vector_Resize (NULL, 5, &fillValue));
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, Vector_Resize (NULL, 5, &fillValue));
 
     // Size exceeds capacity
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, Vector_Resize (&test_vector_uint8, 10, &fillValue));
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, Vector_Resize (&test_vector_uint8, 10, &fillValue));
 }
 
 // Test Vector_Data
@@ -439,7 +439,7 @@ void test_VectorUint32 (void) {
     uint32_t values[] = { 0x12345678, 0x9ABCDEF0, 0xFEDCBA98 };
 
     for (int i = 0; i < 3; i++) {
-        TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, Vector_PushBack (&test_vector_uint32, &values[i]));
+        TEST_ASSERT_EQUAL (eSTATUS_OK, Vector_PushBack (&test_vector_uint32, &values[i]));
     }
 
     TEST_ASSERT_EQUAL (3, Vector_Size (&test_vector_uint32));
@@ -458,8 +458,8 @@ void test_VectorStruct (void) {
     TestStruct testData1 = { .id = 100, .value = 200, .flag = 1 };
     TestStruct testData2 = { .id = 300, .value = 400, .flag = 0 };
 
-    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, Vector_PushBack (&test_vector_struct, &testData1));
-    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, Vector_PushBack (&test_vector_struct, &testData2));
+    TEST_ASSERT_EQUAL (eSTATUS_OK, Vector_PushBack (&test_vector_struct, &testData1));
+    TEST_ASSERT_EQUAL (eSTATUS_OK, Vector_PushBack (&test_vector_struct, &testData2));
 
     TEST_ASSERT_EQUAL (2, Vector_Size (&test_vector_struct));
     TEST_ASSERT_TRUE (Vector_IsFull (&test_vector_struct));
@@ -492,13 +492,13 @@ void test_VectorCompleteWorkflow (void) {
     // Add elements
     uint8_t values[] = { 10, 20, 30 };
     for (int i = 0; i < 3; i++) {
-        TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, Vector_PushBack (&test_vector_uint8, &values[i]));
+        TEST_ASSERT_EQUAL (eSTATUS_OK, Vector_PushBack (&test_vector_uint8, &values[i]));
     }
     TEST_ASSERT_EQUAL (3, Vector_Size (&test_vector_uint8));
 
     // Insert element
     uint8_t insertValue = 15;
-    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, Vector_Insert (&test_vector_uint8, 1, &insertValue));
+    TEST_ASSERT_EQUAL (eSTATUS_OK, Vector_Insert (&test_vector_uint8, 1, &insertValue));
     TEST_ASSERT_EQUAL (4, Vector_Size (&test_vector_uint8));
     TEST_ASSERT_TRUE (Vector_IsFull (&test_vector_uint8));
 
@@ -510,13 +510,13 @@ void test_VectorCompleteWorkflow (void) {
 
     // Erase element
     uint8_t erasedValue;
-    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, Vector_Erase (&test_vector_uint8, 2, &erasedValue));
+    TEST_ASSERT_EQUAL (eSTATUS_OK, Vector_Erase (&test_vector_uint8, 2, &erasedValue));
     TEST_ASSERT_EQUAL (20, erasedValue);
     TEST_ASSERT_EQUAL (3, Vector_Size (&test_vector_uint8));
 
     // Pop back
     uint8_t poppedValue;
-    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, Vector_PopBack (&test_vector_uint8, &poppedValue));
+    TEST_ASSERT_EQUAL (eSTATUS_OK, Vector_PopBack (&test_vector_uint8, &poppedValue));
     TEST_ASSERT_EQUAL (30, poppedValue);
     TEST_ASSERT_EQUAL (2, Vector_Size (&test_vector_uint8));
 

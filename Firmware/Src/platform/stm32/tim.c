@@ -243,7 +243,7 @@ eSTATUS_t Plat_TimDev_Init (TimDevCfg_t* const pCfg, TimDevice_t* pOutTimDev) {
 
     TimHwCfg_t* pHwCfg = TimDev_Get_HwCfg (pCfg->id);
     if (!pHwCfg || !pHwCfg->pRccEnableReg || !pHwCfg->pInstance) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     // Enable rcc clock
@@ -261,16 +261,16 @@ eSTATUS_t Plat_TimDev_Init (TimDevCfg_t* const pCfg, TimDevice_t* pOutTimDev) {
     // deinitialize first in case it was previously initialized
     if (HAL_TIM_PWM_DeInit (&(pOutTimDev->handle)) != HAL_OK) {
         LOG_ERROR ("Failed to de-initialize timer device handle for TIM ID: %u", pOutTimDev->id);
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     if (HAL_TIM_PWM_Init (&(pOutTimDev->handle)) != HAL_OK) {
         LOG_ERROR ("Failed to initialize timer device handle for TIM ID: %u", pOutTimDev->id);
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     pOutTimDev->isInitialized = true;
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t Plat_TimChan_Init (TimChanCfg_t const* pChanCfg, TimChannel_t* pOutChannel) {
@@ -279,21 +279,21 @@ eSTATUS_t Plat_TimChan_Init (TimChanCfg_t const* pChanCfg, TimChannel_t* pOutCha
         return eSTATUS_NULL_ARG;
     }
 
-    eSTATUS_t status     = eSTATUS_SUCCESS;
+    eSTATUS_t status     = eSTATUS_OK;
     TimDevice_t* pTimDev = TimDev_GetById (pChanCfg->devCfg.id);
     if (!pTimDev) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     if (!pTimDev->isInitialized) {
-        if (Plat_TimDev_Init (&pChanCfg->devCfg, pTimDev) != eSTATUS_SUCCESS) {
-            return eSTATUS_FAILURE;
+        if (Plat_TimDev_Init (&pChanCfg->devCfg, pTimDev) != eSTATUS_OK) {
+            return eSTATUS_FAIL;
         }
     }
 
     TimHwCfg_t* pHwCfg = TimDev_Get_HwCfg (pTimDev->id);
     if (!pHwCfg || !GPIO_Init (pChanCfg->gpioId, pChanCfg->id, PLAT_GPIO_CFG_TIM_PWM, pHwCfg->gpioAf)) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     pOutChannel->devId       = pChanCfg->devCfg.id;
@@ -316,13 +316,13 @@ eSTATUS_t Plat_TimChan_Init (TimChanCfg_t const* pChanCfg, TimChannel_t* pOutCha
     // clang-format on
 
     if (halStatus != HAL_OK) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     HAL_NVIC_SetPriority (pOutChannel->irqNum, pOutChannel->irqPriority, pOutChannel->irqPriority);
     HAL_NVIC_EnableIRQ (pOutChannel->irqNum);
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t Plat_TimChan_Start (TimChannel_t* pChannel, uint8_t const* pData, uint32_t size) {
@@ -332,8 +332,8 @@ eSTATUS_t Plat_TimChan_Start (TimChannel_t* pChannel, uint8_t const* pData, uint
     }
     HAL_StatusTypeDef status = HAL_OK;
     status = HAL_TIM_PWM_Start (&(pChannel->pTimBaseDev->handle), TIM_ID_TO_HAL_CHAN (pChannel->chanId));
-    RETURN_IF (status != HAL_OK, eSTATUS_FAILURE, "Failed to start timer PWM for timer");
-    return eSTATUS_SUCCESS;
+    RETURN_IF (status != HAL_OK, eSTATUS_FAIL, "Failed to start timer PWM for timer");
+    return eSTATUS_OK;
 }
 
 eSTATUS_t Plat_TimChan_Stop (TimChannel_t* pChannel) {
@@ -343,6 +343,6 @@ eSTATUS_t Plat_TimChan_Stop (TimChannel_t* pChannel) {
     }
     HAL_StatusTypeDef status = HAL_OK;
     status = HAL_TIM_PWM_Stop (&(pChannel->pTimBaseDev->handle), TIM_ID_TO_HAL_CHAN (pChannel->chanId));
-    RETURN_IF (status != HAL_OK, eSTATUS_FAILURE, "Failed to stop timer PWM for timer");
-    return eSTATUS_SUCCESS;
+    RETURN_IF (status != HAL_OK, eSTATUS_FAIL, "Failed to stop timer PWM for timer");
+    return eSTATUS_OK;
 }

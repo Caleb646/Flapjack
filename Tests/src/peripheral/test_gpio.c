@@ -103,22 +103,22 @@ void test_GPIO_ownership_tracking (void) {
 
     // Initialize GPIO with device1 - should succeed
     eSTATUS_t result = GPIOInit (device1, test_config);
-    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result);
+    TEST_ASSERT_EQUAL (eSTATUS_OK, result);
     TEST_ASSERT_EQUAL (device1, pIO->ownerId);
 
     // Try to initialize same GPIO with device2 - should fail (already owned)
     result = GPIOInit (device2, test_config);
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, result);
     TEST_ASSERT_EQUAL (device1, pIO->ownerId); // Should still be owned by device1
 
     // Free the GPIO
     result = GPIOFreeById (test_gpio);
-    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result);
+    TEST_ASSERT_EQUAL (eSTATUS_OK, result);
     TEST_ASSERT_EQUAL (eDEVICE_ID_NULL, pIO->ownerId);
 
     // Now device2 should be able to claim it
     result = GPIOInit (device2, test_config);
-    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result);
+    TEST_ASSERT_EQUAL (eSTATUS_OK, result);
     TEST_ASSERT_EQUAL (device2, pIO->ownerId);
 }
 
@@ -143,7 +143,7 @@ void test_GPIO_multiple_allocations (void) {
                                         .alternate = 0 } };
 
         eSTATUS_t result = GPIOInit (devices[i], config);
-        TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result);
+        TEST_ASSERT_EQUAL (eSTATUS_OK, result);
 
         vIO_t* pIO = GPIOGetIOfromId (gpios[i]);
         TEST_ASSERT_EQUAL (devices[i], pIO->ownerId);
@@ -158,7 +158,7 @@ void test_GPIO_multiple_allocations (void) {
     // Free odd-numbered GPIOs
     for (uint8_t i = 1; i < num_gpios; i += 2) {
         eSTATUS_t result = GPIOFreeById (gpios[i]);
-        TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result);
+        TEST_ASSERT_EQUAL (eSTATUS_OK, result);
 
         vIO_t* pIO = GPIOGetIOfromId (gpios[i]);
         TEST_ASSERT_EQUAL (eDEVICE_ID_NULL, pIO->ownerId);
@@ -173,7 +173,7 @@ void test_GPIO_multiple_allocations (void) {
     // Free remaining GPIOs
     for (uint8_t i = 0; i < num_gpios; i += 2) {
         eSTATUS_t result = GPIOFreeById (gpios[i]);
-        TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result);
+        TEST_ASSERT_EQUAL (eSTATUS_OK, result);
 
         vIO_t* pIO = GPIOGetIOfromId (gpios[i]);
         TEST_ASSERT_EQUAL (eDEVICE_ID_NULL, pIO->ownerId);
@@ -185,12 +185,12 @@ void test_GPIO_error_conditions (void) {
     // Test freeing invalid GPIO
     eGPIO_ID_t invalid_gpio = 0xFF;
     eSTATUS_t result        = GPIOFreeById (invalid_gpio);
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, result);
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, result);
 
     // Test freeing unowned GPIO (should succeed but have no effect)
     eGPIO_ID_t unowned_gpio = GPIO_ID_MAKE (eGPIO_PORTID_A, eGPIO_PINID_10);
     result                  = GPIOFreeById (unowned_gpio);
-    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, result); // Should succeed even if not owned
+    TEST_ASSERT_EQUAL (eSTATUS_OK, result); // Should succeed even if not owned
 }
 
 // Test direct array access validation

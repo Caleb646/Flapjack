@@ -334,5 +334,5 @@ eSTATUS_t BoardConfInit_MyBoard (DeviceTree_t* pOutBoardConf) {
     pOutBoardConf->numDevices         = sizeof (gDeviceBoardConfs) / sizeof (gDeviceBoardConfs[0]);
 
     // ge_isBoardConfInitialized = true;
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }

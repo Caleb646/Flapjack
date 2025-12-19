@@ -69,30 +69,35 @@ enum {
 };
 
 #define SERVO_ID_TO_INDEX(SERVO_ID) ((SERVO_ID) - 1U)
-#define SERVO_DEF_PERIOD_HZ         (50U)
-#define SERVO_DEF_DC_LEFT_US        (1000U)
-#define SERVO_DEF_DC_MIDDLE_US      (1500U)
-#define SERVO_DEF_DC_RIGHT_US       (2000U)
+#define SERVO_DEF_PERIOD_HZ         50U
+#define SERVO_DEF_DC_LEFT_US        1000U
+#define SERVO_DEF_DC_MIDDLE_US      1500U
+#define SERVO_DEF_DC_RIGHT_US       2000U
 
 typedef struct MotorsCfg_s {
     eGPIO_ID_t gpios[TARG_MAX_MOTORS];
     eMOTOR_PROT_t protType;
+    uint8_t nMotors;
 } MotorsCfg_t;
 
 typedef struct ServosCfg_s {
     eGPIO_ID_t gpios[TARG_MAX_SERVOS];
+    uint8_t nServos;
 } ServosCfg_t;
 
-
-typedef struct MotorsDevice_s MotorsDevice_t;
 typedef struct MotorsDevice_s {
     eSTATUS_t (*fnUpdateMotors) (float const* pThrottles, uint32_t nThrottles);
 } MotorsDevice_t;
 
 CFG_DECLARE (MotorsCfg_t, MotorsCfg);
 CFG_DECLARE (ServosCfg_t, ServosCfg);
+FJ_DECLARE_SHARED (TimChannel_t, e_TimChans[TARG_MAX_SERVOS]);
+FJ_DECLARE_SHARED (MotorsDevice_t, e_MotorsDevice);
 
 eSTATUS_t Motors_Init (void);
+eSTATUS_t Motors_Update (float const* pThrottles, uint32_t nThrottles);
+
 eSTATUS_t Servos_Init (void);
+eSTATUS_t Servos_Update (uint16_t const* pOutputs, uint32_t nOutputs);
 
 #endif // DRIVERS_MOTION_H

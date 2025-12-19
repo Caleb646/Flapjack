@@ -73,34 +73,34 @@ static bool ControlGetNewCmd (DefaultCommand* pOutCmd);
 
 FJ_STATIC eSTATUS_t ControlInit_Producer (void) {
 
-    if (RawCommandQueue_Init () != eSTATUS_SUCCESS) {
+    if (RawCommandQueue_Init () != eSTATUS_OK) {
         LOG_ERROR ("Failed to initialize raw command queue");
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 FJ_STATIC eSTATUS_t ControlInit_Shared (void) {
 
     // if (CmdHandlersUMap_Init () == false) {
     //     LOG_ERROR ("Failed to initialize command handlers map");
-    //     return eSTATUS_FAILURE;
+    //     return eSTATUS_FAIL;
     // }
 
-    eSTATUS_t status = eSTATUS_SUCCESS;
+    eSTATUS_t status = eSTATUS_OK;
     FCSTATE_INIT (&status);
     if (STATUS_OK_PREV_INITED (status) == false) {
         LOG_ERROR ("Failed to initialize FC state module");
         return status;
     }
 
-    if (SharedCommandQueue_Init () != eSTATUS_SUCCESS) {
+    if (SharedCommandQueue_Init () != eSTATUS_OK) {
         LOG_ERROR ("Failed to initialize shared command queue");
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 // FJ_STATIC eSTATUS_t ControlDefaultCmdHandler (DefaultCommand cmd) {
@@ -128,10 +128,10 @@ FJ_STATIC eSTATUS_t ControlInit_Consumer (void) {
     //     SubCommand_t subCmd = { .raw = 0 };
     //     if (ControlRegisterHandler (cmds[i], subCmd, handlers[i]) != false) {
     //         LOG_ERROR ("Failed to register command handler for command: %d", cmds[i]);
-    //         return eSTATUS_FAILURE;
+    //         return eSTATUS_FAIL;
     //     }
     // }
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 FJ_STATIC bool ControlGetNewCmd (DefaultCommand* pOutCmd) {
@@ -146,7 +146,7 @@ FJ_STATIC bool ControlGetNewCmd (DefaultCommand* pOutCmd) {
     }
 
     // LOG_INFO ("%d", gpSharedCommandQueue->count);
-    if (SharedCommandQueue_Pop (pOutCmd) != eSTATUS_SUCCESS) {
+    if (SharedCommandQueue_Pop (pOutCmd) != eSTATUS_OK) {
         LOG_ERROR ("Failed to dequeue command from shared queue");
         return false;
     }
@@ -157,52 +157,52 @@ eSTATUS_t Control_Init (void) {
 
     if (IS_PRODUCER_ME () == true) {
 
-        if (ControlInit_Shared () != eSTATUS_SUCCESS) {
+        if (ControlInit_Shared () != eSTATUS_OK) {
             LOG_ERROR ("Failed to initialize shared");
-            return eSTATUS_FAILURE;
+            return eSTATUS_FAIL;
         }
 
-        if (ControlInit_Producer () != eSTATUS_SUCCESS) {
+        if (ControlInit_Producer () != eSTATUS_OK) {
             LOG_ERROR ("Failed to initialize producer control");
-            return eSTATUS_FAILURE;
+            return eSTATUS_FAIL;
         }
     } else {
         // Consumer core initialization
-        if (ControlInit_Consumer () != eSTATUS_SUCCESS) {
+        if (ControlInit_Consumer () != eSTATUS_OK) {
             LOG_ERROR ("Failed to initialize consumer control");
-            return eSTATUS_FAILURE;
+            return eSTATUS_FAIL;
         }
     }
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t ControlStart (void) {
 
     if (IS_PRODUCER_ME () == true) {
         // if (UARTRegisterCallback (busId, eUART_CALLBACK_ID_RX, ControlRecvCallBack) !=
-        //     eSTATUS_SUCCESS) {
+        //     eSTATUS_OK) {
         //     LOG_ERROR ("Failed to register UART receive callback");
-        //     return eSTATUS_FAILURE;
+        //     return eSTATUS_FAIL;
         // }
-        // if (UARTEnableInterrupt (busId, 8) != eSTATUS_SUCCESS) {
+        // if (UARTEnableInterrupt (busId, 8) != eSTATUS_OK) {
         //     LOG_ERROR ("Failed to enable UART interrupts");
-        //     return eSTATUS_FAILURE;
+        //     return eSTATUS_FAIL;
         // }
         // if (UARTRead_IT (busId, ga_UartInterruptBuffer, sizeof (DefaultCommand)) !=
-        //     eSTATUS_SUCCESS) {
+        //     eSTATUS_OK) {
         //     LOG_ERROR ("Failed to start UART reception");
-        //     return eSTATUS_FAILURE;
+        //     return eSTATUS_FAIL;
         // }
     }
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t ControlProcess_RawCmds (void) {
 
     if (IS_CONSUMER_ME () == true) {
         LOG_ERROR ("Should only be called for the core that is producing");
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
     /*
      * NOTE: Right now, this function assumes that the cmd sent by the GUI
@@ -212,40 +212,40 @@ eSTATUS_t ControlProcess_RawCmds (void) {
     if (RawCommandQueue_IsEmpty () != true) {
         if (SharedCommandQueue_IsFull () == true) {
             LOG_ERROR ("Shared command queue is full, cannot process new raw commands");
-            return eSTATUS_FAILURE;
+            return eSTATUS_FAIL;
         }
         DefaultCommand cmd = { 0 };
         // Get the command from the raw command queue
         RawCommandQueue_Pop (&cmd);
         // LOG_INFO ("Processing command of type: %d", cmd.header.commandType);
         // Process command and place it in the shared command queue
-        if (SharedCommandQueue_Push (&cmd) != eSTATUS_SUCCESS) {
+        if (SharedCommandQueue_Push (&cmd) != eSTATUS_OK) {
             LOG_ERROR ("Failed to process and push raw command to shared queue");
-            return eSTATUS_FAILURE;
+            return eSTATUS_FAIL;
         }
     }
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t ControlProcess_Cmds (void) {
 
     // TODO: re-implement. UMAP doesnt support function pointers
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 
-    RETURN_IF (IS_CONSUMER_ME () == false, eSTATUS_FAILURE, "Should only be called by the core that is consuming");
+    RETURN_IF (IS_CONSUMER_ME () == false, eSTATUS_FAIL, "Should only be called by the core that is consuming");
 
     DefaultCommand cmd = { 0 };
-    RETURN_IF (ControlGetNewCmd (&cmd) == false, eSTATUS_FAILURE, "Failed to get new command");
+    RETURN_IF (ControlGetNewCmd (&cmd) == false, eSTATUS_FAIL, "Failed to get new command");
 
     eCMD_t cmdType = cmd.header.commandType;
-    RETURN_IF (CMD_TYPE_VALID (cmdType) == false, eSTATUS_FAILURE, "Invalid command type: %d", cmdType);
+    RETURN_IF (CMD_TYPE_VALID (cmdType) == false, eSTATUS_FAIL, "Invalid command type: %d", cmdType);
 
     // CmdHandlerFn_t handler = ControlGetHandler (cmd);
-    // RETURN_IF_NULL (handler, eSTATUS_FAILURE, "No handler registered for command type: %d", cmdType);
-    // RETURN_IF (handler (cmd) != eSTATUS_SUCCESS, eSTATUS_FAILURE, "Failed to process command");
+    // RETURN_IF_NULL (handler, eSTATUS_FAIL, "No handler registered for command type: %d",
+    // cmdType); RETURN_IF (handler (cmd) != eSTATUS_OK, eSTATUS_FAIL, "Failed to process command");
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 bool ControlRegisterHandler (eCMD_t cmdType, SubCommand_t subCmd, CmdHandlerFn_t handler) {

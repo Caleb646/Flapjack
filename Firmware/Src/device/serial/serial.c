@@ -23,7 +23,7 @@ static void SerialDebugSink (uint8_t const* pData, uint32_t len) {
 
 eSTATUS_t SerialDebugInit (SerialDebugInitConf_t conf, SerialDebug_t* pOutSerial) {
 
-    eSTATUS_t status    = eSTATUS_SUCCESS;
+    eSTATUS_t status    = eSTATUS_OK;
     DevDesc_t* pDevDesc = conf.pDevDesc;
 
     RETURN_IF_NULL (pDevDesc, eSTATUS_NULL_ARG, "Device description is NULL");
@@ -50,18 +50,18 @@ eSTATUS_t SerialDebugInit (SerialDebugInitConf_t conf, SerialDebug_t* pOutSerial
 
     pSerial->isInitialized = true;
     LoggerAddSink (SerialDebugSink);
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 error:
     memset (pSerial, 0, sizeof (SerialDebug_t));
-    return eSTATUS_FAILURE;
+    return eSTATUS_FAIL;
 }
 
 eSTATUS_t SerialDebugStart (vSerialDebug_t* pSerial) {
 
     if (!SERIAL_VALID (pSerial)) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 vSerialDebug_t const* SerialDebugGetActiveDevice (void) {

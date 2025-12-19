@@ -13,10 +13,21 @@
 
 #include "drivers/sensors/sensor.h"
 
+#include "platform/platform.h"
+
+#include "targets/target.h"
+
 eSTATUS_t Init (void) {
 
     eSTATUS_t status = GPIO_SystemInit ();
     RETURN_IF (FJ_FAIL (status), status, "GPIO system init failed");
+
+    // TODO:
+    // 1. init system timer
+    // 2. init RX
+    // 3. init debug / flash / logging
+
+    Target_Init ();
 
     status = Sensors_Init ();
     RETURN_IF (FJ_FAIL (status), status, "Sensors init failed");
@@ -24,11 +35,11 @@ eSTATUS_t Init (void) {
     status = Mixer_Init ();
     RETURN_IF (FJ_FAIL (status), status, "Mixer init failed");
 
-    status = Pid_Init ();
+    status = PidData_Init ();
     RETURN_IF (FJ_FAIL (status), status, "PID init failed");
 
-    status = Flight_Init (true);
+    status = FlightData_Init (true);
     RETURN_IF (FJ_FAIL (status), status, "Flight init failed");
 
-    return eSTATUS_SUCCESS;
+    return status;
 }

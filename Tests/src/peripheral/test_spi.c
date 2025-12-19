@@ -38,7 +38,7 @@ void test_SPIInit_InvalidBusId_ReturnsFailure (void) {
     conf.busBoardConf.busId       = eI2C_1_BUS_ID; // Wrong bus type
 
     eSTATUS_t status = SPIInit (conf, &test_bus);
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, status);
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, status);
 }
 
 // Test bus ID validation
@@ -77,14 +77,14 @@ void test_SPIDataTransfer_FunctionSignatures (void) {
 
     // These should return failure but not crash
     eSTATUS_t readStatus = SPIRead_Blocking (&test_bus, eIMU_DEVICE_ID, rxData, sizeof (rxData));
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, readStatus);
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, readStatus);
 
     eSTATUS_t writeStatus = SPIWrite_Blocking (&test_bus, eIMU_DEVICE_ID, testData, sizeof (testData));
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, writeStatus);
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, writeStatus);
 
     eSTATUS_t writeReadStatus =
     SPIWriteRead_Blocking (&test_bus, eIMU_DEVICE_ID, testData, rxData, sizeof (testData));
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, writeReadStatus);
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, writeReadStatus);
 }
 
 

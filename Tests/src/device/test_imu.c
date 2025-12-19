@@ -71,7 +71,7 @@ static uint16_t gIMURegs[256] = { 0 };
 
 // static eSTATUS_t IMUTestInit (IMU_t* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf) {
 
-//     eSTATUS_t status = eSTATUS_SUCCESS;
+//     eSTATUS_t status = eSTATUS_OK;
 //     if (pAConf != NULL && pGConf != NULL) {
 //         IMU_TEST_INIT (&status, pIMU, *pAConf, *pGConf);
 //     } else {
@@ -179,9 +179,9 @@ void test_IMUInit (void) {
     gconf.bw          = eIMU_GYRO_BW_HALF;
     gconf.mode        = eIMU_GYRO_MODE_HIGH_PERF;
 
-    eSTATUS_t status = eSTATUS_SUCCESS;
+    eSTATUS_t status = eSTATUS_OK;
     IMU_TEST_INIT (&status, &imu, aconf, gconf);
-    TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+    TEST_ASSERT_EQUAL_INT (eSTATUS_OK, status);
     TEST_ASSERT_EQUAL (1U, imu.nBusDummyBytes);
 
     // BMI3_CMD_SELF_CALIB_TRIGGER should have self calibration value
@@ -195,7 +195,7 @@ void test_IMUInit (void) {
     IMUAccConf expectedAccConf;
     IMUGyroConf expectedGyroConf;
     status = IMUGetConf (&imu, &expectedAccConf, &expectedGyroConf);
-    TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+    TEST_ASSERT_EQUAL_INT (eSTATUS_OK, status);
     TEST_ASSERT_EQUAL_CHAR_ARRAY (&expectedAccConf, &aconf, sizeof (IMUAccConf));
     TEST_ASSERT_EQUAL_CHAR_ARRAY (&expectedAccConf, &imu.aconf, sizeof (IMUAccConf));
     TEST_ASSERT_EQUAL_CHAR_ARRAY (&expectedGyroConf, &gconf, sizeof (IMUGyroConf));
@@ -211,7 +211,7 @@ void test_IMUInit (void) {
     TEST_ASSERT_EQUAL_HEX16 (temp, gIMURegs[BMI3_REG_INT_MAP1 + 1]);
 
     status = IMUEnableInterrupts (&imu);
-    TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+    TEST_ASSERT_EQUAL_INT (eSTATUS_OK, status);
     // Check that imu interrupts are enabled
     TEST_ASSERT_EQUAL_HEX16 (((1U << 2U | 1U << 0U) << 8U) | (1U << 2U | 1U << 0U), gIMURegs[BMI3_REG_IO_INT_CTRL]);
 }
@@ -219,10 +219,10 @@ void test_IMUInit (void) {
 void test_IMUConf (void) {
     setUpIMU ();
 
-    eSTATUS_t status = eSTATUS_SUCCESS;
+    eSTATUS_t status = eSTATUS_OK;
     IMU_t imu        = { .nBusDummyBytes = 1U };
     IMU_TEST_DEF_INIT (&status, &imu);
-    TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+    TEST_ASSERT_EQUAL_INT (eSTATUS_OK, status);
     {
         IMUAccConf aconf  = { 0 };
         aconf.odr         = eIMU_ACC_ODR_100;
@@ -237,19 +237,19 @@ void test_IMUConf (void) {
         gconf.bw          = eIMU_GYRO_BW_QUARTER;
         gconf.mode        = eIMU_GYRO_MODE_HIGH_PERF;
         status            = IMUSetConf (&imu, &aconf, &gconf);
-        TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+        TEST_ASSERT_EQUAL_INT (eSTATUS_OK, status);
         TEST_ASSERT_EQUAL_CHAR_ARRAY (&aconf, &imu.aconf, sizeof (IMUAccConf));
         TEST_ASSERT_EQUAL_CHAR_ARRAY (&gconf, &imu.gconf, sizeof (IMUGyroConf));
 
         IMUAccConf expectedAccConf;
         IMUGyroConf expectedGyroConf;
         status = IMUGetConf (&imu, &expectedAccConf, &expectedGyroConf);
-        TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+        TEST_ASSERT_EQUAL_INT (eSTATUS_OK, status);
         TEST_ASSERT_EQUAL_CHAR_ARRAY (&expectedAccConf, &aconf, sizeof (IMUAccConf));
         TEST_ASSERT_EQUAL_CHAR_ARRAY (&expectedGyroConf, &gconf, sizeof (IMUGyroConf));
 
         status = IMUCompareConfs (aconf, gconf, aconf, gconf);
-        TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+        TEST_ASSERT_EQUAL_INT (eSTATUS_OK, status);
     }
     {
         IMUAccConf aIMUConf  = { 0 };
@@ -277,33 +277,33 @@ void test_IMUConf (void) {
         gconf.mode        = eIMU_GYRO_MODE_HIGH_PERF;
 
         status = IMUSetConf (&imu, &aIMUConf, &gIMUConf);
-        TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+        TEST_ASSERT_EQUAL_INT (eSTATUS_OK, status);
 
         status = IMUSetAltConf (&imu, &aconf, &gconf);
-        TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+        TEST_ASSERT_EQUAL_INT (eSTATUS_OK, status);
 
         IMUAccConf aconf2  = { 0 };
         IMUGyroConf gconf2 = { 0 };
         status             = IMUGetAltConf (&imu, &aconf2, &gconf2);
-        TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+        TEST_ASSERT_EQUAL_INT (eSTATUS_OK, status);
         TEST_ASSERT_EQUAL_CHAR_ARRAY (&aconf, &aconf2, sizeof (IMUAccConf));
         TEST_ASSERT_EQUAL_CHAR_ARRAY (&gconf, &gconf2, sizeof (IMUGyroConf));
         /*
          * Make sure that the alt config doesn't get set on the imu
          */
-        TEST_ASSERT_NOT_EQUAL_INT (eSTATUS_SUCCESS, IMUCompareConfs (aconf, gconf, imu.aconf, imu.gconf));
+        TEST_ASSERT_NOT_EQUAL_INT (eSTATUS_OK, IMUCompareConfs (aconf, gconf, imu.aconf, imu.gconf));
     }
 }
 
 void test_IMUUpdate (void) {
     setUpIMU ();
 
-    eSTATUS_t status = eSTATUS_SUCCESS;
+    eSTATUS_t status = eSTATUS_OK;
     IMU_t imu;
     SPI_HandleTypeDef spi;
 
     IMU_TEST_DEF_INIT (&status, &imu);
-    TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+    TEST_ASSERT_EQUAL_INT (eSTATUS_OK, status);
 
     // Set up test data in simulated registers
     // Accelerometer data (X, Y, Z) - 16-bit values
@@ -318,7 +318,7 @@ void test_IMUUpdate (void) {
 
     // Test IMUUpdateAccel
     status = IMUUpdateRawAccel (&imu);
-    TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+    TEST_ASSERT_EQUAL_INT (eSTATUS_OK, status);
 
     // Verify accelerometer data was read correctly
     // The IMUUpdateAccel function reads into rawAccel.x, .y, .z
@@ -328,7 +328,7 @@ void test_IMUUpdate (void) {
 
     // Test IMUUpdateGyro
     status = IMUUpdateRawGyro (&imu);
-    TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+    TEST_ASSERT_EQUAL_INT (eSTATUS_OK, status);
 
     // Verify gyroscope data was read correctly
     TEST_ASSERT_EQUAL_HEX16 (0xDEF0, imu.rawGyro.x);
@@ -345,7 +345,7 @@ void test_IMUUpdate (void) {
     int32_t prevAZ = imu.rawAccel.z;
 
     status = IMUUpdateRawAccel (&imu);
-    TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+    TEST_ASSERT_EQUAL_INT (eSTATUS_OK, status);
 
     // Verify the values changed (assuming the conversion produces different results)
     // This test ensures the update is actually reading new data
@@ -361,7 +361,7 @@ void test_IMUUpdate (void) {
     int32_t prevGZ = imu.rawGyro.z;
 
     status = IMUUpdateRawGyro (&imu);
-    TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+    TEST_ASSERT_EQUAL_INT (eSTATUS_OK, status);
 
     // Verify the gyro values changed
     TEST_ASSERT_TRUE (imu.rawGyro.x != prevGX || imu.rawGyro.y != prevGY || imu.rawGyro.z != prevGZ);
@@ -376,7 +376,7 @@ void test_IMUUpdate (void) {
     // Test conversion with 4G accel range and 250 dps gyro range
     status =
     IMUConvertRaw (eIMU_ACC_RANGE_4G, testRawAccel, eIMU_GYRO_RANGE_250, testRawGyro, &convertedAccel, &convertedGyro);
-    TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+    TEST_ASSERT_EQUAL_INT (eSTATUS_OK, status);
 
     // Verify that conversion produces reasonable values
     // For accelerometer: should be in m/s² (typical range -40 to +40 m/s² for 4G)
@@ -395,7 +395,7 @@ void test_IMUUpdate (void) {
 
     status =
     IMUConvertRaw (eIMU_ACC_RANGE_2G, testRawAccel, eIMU_GYRO_RANGE_125, testRawGyro, &convertedAccel2G, &convertedGyro125);
-    TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+    TEST_ASSERT_EQUAL_INT (eSTATUS_OK, status);
 
     // 2G range should give smaller acceleration values than 4G for same raw data
     TEST_ASSERT_TRUE (fabsf (convertedAccel2G.x) < fabsf (convertedAccel.x));
@@ -413,7 +413,7 @@ void test_IMUUpdate (void) {
     Vec3f zeroGyro  = { 0 };
 
     status = IMUConvertRaw (eIMU_ACC_RANGE_4G, zeroRaw, eIMU_GYRO_RANGE_250, zeroRaw, &zeroAccel, &zeroGyro);
-    TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+    TEST_ASSERT_EQUAL_INT (eSTATUS_OK, status);
 
     // Zero raw values should produce zero or near-zero converted values
     TEST_ASSERT_TRUE (fabsf (zeroAccel.x) < 0.1F);
@@ -429,7 +429,7 @@ void test_IMUUpdate (void) {
     Vec3f maxGyro  = { 0 };
 
     status = IMUConvertRaw (eIMU_ACC_RANGE_16G, maxRaw, eIMU_GYRO_RANGE_2000, maxRaw, &maxAccel, &maxGyro);
-    TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+    TEST_ASSERT_EQUAL_INT (eSTATUS_OK, status);
 
     // Maximum values should be within the expected range limits
     // 16G = ~157 m/s², 2000 dps should be close to limits
@@ -449,7 +449,7 @@ void test_IMUUpdate (void) {
     Vec3f exactGyro1  = { 0 };
 
     status = IMUConvertRaw (eIMU_ACC_RANGE_2G, exactRaw1, eIMU_GYRO_RANGE_125, exactRaw1, &exactAccel1, &exactGyro1);
-    TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+    TEST_ASSERT_EQUAL_INT (eSTATUS_OK, status);
 
     // For 2G range: 2G * 9.81 m/s² = 19.62 m/s² full scale
     // 16384 / 32768 = 0.5, so expect ~9.81 m/s²
@@ -468,7 +468,7 @@ void test_IMUUpdate (void) {
     Vec3f exactGyro2  = { 0 };
 
     status = IMUConvertRaw (eIMU_ACC_RANGE_4G, exactRaw2, eIMU_GYRO_RANGE_250, exactRaw2, &exactAccel2, &exactGyro2);
-    TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+    TEST_ASSERT_EQUAL_INT (eSTATUS_OK, status);
 
     // For 4G range: 4G * 9.81 m/s² = 39.24 m/s² full scale
     // 8192 / 32768 = 0.25, so expect ~9.81 m/s²
@@ -488,7 +488,7 @@ void test_IMUUpdate (void) {
 
     status =
     IMUConvertRaw (eIMU_ACC_RANGE_8G, fullScaleRaw, eIMU_GYRO_RANGE_500, fullScaleRaw, &fullAccel, &fullGyro);
-    TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+    TEST_ASSERT_EQUAL_INT (eSTATUS_OK, status);
 
     // For 8G range: 8G * 9.81 m/s² = 78.48 m/s² full scale
     // 32767 / 32768 ≈ 1.0, so expect ~78.48 m/s²
@@ -507,7 +507,7 @@ void test_IMUUpdate (void) {
     Vec3f smallGyro  = { 0 };
 
     status = IMUConvertRaw (eIMU_ACC_RANGE_2G, smallRaw, eIMU_GYRO_RANGE_125, smallRaw, &smallAccel, &smallGyro);
-    TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+    TEST_ASSERT_EQUAL_INT (eSTATUS_OK, status);
 
     // For small values, ensure they're proportionally converted
     // 100 / 32768 * 19.62 m/s² ≈ 0.0599 m/s²
@@ -526,7 +526,7 @@ void test_IMUUpdate (void) {
     Vec3f lsbGyro  = { 0 };
 
     status = IMUConvertRaw (eIMU_ACC_RANGE_16G, lsbRaw, eIMU_GYRO_RANGE_2000, lsbRaw, &lsbAccel, &lsbGyro);
-    TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+    TEST_ASSERT_EQUAL_INT (eSTATUS_OK, status);
 
     // For 16G range: 1 LSB = 16G * 9.81 / 32768 ≈ 0.00478 m/s²
     TEST_ASSERT_FLOAT_WITHIN (0.001F, 0.00478F, lsbAccel.x);
@@ -543,17 +543,17 @@ void test_IMUSelfCalibrate (void) {
     setUpIMU ();
 
     IMU_t imu;
-    eSTATUS_t status = eSTATUS_SUCCESS;
+    eSTATUS_t status = eSTATUS_OK;
 
     IMU_TEST_DEF_INIT (&status, &imu);
-    TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+    TEST_ASSERT_EQUAL_INT (eSTATUS_OK, status);
 
     // Test successful self-calibration
     IMUSelfCalibResult calibResult = { 0 };
 
     status = IMUCalibrate (&imu, BMI3_SC_SENSITIVITY_EN | BMI3_SC_OFFSET_EN, BMI3_SC_APPLY_CORR_EN, &calibResult);
 
-    TEST_ASSERT_EQUAL_INT (eSTATUS_SUCCESS, status);
+    TEST_ASSERT_EQUAL_INT (eSTATUS_OK, status);
     TEST_ASSERT_TRUE (calibResult.result);
     TEST_ASSERT_EQUAL_INT (0, calibResult.error);
 }

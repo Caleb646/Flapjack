@@ -42,7 +42,7 @@ MagCfg_t* pMagCfg,
 MagDevice_t* pOutMagDevice
 ) {
 
-    eSTATUS_t status = eSTATUS_SUCCESS;
+    eSTATUS_t status = eSTATUS_OK;
 
     if (IsMARG (pAccCfg, pGyroCfg, pMagCfg)) {
 
@@ -100,17 +100,17 @@ FJ_STATIC eSTATUS_t Sensor_InitHw (SENSOR_ID_t id, SENSOR_TYPE_t type, void* pCf
         switch (type) {
         case SENSOR_TYPE_ACC: return Bmi323_InitAcc ((AccCfg_t*)pCfg, (AccDevice_t*)pOutDevice);
         case SENSOR_TYPE_GYR: return Bmi323_InitGyro ((GyroCfg_t*)pCfg, (GyroDevice_t*)pOutDevice);
-        default: return eSTATUS_FAILURE;
+        default: return eSTATUS_FAIL;
         }
     case SENSOR_ID_MMC5983:
         switch (type) {
         case SENSOR_TYPE_MAG: return Mmc5983_InitMag ((MagCfg_t*)pCfg, (MagDevice_t*)pOutDevice);
-        default: return eSTATUS_FAILURE;
+        default: return eSTATUS_FAIL;
         }
-    default: return eSTATUS_FAILURE;
+    default: return eSTATUS_FAIL;
     }
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t Sensors_Init (void) {
@@ -119,7 +119,7 @@ eSTATUS_t Sensors_Init (void) {
     GyroCfg_t* pGyroCfg = GyroCfg_GetMutable ();
     MagCfg_t* pMagCfg   = MagCfg_GetMutable ();
 
-    eSTATUS_t status = eSTATUS_SUCCESS;
+    eSTATUS_t status = eSTATUS_OK;
     status = Sensor_InitBus (pAccCfg, &e_Acc.dev, pGyroCfg, &e_Gyro.dev, pMagCfg, &e_Mag.dev);
     GOTO_IF (FJ_FAIL (status), error, "Failed to init inertials base");
 
@@ -152,7 +152,7 @@ FJ_TESTABLE FJ_INLINE eSTATUS_t Acc_Update_ (Acc_t* pAcc, bool forcePolling) {
 
     pAcc->filteredData = pAcc->scaledData; // No filtering yet
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t Acc_Update (bool forcePolling) {

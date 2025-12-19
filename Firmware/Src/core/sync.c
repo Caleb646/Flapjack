@@ -74,17 +74,17 @@ FJ_STATIC vMailBox_t* SyncMailBoxGet (uint32_t mbID) {
 FJ_STATIC eSTATUS_t SyncMailBoxWrite (uint32_t mbID, uint8_t const* pBuffer, uint32_t len) {
 
     if (len > sizeof (MailBox_t) || pBuffer == NULL) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
     memcpy (SyncMailBoxGet (mbID), pBuffer, len);
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 FJ_STATIC eSTATUS_t SyncMailBoxWriteNotify (uint32_t mbID, uint8_t const* pBuffer, uint32_t len) {
 
     eSTATUS_t status = SyncMailBoxWrite (mbID, pBuffer, len);
-    if (status != eSTATUS_SUCCESS) {
-        return eSTATUS_FAILURE;
+    if (status != eSTATUS_OK) {
+        return eSTATUS_FAIL;
     }
 
 #ifndef UNIT_TEST
@@ -93,16 +93,16 @@ FJ_STATIC eSTATUS_t SyncMailBoxWriteNotify (uint32_t mbID, uint8_t const* pBuffe
     __ASM volatile ("sev");
 
 #endif
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 FJ_STATIC eSTATUS_t SyncMailBoxRead (uint32_t mbID, uint8_t* pBuffer, uint32_t len) {
 
     if (len > sizeof (MailBox_t) || pBuffer == NULL) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
     memcpy ((void*)pBuffer, (void*)SyncMailBoxGet (mbID), len);
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 
@@ -119,7 +119,7 @@ FJ_STATIC void SyncIRQHandler (uint16_t myCPUMailBoxId) {
     DefaultTask task = { 0 };
     eSTATUS_t status = SyncMailBoxRead (myCPUMailBoxId, (uint8_t*)&task, sizeof (DefaultTask));
 
-    if (TASK_IS_VALID (&task) == false || status != eSTATUS_SUCCESS) {
+    if (TASK_IS_VALID (&task) == false || status != eSTATUS_OK) {
         return;
     }
 
@@ -150,20 +150,20 @@ eSTATUS_t SyncInit (void) {
 eSTATUS_t SyncRegisterHandler (eSYNC_TASKID_t taskID, task_handler_fn_t fn) {
 
     if (TASK_TYPE_IS_VALID (taskID) == false || fn == NULL) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
     ga_Handlers[taskID] = fn;
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t SyncProcessTasks (void) {
 
     if (SyncTaskQueue_IsEmpty () == true) {
-        return eSTATUS_SUCCESS;
+        return eSTATUS_OK;
     }
 
     DefaultTask task = { 0 };
-    while (SyncTaskQueue_Pop (&task) == eSTATUS_SUCCESS) {
+    while (SyncTaskQueue_Pop (&task) == eSTATUS_OK) {
         if (TASK_IS_VALID (&task) == false) {
             continue;
         }
@@ -173,7 +173,7 @@ eSTATUS_t SyncProcessTasks (void) {
             fn (&task);
         }
     }
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t SyncNotifyTaskUartOut (uint16_t len) {

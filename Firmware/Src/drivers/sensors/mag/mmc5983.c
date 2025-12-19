@@ -34,13 +34,13 @@ FJ_STATIC eSTATUS_t Mmc5983_WriteControlReg (BusDeviceSPI_t* pBusDeviceSpi, uint
             return status;
         }
     }
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 
 FJ_STATIC eSTATUS_t Mmc5983_SoftReset (BusDeviceSPI_t* pBusDeviceSpi) {
 
-    // eMAG_STATUS_t status = eSTATUS_SUCCESS;
+    // eMAG_STATUS_t status = eSTATUS_OK;
     memset (g_ControlRegisters, 0, sizeof (g_ControlRegisters));
     eSTATUS_t status = Mmc5983_WriteControlReg (pBusDeviceSpi, MMC5983_INT_CTRL_1_REG, MMC5983_SW_RST, true);
     // 10 ms reset time + 5 ms margin
@@ -84,7 +84,7 @@ FJ_STATIC eSTATUS_t Mmc5983_ReadMagData (MagDevice_t* pMagDevice, bool forcePoll
     pOutData[1] = (((y1 << 8U) | y2) << 2U) | ((xyz >> 4U) & 0x3U);
     pOutData[2] = (((z1 << 8U) | z2) << 2U) | ((xyz >> 2U) & 0x3U);
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 FJ_STATIC eSTATUS_t Mmc5983_Init (BusDeviceSPI_t* pBusDeviceSpi) {
@@ -133,7 +133,7 @@ FJ_STATIC eSTATUS_t Mmc5983_Init (BusDeviceSPI_t* pBusDeviceSpi) {
     // }
 
     LOG_INFO ("Successfully initialized MAG");
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 
 error:
     return status;

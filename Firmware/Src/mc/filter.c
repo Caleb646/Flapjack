@@ -345,7 +345,7 @@ FilterMadgwickWarmUp (FilterMadgwick_t* pFilter, vIMU_t* pIMU, vMag_t* pMag, uin
         Vec3f gyro       = VEC3F_ZERO ();
         Vec3f mag        = VEC3F_ZERO ();
         eSTATUS_t status = IMU_Update (pIMU, true, &accel, &gyro);
-        RETURN_IF (status != eSTATUS_SUCCESS, false, "Failed to poll IMU");
+        RETURN_IF (status != eSTATUS_OK, false, "Failed to poll IMU");
 
         if (pMag != NULL) {
             status = Mag_Update (pMag, true, &mag);
@@ -431,11 +431,11 @@ eSTATUS_t FilterInit (FilterInitConf_t conf, Filter_t* pOut) {
 
     memset ((void*)pFilter, 0, sizeof (vFilter_t));
     bool status = FilterMadgwickInit (conf.madgwickConf, &pFilter->madgwick);
-    RETURN_IF_NOT (status, eSTATUS_FAILURE, "Failed to init Madgwick filter");
+    RETURN_IF_NOT (status, eSTATUS_FAIL, "Failed to init Madgwick filter");
 
     pFilter->msLastUpdateTime = GetMilliseconds ();
     pFilter->isInitialized    = true;
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 /*
@@ -445,7 +445,7 @@ eSTATUS_t FilterInit (FilterInitConf_t conf, Filter_t* pOut) {
 eSTATUS_t FilterStart (vFilter_t* pFilter, uint32_t warmUpIterations, Vec3f* pOutAttitude) {
 
     if (!FILTER_VALID (pFilter)) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     bool success = true;
@@ -453,29 +453,29 @@ eSTATUS_t FilterStart (vFilter_t* pFilter, uint32_t warmUpIterations, Vec3f* pOu
         success = FilterMadgwickWarmUp (&pFilter->madgwick, NULL, NULL, warmUpIterations, pOutAttitude);
     }
 
-    return success ? eSTATUS_SUCCESS : eSTATUS_FAILURE;
+    return success ? eSTATUS_OK : eSTATUS_FAIL;
 }
 
 eSTATUS_t FilterStop (vFilter_t* pFilter) {
 
     if (!FILTER_VALID (pFilter)) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t
 Filter_Update (vFilter_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyro, Vec3f const* pMag, float dt, Vec3f* pOutput) {
 
     if (!FILTER_VALID (pFilter) || pOutput == NULL) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     bool success = FilterMadgwickUpdate (&pFilter->madgwick, pAccel, pGyro, pMag, dt, pOutput);
     if (success == true) {
         pFilter->msLastUpdateTime = GetMilliseconds ();
     }
-    return success ? eSTATUS_SUCCESS : eSTATUS_FAILURE;
+    return success ? eSTATUS_OK : eSTATUS_FAIL;
 }
 
 vFilter_t const* FilterGetActiveFilter (void) {

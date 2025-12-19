@@ -20,14 +20,14 @@
 eSTATUS_t Device_InitAll (DeviceTree_t* pDeviceTree) {
 
     RETURN_IF_NULL (pDeviceTree, eSTATUS_NULL_ARG, "Device tree is NULL");
-    eSTATUS_t status = eSTATUS_SUCCESS;
+    eSTATUS_t status = eSTATUS_OK;
     /*
      * Setup serial debug first so errors can be logged.
      * TODO: flash maybe should be setup first as well. So if serial debug
      * is not available logs can be written to flash.
      */
     DevDesc_t* pSerial = DeviceTree_GetDeviceById (eSERIAL_DEBUG_DEVICE_ID);
-    RETURN_IF_NULL (pSerial, eSTATUS_FAILURE, "Serial debug device not found in device tree");
+    RETURN_IF_NULL (pSerial, eSTATUS_FAIL, "Serial debug device not found in device tree");
     if (pSerialDebugConf != NULL) {
         SERIAL_DEBUG_INIT (&status, *pSerialDebugConf);
         RETURN_IF (FJ_FAIL (status), status, "Failed to init serial debug");
@@ -40,7 +40,7 @@ eSTATUS_t Device_InitAll (DeviceTree_t* pDeviceTree) {
         switch (deviceId) {
         case eIMU_DEVICE_ID:
             IMU_INIT (&status, *pDevConf);
-            LOG_ERROR_IF (status != eSTATUS_SUCCESS, "Failed to init IMU");
+            LOG_ERROR_IF (status != eSTATUS_OK, "Failed to init IMU");
             break;
         case eMAG_DEVICE_ID: break;            // TODO
         case eBARO_DEVICE_ID: break;           // TODO
@@ -61,12 +61,12 @@ eSTATUS_t Device_InitAll (DeviceTree_t* pDeviceTree) {
             }
         }
     }
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t Device_StartAll (void) {
 
-    eSTATUS_t status = eSTATUS_SUCCESS;
+    eSTATUS_t status = eSTATUS_OK;
 
     // Serial Debug is allowed to fail
     status = SerialDebugStart (SerialDebugGetMutableActiveDevice ());
@@ -88,5 +88,5 @@ eSTATUS_t Device_StartAll (void) {
 
     // NOTE: Leave motors and servos to be started by the motion control (mc) module
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }

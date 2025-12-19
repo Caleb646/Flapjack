@@ -20,7 +20,7 @@ eSTATUS_t Plat_GPIO_SystemInit (void) {
     //     }
     // }
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 GPIO_t* Plat_GPIO_Init (eGPIO_ID_t gpioId, uint8_t ownerId, GPIOCfg_t cfg, uint32_t af) {

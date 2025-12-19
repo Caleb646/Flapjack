@@ -125,7 +125,7 @@ Madgwick_Update_6DOF (Madgwick_t* pMadgwick, Vec3f const* pAccel, Vec3f const* p
     pMadgwick->qEst.q3 = SEq_3;
     pMadgwick->qEst.q4 = SEq_4;
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 FJ_TESTABLE eSTATUS_t
@@ -316,7 +316,7 @@ Madgwick_Update_9DOF (Madgwick_t* pMadgwick, Vec3f const* pAccel, Vec3f const* p
     pMadgwick->gbias.y = w_by;
     pMadgwick->gbias.z = w_bz;
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 FJ_TESTABLE void Madgwick_QuatToEuler (Vec4f const* pQuat, float outEuler[AXIS_IDX_COUNT]) {
@@ -357,7 +357,7 @@ FJ_TESTABLE eSTATUS_t Madgwick_WarmUp (Madgwick_t* pMadgwick, uint32_t iteration
         Madgwick_QuatToEuler (&pMadgwick->qEst, pOutAttitude);
         usStartTime = GetMicroseconds ();
     }
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 FJ_TESTABLE eSTATUS_t Madgwick_Init (FlightCfg_t const* pCfg, Madgwick_t* pOut) {
@@ -376,12 +376,12 @@ FJ_TESTABLE eSTATUS_t Madgwick_Init (FlightCfg_t const* pCfg, Madgwick_t* pOut) 
 
 eSTATUS_t FlightData_Init (bool doWarmUp) {
 
-    RETURN_IF (FJ_FAIL (Madgwick_Init (FlightCfg_Get (), &e_FlightData.madgwick)), eSTATUS_FAILURE, "Madgwick filter initialization failed");
+    RETURN_IF (FJ_FAIL (Madgwick_Init (FlightCfg_Get (), &e_FlightData.madgwick)), eSTATUS_FAIL, "Madgwick filter initialization failed");
     if (doWarmUp) {
-        RETURN_IF (FJ_FAIL (Madgwick_WarmUp (&e_FlightData.madgwick, 500, &e_FlightData.currentAttitude)), eSTATUS_FAILURE, "Madgwick filter warm-up failed");
+        RETURN_IF (FJ_FAIL (Madgwick_WarmUp (&e_FlightData.madgwick, 500, &e_FlightData.currentAttitude)), eSTATUS_FAIL, "Madgwick filter warm-up failed");
     }
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t Attitude_Update (uint32_t usCurrentTime) {
@@ -403,5 +403,5 @@ eSTATUS_t Attitude_Update (uint32_t usCurrentTime) {
 
     RETURN_IF (FJ_FAIL (status), status, "Attitude update failed");
     Madgwick_QuatToEuler (&e_FlightData.madgwick.qEst, e_FlightData.currentAttitude);
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }

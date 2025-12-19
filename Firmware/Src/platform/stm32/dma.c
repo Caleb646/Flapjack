@@ -140,7 +140,7 @@ eSTATUS_t Plat_Dma_Init (DmaCfg_t const* pCfg, DmaDevice_t* pOutDmaDevice) {
 
     DmaHwCfg_t hwCfg = Stm32_Dma_GetHwCfg (g_DmaAllocated);
     if (!hwCfg.pDev || !hwCfg.pStream) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     *(hwCfg.pClkEnableReg) |= hwCfg.clkEnableMsk;
@@ -179,12 +179,12 @@ eSTATUS_t Plat_Dma_Init (DmaCfg_t const* pCfg, DmaDevice_t* pOutDmaDevice) {
         case eDMA_TRANSFER_TYPE_PERIPH_TO_MEM:
             pOutDmaDevice->handle.Init.Direction = DMA_PERIPH_TO_MEMORY;
             break;
-        default: return eSTATUS_FAILURE;
+        default: return eSTATUS_FAIL;
         }
     }
 
     if (HAL_DMA_Init (&(pOutDmaDevice->handle)) != HAL_OK) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     // TODO: let dma cfg influence irq priority
@@ -192,7 +192,7 @@ eSTATUS_t Plat_Dma_Init (DmaCfg_t const* pCfg, DmaDevice_t* pOutDmaDevice) {
     HAL_NVIC_EnableIRQ (hwCfg.irqNum);
 
     ++g_DmaAllocated;
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 void Plat_Dma_RegisterCallback (DmaDevice_t* pDmaDevice, fnDmaIrqHandler_t fnIrqHandler, void* pCtx) {

@@ -36,23 +36,23 @@ eSTATUS_t PIDInit (PIDInitConf_t conf) {
     pPID->integralLimit    = conf.integralLimit;
     pPID->msLastUpdateTime = GetMilliseconds ();
     pPID->isInitialized    = true;
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t PIDStart (vPID_t* pPID) {
 
     if (PID_VALID (pPID) == false) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t PIDStop (vPID_t* pPID) {
 
     if (PID_VALID (pPID) == false) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t
@@ -60,7 +60,7 @@ PID_Update (vPID_t* pPID, Vec3f const* pCurrentAttitude, Vec3f const* pTargetAtt
 
     if (PID_VALID (pPID) == false || pOut == NULL || pCurrentAttitude == NULL ||
         pTargetAttitude == NULL || pMaxAttitude == NULL) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     Vec3f currentAttitude = *pCurrentAttitude;
@@ -121,7 +121,7 @@ PID_Update (vPID_t* pPID, Vec3f const* pCurrentAttitude, Vec3f const* pTargetAtt
     pPID->prevError.yaw   = yawError;
 
     pPID->msLastUpdateTime = GetMilliseconds ();
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 vPID_t const* PIDGetActivePID (void) {

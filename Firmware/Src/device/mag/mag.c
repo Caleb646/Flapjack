@@ -39,13 +39,13 @@ FJ_STATIC eMAG_STATUS_t MagRead (vMag_t* pMag, uint8_t reg, uint8_t* pData, uint
     uint8_t rxData[MAX_BUFFER_SIZE] = { 0 };
 
     eSTATUS_t status = BUS_WRITE_READ_BLOCK (&pMag->bus, txData, rxData, totalSize);
-    if (status != eSTATUS_SUCCESS) {
+    if (status != eSTATUS_OK) {
         return eMAG_BUS_ERROR;
     }
 
     memcpy (pData, &(rxData[pMag->nBusDummyBytes + 1U]), size);
     DelayMicroseconds (2);
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 FJ_STATIC eMAG_STATUS_t MagWrite (vMag_t* pMag, uint8_t reg, uint8_t const* pData, uint16_t size) {
@@ -64,12 +64,12 @@ FJ_STATIC eMAG_STATUS_t MagWrite (vMag_t* pMag, uint8_t reg, uint8_t const* pDat
     memcpy (&(txData[1]), pData, size);
 
     eSTATUS_t status = BUS_WRITE_BLOCK (&pMag->bus, txData, totalSize);
-    if (status != eSTATUS_SUCCESS) {
+    if (status != eSTATUS_OK) {
         return eMAG_BUS_ERROR;
     }
 
     DelayMicroseconds (2);
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 FJ_STATIC bool MagControlRegWrite (vMag_t* pMag, uint8_t reg, uint8_t bitMask, bool doWrite) {
@@ -77,7 +77,7 @@ FJ_STATIC bool MagControlRegWrite (vMag_t* pMag, uint8_t reg, uint8_t bitMask, b
     uint8_t* pValue = &gControlRegisters[CONTROL_REG2IDX (reg)];
     *pValue |= bitMask;
     if (doWrite == true) {
-        if (MagWrite (pMag, reg, pValue, 1U) != eSTATUS_SUCCESS) {
+        if (MagWrite (pMag, reg, pValue, 1U) != eSTATUS_OK) {
             *pValue &= ~(uint32_t)bitMask; // unset the bit on failure
             LOG_ERROR ("Failed to write MAG control register");
             return false;
@@ -89,7 +89,7 @@ FJ_STATIC bool MagControlRegWrite (vMag_t* pMag, uint8_t reg, uint8_t bitMask, b
 FJ_STATIC uint8_t MagReadStatusReg (vMag_t* pMag) {
 
     uint8_t status = 0;
-    if (MagRead (pMag, MMC5983_STATUS_REG, &status, 1U) != eSTATUS_SUCCESS) {
+    if (MagRead (pMag, MMC5983_STATUS_REG, &status, 1U) != eSTATUS_OK) {
         LOG_ERROR ("Failed to read MAG status register");
         return 0;
     }
@@ -103,7 +103,7 @@ FJ_STATIC bool MagXYZIsReady (vMag_t* pMag) {
 
 FJ_STATIC eMAG_STATUS_t MagSoftReset (vMag_t* pMag) {
 
-    // eMAG_STATUS_t status = eSTATUS_SUCCESS;
+    // eMAG_STATUS_t status = eSTATUS_OK;
     memset (gControlRegisters, 0, sizeof (gControlRegisters));
 
     bool success = MagControlRegWrite (pMag, MMC5983_INT_CTRL_1_REG, MMC5983_SW_RST, true);
@@ -111,7 +111,7 @@ FJ_STATIC eMAG_STATUS_t MagSoftReset (vMag_t* pMag) {
     DelayMicroseconds (15000);
     // Clear the software reset bit on our registers
     MagControlRegWrite (pMag, MMC5983_INT_CTRL_1_REG, (uint8_t)~MMC5983_SW_RST, false);
-    return success == true ? eSTATUS_SUCCESS : eMAG_BUS_ERROR;
+    return success == true ? eSTATUS_OK : eMAG_BUS_ERROR;
 }
 
 /*
@@ -121,7 +121,7 @@ FJ_STATIC bool MagUpdateRawData (vMag_t* pMag) {
 
     uint8_t pXYZ[7]  = { 0 };
     eSTATUS_t status = MagRead (pMag, MMC5983_X_OUT_0_REG, pXYZ, 7U);
-    if (status != eSTATUS_SUCCESS) {
+    if (status != eSTATUS_OK) {
         return false;
     }
 
@@ -169,7 +169,7 @@ FJ_STATIC FJ_UNUSED_FN_DECL bool MagUpdateFromINT (vMag_t* pMag) {
 
 FJ_STATIC bool MagUpdateFromPolling (vMag_t* pMag) {
 
-    // eMAG_STATUS_t status = eSTATUS_SUCCESS;
+    // eMAG_STATUS_t status = eSTATUS_OK;
     bool success = true;
     // Initiate measurement
     success = MagControlRegWrite (pMag, MMC5983_INT_CTRL_0_REG, MMC5983_TM_M, true);
@@ -198,7 +198,7 @@ eMAG_STATUS_t MagInit (MagInitConf_t conf, Mag_t* pOutMag, Bus_t* pBusOverride) 
         return eMAG_INVALID_DEVICE;
     }
 
-    eSTATUS_t status    = eSTATUS_SUCCESS;
+    eSTATUS_t status    = eSTATUS_OK;
     DevDesc_t* pDevDesc = conf.pDevDesc;
 
     vMag_t* pMag = &gMag;
@@ -252,19 +252,19 @@ eMAG_STATUS_t MagInit (MagInitConf_t conf, Mag_t* pOutMag, Bus_t* pBusOverride) 
 
     pMag->isInitialized = true;
     LOG_INFO ("Successfully initialized MAG");
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 
 error:
     memset (pMag, 0, sizeof (vMag_t));
     memset (gControlRegisters, 0, sizeof (gControlRegisters));
-    return eSTATUS_FAILURE;
+    return eSTATUS_FAIL;
 }
 
 eMAG_STATUS_t MagStart (vMag_t* pMag) {
 
     RETURN_IF (MAG_VALID (pMag) == false, eMAG_INVALID_DEVICE, "MAG device is not initialized");
 
-    eMAG_STATUS_t status = eSTATUS_SUCCESS;
+    eMAG_STATUS_t status = eSTATUS_OK;
     bool success         = true;
     if (pMag->usingEXTIInterrupt == true) {
         // Enable interrupts on the MAG
@@ -279,7 +279,7 @@ eMAG_STATUS_t MagStop (vMag_t* pMag) {
 
     RETURN_IF (MAG_VALID (pMag) == false, eMAG_INVALID_DEVICE, "MAG device is not initialized");
 
-    eMAG_STATUS_t status = eSTATUS_SUCCESS;
+    eMAG_STATUS_t status = eSTATUS_OK;
     bool success         = true;
     if (pMag->usingEXTIInterrupt == true) {
         // Disable interrupts on the MAG
@@ -306,7 +306,7 @@ eMAG_STATUS_t Mag_Update (vMag_t* pMag, bool forcePolling, Vec3f* pOutput) {
     RETURN_IF (success != true, eMAG_BUS_ERROR, "Failed to update MAG data");
     *pOutput          = MagRaw2NormedGauss (pMag, pMag->rawData, true);
     pMag->dataUpdated = false;
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 vMag_t const* MagGetActiveDevice (void) {

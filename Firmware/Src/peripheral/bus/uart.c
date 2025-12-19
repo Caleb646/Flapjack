@@ -131,13 +131,13 @@ void HAL_UART_ErrorCallback (UART_HandleTypeDef* huart) {
             PeriphClkInitStruct.Usart16ClockSelection     = CLKSELECTION; \
         }                                                                 \
         if (HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct) != HAL_OK) { \
-            *(pSTATUS) = eSTATUS_FAILURE;                                 \
+            *(pSTATUS) = eSTATUS_FAIL;                                    \
         }                                                                 \
     } while (0)
 
 static eSTATUS_t UARTClockInit (eBUS_ID_t busId) {
 
-    eSTATUS_t status = eSTATUS_SUCCESS;
+    eSTATUS_t status = eSTATUS_OK;
     // NOLINTBEGIN(performance-no-int-to-ptr)
     if (busId == eUART_1_BUS_ID) {
         UART_CLOCK_INIT (&status, busId, RCC_PERIPHCLK_USART1, RCC_USART16CLKSOURCE_D2PCLK2);
@@ -155,12 +155,12 @@ static eSTATUS_t UARTClockInit (eBUS_ID_t busId) {
         return status;
     }
     // NOLINTEND(performance-no-int-to-ptr)
-    return eSTATUS_FAILURE;
+    return eSTATUS_FAIL;
 }
 
 static eSTATUS_t UARTInitGPIO (vUARTBus_t* pBus, UARTInitConf_t conf) {
 
-    eSTATUS_t status = eSTATUS_SUCCESS;
+    eSTATUS_t status = eSTATUS_OK;
     eBUS_ID_t busId  = pBus->busId;
     GPIODesc_t* pTx  = BUS_DESC_UART_GET_TX (conf.pBusDesc);
     GPIODesc_t* pRx  = BUS_DESC_UART_GET_RX (conf.pBusDesc);
@@ -196,7 +196,7 @@ eSTATUS_t UARTInit (UARTInitConf_t conf, vUARTBus_t* pOutBus) {
         return eSTATUS_NULL_ARG;
     }
 
-    eSTATUS_t status    = eSTATUS_SUCCESS;
+    eSTATUS_t status    = eSTATUS_OK;
     BusDesc_t* pBusDesc = conf.pBusDesc;
     eBUS_ID_t busId     = BUS_DESC_GET_ID (pBusDesc);
     // TODO: configure baudrate
@@ -247,52 +247,52 @@ eSTATUS_t UARTInit (UARTInitConf_t conf, vUARTBus_t* pOutBus) {
     }
 
     pBus->isInitialized = true;
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 error:
     memset (pBus, 0, sizeof (UARTBus_t));
-    return eSTATUS_FAILURE;
+    return eSTATUS_FAIL;
 }
 
 eSTATUS_t UARTRead_Blocking (vUARTBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size) {
 
     FJ_UNUSED (deviceId);
     if (UART_VALID (pBus) == false || pData == NULL || size == 0) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     if (HAL_UART_Receive (&pBus->handle, pData, size, HAL_MAX_DELAY) != HAL_OK) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t UARTWrite_Blocking (vUARTBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t const* pData, size_t size) {
 
     FJ_UNUSED (deviceId);
     if (UART_VALID (pBus) == false || pData == NULL || size == 0) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     if (HAL_UART_Transmit (&pBus->handle, (uint8_t const*)pData, size, HAL_MAX_DELAY) != HAL_OK) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t UARTRead_IT (vUARTBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size) {
 
     FJ_UNUSED (deviceId);
     if (UART_VALID (pBus) == false || pData == NULL || size == 0) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     if (HAL_UART_Receive_IT (&pBus->handle, pData, size) != HAL_OK) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t UARTRegisterCallback (vUARTBus_t* pBus, eDEVICE_ID_t deviceId, BusCallback_t callback) {
@@ -300,7 +300,7 @@ eSTATUS_t UARTRegisterCallback (vUARTBus_t* pBus, eDEVICE_ID_t deviceId, BusCall
     FJ_UNUSED (deviceId);
     if (UART_VALID (pBus) == false || callback.Callback == NULL ||
         BUS_CALLBACK_ID_VALID (callback.data.cbId) == false) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     pBus->callbacks[callback.data.cbId] = callback;
@@ -310,7 +310,7 @@ eSTATUS_t UARTRegisterCallback (vUARTBus_t* pBus, eDEVICE_ID_t deviceId, BusCall
 eSTATUS_t UARTEnableInterrupts (vUARTBus_t* pBus, uint32_t priority) {
 
     if (UART_VALID (pBus) == false) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     FOR_EACH_CONST (UARTInterruptMapping_t, gUartInterruptMappings) {
@@ -344,9 +344,9 @@ eSTATUS_t UARTEnableInterrupts (vUARTBus_t* pBus, uint32_t priority) {
         HAL_NVIC_SetPriority (UART5_IRQn, priority, priority);
         HAL_NVIC_EnableIRQ (UART5_IRQn);
         break;
-    default: return eSTATUS_FAILURE;
+    default: return eSTATUS_FAIL;
     }
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t UART_READ_BLOCKING (void* pCtx, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size) {

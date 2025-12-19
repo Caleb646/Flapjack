@@ -14,7 +14,7 @@ eSTATUS_t Bus_Init (BusInitConf_t conf, Bus_t* pOutBus) {
         return eSTATUS_NULL_ARG;
     }
 
-    eSTATUS_t status      = eSTATUS_SUCCESS;
+    eSTATUS_t status      = eSTATUS_OK;
     DevDesc_t* pDevDesc   = conf.pDevDesc;
     BusDesc_t* pBusDesc   = DEV_DESC_GET_BUS (pDevDesc);
     eDEVICE_ID_t deviceId = DEV_DESC_GET_ID (pDevDesc);
@@ -49,7 +49,7 @@ eSTATUS_t Bus_Init (BusInitConf_t conf, Bus_t* pOutBus) {
 
         status = UART_INIT (pBusDesc);
         if (FJ_FAIL (status)) {
-            return eSTATUS_FAILURE;
+            return eSTATUS_FAIL;
         }
 
         pOutBus->busType = eBUS_TYPE_UART;
@@ -59,14 +59,14 @@ eSTATUS_t Bus_Init (BusInitConf_t conf, Bus_t* pOutBus) {
         pOutBus->supportedOps |= BUS_MAKE_OP_ID (eBUS_OP_DIR_WRITE_READ, eBUS_OP_MODE_BLOCK);
         pOutBus->supportedOps |= BUS_MAKE_OP_ID (eBUS_OP_DIR_TRANSACTION, eBUS_OP_MODE_BLOCK);
 
-        return eSTATUS_SUCCESS;
+        return eSTATUS_OK;
     } else {
         // invalid bus type
         return eSTATUS_UNSUPPORTED;
     }
 
     pOutBus->isInitialized = true;
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t Bus_Read (Bus_t* pBus, eBUS_OP_MODE_t opMode, uint8_t* pData, size_t size) {

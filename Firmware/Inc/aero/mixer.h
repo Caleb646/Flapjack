@@ -52,5 +52,6 @@ FJ_DECLARE_SHARED (Mixer_t, e_Mixer);
 
 eSTATUS_t Mixer_Init (void);
 eSTATUS_t Mixer_Mix (uint32_t usCurrentTime);
+eSTATUS_t Mixer_Update (uint32_t usCurrentTime);
 
 #endif // AERO_MIXER_H

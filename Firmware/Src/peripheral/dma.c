@@ -87,31 +87,31 @@ static eSTATUS_t DMAClockInit (DMAInitConf_t conf, DMAStream_t* pOutStream) {
 
     if (pOutStream == NULL) {
         LOG_ERROR ("dma config is NULL");
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
     __HAL_RCC_DMA1_CLK_ENABLE ();
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t DMAInit (DMAInitConf_t conf, eDMA_STREAM_ID_t* pOutStreamId) {
 
-    RETURN_IF_NULL (pOutStreamId, eSTATUS_FAILURE, "Output stream ID pointer is NULL");
+    RETURN_IF_NULL (pOutStreamId, eSTATUS_FAIL, "Output stream ID pointer is NULL");
 
     if (conf.direction == DMA_MEMORY_TO_PERIPH && conf.fifoMode == DMA_FIFOMODE_ENABLE) {
         LOG_ERROR ("Direct mode (fifo disabled) has to be used for memory-to-peripheral transfers");
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     eDMA_STREAM_ID_t streamId = DMAGetFreeStreamId ();
     if (streamId == eDMA_STREAM_MAX) {
         LOG_ERROR ("No free DMA streams available");
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     DMAStream_t* pStream = DMAGetStreamById (streamId);
     if (pStream->isInitialized == true || pStream->isInUse == true) {
         LOG_ERROR ("DMA stream is already in use");
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     memset (pStream, 0, sizeof (DMAStream_t));
@@ -136,7 +136,7 @@ eSTATUS_t DMAInit (DMAInitConf_t conf, eDMA_STREAM_ID_t* pOutStreamId) {
     pStream->handle.Init.MemBurst      = DMA_MBURST_SINGLE;
     pStream->handle.Init.PeriphBurst   = DMA_PBURST_SINGLE;
 
-    if (DMAClockInit (conf, pStream) != eSTATUS_SUCCESS) {
+    if (DMAClockInit (conf, pStream) != eSTATUS_OK) {
         LOG_ERROR ("Failed to initialize DMA clock");
         goto error;
     }
@@ -146,7 +146,7 @@ eSTATUS_t DMAInit (DMAInitConf_t conf, eDMA_STREAM_ID_t* pOutStreamId) {
         goto error;
     }
 
-    if (DMAEnableInterrupts (streamId, 10) != eSTATUS_SUCCESS) {
+    if (DMAEnableInterrupts (streamId, 10) != eSTATUS_OK) {
         LOG_ERROR ("Failed to enable DMA interrupts for timer");
         goto error;
     }
@@ -154,11 +154,11 @@ eSTATUS_t DMAInit (DMAInitConf_t conf, eDMA_STREAM_ID_t* pOutStreamId) {
     *pOutStreamId          = streamId;
     pStream->isInUse       = true;
     pStream->isInitialized = true;
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 
 error:
     memset (pStream, 0, sizeof (DMAStream_t));
-    return eSTATUS_FAILURE;
+    return eSTATUS_FAIL;
 }
 
 eSTATUS_t DMAEnableInterrupts (eDMA_STREAM_ID_t streamId, uint32_t priority) {
@@ -166,7 +166,7 @@ eSTATUS_t DMAEnableInterrupts (eDMA_STREAM_ID_t streamId, uint32_t priority) {
     DMAStream_t* pStream = DMAGetStreamById (streamId);
     if (pStream == NULL || pStream->isInitialized == false) {
         LOG_ERROR ("DMA stream is not initialized");
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     uint32_t interruptId = 0U;
@@ -178,13 +178,13 @@ eSTATUS_t DMAEnableInterrupts (eDMA_STREAM_ID_t streamId, uint32_t priority) {
     case eDMA_STREAM_4: interruptId = DMA1_Stream4_IRQn; break;
     case eDMA_STREAM_5: interruptId = DMA1_Stream5_IRQn; break;
     case eDMA_STREAM_6: interruptId = DMA1_Stream6_IRQn; break;
-    default: LOG_ERROR ("Invalid DMA stream ID"); return eSTATUS_FAILURE;
+    default: LOG_ERROR ("Invalid DMA stream ID"); return eSTATUS_FAIL;
     }
 
     HAL_NVIC_SetPriority (interruptId, priority, priority);
     HAL_NVIC_EnableIRQ (interruptId);
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 DMAStream_t* DMAGetStreamById (eDMA_STREAM_ID_t id) {

@@ -2,6 +2,8 @@
 
 #include "common.h"
 
+#include "core/core.h"
+
 #include "drivers/motor.h"
 
 #include "aero/flight.h"
@@ -104,7 +106,7 @@ FJ_TESTABLE FJ_INLINE eSTATUS_t Mixer_Init_ (eMIXER_PROFILE_ID_t profileId, Mixe
     pOutMixer->motorsMinThrottle = 0.0F;
     pOutMixer->motorsMaxThrottle = 1.0F;
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 
@@ -119,10 +121,17 @@ eSTATUS_t Mixer_Mix (uint32_t usCurrentTime) {
     Mixer_MixMotors (&e_Mixer, PidData_Get ()->pidAttitude, FlightData_Get()->targetThrottle, e_Mixer.motorOutputs);
     Mixer_MixServos (&e_Mixer, PidData_Get ()->pidAttitude, FlightData_Get()->targetThrottle, e_Mixer.servoOutputs);
     // clang-format on
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t Mixer_Update (uint32_t usCurrentTime) {
 
-    Motor_Update (usCurrentTime);
+    eSTATUS_t status =
+    Motors_Update (e_Mixer.motorOutputs, e_Mixer.profiles[e_Mixer.currentProfileId].motorCount);
+    RETURN_IF (FJ_FAIL (status), status, "Failed to update motors");
+
+    status = Servos_Update (e_Mixer.servoOutputs, e_Mixer.profiles[e_Mixer.currentProfileId].servoCount);
+    RETURN_IF (FJ_FAIL (status), status, "Failed to update servos");
+
+    return eSTATUS_OK;
 }

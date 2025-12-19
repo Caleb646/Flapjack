@@ -53,13 +53,13 @@ static eSTATUS_t LoggerSyncUARTTaskHandler (DefaultTask const* pTask) {
         SyncTaskUartOut const* pSyncTaskUartOut = (SyncTaskUartOut const*)pTask;
         return LoggerWriteToSinks (LoggerGetOtherRingBuf (), pSyncTaskUartOut->len);
     }
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 static eSTATUS_t LoggerWriteToSinks (vRingBuff_t* pRingBuf, uint32_t totalLen) {
 
     if (RingBuffIsValid (pRingBuf) != true) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     uint32_t nTotalBytes   = totalLen;
@@ -84,7 +84,7 @@ static eSTATUS_t LoggerWriteToSinks (vRingBuff_t* pRingBuf, uint32_t totalLen) {
         nTotalBytes -= bytesRead;
     }
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 /*
@@ -158,16 +158,16 @@ static void LoggerWriteChar (void* p, char ch) {
 eSTATUS_t LoggerAddSink (LoggerWriteToSink_t sink) {
 
     if (sink == NULL || gCurrentSinkIdx >= MAX_NSINKS) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
     gLoggerSinks[gCurrentSinkIdx++] = sink;
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t LoggerRemoveSink (LoggerWriteToSink_t fpSink) {
 
     if (fpSink == NULL || gCurrentSinkIdx == 0U) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
     for (uint32_t i = 0; i < gCurrentSinkIdx; ++i) {
         if (gLoggerSinks[i] == fpSink) {
@@ -178,10 +178,10 @@ eSTATUS_t LoggerRemoveSink (LoggerWriteToSink_t fpSink) {
                 gLoggerSinks[j] = gLoggerSinks[j + 1];
             }
             --gCurrentSinkIdx;
-            return eSTATUS_SUCCESS;
+            return eSTATUS_OK;
         }
     }
-    return eSTATUS_FAILURE;
+    return eSTATUS_FAIL;
 }
 
 eSTATUS_t LoggerInit (void) {
@@ -189,12 +189,12 @@ eSTATUS_t LoggerInit (void) {
     init_printf (NULL, LoggerWriteChar);
     // Let both cores register this task handler only the primary logger
     // core will actually write to the UART
-    if (SyncRegisterHandler (eSYNC_TASKID_UART_OUT, LoggerSyncUARTTaskHandler) != eSTATUS_SUCCESS) {
-        return eSTATUS_FAILURE;
+    if (SyncRegisterHandler (eSYNC_TASKID_UART_OUT, LoggerSyncUARTTaskHandler) != eSTATUS_OK) {
+        return eSTATUS_FAIL;
     }
 
     if (gLoggerInitialized == true) {
-        return eSTATUS_SUCCESS;
+        return eSTATUS_OK;
     }
 
     ATOMIC_BLOCK_LOCAL (eNVIC_PRIO_LVL_MAX) {
@@ -210,10 +210,10 @@ eSTATUS_t LoggerInit (void) {
         ok &= RingBuffInit (gCM7RingBufStorage, sizeof (gCM7RingBufStorage), &g_CM7_RingBuf);
         if (ok != true) {
             gLoggerInitialized = false;
-            return eSTATUS_FAILURE;
+            return eSTATUS_FAIL;
         }
         SysSem_Release ();
     }
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }

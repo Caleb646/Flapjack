@@ -10,6 +10,16 @@
 
 #include "drivers/sensors/sensor.h"
 
+eSTATUS_t Task_UpdateMain (Task_t* pSelf, uint32_t currentTimeUs) {
+
+    FJ_UNUSED (pSelf);
+    // update data from rx controller
+    // update flight data (target throttle & attitude....) using rx controller input
+    // update flight data (attitude, altitude) using sensor data
+    // update pid
+    return Pid_Update (currentTimeUs);
+}
+
 eSTATUS_t Task_UpdateAcc (Task_t* pSelf, uint32_t currentTimeUs) {
 
     FJ_UNUSED (pSelf);
@@ -53,6 +63,5 @@ eSTATUS_t Task_UpdatePid (Task_t* pSelf, uint32_t currentTimeUs) {
 eSTATUS_t Task_UpdateMixer (Task_t* pSelf, uint32_t currentTimeUs) {
 
     FJ_UNUSED (pSelf);
-    FJ_UNUSED (currentTimeUs);
-    return Mixer_Update ();
+    return Mixer_Mix (currentTimeUs) | Mixer_Update (currentTimeUs);
 }

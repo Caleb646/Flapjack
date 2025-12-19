@@ -14,13 +14,6 @@
 //
 static Task_t g_Tasks[5] = { 0U };
 
-void Task_UpdateInertialSensors (void* pArg) {
-
-    // Acc_Update (Flight_GetActive_AccDevice (), 0.0F, false, NULL);
-    // Gyro_Update (Flight_GetActive_GyroDevice (), 0.0F, false, NULL);
-    // Mag_Update (Flight_GetActive_MagDevice (), 0.0F, false, NULL);
-}
-
 FJ_STATIC void Scheduler_CM4_Loop (void) {
 
     uint32_t msLastUpdate    = GetMilliseconds ();
@@ -64,7 +57,7 @@ FJ_STATIC void Scheduler_CM7_Loop (void) {
     FC_SET_RUNNING_OP_STATE ();
 
 
-    eSTATUS_t status      = eSTATUS_SUCCESS;
+    eSTATUS_t status      = eSTATUS_OK;
     FCState_t fcState     = { 0 };
     Vec3f currentAttitude = VEC3F_ZERO ();
     Vec3f targetAttitude  = VEC3F_ZERO ();
@@ -99,7 +92,7 @@ FJ_STATIC void Scheduler_CM7_Loop (void) {
             continue;
         }
 
-        status          = eSTATUS_SUCCESS;
+        status          = eSTATUS_OK;
         currentAttitude = fcState.currentAttitude;
         targetAttitude  = fcState.targetAttitude;
         maxAttitude     = fcState.maxAttitude;

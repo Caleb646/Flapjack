@@ -55,7 +55,7 @@ FJ_STATIC eSTATUS_t FlashReadJEDECID (vFlash_t* pFlash, uint8_t* pManufacturerID
     if (STATUS_OK (status)) {
         *pManufacturerID = rx[2U];
         *pDeviceId       = (uint16_t)((uint16_t)rx[3U] << 8U) | (uint16_t)rx[4U];
-        return eSTATUS_SUCCESS;
+        return eSTATUS_OK;
     }
     return status;
 }
@@ -70,7 +70,7 @@ FJ_STATIC FJ_INLINE eSTATUS_t FlashWaitWriteInProgress (vFlash_t* pFlash, uint32
     while (FlashCheckWriteInProgress (pFlash) && timeout-- > 0U) {
         DelayMicroseconds (1U);
     }
-    return timeout > 0U ? eSTATUS_SUCCESS : eSTATUS_TIMEOUT;
+    return timeout > 0U ? eSTATUS_OK : eSTATUS_TIMEOUT;
 }
 
 FJ_STATIC FJ_INLINE eSTATUS_t FlashWriteEnable (vFlash_t* pFlash) {
@@ -88,17 +88,17 @@ FJ_STATIC eSTATUS_t FlashReset (vFlash_t* pFlash) {
     // eSTATUS_t status = FlashWrite_ (pFlash, &cmd, 1);
     DelayMicroseconds (1000U); // Wait for 1ms after reset command
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 // clang-format off
 FJ_STATIC eSTATUS_t FlashStartProgram (vFlash_t* pFlash, uint16_t columnAddr, uint8_t const* pData, uint32_t size) {
     // clang-format on
     if (size > W25NO1GW_PAGE_WRITABLE_SIZE) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
-    eSTATUS_t status = eSTATUS_SUCCESS;
+    eSTATUS_t status = eSTATUS_OK;
 
     status = FlashWaitWriteInProgress (pFlash, 1000U);
     RETURN_IF (FJ_FAIL (status), status, "timeout waiting for flash not busy");
@@ -139,7 +139,7 @@ eSTATUS_t FlashInit (FlashInitConf_t conf, Flash_t* pOutFlash) {
         return eSTATUS_INVALID_ARG;
     }
 
-    eSTATUS_t status    = eSTATUS_SUCCESS;
+    eSTATUS_t status    = eSTATUS_OK;
     DevDesc_t* pDevDesc = conf.pDevDesc;
     vFlash_t* pFlash    = &g_Flash;
     if (pOutFlash != NULL) {
@@ -178,24 +178,24 @@ error:
 eSTATUS_t FlashStart (vFlash_t* pFlash) {
 
     if (!FLASH_VALID (pFlash)) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t FlashWrite (vFlash_t* pFlash, uint32_t addr, uint8_t const* pData, uint32_t size, uint32_t* pBytesWritten) {
 
     if (!FLASH_VALID (pFlash)) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     if (pData == NULL || size == 0U) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     if (size > W25NO1GW_PAGE_WRITABLE_SIZE * W25NO1GW_PAGES_PER_BLOCK * W25NO1GW_NUM_BLOCKS) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     uint32_t bytesWritten = 0U;
@@ -217,7 +217,7 @@ eSTATUS_t FlashWrite (vFlash_t* pFlash, uint32_t addr, uint8_t const* pData, uin
     if (pBytesWritten != NULL) {
         *pBytesWritten = bytesWritten;
     }
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 vFlash_t const* FlashGetActiveDevice (void) {

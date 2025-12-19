@@ -38,17 +38,17 @@ eSTATUS_t MotorInit (MotorInitConf_t conf, Motor_t* pOutMotor) {
 
     static bool isVectorInitialized = false;
     if (isVectorInitialized == false) {
-        if (MotorVector_Init () != eSTATUS_SUCCESS) {
+        if (MotorVector_Init () != eSTATUS_OK) {
             LOG_ERROR ("Failed to initialize motor vector");
-            return eSTATUS_FAILURE;
+            return eSTATUS_FAIL;
         }
         isVectorInitialized = true;
     }
 
-    eSTATUS_t status     = eSTATUS_SUCCESS;
+    eSTATUS_t status     = eSTATUS_OK;
     DeviceDesc_t device  = conf.boardConf;
     eDEVICE_ID_t motorId = device.deviceId;
-    RETURN_IF (DEVICE_ID_IS_MOTOR (motorId) == false, eSTATUS_FAILURE, "Invalid motor ID: %u", motorId);
+    RETURN_IF (DEVICE_ID_IS_MOTOR (motorId) == false, eSTATUS_FAIL, "Invalid motor ID: %u", motorId);
 
     MotorView_t motorConf               = device.motor;
     bool usingDMA                       = motorConf.useDMA;
@@ -60,7 +60,7 @@ eSTATUS_t MotorInit (MotorInitConf_t conf, Motor_t* pOutMotor) {
     float pidPitchMix = motorConf.pidPitchMix;
     float pidYawMix   = motorConf.pidYawMix;
 
-    RETURN_IF_NULL (pTimerBoardConf, eSTATUS_FAILURE, "MotorInit: pTimerBoardConf is NULL");
+    RETURN_IF_NULL (pTimerBoardConf, eSTATUS_FAIL, "MotorInit: pTimerBoardConf is NULL");
 
     Motor_t motor   = { 0 };
     Motor_t* pMotor = &motor;
@@ -78,58 +78,58 @@ eSTATUS_t MotorInit (MotorInitConf_t conf, Motor_t* pOutMotor) {
     pMotor->curTargetThrottle = 0.0F;
 
     status = DSHOT_INIT (device);
-    RETURN_IF (FJ_FAIL (status), eSTATUS_FAILURE, "Failed to initialize DShot for motor ID %u", motorId);
+    RETURN_IF (FJ_FAIL (status), eSTATUS_FAIL, "Failed to initialize DShot for motor ID %u", motorId);
 
     if (pLinkedServoBoardConf != NULL) {
         pMotor->linkedServoId = pLinkedServoBoardConf->deviceId;
     }
 
     pMotor->isInitialized = true;
-    if (MotorVector_PushBack (pMotor) != eSTATUS_SUCCESS) {
+    if (MotorVector_PushBack (pMotor) != eSTATUS_OK) {
         LOG_ERROR ("Failed to add Motor_t to vector");
         goto error;
     }
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 
 error:
     memset (pMotor, 0, sizeof (Motor_t));
-    return eSTATUS_FAILURE;
+    return eSTATUS_FAIL;
 }
 
 eSTATUS_t MotorStart (Motor_t* pMotor) {
 
     if (MOTOR_VALID (pMotor) == false) {
         LOG_ERROR ("Received invalid motor pointer");
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
-    if (DSHOT_START (pMotor->motorId) != eSTATUS_SUCCESS) {
+    if (DSHOT_START (pMotor->motorId) != eSTATUS_OK) {
         LOG_ERROR ("Failed to start DShot for Motor_t");
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
     // Set initial throttle to minimum
     // return DShotWrite (&pMotor->dshot, DSHOT_MIN_THROTTLE);
     LOG_INFO ("Started Motor ID %u", pMotor->motorId);
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t MotorStop (Motor_t* pMotor) {
 
     if (MOTOR_VALID (pMotor) == false) {
         LOG_ERROR ("Received invalid motor pointer");
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     /*
      * NOTE: The motor's ESC will automatically stop the motor
      * when the PWM signal has stopped for more than 5-10ms.
      */
-    if (DSHOT_STOP (pMotor->motorId) != eSTATUS_SUCCESS) {
+    if (DSHOT_STOP (pMotor->motorId) != eSTATUS_OK) {
         LOG_ERROR ("Failed to stop dshot");
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 /*
@@ -139,12 +139,12 @@ eSTATUS_t MotorWrite (Motor_t* pMotor, float targetThrottle) {
 
     if (MOTOR_VALID (pMotor) == false) {
         LOG_ERROR ("Received invalid motor pointer");
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     if (targetThrottle < 0.0F || targetThrottle > 1.0F) {
         LOG_ERROR ("Motor_t throttle out of range: %u", (uint16_t)(targetThrottle * 100.0F));
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     float clippedThrottle     = clipf32 (targetThrottle, MOTOR_MIN_THROTTLE, MOTOR_MAX_THROTTLE);
@@ -153,7 +153,7 @@ eSTATUS_t MotorWrite (Motor_t* pMotor, float targetThrottle) {
 
     eSTATUS_t status =
     DSHOT_WRITE (pMotor->motorId, DSHOT_MIN_THROTTLE + (uint16_t)(clippedThrottle * (float)DSHOT_RANGE));
-    if (status != eSTATUS_SUCCESS && status != eSTATUS_BUSY) {
+    if (status != eSTATUS_OK && status != eSTATUS_BUSY) {
         LOG_ERROR ("Failed to write to motor");
         return status;
     }
@@ -161,28 +161,28 @@ eSTATUS_t MotorWrite (Motor_t* pMotor, float targetThrottle) {
      * NOTE: DShotWrite returns eSTATUS_BUSY when a write is in progress.
      * Don't consider this a failure.
      */
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t MotorWriteCmd (Motor_t* pMotor, eMOTOR_CMD_t command) {
 
     if (MOTOR_VALID (pMotor) == false) {
         LOG_ERROR ("Received invalid motor pointer");
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     switch (command) {
     // NOTE: The arm and disarm command values are the same and depend on the ESC's current state.
     case eMOTOR_CMD_ARM: break;
     // case eMOTOR_CMD_DISARM: break;
-    default: LOG_ERROR ("Unknown motor command"); return eSTATUS_FAILURE;
+    default: LOG_ERROR ("Unknown motor command"); return eSTATUS_FAIL;
     }
 
     eSTATUS_t status = DSHOT_WRITE (pMotor->motorId, command);
-    if (status != eSTATUS_SUCCESS && status != eSTATUS_BUSY) {
+    if (status != eSTATUS_OK && status != eSTATUS_BUSY) {
         LOG_ERROR ("Failed to write command to motor");
         return status;
     }
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }

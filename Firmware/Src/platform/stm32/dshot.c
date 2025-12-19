@@ -114,7 +114,7 @@ static eSTATUS_t Plat_Dshot_Write (float const* pThrottles, uint32_t nThrottles)
     }
 
     if (timeout == 0U) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     for (uint32_t motorIdx = 0; motorIdx < nThrottles; ++motorIdx) {
@@ -130,7 +130,7 @@ static eSTATUS_t Plat_Dshot_Write (float const* pThrottles, uint32_t nThrottles)
     __HAL_TIM_ENABLE_DMA (&gp_Timer->handle, TIM_DMA_UPDATE);
     __HAL_TIM_ENABLE (&gp_Timer->handle);
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t Plat_Dshot_Init (MotorsCfg_t const* pCfg, MotorProtVtbl_t* pOutVtbl) {
@@ -163,8 +163,8 @@ eSTATUS_t Plat_Dshot_Init (MotorsCfg_t const* pCfg, MotorProtVtbl_t* pOutVtbl) {
     }
 
     gp_Timer = TimDev_GetByCaps (true);
-    if (TimDev_InitBase (gp_Timer) != eSTATUS_SUCCESS) {
-        return eSTATUS_FAILURE;
+    if (TimDev_InitBase (gp_Timer) != eSTATUS_OK) {
+        return eSTATUS_FAIL;
     }
     TimDev_SetBestClkAndPeriod (gp_Timer, 434782U); // 434,782 Hz update rate for 2.3us bit time for DSHOT150
 
@@ -174,16 +174,16 @@ eSTATUS_t Plat_Dshot_Init (MotorsCfg_t const* pCfg, MotorProtVtbl_t* pOutVtbl) {
 
         gp_DmaBuffers[i] = Alloc_SharedMem (DMA_BUFFER_SIZE_BYTES);
         if (!gp_DmaBuffers[i]) {
-            return eSTATUS_FAILURE;
+            return eSTATUS_FAIL;
         }
 
         gp_DmaDevs[i] = Dma_GetFreeDevice ();
-        if (Dma_InitForMemToGpio (TimDev_GetId (gp_Timer), gp_DmaDevs[i]) != eSTATUS_SUCCESS) {
-            return eSTATUS_FAILURE;
+        if (Dma_InitForMemToGpio (TimDev_GetId (gp_Timer), gp_DmaDevs[i]) != eSTATUS_OK) {
+            return eSTATUS_FAIL;
         }
         Dma_RegisterCallback (gp_DmaDevs[i], Stm32_Dshot_DmaCallback, NULL);
     }
 
     pOutVtbl->fnUpdateMotors = Plat_Dshot_Write;
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }

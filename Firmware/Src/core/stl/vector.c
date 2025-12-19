@@ -7,7 +7,7 @@
 eSTATUS_t Vector_Init (Vector_t* pVector, void* pBuffer, uint16_t capacity, uint16_t elementSize, bool isShared) {
 
     if (pVector == NULL || pBuffer == NULL || elementSize == 0) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     pVector->processID   = isShared ? 1 : 0; // Set processID to 1 for shared, 0 for non-shared
@@ -16,7 +16,7 @@ eSTATUS_t Vector_Init (Vector_t* pVector, void* pBuffer, uint16_t capacity, uint
     pVector->elementSize = elementSize;
     pVector->size        = 0;
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 bool Vector_IsEmpty (Vector_t const* pVector) {
@@ -54,11 +54,11 @@ uint16_t Vector_Capacity (Vector_t const* pVector) {
 eSTATUS_t Vector_PushBack (Vector_t* pVector, void const* pElement) {
 
     if (pVector == NULL || pElement == NULL) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     if (pVector->size >= pVector->capacity) {
-        return eSTATUS_FAILURE; // Vector is full
+        return eSTATUS_FAIL; // Vector is full
     }
 
     // Calculate the address where to insert the new element
@@ -69,17 +69,17 @@ eSTATUS_t Vector_PushBack (Vector_t* pVector, void const* pElement) {
 
     pVector->size++;
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t Vector_PopBack (Vector_t* pVector, void* pOutElement) {
 
     if (pVector == NULL) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     if (pVector->size == 0) {
-        return eSTATUS_FAILURE; // Vector is empty
+        return eSTATUS_FAIL; // Vector is empty
     }
 
     if (pOutElement != NULL) {
@@ -89,7 +89,7 @@ eSTATUS_t Vector_PopBack (Vector_t* pVector, void* pOutElement) {
     }
     pVector->size--;
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 void* Vector_At (Vector_t const* pVector, uint16_t index) {
@@ -136,11 +136,11 @@ void* Vector_Back (Vector_t const* pVector) {
 eSTATUS_t Vector_Insert (Vector_t* pVector, uint16_t index, void const* pElement) {
 
     if (pVector == NULL || pElement == NULL) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     if (pVector->size >= pVector->capacity || index > pVector->size) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     if (index < pVector->size) {
@@ -155,17 +155,17 @@ eSTATUS_t Vector_Insert (Vector_t* pVector, uint16_t index, void const* pElement
     memcpy (pInsertPos, pElement, pVector->elementSize);
 
     pVector->size++;
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t Vector_Erase (Vector_t* pVector, uint16_t index, void* pOutElement) {
 
     if (pVector == NULL) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     if (index >= pVector->size) {
-        return eSTATUS_FAILURE; // Index out of bounds
+        return eSTATUS_FAIL; // Index out of bounds
     }
 
     // Copy the element to be erased if output pointer is provided
@@ -182,7 +182,7 @@ eSTATUS_t Vector_Erase (Vector_t* pVector, uint16_t index, void* pOutElement) {
     }
 
     pVector->size--;
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 void Vector_Clear (Vector_t* pVector) {
@@ -195,11 +195,11 @@ void Vector_Clear (Vector_t* pVector) {
 eSTATUS_t Vector_Resize (Vector_t* pVector, uint16_t newSize, void const* pFillValue) {
 
     if (pVector == NULL) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     if (newSize > pVector->capacity) {
-        return eSTATUS_FAILURE; // New size exceeds capacity
+        return eSTATUS_FAIL; // New size exceeds capacity
     }
 
     // If growing and fill value is provided, fill new elements
@@ -211,7 +211,7 @@ eSTATUS_t Vector_Resize (Vector_t* pVector, uint16_t newSize, void const* pFillV
     }
 
     pVector->size = newSize;
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 void* Vector_Data (Vector_t const* pVector) {

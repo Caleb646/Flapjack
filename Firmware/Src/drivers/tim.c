@@ -154,10 +154,10 @@ eSTATUS_t TimChan_InitCC (eGPIO_ID_t gpioId, TimChannel_t* pOutTimChan) {
         return eSTATUS_NULL_ARG;
     }
 
-    eSTATUS_t status = eSTATUS_SUCCESS;
+    eSTATUS_t status = eSTATUS_OK;
     TimId_u timId    = TimChan_GetByGpioId (gpioId);
     if (timId.devId == eTIM_NULL_DEVICE_ID || timId.chanId == eTIM_CHANNEL_NULL_ID) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     TimChanCfg_t chanCfg = {
@@ -173,5 +173,5 @@ eSTATUS_t TimChan_InitCC (eGPIO_ID_t gpioId, TimChannel_t* pOutTimChan) {
     status = Plat_TimChan_Init (&chanCfg, pOutTimChan);
     RETURN_IF (FJ_FAIL (status), status, "Failed to initialize platform timer CC");
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }

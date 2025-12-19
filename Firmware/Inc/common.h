@@ -62,35 +62,21 @@
 #define CONCAT(a, b)                                  CONCAT_ (a, b)
 #define VALUES(NAME, ...)                             CONCAT (NAME, NARG (__VA_ARGS__)) (__VA_ARGS__)
 
-typedef int8_t eSTATUS_t;
+typedef uint16_t eSTATUS_t;
 enum {
-    eSTATUS_FAILURE        = -126,
-    eSTATUS_BUSY           = -124,
-    eSTATUS_TIMEOUT        = -123,
-    eSTATUS_NULL_ARG       = -122,
-    eSTATUS_INVALID_ARG    = -121,
-    eSTATUS_BUS_ERROR      = -120,
-    eSTATUS_MEM_ERROR      = -119,
-    eSTATUS_HW_ERROR       = -118,
-    eSTATUS_DEV_ERROR      = -117,
-    eSTATUS_EXT_DEV_ERROR  = -115,
-    eSTATUS_NOT_FOUND      = -116,
-    eSTATUS_UNSUPPORTED    = -115,
-    eSTATUS_ALREADY_INITED = -114,
-    eSTATUS_RETRY          = -113,
-    eSTATUS_NOT_SUPPORTED  = -112,
+    eSTATUS_OK   = (1U << 0U),
+    eSTATUS_FAIL = (1U << 1U),
+    eSTATUS_BUSY = (1U << 2U)
 
-    eSTATUS_SUB_STATUS_START__,
 
-    eSTATUS_SUCCESS = 0,
 };
 
 // clang-format off
 
-#define STATUS_OK(STATUS)   ((STATUS) == eSTATUS_SUCCESS)
-#define STATUS_OK_BUSY(STATUS) ((STATUS) == eSTATUS_SUCCESS || (STATUS) == eSTATUS_BUSY)
-#define STATUS_OK_PREV_INITED(STATUS) ((STATUS) == eSTATUS_SUCCESS || (STATUS) == eSTATUS_ALREADY_INITED)
-#define STATUS_FAIL(STATUS) ((STATUS) != eSTATUS_SUCCESS)
+#define STATUS_OK(STATUS)   ((STATUS) == eSTATUS_OK)
+#define STATUS_OK_BUSY(STATUS) ((STATUS) == eSTATUS_OK || (STATUS) == eSTATUS_BUSY)
+#define STATUS_OK_PREV_INITED(STATUS) ((STATUS) == eSTATUS_OK || (STATUS) == eSTATUS_ALREADY_INITED)
+#define STATUS_FAIL(STATUS) ((STATUS) != eSTATUS_OK)
 #define STATUS_RETRY(STATUS) ((STATUS) == eSTATUS_RETRY)
 #define FJ_OK(STATUS)    STATUS_OK(STATUS)
 #define FJ_FAIL(STATUS)    STATUS_FAIL(STATUS)

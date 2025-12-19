@@ -42,7 +42,7 @@ void test_UARTInit_InvalidBusId_ReturnsFailure (void) {
     conf.busBoardConf.busId       = eSPI_1_BUS_ID; // Wrong bus type
 
     eSTATUS_t status = UARTInit (conf, &test_bus);
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, status);
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, status);
 }
 
 // Test UARTInit with zero baud rate
@@ -53,7 +53,7 @@ void test_UARTInit_ZeroBaudRate_ReturnsFailure (void) {
     conf.busBoardConf.UARTBoardConf.baudRate = 0; // Invalid baud rate
 
     eSTATUS_t status = UARTInit (conf, &test_bus);
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, status);
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, status);
 }
 
 // Test UARTInit with valid baud rate but missing GPIO
@@ -66,7 +66,7 @@ void test_UARTInit_ValidBaudRate_MissingGPIO_ReturnsFailure (void) {
     conf.busBoardConf.UARTBoardConf.pRxBoardConf = NULL; // Missing RX pin
 
     eSTATUS_t status = UARTInit (conf, &test_bus);
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, status);
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, status);
 }
 
 // Test bus ID validation
@@ -99,9 +99,8 @@ void dummy_callback (eBUS_ID_t busId) {
 void test_UARTRegisterCallback_NullBus_ReturnsFailure (void) {
 
 
-    eSTATUS_t status =
-    UARTRegisterCallback (NULL, eUART_CALLBACK_ID_RX, dummy_callback);
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, status);
+    eSTATUS_t status = UARTRegisterCallback (NULL, eUART_CALLBACK_ID_RX, dummy_callback);
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, status);
 }
 
 void test_UARTRegisterCallback_NullCallback_ReturnsFailure (void) {
@@ -109,16 +108,15 @@ void test_UARTRegisterCallback_NullCallback_ReturnsFailure (void) {
     test_bus.isInitialized = true;
 
     eSTATUS_t status = UARTRegisterCallback (&test_bus, eUART_CALLBACK_ID_RX, NULL);
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, status);
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, status);
 }
 
 void test_UARTRegisterCallback_InvalidCallbackId_ReturnsFailure (void) {
     // Mark bus as initialized for validation
     test_bus.isInitialized = true;
 
-    eSTATUS_t status =
-    UARTRegisterCallback (&test_bus, eUART_CALLBACK_ID_MAX, dummy_callback);
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, status);
+    eSTATUS_t status = UARTRegisterCallback (&test_bus, eUART_CALLBACK_ID_MAX, dummy_callback);
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, status);
 }
 
 void dummy_rx_callback (eBUS_ID_t busId) {
@@ -139,15 +137,15 @@ void test_UARTRegisterCallback_ValidParameters_ReturnsSuccess (void) {
     eSTATUS_t status;
 
     status = UARTRegisterCallback (&test_bus, eUART_CALLBACK_ID_RX, dummy_rx_callback);
-    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, status);
+    TEST_ASSERT_EQUAL (eSTATUS_OK, status);
     TEST_ASSERT_EQUAL (dummy_rx_callback, test_bus.rxCallback);
 
     status = UARTRegisterCallback (&test_bus, eUART_CALLBACK_ID_TX, dummy_tx_callback);
-    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, status);
+    TEST_ASSERT_EQUAL (eSTATUS_OK, status);
     TEST_ASSERT_EQUAL (dummy_tx_callback, test_bus.txCallback);
 
     status = UARTRegisterCallback (&test_bus, eUART_CALLBACK_ID_ERROR, dummy_error_callback);
-    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, status);
+    TEST_ASSERT_EQUAL (eSTATUS_OK, status);
     TEST_ASSERT_EQUAL (dummy_error_callback, test_bus.errorCallback);
 }
 
@@ -156,12 +154,12 @@ void test_UARTEnableInterrupts_UninitializedBus_ReturnsFailure (void) {
     test_bus.isInitialized = false;
 
     eSTATUS_t status = UARTEnableInterrupts (&test_bus, 0);
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, status);
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, status);
 }
 
 void test_UARTEnableInterrupts_NullBus_ReturnsFailure (void) {
     eSTATUS_t status = UARTEnableInterrupts (NULL, 0);
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, status);
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, status);
 }
 
 // Test basic data transfer function signatures
@@ -173,17 +171,14 @@ void test_UARTDataTransfer_FunctionSignatures (void) {
     uint8_t rxData[4];
 
     // These should return failure but not crash due to uninitialized bus
-    eSTATUS_t readStatus =
-    UARTRead_Blocking (&test_bus, eIMU_DEVICE_ID, rxData, sizeof (rxData));
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, readStatus);
+    eSTATUS_t readStatus = UARTRead_Blocking (&test_bus, eIMU_DEVICE_ID, rxData, sizeof (rxData));
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, readStatus);
 
-    eSTATUS_t writeStatus =
-    UARTWrite_Blocking (&test_bus, eIMU_DEVICE_ID, testData, sizeof (testData));
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, writeStatus);
+    eSTATUS_t writeStatus = UARTWrite_Blocking (&test_bus, eIMU_DEVICE_ID, testData, sizeof (testData));
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, writeStatus);
 
-    eSTATUS_t readITStatus =
-    UARTRead_IT (&test_bus, eIMU_DEVICE_ID, rxData, sizeof (rxData));
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, readITStatus);
+    eSTATUS_t readITStatus = UARTRead_IT (&test_bus, eIMU_DEVICE_ID, rxData, sizeof (rxData));
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, readITStatus);
 }
 
 // Test UART data transfer with null parameters
@@ -195,23 +190,23 @@ void test_UARTDataTransfer_NullParameters_ReturnsFailure (void) {
 
     // Test null data pointer
     eSTATUS_t status = UARTRead_Blocking (&test_bus, eIMU_DEVICE_ID, NULL, 4);
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, status);
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, status);
 
     status = UARTWrite_Blocking (&test_bus, eIMU_DEVICE_ID, NULL, 4);
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, status);
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, status);
 
     status = UARTRead_IT (&test_bus, eIMU_DEVICE_ID, NULL, 4);
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, status);
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, status);
 
     // Test zero size
     status = UARTRead_Blocking (&test_bus, eIMU_DEVICE_ID, testData, 0);
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, status);
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, status);
 
     status = UARTWrite_Blocking (&test_bus, eIMU_DEVICE_ID, testData, 0);
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, status);
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, status);
 
     status = UARTRead_IT (&test_bus, eIMU_DEVICE_ID, testData, 0);
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, status);
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, status);
 }
 
 // Test wrapper function signatures
@@ -220,17 +215,14 @@ void test_UARTWrapperFunctions_Signatures (void) {
     uint8_t rxData[4];
 
     // Test wrapper functions exist and handle invalid context gracefully
-    eSTATUS_t readStatus =
-    UART_READ_BLOCKING (&test_bus, eIMU_DEVICE_ID, rxData, sizeof (rxData));
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, readStatus);
+    eSTATUS_t readStatus = UART_READ_BLOCKING (&test_bus, eIMU_DEVICE_ID, rxData, sizeof (rxData));
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, readStatus);
 
-    eSTATUS_t writeStatus =
-    UART_WRITE_BLOCKING (&test_bus, eIMU_DEVICE_ID, testData, sizeof (testData));
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, writeStatus);
+    eSTATUS_t writeStatus = UART_WRITE_BLOCKING (&test_bus, eIMU_DEVICE_ID, testData, sizeof (testData));
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, writeStatus);
 
-    eSTATUS_t readITStatus =
-    UART_READ_IT (&test_bus, eIMU_DEVICE_ID, rxData, sizeof (rxData));
-    TEST_ASSERT_EQUAL (eSTATUS_FAILURE, readITStatus);
+    eSTATUS_t readITStatus = UART_READ_IT (&test_bus, eIMU_DEVICE_ID, rxData, sizeof (rxData));
+    TEST_ASSERT_EQUAL (eSTATUS_FAIL, readITStatus);
 }
 
 // Run all tests

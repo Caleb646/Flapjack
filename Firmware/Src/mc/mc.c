@@ -8,7 +8,7 @@
 
 eSTATUS_t MC_InitAll (void) {
 
-    eSTATUS_t status = eSTATUS_SUCCESS;
+    eSTATUS_t status = eSTATUS_OK;
 
     PID_INIT (&status);
     RETURN_IF (FJ_FAIL (status), status, "Failed to init PID");
@@ -23,7 +23,7 @@ eSTATUS_t MC_InitAll (void) {
 
 eSTATUS_t MC_StartAll (void) {
 
-    eSTATUS_t status = eSTATUS_SUCCESS;
+    eSTATUS_t status = eSTATUS_OK;
 
     status = PIDStart (PID_GetMutableActivePID ());
     RETURN_IF (FJ_FAIL (status), status, "Failed to start PID");

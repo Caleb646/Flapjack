@@ -45,7 +45,7 @@ PidAxisData_t* pOutAxisData
     pOutAxisData->integral     = integral;
     pOutAxisData->derivative   = derivative;
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 FJ_TESTABLE eSTATUS_t Pid_UpdateAttitude (
@@ -67,7 +67,7 @@ float attOut[AXIS_IDX_COUNT]
         RETURN_IF (FJ_FAIL (status), status, "PID axis %d update failed", i);
         attOut[i] = pAxisData->attitude;
     }
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t PidData_Init (void) {

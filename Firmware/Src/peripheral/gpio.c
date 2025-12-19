@@ -59,7 +59,7 @@ static void GPIOEnablePortClock (eGPIO_ID_t gpioId) {
 eSTATUS_t GPIOSystemInit (void) {
 
     if (g_IsSystemInitialized) {
-        return eSTATUS_SUCCESS;
+        return eSTATUS_OK;
     }
     for (uint32_t portId = 0; portId < GPIO_NPORTS; ++portId) {
         for (uint32_t pinId = 0; pinId < GPIO_NPINS; ++pinId) {
@@ -70,7 +70,7 @@ eSTATUS_t GPIOSystemInit (void) {
         }
     }
     g_IsSystemInitialized = true;
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 vIO_t* GPIOGetIOfromId (eGPIO_ID_t gpioId) {
@@ -95,10 +95,10 @@ eSTATUS_t GPIOFreeById (eGPIO_ID_t gpioId) {
 eSTATUS_t GPIOFreeByIO (vIO_t* pIO) {
 
     if (!GPIO_VALID (pIO) || !g_IsSystemInitialized) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
     pIO->ownerId = eDEVICE_ID_NULL;
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t GPIOInit (eDEVICE_ID_t ownerId, GPIODesc_t* pGPIODesc) {
@@ -110,7 +110,7 @@ eSTATUS_t GPIOInit (eDEVICE_ID_t ownerId, GPIODesc_t* pGPIODesc) {
     eGPIO_ID_t gpioId = GPIO_DESC_GET_ID (pGPIODesc);
     vIO_t* pIO        = GPIOGetIOfromId (gpioId);
     if (FJ_IS_NULL (pIO) || GPIO_HAS_OWNER (pIO)) {
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
 
     GPIOEnablePortClock (gpioId);
@@ -124,5 +124,5 @@ eSTATUS_t GPIOInit (eDEVICE_ID_t ownerId, GPIODesc_t* pGPIODesc) {
     GPIO_InitStruct.Alternate        = GPIO_DESC_GET_ALTERNATE (pGPIODesc);
     HAL_GPIO_Init (pIO->pPort, &GPIO_InitStruct);
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }

@@ -84,7 +84,7 @@ FJ_STATIC eSTATUS_t Bmi323_SendCmd (BusDeviceSPI_t* pBusDeviceSpi, uint16_t cmd)
     uint8_t pRegData[2] = { cmd & BMI3_SET_LOW_BYTE, (cmd & BMI3_SET_HIGH_BYTE) >> 8U };
     eSTATUS_t status    = SPI_WriteRegister (pBusDeviceSpi, BMI3_REG_CMD, pRegData, 2);
     RETURN_IF (FJ_FAIL (status), status, "Failed to send bmi323 command 0x%04X", cmd);
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 FJ_STATIC eSTATUS_t Bmi323_SoftReset (BusDeviceSPI_t* pBusDeviceSpi) {
@@ -133,7 +133,7 @@ FJ_STATIC eSTATUS_t Bmi323_SoftReset (BusDeviceSPI_t* pBusDeviceSpi) {
 
     if (!featEnabled) {
         LOG_ERROR ("Failed to enable feature engine after soft reset");
-        return eSTATUS_FAILURE;
+        return eSTATUS_FAIL;
     }
     return status;
 }
@@ -160,7 +160,7 @@ FJ_STATIC eSTATUS_t Bmi323_RemapAxes (BusDeviceSPI_t* pBusDeviceSpi, uint8_t rem
     RETURN_IF (FJ_FAIL (status), status, "Failed to send bmi323 command to update axis remap");
 
     int16_t wait = 1000;
-    status       = eSTATUS_FAILURE;
+    status       = eSTATUS_FAIL;
     while (wait-- > 0) {
 
         BmiFeat_t featStatus = { 0 };
@@ -171,7 +171,7 @@ FJ_STATIC eSTATUS_t Bmi323_RemapAxes (BusDeviceSPI_t* pBusDeviceSpi, uint8_t rem
             featStatus.sysState == eBMI3_FEAT_STATE_SYS_IN_FEAT_MODE && 
             featStatus.axisRemapComplete == eBMI3_FEAT_AXIS_MAP_COMPLETE) {
             LOG_INFO ("bmi323 axis remap successful");
-            return eSTATUS_SUCCESS;
+            return eSTATUS_OK;
         }
         // clang-format on
         Delay (1);
@@ -285,7 +285,7 @@ FJ_STATIC eSTATUS_t Bmi323_ReadAccData (AccDevice_t* pAccDevice, bool forcePolli
     pOutData[1] = (int16_t)((uint16_t)pData[2] | ((uint16_t)pData[3] << 8U));
     pOutData[2] = (int16_t)((uint16_t)pData[4] | ((uint16_t)pData[5] << 8U));
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 FJ_STATIC eSTATUS_t Bmi323_ReadGyroData (GyroDevice_t* pGyroDevice, bool forcePolling, int16_t* pOutData) {
@@ -307,13 +307,13 @@ FJ_STATIC eSTATUS_t Bmi323_ReadGyroData (GyroDevice_t* pGyroDevice, bool forcePo
     pOutData[1] = (int16_t)((uint16_t)pData[2] | ((uint16_t)pData[3] << 8U));
     pOutData[2] = (int16_t)((uint16_t)pData[4] | ((uint16_t)pData[5] << 8U));
 
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 FJ_STATIC eSTATUS_t Bmi323_Init (BusDeviceSPI_t* pBusDeviceSpi) {
 
     if (g_isBmi323Initialized) {
-        return eSTATUS_SUCCESS;
+        return eSTATUS_OK;
     }
 
     eSTATUS_t status = Bmi323_SoftReset (pBusDeviceSpi);
@@ -364,7 +364,7 @@ FJ_STATIC eSTATUS_t Bmi323_Init (BusDeviceSPI_t* pBusDeviceSpi) {
     // GPIO_INIT_EXTI (&status, extiConf.extiId, extiConf.gpioId);
     // /* Enable EXTI interrupt for vIMU_t data ready interrupt */
     g_isBmi323Initialized = true;
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t Bmi323_InitAcc (AccCfg_t* pAccCfg, AccDevice_t* pOutAccDevice) {
