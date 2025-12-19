@@ -37,6 +37,9 @@ typedef struct PidData_s {
 CFG_DECLARE (PidCfg_t, PidCfg);
 FJ_DECLARE_SHARED (PidData_t, e_PidData);
 
+static inline PidData_t const* PidData_Get (void) {
+    return &e_PidData;
+}
 eSTATUS_t PidData_Init (void);
 eSTATUS_t Pid_Update (uint32_t usCurrentTime);
 

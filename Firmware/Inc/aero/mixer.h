@@ -10,7 +10,7 @@ typedef struct MotorMix_s {
     float yaw;
 } MotorMix_t;
 
-typedef uint8_t eSERVO_MIX_INPUT_ID_t;
+typedef uint8_t eSERVO_MIX_INPUT_IDX_t;
 enum {
     eSERVO_MIX_INPUT_PID_ROLL,
     eSERVO_MIX_INPUT_PID_PITCH,
@@ -22,7 +22,7 @@ enum {
 
 typedef struct ServoMix_s {
     eSERVO_ID_t targetServo;
-    eSERVO_MIX_INPUT_ID_t inputIndex;
+    eSERVO_MIX_INPUT_IDX_t inputIndex;
 } ServoMix_t;
 
 typedef uint8_t eMIXER_PROFILE_ID_t;
@@ -51,7 +51,6 @@ FJ_DECLARE_SHARED (ServoMix_t, e_AirplaneServoMix[]);
 FJ_DECLARE_SHARED (Mixer_t, e_Mixer);
 
 eSTATUS_t Mixer_Init (void);
-eSTATUS_t Mixer_Mix (void);
-eSTATUS_t Mixer_Update (void);
+eSTATUS_t Mixer_Mix (uint32_t usCurrentTime);
 
 #endif // AERO_MIXER_H

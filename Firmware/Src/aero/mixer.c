@@ -4,7 +4,9 @@
 
 #include "drivers/motor.h"
 
+#include "aero/flight.h"
 #include "aero/mixer.h"
+#include "aero/pid.h"
 
 #include "targets/target.h"
 
@@ -58,41 +60,41 @@ FJ_DEFINE_SHARED (Mixer_t, e_Mixer) = {
 };
 
 FJ_TESTABLE FJ_INLINE void
-Mixer_MixMotors (Mixer_t* pMixer, Vec3f const* pPidAttitude, float targetThrottle, float* pMotorOutputs) {
+Mixer_MixMotors (Mixer_t* pMixer, float const pidAttitude[AXIS_IDX_COUNT], float targetThrottle, float motorOutputs[TARG_MAX_MOTORS]) {
 
     MixerProfile_t const* pProfile = &pMixer->profiles[pMixer->currentProfileId];
     MotorMix_t const* pMix         = pProfile->pMotorMix;
 
     for (uint32_t i = 0; i < pProfile->motorCount; ++i) {
         float mixedThrottle = pMix[i].throttle * targetThrottle;
-        mixedThrottle += pMix[i].pitch * ABS_F32 (pPidAttitude->pitch);
-        mixedThrottle += pMix[i].roll * pPidAttitude->roll;
-        mixedThrottle += pMix[i].yaw * pPidAttitude->yaw;
-        pMotorOutputs[i] = clipf32 (mixedThrottle, pMixer->motorsMinThrottle, pMixer->motorsMaxThrottle);
+        mixedThrottle += pMix[i].pitch * ABS_F32 (pidAttitude[AXIS_IDX_PITCH]);
+        mixedThrottle += pMix[i].roll * pidAttitude[AXIS_IDX_ROLL];
+        mixedThrottle += pMix[i].yaw * pidAttitude[AXIS_IDX_YAW];
+        motorOutputs[i] = clipf32 (mixedThrottle, pMixer->motorsMinThrottle, pMixer->motorsMaxThrottle);
     }
 }
 
 FJ_TESTABLE FJ_INLINE void
-Mixer_MixServos (Mixer_t* pMixer, Vec3f const* pPidAttitude, float targetThrottle, uint16_t* pServoOutputs) {
+Mixer_MixServos (Mixer_t* pMixer, float const pidAttitude[AXIS_IDX_COUNT], float targetThrottle, uint16_t servoOutputs[TARG_MAX_SERVOS]) {
 
     MixerProfile_t const* pProfile          = &pMixer->profiles[pMixer->currentProfileId];
     ServoMix_t const* pServoMix             = pProfile->pServoMix;
     uint16_t inputs[eSERVO_MIX_INPUT_COUNT] = { 0 };
     // TODO: Should PID be between -1 and 1 or another range????
     inputs[eSERVO_MIX_INPUT_PID_ROLL] =
-    (uint16_t)mapf32 (pPidAttitude->roll, -1.0F, 1.0F, SERVO_DEF_DC_LEFT_US, SERVO_DEF_DC_RIGHT_US);
+    (uint16_t)mapf32 (pidAttitude[AXIS_IDX_ROLL], -1.0F, 1.0F, SERVO_DEF_DC_LEFT_US, SERVO_DEF_DC_RIGHT_US);
 
     for (uint32_t mixIdx = 0; mixIdx < pProfile->servoMixCount; ++mixIdx) {
         float mixedInput = 0.0F;
         switch (pServoMix[mixIdx].inputIndex) {
-        case eSERVO_MIX_INPUT_PID_ROLL: mixedInput = pPidAttitude->roll; break;
-        case eSERVO_MIX_INPUT_PID_PITCH: mixedInput = pPidAttitude->pitch; break;
-        case eSERVO_MIX_INPUT_PID_YAW: mixedInput = pPidAttitude->yaw; break;
+        case eSERVO_MIX_INPUT_PID_ROLL: mixedInput = pidAttitude[AXIS_IDX_ROLL]; break;
+        case eSERVO_MIX_INPUT_PID_PITCH: mixedInput = pidAttitude[AXIS_IDX_PITCH]; break;
+        case eSERVO_MIX_INPUT_PID_YAW: mixedInput = pidAttitude[AXIS_IDX_YAW]; break;
         case eSERVO_MIX_INPUT_PID_THROTTLE: mixedInput = targetThrottle; break;
         default: break;
         }
         // TODO: Scale mixedInput to appropriate servo output range
-        pServoOutputs[SERVO_ID_TO_INDEX (pServoMix[mixIdx].targetServo)] += (uint16_t)(mixedInput * 1000.0F);
+        servoOutputs[SERVO_ID_TO_INDEX (pServoMix[mixIdx].targetServo)] += (uint16_t)(mixedInput * 1000.0F);
     }
 }
 
@@ -111,17 +113,11 @@ eSTATUS_t Mixer_Init (void) {
     return Mixer_Init_ (eMIXER_PROFILE_TILT_ROTOR, &e_Mixer);
 }
 
-eSTATUS_t Mixer_Mix (void) {
+eSTATUS_t Mixer_Mix (uint32_t usCurrentTime) {
 
-    // TODO get the below values from somewhere
-    Vec3f* pPidAttitude;
-    Vec3f* pTargetAttitude;
-    float targetThrottle;
-
-    return eSTATUS_SUCCESS;
-}
-
-eSTATUS_t Mixer_Update (void) {
-
+    // clang-format off
+    Mixer_MixMotors (&e_Mixer, PidData_Get ()->pidAttitude, FlightData_Get()->targetThrottle, e_Mixer.motorOutputs);
+    Mixer_MixServos (&e_Mixer, PidData_Get ()->pidAttitude, FlightData_Get()->targetThrottle, e_Mixer.servoOutputs);
+    // clang-format on
     return eSTATUS_SUCCESS;
 }

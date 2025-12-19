@@ -8,6 +8,8 @@
 
 #include "cfg/cfg.h"
 
+#include "drivers/io/gpio_defs.h"
+
 typedef uint8_t eMOTOR_PROT_t;
 enum {
     eMOTION_PROT_TYPE_NULL = 0,
@@ -75,48 +77,20 @@ enum {
 typedef struct MotorsCfg_s {
     eGPIO_ID_t gpios[TARG_MAX_MOTORS];
     eMOTOR_PROT_t protType;
-    uint8_t nMotors;
 } MotorsCfg_t;
 
 typedef struct ServosCfg_s {
     eGPIO_ID_t gpios[TARG_MAX_SERVOS];
-    uint8_t nServos;
 } ServosCfg_t;
+
+
+typedef struct MotorsDevice_s MotorsDevice_t;
+typedef struct MotorsDevice_s {
+    eSTATUS_t (*fnUpdateMotors) (float const* pThrottles, uint32_t nThrottles);
+} MotorsDevice_t;
 
 CFG_DECLARE (MotorsCfg_t, MotorsCfg);
 CFG_DECLARE (ServosCfg_t, ServosCfg);
-
-// typedef struct ServoView_s ServoView_t;
-
-// typedef struct MotorView_s {
-//     Vec3f* pMixes;
-//     float* pThrottle;
-//     ServoView_t* pLinkedServo;
-// } MotorView_t;
-
-typedef struct MotorsDevice_s {
-    MotorProtVtbl_t vtbl;
-} MotorsDevice_t;
-
-// typedef struct ServoView_s {
-//     Vec3f* pMixes;
-//     float* pAngle;
-//     float* pMaxAngleDeg;
-//     bool isLinked;
-// } ServoView_t;
-
-// typedef struct ServosDevice_s {
-//     MotorProtVtbl_t vtbl;
-//     float outputs[TARG_MAX_SERVOS];
-//     ServoView_t views[TARG_MAX_SERVOS];
-// } ServosDevice_t;
-
-typedef struct MotorProtVtbl_s {
-    union {
-        eSTATUS_t (*fnUpdateMotors) (float const* pThrottles, uint32_t nThrottles);
-        // eSTATUS_t (*fnUpdateServos) (float const* pAngles, uint32_t nAngles);
-    };
-} MotorProtVtbl_t;
 
 eSTATUS_t Motors_Init (void);
 eSTATUS_t Servos_Init (void);

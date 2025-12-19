@@ -9,11 +9,15 @@
 
 #include "drivers/sensors/sensor.h"
 
+// TODO find better default values
+// clang-format off
 CFG_DEFINE (FlightCfg_t, FlightCfg) = {
     .gyroMeasureErrorDegs = 5.0F,
     .gyroMeasureDriftDegs = 0.0F,
+    .bx = 0.0F,
+    .bz = 0.0F
 };
-
+// clang-format on
 FJ_DEFINE_SHARED (FlightData_t, e_FlightData);
 
 typedef eSTATUS_t (*MadgwickUpdate_fn) (Madgwick_t* pMadgwick, Vec3f const* pAccel, Vec3f const* pGyro, Vec3f const* pMag, uint32_t usCurrentTime);
