@@ -121,3 +121,8 @@ eSTATUS_t Mixer_Mix (uint32_t usCurrentTime) {
     // clang-format on
     return eSTATUS_SUCCESS;
 }
+
+eSTATUS_t Mixer_Update (uint32_t usCurrentTime) {
+
+    Motor_Update (usCurrentTime);
+}
