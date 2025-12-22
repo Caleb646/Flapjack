@@ -73,7 +73,7 @@ float attOut[AXIS_IDX_COUNT]
 eSTATUS_t PidData_Init (void) {
 
     e_PidData.usLastUpdate = GetMicroseconds ();
-    return eSTATUS_SUCCESS;
+    return eSTATUS_OK;
 }
 
 eSTATUS_t Pid_Update (uint32_t usCurrentTime) {

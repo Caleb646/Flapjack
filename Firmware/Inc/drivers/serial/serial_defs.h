@@ -3,6 +3,12 @@
 
 #include <stdint.h>
 
+#include "drivers/dma_defs.h"
+
+#include "platform/platform.h"
+
+#include "core/stl/ring_buff.h"
+
 typedef uint8_t eSERIAL_PORT_MODE_t;
 enum {
     eSERIAL_PORT_MODE_NULL = 0,
@@ -56,10 +62,15 @@ enum {
 };
 
 typedef struct SerialPortCfg_s {
+
     eSERIAL_PORT_ID_t portId;
     eSERIAL_PORT_BAUD_t baudrate;
     eSERIAL_PORT_TYPE_t portType;
     eSERIAL_PORT_FUNCTION_t functions;
+
+    uint32_t rxBufferSize;
+    uint32_t txBufferSize;
+
 } SerialPortCfg_t;
 
 typedef struct SerialPort_s SerialPort_t;
@@ -69,9 +80,11 @@ typedef struct SerialPortVtable_s {
     eSTATUS_t (*fnWrite) (SerialPort_t* pSerialPort, uint8_t const* pData, uint32_t size);
     eSTATUS_t (*fnRead) (SerialPort_t* pSerialPort, uint8_t* pData, uint32_t size);
     eSTATUS_t (*fnSetBaud) (SerialPort_t* pSerialPort, eSERIAL_PORT_BAUD_t baudrate);
+    // eSTATUS_t (*fnSetRxCallback) (SerialPort_t* pSerialPort, SerialRxCallback_t fnCallback, void* pCallbackArg);
 } SerialPortVtable_t;
 
 typedef struct SerialPort_s {
+
     eSERIAL_PORT_ID_t portId;
     eSERIAL_PORT_MODE_t mode;
     eSERIAL_PORT_BAUD_t baudrate;
@@ -83,7 +96,43 @@ typedef struct SerialPort_s {
     void* pRxCallbackArg;
 
     SerialPortVtable_t* pVtbl;
+
+    bool volatile isRxBusy;
+    RingBuff rxRingBuff;
+
+    bool volatile isTxBusy;
+    RingBuff txRingBuff;
+
+    DmaDevice_t* pRxDmaDev;
+    DmaDevice_t* pTxDmaDev;
+
 } SerialPort_t;
 
+typedef struct UartHwCfg_s {
+
+    eSERIAL_PORT_ID_t portId;
+    USART_TypeDef* pInstance;
+
+    uint32_t volatile* pRccReg;
+    uint32_t rccMask;
+
+    eGPIO_ID_t txOpts[PLAT_UART_MAX_PIN_SEL];
+    eGPIO_ID_t rxOpts[PLAT_UART_MAX_PIN_SEL];
+    uint8_t afOpts[PLAT_UART_MAX_PIN_SEL];
+
+    IRQn_Type irqNum;
+
+    uint32_t dma_RxRequestId;
+    uint32_t dma_TxRequestId;
+
+} UartHwCfg_t;
+
+typedef struct UartDevice_s {
+
+    eSERIAL_PORT_ID_t portId;
+    UART_HandleTypeDef handle;
+    SerialPort_t* pSerialPort;
+
+} UartDevice_t;
 
 #endif // DRIVERS_SERIAL_DEFS_H

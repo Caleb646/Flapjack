@@ -65,3 +65,14 @@ SerialPort_t* SerialPort_Init (SerialPortCfg_t const* pCfg) {
 
     return pSerialPort;
 }
+
+eSTATUS_t SerialPort_SetRxCallback (SerialPort_t* pPort, SerialRxCallback_t callback, void* pCallbackArg) {
+
+    if (!pPort) {
+        return eSTATUS_FAIL;
+    }
+
+    pPort->fnRxCallback   = callback;
+    pPort->pRxCallbackArg = pCallbackArg;
+    return eSTATUS_OK;
+}

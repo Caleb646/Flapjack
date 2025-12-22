@@ -181,7 +181,7 @@ eSTATUS_t Plat_Dshot_Init (MotorsCfg_t const* pCfg, MotorProtVtbl_t* pOutVtbl) {
         if (Dma_InitForMemToGpio (TimDev_GetId (gp_Timer), gp_DmaDevs[i]) != eSTATUS_OK) {
             return eSTATUS_FAIL;
         }
-        Dma_RegisterCallback (gp_DmaDevs[i], Stm32_Dshot_DmaCallback, NULL);
+        Dma_SetIrqHandler (gp_DmaDevs[i], Stm32_Dshot_DmaCallback, NULL);
     }
 
     pOutVtbl->fnUpdateMotors = Plat_Dshot_Write;

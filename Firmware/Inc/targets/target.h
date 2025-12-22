@@ -46,6 +46,10 @@
 #define TARG_UART_5_TX               TARG_NONE
 #define TARG_UART_5_RX               TARG_NONE
 
+// clang-format off
+#define TARG_UART_ENABLED(UART_ID) (TARG_UART_##UART_ID##_TX != TARG_NONE && TARG_UART_##UART_ID##_RX != TARG_NONE)
+// clang-format on
+
 #define TARG_SHARED_MEM_BSS_SECTION  __attribute__ ((section (".shared_mem_bss")))
 #define TARG_SHARED_MEM_DATA_SECTION __attribute__ ((section (".shared_mem_data")))
 

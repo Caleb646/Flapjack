@@ -11,13 +11,11 @@
 
 #include "targets/target.h"
 
-#define DMA_MAX_DEVICES 8U
-
-typedef struct {
-    volatile uint32_t ISR; /*!< DMA interrupt status register */
-    volatile uint32_t Reserved0;
-    volatile uint32_t IFCR; /*!< DMA interrupt flag clear register */
-} DMA_Base_Registers;
+// typedef struct {
+//     volatile uint32_t ISR; /*!< DMA interrupt status register */
+//     volatile uint32_t Reserved0;
+//     volatile uint32_t IFCR; /*!< DMA interrupt flag clear register */
+// } DMA_Base_Registers;
 
 typedef struct DmaHwCfg_s {
     DMA_TypeDef* pDev;
@@ -27,16 +25,6 @@ typedef struct DmaHwCfg_s {
     uint8_t irqNum;
 } DmaHwCfg_t;
 
-typedef struct DmaDevice_s DmaDevice_t;
-typedef struct DmaDevice_s {
-    DMA_TypeDef* pDev;
-    DMA_HandleTypeDef handle;
-    void* pCtx;
-    fnDmaIrqHandler_t fnIrqHandler;
-} DmaDevice_t;
-
-static TARG_SHARED_MEM_SECTION DmaDevice_t* g_DmaDevices[DMA_MAX_DEVICES] = { 0 };
-static TARG_SHARED_MEM_SECTION uint8_t g_DmaAllocated                     = 0U;
 
 void Stm32_Dma_IRQHandler (DmaDevice_t* pDmaDevice) {
 
@@ -44,41 +32,43 @@ void Stm32_Dma_IRQHandler (DmaDevice_t* pDmaDevice) {
         return;
     }
 
-    DMA_HandleTypeDef* hdma      = &pDmaDevice->handle;
-    DMA_Base_Registers* regs_dma = (DMA_Base_Registers*)hdma->StreamBaseAddress;
-    if (__HAL_DMA_GET_IT_SOURCE (hdma, DMA_IT_TE)) {
-        /* Disable the transfer error interrupt */
-        ((DMA_Stream_TypeDef*)hdma->Instance)->CR &= ~(DMA_IT_TE);
-        /* Clear the transfer error flag */
-        regs_dma->IFCR = DMA_FLAG_TEIF0_4 << (hdma->StreamIndex & 0x1FU);
-    }
+    // DMA_HandleTypeDef* hdma      = &pDmaDevice->handle;
+    // DMA_Base_Registers* regs_dma = (DMA_Base_Registers*)hdma->StreamBaseAddress;
+    // if (__HAL_DMA_GET_IT_SOURCE (hdma, DMA_IT_TE)) {
+    //     /* Disable the transfer error interrupt */
+    //     ((DMA_Stream_TypeDef*)hdma->Instance)->CR &= ~(DMA_IT_TE);
+    //     /* Clear the transfer error flag */
+    //     regs_dma->IFCR = DMA_FLAG_TEIF0_4 << (hdma->StreamIndex & 0x1FU);
+    // }
 
-    if (__HAL_DMA_GET_IT_SOURCE (hdma, DMA_IT_TC)) {
-        /* Disable all the transfer interrupts */
-        ((DMA_Stream_TypeDef*)hdma->Instance)->CR &= ~(DMA_IT_TC | DMA_IT_TE | DMA_IT_DME);
-        ((DMA_Stream_TypeDef*)hdma->Instance)->FCR &= ~(DMA_IT_FE);
-        /* Clear the transfer complete flag */
-        regs_dma->IFCR = DMA_FLAG_TCIF0_4 << (hdma->StreamIndex & 0x1FU);
-    }
+    // if (__HAL_DMA_GET_IT_SOURCE (hdma, DMA_IT_TC)) {
+    //     /* Disable all the transfer interrupts */
+    //     ((DMA_Stream_TypeDef*)hdma->Instance)->CR &= ~(DMA_IT_TC | DMA_IT_TE | DMA_IT_DME);
+    //     ((DMA_Stream_TypeDef*)hdma->Instance)->FCR &= ~(DMA_IT_FE);
+    //     /* Clear the transfer complete flag */
+    //     regs_dma->IFCR = DMA_FLAG_TCIF0_4 << (hdma->StreamIndex & 0x1FU);
+    // }
 
     if (pDmaDevice->fnIrqHandler) {
         pDmaDevice->fnIrqHandler (pDmaDevice, pDmaDevice->pCtx);
+    } else {
+        HAL_DMA_IRQHandler (&pDmaDevice->handle);
     }
 }
 
-#define DMA_MAKE_IRQ_HANDLER(DEV_INDEX, STREAM_ID)                \
-    void DMA##DEV_INDEX##_Stream##STREAM_ID##_IRQHandler (void) { \
-        Stm32_Dma_IRQHandler (g_DmaDevices[STREAM_ID]);           \
+#define DMA_DEF_IRQ_HANDLER(DEV_ID, STREAM_ID)                 \
+    void DMA##DEV_ID##_Stream##STREAM_ID##_IRQHandler (void) { \
+        Stm32_Dma_IRQHandler (e_pDmaDevices[STREAM_ID]);       \
     }
 
-DMA_MAKE_IRQ_HANDLER (0, 0);
-DMA_MAKE_IRQ_HANDLER (0, 1);
-DMA_MAKE_IRQ_HANDLER (0, 2);
-DMA_MAKE_IRQ_HANDLER (0, 3);
-DMA_MAKE_IRQ_HANDLER (0, 4);
-DMA_MAKE_IRQ_HANDLER (0, 5);
-DMA_MAKE_IRQ_HANDLER (0, 6);
-DMA_MAKE_IRQ_HANDLER (0, 7);
+DMA_DEF_IRQ_HANDLER (1, 0);
+DMA_DEF_IRQ_HANDLER (1, 1);
+DMA_DEF_IRQ_HANDLER (1, 2);
+DMA_DEF_IRQ_HANDLER (1, 3);
+DMA_DEF_IRQ_HANDLER (1, 4);
+DMA_DEF_IRQ_HANDLER (1, 5);
+DMA_DEF_IRQ_HANDLER (1, 6);
+DMA_DEF_IRQ_HANDLER (1, 7);
 
 DmaHwCfg_t Stm32_Dma_GetHwCfg (uint32_t index) {
 
@@ -120,32 +110,20 @@ DmaHwCfg_t Stm32_Dma_GetHwCfg (uint32_t index) {
     return dmaHwCfg;
 }
 
-DmaDevice_t* Plat_Dma_GetFree (void) {
-
-    DmaDevice_t** ppDmaDevice = &g_DmaDevices[g_DmaAllocated];
-    if (!(*ppDmaDevice)) {
-        *ppDmaDevice = Alloc_SharedMem (sizeof (DmaDevice_t));
-    }
-
-    ++g_DmaAllocated;
-    return *ppDmaDevice;
-}
-
 
 eSTATUS_t Plat_Dma_Init (DmaCfg_t const* pCfg, DmaDevice_t* pOutDmaDevice) {
 
-    if (!pCfg || g_DmaAllocated >= DMA_MAX_DEVICES) {
-        return eSTATUS_INVALID_ARG;
+    if (!pCfg || !pOutDmaDevice) {
+        return eSTATUS_FAIL;
     }
 
-    DmaHwCfg_t hwCfg = Stm32_Dma_GetHwCfg (g_DmaAllocated);
+    DmaHwCfg_t hwCfg = Stm32_Dma_GetHwCfg (pOutDmaDevice->devIdx);
     if (!hwCfg.pDev || !hwCfg.pStream) {
         return eSTATUS_FAIL;
     }
 
     *(hwCfg.pClkEnableReg) |= hwCfg.clkEnableMsk;
     // TODO: let dma cfg influence init params
-    memset (pOutDmaDevice, 0, sizeof (DmaDevice_t));
     pOutDmaDevice->pDev                            = hwCfg.pDev;
     pOutDmaDevice->handle.Instance                 = hwCfg.pStream;
     pOutDmaDevice->handle.Init.Request             = DMA_REQUEST_MEM2MEM;
@@ -183,6 +161,10 @@ eSTATUS_t Plat_Dma_Init (DmaCfg_t const* pCfg, DmaDevice_t* pOutDmaDevice) {
         }
     }
 
+    if (HAL_DMA_DeInit (&(pOutDmaDevice->handle)) != HAL_OK) {
+        return eSTATUS_FAIL;
+    }
+
     if (HAL_DMA_Init (&(pOutDmaDevice->handle)) != HAL_OK) {
         return eSTATUS_FAIL;
     }
@@ -191,11 +173,10 @@ eSTATUS_t Plat_Dma_Init (DmaCfg_t const* pCfg, DmaDevice_t* pOutDmaDevice) {
     HAL_NVIC_SetPriority (hwCfg.irqNum, 8, 8);
     HAL_NVIC_EnableIRQ (hwCfg.irqNum);
 
-    ++g_DmaAllocated;
     return eSTATUS_OK;
 }
 
-void Plat_Dma_RegisterCallback (DmaDevice_t* pDmaDevice, fnDmaIrqHandler_t fnIrqHandler, void* pCtx) {
+void Plat_Dma_SetIrqHandler (DmaDevice_t* pDmaDevice, DmaIrqHandler_fn fnIrqHandler, void* pCtx) {
 
     if (!pDmaDevice || !fnIrqHandler) {
         return;

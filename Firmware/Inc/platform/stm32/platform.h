@@ -13,6 +13,8 @@
 #define PLAT_UART_MAX_DEVS         5U
 #define PLAT_UART_MAX_PIN_SEL      1U
 
+#define PLAT_DMA_MAX_DEVS          8U
+
 #define PLAT_GPIO_PORT_START_ADDR  GPIOA_BASE
 #define PLAT_GPIO_MAX_PORTS        11U
 #define PLAT_GPIO_PORT_BYTE_OFFSET 0x400UL
