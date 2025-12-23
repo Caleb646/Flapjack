@@ -99,6 +99,22 @@ uint8_t RingBuffInit (void* pData, size_t size, RINGBUFF_VOLATILE RingBuff* pOut
     return 1;
 }
 
+void* RingBuffGetBufferData (RINGBUFF_VOLATILE RingBuff* buff) {
+
+    if (!BUF_IS_VALID (buff)) {
+        return NULL;
+    }
+    return (void*)buff->buff;
+}
+
+size_t RingBuffGetSize (RINGBUFF_VOLATILE RingBuff* buff) {
+
+    if (!BUF_IS_VALID (buff)) {
+        return 0;
+    }
+    return buff->size - 1;
+}
+
 /**
  * \brief           Check if ringbuff is initialized and ready to use
  * \param[in]       buff: Buffer handle

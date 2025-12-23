@@ -12,9 +12,8 @@
 typedef uint8_t eSERIAL_PORT_MODE_t;
 enum {
     eSERIAL_PORT_MODE_NULL = 0,
-    eSERIAL_PORT_MODE_TX,
-    eSERIAL_PORT_MODE_RX,
-    eSERIAL_PORT_MODE_TX_RX
+    eSERIAL_PORT_MODE_TX   = (1U << 0U),
+    eSERIAL_PORT_MODE_RX   = (1U << 1U)
 };
 
 typedef uint8_t eSERIAL_PORT_ID_t;
@@ -66,7 +65,8 @@ typedef struct SerialPortCfg_s {
     eSERIAL_PORT_ID_t portId;
     eSERIAL_PORT_BAUD_t baudrate;
     eSERIAL_PORT_TYPE_t portType;
-    eSERIAL_PORT_FUNCTION_t functions;
+    uint16_t modes;
+    uint16_t functions;
 
     uint32_t rxBufferSize;
     uint32_t txBufferSize;
@@ -101,6 +101,7 @@ typedef struct SerialPort_s {
     RingBuff rxRingBuff;
 
     bool volatile isTxBusy;
+    uint32_t volatile txBytesInProgress;
     RingBuff txRingBuff;
 
     DmaDevice_t* pRxDmaDev;

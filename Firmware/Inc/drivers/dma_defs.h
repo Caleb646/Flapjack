@@ -20,14 +20,19 @@ enum {
     eDMA_MODE_CIRCULAR,
 };
 
+typedef struct DmaDevice_s DmaDevice_t;
+typedef void (*DmaIrqHandler_fn) (DmaDevice_t* pDmaDevice, void* pCtx);
+
 typedef struct DmaCfg_s {
+
     eDMA_DIRECTION_t direction;
     eDMA_MODE_t mode;
     uint32_t requestId;
-} DmaCfg_t;
 
-typedef struct DmaDevice_s DmaDevice_t;
-typedef void (*DmaIrqHandler_fn) (DmaDevice_t* pDmaDevice, void* pCtx);
+    DmaIrqHandler_fn fnIrqHandler;
+    void* pCtx;
+
+} DmaCfg_t;
 
 typedef struct DmaDevice_s {
 

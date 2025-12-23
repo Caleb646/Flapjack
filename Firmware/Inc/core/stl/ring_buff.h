@@ -104,6 +104,8 @@ typedef struct RingBuff_ {
 
 RINGBUFF_VOLATILE RingBuff* RingBuffCreate (void* buffdata, size_t size);
 uint8_t RingBuffInit (void* pData, size_t size, RINGBUFF_VOLATILE RingBuff* pOutBuff);
+void* RingBuffGetBufferData (RINGBUFF_VOLATILE RingBuff* buff);
+size_t RingBuffGetSize (RINGBUFF_VOLATILE RingBuff* buff);
 bool RingBuffIsValid (RINGBUFF_VOLATILE RingBuff* buff);
 void RingBuffFree (RINGBUFF_VOLATILE RingBuff* buff);
 void RingBuffReset (RINGBUFF_VOLATILE RingBuff* buff);

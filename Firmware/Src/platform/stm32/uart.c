@@ -8,6 +8,9 @@
 #include "drivers/io/gpio.h"
 #include "drivers/io/gpio_defs.h"
 
+#include "drivers/dma.h"
+#include "drivers/dma_defs.h"
+
 #include "platform/platform.h"
 
 #include "targets/target.h"
@@ -82,19 +85,99 @@ FJ_DEFINE_SHARED (UartHwCfg_t, e_UartHwCfgs[]) = {
 #endif
 };
 
-void Stm32_UART_IRQHandler (eSERIAL_PORT_ID_t portId) {
+static void Stm32_Uart_DmaIrqHandler (DmaDevice_t* pDmaDevice, void* pCtx) {
 
-    UartDevice_t* pUartDev = Stm32_Uart_GetByPortId (portId);
-    if (!pUartDev) {
+    // SerialPort_t* pSerialPort = (SerialPort_t*)pCtx;
+    // if (!pSerialPort) {
+    //     return;
+    // }
+
+    // UartDevice_t* pUartDev = (UartDevice_t*)pSerialPort->pSerialHwHandle;
+    // if (!pUartDev) {
+    //     return;
+    // }
+
+    // HAL_UART_DMA_IRQHandler (&pUartDev->handle);
+    // HAL_DMA_IRQHandler (&pDmaDevice->handle.Parent);
+    HAL_DMA_IRQHandler (&pDmaDevice->handle);
+}
+
+void Stm32_Uart_IrqHandler (eSERIAL_PORT_ID_t portId) {
+
+    UartDevice_t* pUartDev    = Stm32_Uart_GetByPortId (portId);
+    SerialPort_t* pSerialPort = pUartDev ? pUartDev->pSerialPort : NULL;
+    if (!pUartDev || !pSerialPort) {
         return;
     }
 
-    HAL_UART_IRQHandler (&pUartDev->handle);
+    UART_HandleTypeDef* huart = &pUartDev->handle;
+    uint32_t isrflags         = READ_REG (huart->Instance->ISR);
+    uint32_t cr1its           = READ_REG (huart->Instance->CR1);
+    uint32_t cr3its           = READ_REG (huart->Instance->CR3);
+
+    /* UART parity error interrupt occurred -------------------------------------*/
+    if (((isrflags & USART_ISR_PE) != 0U) && ((cr1its & USART_CR1_PEIE) != 0U)) {
+        __HAL_UART_CLEAR_FLAG (huart, UART_CLEAR_PEF);
+    }
+
+    /* UART frame error interrupt occurred --------------------------------------*/
+    if (((isrflags & USART_ISR_FE) != 0U) && ((cr3its & USART_CR3_EIE) != 0U)) {
+        __HAL_UART_CLEAR_FLAG (huart, UART_CLEAR_FEF);
+    }
+
+    /* UART noise error interrupt occurred --------------------------------------*/
+    if (((isrflags & USART_ISR_NE) != 0U) && ((cr3its & USART_CR3_EIE) != 0U)) {
+        __HAL_UART_CLEAR_FLAG (huart, UART_CLEAR_NEF);
+    }
+
+    /* UART Over-Run interrupt occurred -----------------------------------------*/
+    if (((isrflags & USART_ISR_ORE) != 0U) &&
+        (((cr1its & USART_CR1_RXNEIE_RXFNEIE) != 0U) || ((cr3its & (USART_CR3_RXFTIE | USART_CR3_EIE)) != 0U))) {
+        __HAL_UART_CLEAR_FLAG (huart, UART_CLEAR_OREF);
+    }
+
+    /* UART Receiver Timeout interrupt occurred ---------------------------------*/
+    if (((isrflags & USART_ISR_RTOF) != 0U) && ((cr1its & USART_CR1_RTOIE) != 0U)) {
+        __HAL_UART_CLEAR_FLAG (huart, UART_CLEAR_RTOF);
+    }
+
+    /* UART in mode Receiver ---------------------------------------------------*/
+    if (((isrflags & USART_ISR_RXNE_RXFNE) != 0U) &&
+        (((cr1its & USART_CR1_RXNEIE_RXFNEIE) != 0U) || ((cr3its & USART_CR3_RXFTIE) != 0U))) {
+        // TODO
+        return;
+    }
+
+    /* UART Transmission Complete interrupt occurred ---------------------------------*/
+    if (((isrflags & USART_ISR_TC) != 0U) && ((cr1its & USART_CR1_TCIE) != 0U)) {
+        __HAL_UART_CLEAR_IT (huart, UART_CLEAR_TCF);
+
+        if (pSerialPort->pTxDmaDev && RingBuffIsValid (&pSerialPort->txRingBuff)) {
+
+            RingBuff* pTxRingBuff = &pSerialPort->txRingBuff;
+            RingBuffSkip (pTxRingBuff, pSerialPort->txBytesInProgress);
+
+            if (RingBuffGetFull (pTxRingBuff) > 0) {
+
+                void* pSendStart               = RingBuffGetLinearBlockReadAddress (pTxRingBuff);
+                uint32_t sendSize              = RingBuffGetLinearBlockReadSize (pTxRingBuff);
+                pSerialPort->txBytesInProgress = sendSize;
+                pSerialPort->isTxBusy          = true;
+                HAL_UART_Transmit_DMA (&pUartDev->handle, (uint8_t*)pSendStart, sendSize);
+
+            } else {
+                pSerialPort->txBytesInProgress = 0;
+                pSerialPort->isTxBusy          = false;
+            }
+        }
+    }
+
+    // HAL_UART_IRQHandler (&pUartDev->handle);
 }
 
 #define UART_IRQ_HANDLER_DEF(TYPE, NUM, PORT_ID)               \
     void TYPE##NUM##_IRQHandler (void) {                       \
-        Stm32_UART_IRQHandler (eSERIAL_PORT_ID_UART##PORT_ID); \
+        Stm32_Uart_IrqHandler (eSERIAL_PORT_ID_UART##PORT_ID); \
     }
 
 #if TARG_UART_ENABLED(1)
@@ -137,22 +220,113 @@ static UartHwCfg_t* Stm32_Uart_GetHwCfgByPortId (eSERIAL_PORT_ID_t portId) {
     return NULL;
 }
 
-FJ_TESTABLE eSTATUS_t Stm32_Uart_Write (SerialPort_t* pSerialPort, const uint8_t* pData, uint32_t nData) {
+FJ_TESTABLE eSTATUS_t
+Stm32_Uart_SetupDma (SerialPortCfg_t const* pCfg, UartHwCfg_t const* pHwCfg, UartDevice_t* pUartDev, bool isRx, SerialPort_t* pOutSerialPort) {
+
+    DmaCfg_t dmaCfg = { 0 };
+    if (isRx) {
+        dmaCfg.direction = eDMA_DIRECTION_PERIPH_TO_MEM;
+        dmaCfg.mode      = eDMA_MODE_CIRCULAR;
+        dmaCfg.requestId = pHwCfg->dma_RxRequestId;
+    } else {
+        dmaCfg.direction = eDMA_DIRECTION_MEM_TO_PERIPH;
+        dmaCfg.mode      = eDMA_MODE_NORMAL;
+        dmaCfg.requestId = pHwCfg->dma_TxRequestId;
+    }
+
+    dmaCfg.fnIrqHandler = Stm32_Uart_DmaIrqHandler;
+    dmaCfg.pCtx         = (void*)pOutSerialPort;
+
+    DmaDevice_t** pDmaDev = isRx ? &pOutSerialPort->pRxDmaDev : &pOutSerialPort->pTxDmaDev;
+    *pDmaDev              = Dma_Init (&dmaCfg);
+    if (!(*pDmaDev)) {
+        return eSTATUS_FAIL;
+    }
+
+    if (isRx) {
+        pOutSerialPort->isRxBusy = false;
+    } else {
+        pOutSerialPort->isTxBusy = false;
+    }
+
+    uint32_t bufferSize = isRx ? pCfg->rxBufferSize : pCfg->txBufferSize;
+    uint8_t* pBufData   = Alloc_SharedMem (bufferSize);
+    if (!pBufData) {
+        return eSTATUS_FAIL;
+    }
+
+    // Initialize ring buffer
+    RingBuff* pRingBuff = isRx ? &pOutSerialPort->rxRingBuff : &pOutSerialPort->txRingBuff;
+    RingBuffInit (pBufData, bufferSize, pRingBuff);
+
+    // Link DMA to UART handle
+    if (isRx) {
+        __HAL_LINKDMA (&(pUartDev->handle), hdmarx, (*pDmaDev)->handle);
+        // Start RX DMA transfer
+        if (HAL_UART_Receive_DMA (&pUartDev->handle, RingBuffGetBufferData (pRingBuff), bufferSize) != HAL_OK) {
+            return eSTATUS_FAIL;
+        }
+    } else {
+        __HAL_LINKDMA (&(pUartDev->handle), hdmatx, (*pDmaDev)->handle);
+    }
+
+    return eSTATUS_OK;
+}
+
+FJ_TESTABLE eSTATUS_t Stm32_Uart_Write (SerialPort_t* pSerialPort, uint8_t const* pData, uint32_t nData) {
 
     UartDevice_t* pUartDev = (UartDevice_t*)pSerialPort->pSerialHwHandle;
-    if (HAL_UART_Transmit (&pUartDev->handle, (uint8_t*)pData, nData, HAL_MAX_DELAY) != HAL_OK) {
-        return eSTATUS_FAIL;
+    if (pSerialPort->pTxDmaDev && RingBuffIsValid (&pSerialPort->txRingBuff)) {
+
+        RingBuff* pTxRingBuff = &pSerialPort->txRingBuff;
+        RingBuffWrite (pTxRingBuff, (uint8_t*)pData, nData);
+
+        // dma is already in progress. once the current transfer is complete,
+        // the irq handler will check for more data in the ring buffer
+        if (pSerialPort->isTxBusy || pSerialPort->txBytesInProgress > 0) {
+            return eSTATUS_OK;
+        }
+
+        // start new dma transfer and only send a linear block.
+        // the irq handler will send the bytes that wrap around.
+        void* pSendStart               = RingBuffGetLinearBlockReadAddress (pTxRingBuff);
+        uint32_t sendSize              = RingBuffGetLinearBlockReadSize (pTxRingBuff);
+        pSerialPort->txBytesInProgress = sendSize;
+        pSerialPort->isTxBusy          = true;
+        if (HAL_UART_Transmit_DMA (&pUartDev->handle, (uint8_t*)pSendStart, sendSize) != HAL_OK) {
+            return eSTATUS_FAIL;
+        }
+
+    } else {
+
+        if (HAL_UART_Transmit (&pUartDev->handle, (uint8_t*)pData, nData, HAL_MAX_DELAY) != HAL_OK) {
+            return eSTATUS_FAIL;
+        }
     }
     return eSTATUS_OK;
 }
 
-FJ_TESTABLE eSTATUS_t Stm32_Uart_Read (SerialPort_t* pSerialPort, uint8_t* pData, uint32_t nData) {
+// Return the total number of bytes read
+FJ_TESTABLE uint32_t Stm32_Uart_Read (SerialPort_t* pSerialPort, uint8_t* pData, uint32_t nData) {
 
     UartDevice_t* pUartDev = (UartDevice_t*)pSerialPort->pSerialHwHandle;
-    if (HAL_UART_Receive (&pUartDev->handle, pData, nData, HAL_MAX_DELAY) != HAL_OK) {
-        return eSTATUS_FAIL;
+
+    if (pSerialPort->pRxDmaDev && RingBuffIsValid (&pSerialPort->rxRingBuff)) {
+
+        uint32_t bytesRemaining     = __HAL_DMA_GET_COUNTER (&pSerialPort->pRxDmaDev->handle);
+        uint32_t totalBytesInBuff   = RingBuffGetSize (&pSerialPort->rxRingBuff);
+        uint32_t totalBytesReceived = totalBytesInBuff - bytesRemaining;
+        uint32_t totalBytesWritten  = RingBuffGetFree (&pSerialPort->rxRingBuff);
+        if (totalBytesReceived > totalBytesWritten) {
+            RingBuffAdvance (&pSerialPort->rxRingBuff, totalBytesReceived - totalBytesWritten);
+        }
+        return RingBuffRead (&pSerialPort->rxRingBuff, pData, nData);
     }
-    return eSTATUS_OK;
+
+    if (HAL_UART_Receive (&pUartDev->handle, pData, nData, HAL_MAX_DELAY) != HAL_OK) {
+        return 0;
+    }
+    return nData;
 }
 
 FJ_TESTABLE eSTATUS_t Stm32_Uart_SetBaud (SerialPort_t* pSerialPort, eSERIAL_PORT_BAUD_t baudrate) {
@@ -235,14 +409,29 @@ eSTATUS_t Plat_Uart_Init (SerialPortCfg_t const* pCfg, SerialPort_t* pOutSerialP
     pUartDev->handle.Init.ClockPrescaler         = UART_PRESCALER_DIV1;
     pUartDev->handle.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
 
+    if (HAL_UART_DeInit (&pUartDev->handle) != HAL_OK) {
+        return eSTATUS_FAIL;
+    }
+
     if (HAL_UART_Init (&pUartDev->handle) != HAL_OK) {
         return eSTATUS_FAIL;
+    }
+
+    if (pCfg->modes & eSERIAL_PORT_MODE_RX) {
+        if (Stm32_Uart_SetupDma (pCfg, pHwCfg, pUartDev, true, pOutSerialPort) != eSTATUS_OK) {
+            return eSTATUS_FAIL;
+        }
+    }
+
+    if (pCfg->modes & eSERIAL_PORT_MODE_TX) {
+        if (Stm32_Uart_SetupDma (pCfg, pHwCfg, pUartDev, false, pOutSerialPort) != eSTATUS_OK) {
+            return eSTATUS_FAIL;
+        }
     }
 
     // TODO: configure NVIC priority levels
     HAL_NVIC_SetPriority (pHwCfg->irqNum, 8, 8);
     HAL_NVIC_EnableIRQ (pHwCfg->irqNum);
-
 
     pOutSerialPort->pSerialHwHandle = (void*)pUartDev;
     pOutSerialPort->pVtbl           = &e_UartVtbl;

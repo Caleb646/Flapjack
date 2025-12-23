@@ -26,7 +26,7 @@ typedef struct DmaHwCfg_s {
 } DmaHwCfg_t;
 
 
-void Stm32_Dma_IRQHandler (DmaDevice_t* pDmaDevice) {
+void Stm32_Dma_IrqHandler (DmaDevice_t* pDmaDevice) {
 
     if (!pDmaDevice) {
         return;
@@ -58,7 +58,7 @@ void Stm32_Dma_IRQHandler (DmaDevice_t* pDmaDevice) {
 
 #define DMA_DEF_IRQ_HANDLER(DEV_ID, STREAM_ID)                 \
     void DMA##DEV_ID##_Stream##STREAM_ID##_IRQHandler (void) { \
-        Stm32_Dma_IRQHandler (e_pDmaDevices[STREAM_ID]);       \
+        Stm32_Dma_IrqHandler (e_pDmaDevices[STREAM_ID]);       \
     }
 
 DMA_DEF_IRQ_HANDLER (1, 0);
@@ -176,17 +176,7 @@ eSTATUS_t Plat_Dma_Init (DmaCfg_t const* pCfg, DmaDevice_t* pOutDmaDevice) {
     return eSTATUS_OK;
 }
 
-void Plat_Dma_SetIrqHandler (DmaDevice_t* pDmaDevice, DmaIrqHandler_fn fnIrqHandler, void* pCtx) {
-
-    if (!pDmaDevice || !fnIrqHandler) {
-        return;
-    }
-
-    pDmaDevice->fnIrqHandler = fnIrqHandler;
-    pDmaDevice->pCtx         = pCtx;
-}
-
-void Plat_Dma_SetDeviceTransferCfg (DmaDevice_t* pDmaDevice, uint32_t srcAddr, uint32_t dstAddr, size_t size) {
+void Plat_Dma_SetTransferCfg (DmaDevice_t* pDmaDevice, uint32_t srcAddr, uint32_t dstAddr, size_t size) {
 
     if (!pDmaDevice || !pDmaDevice->handle.Instance) {
         return;
@@ -223,7 +213,7 @@ void Plat_Dma_SetDeviceTransferCfg (DmaDevice_t* pDmaDevice, uint32_t srcAddr, u
     }
 }
 
-void Plat_Dma_SetDeviceEnabled (DmaDevice_t* pDmaDevice, bool enable) {
+void Plat_Dma_SetEnabled (DmaDevice_t* pDmaDevice, bool enable) {
 
     if (!pDmaDevice || !pDmaDevice->handle.Instance) {
         return;
