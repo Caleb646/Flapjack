@@ -8,6 +8,9 @@ Scripts/build
 
 **/build/**
 
+**Build
+**Tools
+
 # Kicad Ignores
 *.lnk
 *.kicad_pcb.lck
