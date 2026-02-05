@@ -143,15 +143,20 @@ typedef struct {
     };
 } Vec4f;
 
+#define GET_FIRST_EXPAND(FIRST, ...)                FIRST
+#define GET_FIRST(...)                              GET_FIRST_EXPAND (__VA_ARGS__)
+#define GET_SECOND_EXPAND(FIRST, SECOND, ...)       SECOND
+#define GET_SECOND(...)                             GET_SECOND_EXPAND (__VA_ARGS__)
+#define GET_THIRD_EXPAND(FIRST, SECOND, THIRD, ...) THIRD
+#define GET_THIRD(...)                              GET_THIRD_EXPAND (__VA_ARGS__)
+
 #define VEC4F_ZERO() { .x = 0.0F, .y = 0.0F, .z = 0.0F, .w = 0.0F }
 // clang-format off
 #define MEM_U32_ALIGN4(addr)                  ((uint32_t)(addr) & ((uint32_t)~0x3U))
+
 #define FJ_DECLARE_SHARED(TYPE, NAME)      extern TYPE NAME TARG_SHARED_MEM_DATA_SECTION
 #define FJ_DEFINE_SHARED(TYPE, NAME)       TYPE NAME TARG_SHARED_MEM_DATA_SECTION
-#define DEFINE_STATIC_SHARED_BSS(TYPE, NAME)  static TYPE NAME TARG_SHARED_MEM_BSS_SECTION
-#define DEFINE_STATIC_SHARED_DATA(TYPE, NAME) static TYPE NAME TARG_SHARED_MEM_DATA_SECTION
-#define DEFINE_STATIC_SHARED_BSS_ARRAY(TYPE, NAME, SIZE) static TYPE NAME[SIZE] TARG_SHARED_MEM_BSS_SECTION
-#define DEFINE_STATIC_SHARED_DATA_ARRAY(TYPE, NAME, SIZE) static TYPE NAME[SIZE] TARG_SHARED_MEM_DATA_SECTION
+
 // clang-format on
 void* Alloc_SharedMem (size_t size);
 
@@ -182,52 +187,6 @@ uint32_t GetMilliseconds (void);
 uint32_t GetMicroseconds (void);
 void Delay (uint32_t ms);
 void DelayMicroseconds (uint32_t us);
-
-#define SYS_SEM_ID 1U
-// bool SysSEMEnable (void);
-bool SysSem_Take (void);
-void SysSem_Release (void);
-
-/* Source --> Betaflight: https://github.com/betaflight/betaflight/blob/master/src/main/build/atomic.h */
-void BasePriRestoreMem (uint8_t* val);
-// set BASEPRI_MAX, with global memory barrier, returns true
-uint8_t BasePriSetMemRetVal (uint8_t prio);
-
-typedef uint8_t eNVIC_PRIO_LVL_t;
-enum {
-    eNVIC_PRIO_LVL_UNUSED = 0,
-    eNVIC_PRIO_LVL_MAX,
-    eNVIC_PRIO_LVL_2,
-    eNVIC_PRIO_LVL_3,
-    eNVIC_PRIO_LVL_4,
-    eNVIC_PRIO_LVL_5,
-    eNVIC_PRIO_LVL_6,
-    eNVIC_PRIO_LVL_7,
-    eNVIC_PRIO_LVL_8,
-    eNVIC_PRIO_LVL_9,
-    eNVIC_PRIO_LVL_10,
-    eNVIC_PRIO_LVL_11,
-    eNVIC_PRIO_LVL_12,
-    eNVIC_PRIO_LVL_13,
-    eNVIC_PRIO_LVL_14,
-    eNVIC_PRIO_LVL_15
-};
-
-#ifndef UNIT_TEST
-
-// clang-format off
-// NOTE: Be careful using this with Delay functions as 
-// they may use SysTick which may be disabled by this macro.
-#define ATOMIC_BLOCK_LOCAL(NVIC_PRIO)                                                                    \
-    for (uint8_t __basepri_save __attribute__ ((__cleanup__ (BasePriRestoreMem), __unused__)) =  __get_BASEPRI (), __ToDo = BasePriSetMemRetVal ((NVIC_PRIO)); \
-    __ToDo; __ToDo = 0); \
-    // clang-format on
-
-#else
-
-#define ATOMIC_BLOCK_LOCAL(NVIC_PRIO) if (1)
-
-#endif
 
 
 #endif // CORE_COMMON_H

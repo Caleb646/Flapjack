@@ -6,35 +6,24 @@
 
 #include "common.h"
 
-#include "drivers/driver.h"
 #include "drivers/io/gpio_defs.h"
 
-#include "platform/platform.h"
+FJ_DECLARE_SHARED (GPIO_t, e_Gpios[]);
 
-FJ_STATIC_ASSERT (PLAT_GPIO_MAX_PORTS < 16, "GPIO id will overflow if more than 15 ports");
-
-DRIVER_DECLARE_ARRAY (GPIO_t, GPIOs, PLAT_GPIO_MAX_PORTS* PLAT_GPIO_MAX_PINS);
-
-eSTATUS_t Plat_GPIO_SystemInit (void);
 GPIO_t* Plat_GPIO_Init (eGPIO_ID_t gpioId, uint8_t ownerId, GPIOCfg_t cfg, uint32_t af);
-GPIO_t* Plat_GPIO_GetIO (eGPIO_ID_t gpioId);
 GPIO_TypeDef* Plat_GPIO_GetPort (GPIO_t* pIO);
 uint16_t Plat_GPIO_GetPin (GPIO_t* pIO);
 void Plat_GPIO_Write (GPIO_t* pIO, eGPIO_STATE_t state);
 void Plat_GPIO_SetHigh (GPIO_t* pIO);
 void Plat_GPIO_SetLow (GPIO_t* pIO);
 
-static inline eSTATUS_t GPIO_SystemInit (void) {
-    return Plat_GPIO_SystemInit ();
-}
+eSTATUS_t GPIO_SystemInit (void);
 
 static inline GPIO_t* GPIO_Init (eGPIO_ID_t gpioId, uint8_t ownerId, GPIOCfg_t cfg, uint32_t af) {
     return Plat_GPIO_Init (gpioId, ownerId, cfg, af);
 }
 
-static inline GPIO_t* GPIO_GetIO (eGPIO_ID_t gpioId) {
-    return Plat_GPIO_GetIO (gpioId);
-}
+GPIO_t* GPIO_GetIO (eGPIO_ID_t gpioId);
 
 static inline GPIO_TypeDef* GPIO_GetPort (GPIO_t* pIO) {
     return Plat_GPIO_GetPort (pIO);
@@ -44,12 +33,14 @@ static inline uint16_t GPIO_GetPin (GPIO_t* pIO) {
     return Plat_GPIO_GetPin (pIO);
 }
 
+uint32_t GPIO_GetIndex (eGPIO_ID_t gpioId);
+
 static inline uint32_t GPIO_GetPortIndex (eGPIO_ID_t gpioId) {
-    return PLAT_GPIO_ID_TO_PORT_INDEX (gpioId);
+    return GPIO_ID_TO_PORT_INDEX (gpioId);
 }
 
 static inline uint32_t GPIO_GetPinIndex (eGPIO_ID_t gpioId) {
-    return PLAT_GPIO_ID_TO_PIN_INDEX (gpioId);
+    return GPIO_ID_TO_PIN_INDEX (gpioId);
 }
 
 static inline void GPIO_Write (GPIO_t* pIO, eGPIO_STATE_t state) { // ? pin : (pin << 16U);

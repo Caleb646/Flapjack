@@ -15,13 +15,9 @@
 FJ_DECLARE_SHARED (DmaDevice_t*, e_pDmaDevices[PLAT_DMA_MAX_DEVS]);
 
 eSTATUS_t Plat_Dma_Init (DmaCfg_t const* pCfg, DmaDevice_t* pOutDmaDevice);
-void Plat_Dma_SetTransferCfg (DmaDevice_t* pDmaDevice, uint32_t srcAddr, uint32_t dstAddr, size_t size);
-void Plat_Dma_SetEnabled (DmaDevice_t* pDmaDevice, bool enable);
-void Plat_Dma_SetInterruptsEnabled (DmaDevice_t* pDmaDevice, bool enable);
-
-static inline DmaDevice_t* Dma_GetFreeDevice (void) {
-    return Plat_Dma_GetFree ();
-}
+// void Plat_Dma_SetTransferCfg (DmaDevice_t* pDmaDevice, uint32_t srcAddr, uint32_t dstAddr, size_t size);
+// void Plat_Dma_SetEnabled (DmaDevice_t* pDmaDevice, bool enable);
+// void Plat_Dma_SetInterruptsEnabled (DmaDevice_t* pDmaDevice, bool enable);
 
 DmaDevice_t* Dma_Init (DmaCfg_t const* pCfg);
 

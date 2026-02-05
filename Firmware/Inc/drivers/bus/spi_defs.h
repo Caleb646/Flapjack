@@ -3,24 +3,27 @@
 
 #include <stdint.h>
 
-typedef uint8_t eSPI_DEV_ID_t;
-enum {
-    eSPI_DEV_ID_NULL = 0,
-    eSPI_DEV_ID_1,
-    eSPI_DEV_ID_2,
-    eSPI_DEV_ID_3,
-    eSPI_DEV_ID_4,
-    eSPI_DEV_ID_5,
-    eSPI_DEV_ID_6,
-};
+#include "drivers/bus/bus_defs.h"
 
-#define SPI_DEV_ID_TO_INDEX(DEV_ID) ((DEV_ID) - 1U)
+#include "drivers/io/gpio_defs.h"
 
-typedef struct SPI_TypeDef;
-typedef struct SPIDevice_s {
-    eSPI_DEV_ID_t devId;
+// typedef struct SPI_TypeDef;
+
+typedef struct SpiDevice_s {
+    eBUS_DEV_ID_t devId;
     SPI_TypeDef* pInstance;
-} SPIDevice_t;
+} SpiDevice_t;
+
+typedef struct SpiHardware_s {
+    eBUS_DEV_ID_t devId;
+    SPI_TypeDef* pInstance;
+    uint32_t volatile* pRcc;
+    uint32_t rccMask;
+    eGPIO_ID_t sckGpioId;
+    eGPIO_ID_t misoGpioId;
+    eGPIO_ID_t mosiGpioId;
+    uint32_t afId;
+} SpiHardware_t;
 
 
 #endif // DRIVERS_BUS_SPI_DEFS_H

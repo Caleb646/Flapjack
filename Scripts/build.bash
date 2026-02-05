@@ -119,7 +119,7 @@ esac
 export PATH="${MINGW64_GNU_BIN_PATH}:${ARM_GNU_BIN_PATH}:${PATH}"
 OUTPUT_DIR="${FJ_BUILD_ROOT_DIR_PATH}/${BUILD_TYPE}"
 cmake_args=(
-    # --fresh
+    --fresh
     -S "${FJ_PROJECT_ROOT}"
     -B "${OUTPUT_DIR}" 
     -G "${CMAKE_GENERATOR}"

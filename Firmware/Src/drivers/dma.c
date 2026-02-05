@@ -1,15 +1,14 @@
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "common.h"
-
-#include "core/core.h"
 
 #include "drivers/dma.h"
 #include "drivers/dma_defs.h"
 
-#include "drivers/tim.h"
-#include "drivers/tim_defs.h"
+// #include "drivers/tim.h"
+// #include "drivers/tim_defs.h"
 
 #include "platform/platform.h"
 

@@ -26,7 +26,6 @@
 
 #else
 
-#include "cmsis_os.h"
 #include "stm32h7xx.h"
 #include "stm32h7xx_hal.h"
 

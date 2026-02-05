@@ -20,8 +20,54 @@
 
 #include "targets/target.h"
 
-CFG_DEFINE (MotorsCfg_t, MotorsCfg);
-CFG_DEFINE (ServosCfg_t, ServosCfg);
+FJ_DEFINE_SHARED (MotorsCfg_t, e_MotorsCfg) = {
+    .gpios    = {
+#if TARG_MOTOR_ENABLED(1) 
+        [MOTOR_ID_TO_INDEX(eMOTOR_1_ID)] = GPIO_ID_MAKE(TARG_MOTOR_1_PIN),
+#endif
+#if TARG_MOTOR_ENABLED(2) 
+        [MOTOR_ID_TO_INDEX(eMOTOR_2_ID)] = GPIO_ID_MAKE(TARG_MOTOR_2_PIN),
+#endif
+#if TARG_MOTOR_ENABLED(3)
+        [MOTOR_ID_TO_INDEX(eMOTOR_3_ID)] = GPIO_ID_MAKE(TARG_MOTOR_3_PIN),
+#endif
+#if TARG_MOTOR_ENABLED(4)
+        [MOTOR_ID_TO_INDEX(eMOTOR_4_ID)] = GPIO_ID_MAKE(TARG_MOTOR_4_PIN),
+#endif
+    },
+    .protType = MOTOR_PROT_MAKE (TARG_MOTOR_PROT),
+    .nMotors  = TARG_MAX_MOTORS,
+};
+
+FJ_DEFINE_SHARED (ServosCfg_t, e_ServosCfg) = {
+    .gpios    = {
+#if TARG_SERVO_ENABLED(1)
+        [SERVO_ID_TO_INDEX(eSERVO_1_ID)] = GPIO_ID_MAKE(TARG_SERVO_1_PIN),
+#endif
+#if TARG_SERVO_ENABLED(2)
+        [SERVO_ID_TO_INDEX(eSERVO_2_ID)] = GPIO_ID_MAKE(TARG_SERVO_2_PIN),
+#endif
+#if TARG_SERVO_ENABLED(3)
+        [SERVO_ID_TO_INDEX(eSERVO_3_ID)] = GPIO_ID_MAKE(TARG_SERVO_3_PIN),
+#endif
+#if TARG_SERVO_ENABLED(4)
+        [SERVO_ID_TO_INDEX(eSERVO_4_ID)] = GPIO_ID_MAKE(TARG_SERVO_4_PIN),
+#endif
+#if TARG_SERVO_ENABLED(5)
+        [SERVO_ID_TO_INDEX(eSERVO_5_ID)] = GPIO_ID_MAKE(TARG_SERVO_5_PIN),
+#endif
+#if TARG_SERVO_ENABLED(6)
+        [SERVO_ID_TO_INDEX(eSERVO_6_ID)] = GPIO_ID_MAKE(TARG_SERVO_6_PIN),
+#endif
+#if TARG_SERVO_ENABLED(7)
+        [SERVO_ID_TO_INDEX(eSERVO_7_ID)] = GPIO_ID_MAKE(TARG_SERVO_7_PIN),
+#endif
+#if TARG_SERVO_ENABLED(8)
+        [SERVO_ID_TO_INDEX(eSERVO_8_ID)] = GPIO_ID_MAKE(TARG_SERVO_8_PIN),
+#endif
+},
+    .nServos  = TARG_MAX_SERVOS,
+};
 FJ_DEFINE_SHARED (TimChannel_t, e_TimChans[TARG_MAX_SERVOS]);
 FJ_DEFINE_SHARED (MotorsDevice_t, e_MotorsDevice);
 
@@ -35,7 +81,7 @@ eSTATUS_t Motors_Init (void) {
 
     eSTATUS_t status        = eSTATUS_FAIL;
     MotorsDevice_t* pMotors = &e_MotorsDevice;
-    MotorsCfg_t const* pCfg = MotorsCfg_Get ();
+    MotorsCfg_t const* pCfg = &e_MotorsCfg;
 
     if (MOTOR_PROT_IS_DSHOT (pCfg->protType)) {
         status = Dshot_Init (pCfg, pMotors);
@@ -73,7 +119,7 @@ FJ_TESTABLE eSTATUS_t Servos_Init_ (ServosCfg_t const* pCfg, TimChannel_t outTim
 }
 
 eSTATUS_t Servos_Init (void) {
-    return Servos_Init_ (ServosCfg_Get (), e_TimChans);
+    return Servos_Init_ (&e_ServosCfg, e_TimChans);
 }
 
 eSTATUS_t Servos_Update (uint16_t const* pOutputs, uint32_t nOutputs) {

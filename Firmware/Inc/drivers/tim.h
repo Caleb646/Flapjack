@@ -6,38 +6,37 @@
 
 #include "common.h"
 
-#include "drivers/driver.h"
-
 #include "drivers/io/gpio_defs.h"
 
 #include "drivers/tim_defs.h"
 
 #include "targets/target.h"
 
-DRIVER_DECLARE_ARRAY (TimDevice_t*, TimDevices, TARG_MAX_TIMS);
-extern TARG_SHARED_MEM_DATA_SECTION TimHwCfg_t e_TimHwCfgs[];
-extern TARG_SHARED_MEM_DATA_SECTION uint8_t e_nTimHwCfgs;
-extern TARG_SHARED_MEM_DATA_SECTION TimDmaReqMap_t e_TimDmaReqMaps[];
-extern TARG_SHARED_MEM_DATA_SECTION uint8_t e_nTimDmaReqMaps;
+FJ_DECLARE_SHARED (TimDevice_t, e_TimDevices[]);
+FJ_DECLARE_SHARED (TimHwCfg_t, e_TimHwCfgs[]);
+FJ_DECLARE_SHARED (uint8_t, e_nTimDevices);
+
+TimDevice_t* Tim_GetById (eTIM_DEVICE_ID_t devId);
+TimHwCfg_t* Tim_GetHwCfgById (eTIM_DEVICE_ID_t devId);
 
 /*
  *
  * Platform Tim Device
  *
  */
-void Plat_TimDev_SetPrescaler (TimDevice_t* pTimDev, uint32_t prescaler);
-void Plat_TimDev_SetPeriod (TimDevice_t* pTimDev, uint32_t period);
-void Plat_TimDev_SetCNT (TimDevice_t* pTimDev, uint32_t count);
+void Plat_Tim_SetPrescaler (TimDevice_t* pTimDev, uint32_t prescaler);
+void Plat_Tim_SetPeriod (TimDevice_t* pTimDev, uint32_t period);
+void Plat_Tim_SetCNT (TimDevice_t* pTimDev, uint32_t count);
 
-uint32_t Plat_TimDev_GetPrescaler (TimDevice_t* pTimDev);
-uint32_t Plat_TimDev_GetPeriod (TimDevice_t* pTimDev);
+uint32_t Plat_Tim_GetPrescaler (TimDevice_t* pTimDev);
+uint32_t Plat_Tim_GetPeriod (TimDevice_t* pTimDev);
 uint32_t Plat_TimDev_GetCNT (TimDevice_t* pTimDev);
 
-uint32_t Plat_TimDev_GetClkFreqHz (TimDevice_t* pTimDev);
-void Plat_TimDev_SetInterruptEnabled (TimDevice_t* pTimDev, eTIM_INTERRUPT_FLAG_t flag, bool enabled);
+uint32_t Plat_Tim_GetClkFreqHz (TimDevice_t* pTimDev);
+void Plat_Tim_SetInterruptEnabled (TimDevice_t* pTimDev, eTIM_INTERRUPT_FLAG_t flag, bool enabled);
 void Plat_TimDev_ClearInterruptFlag (TimDevice_t* pTimDev, eTIM_INTERRUPT_FLAG_t flag);
 uint32_t Plat_TimDev_GetInterruptFlag (TimDevice_t* pTimDev, eTIM_INTERRUPT_FLAG_t flag);
-eSTATUS_t Plat_TimDev_Init (TimDevCfg_t* const pCfg, TimDevice_t* pOutTimDev);
+eSTATUS_t Plat_Tim_Init (TimDevCfg_t* const pCfg, TimDevice_t* pOutTimDev);
 
 /*
  *
@@ -57,26 +56,26 @@ eSTATUS_t Plat_TimChan_Stop (TimChannel_t* pChannel);
  * Tim Device Functions
  *
  */
-TimHwCfg_t* TimDev_Get_HwCfg (eTIM_DEVICE_ID_t devId);
+// TimHwCfg_t* TimDev_Get_HwCfg (eTIM_DEVICE_ID_t devId);
 TimDmaReqMap_t* TimDev_Get_DmaReqMap (eTIM_DEVICE_ID_t devId);
 static inline void TimDev_SetPrescaler (TimDevice_t* pTimDev, uint32_t prescaler) {
-    Plat_TimDev_SetPrescaler (pTimDev, prescaler);
+    Plat_Tim_SetPrescaler (pTimDev, prescaler);
 }
 
 static inline void TimDev_SetPeriod (TimDevice_t* pTimDev, uint32_t period) {
-    Plat_TimDev_SetPeriod (pTimDev, period);
+    Plat_Tim_SetPeriod (pTimDev, period);
 }
 
 static inline void TimDev_SetCNT (TimDevice_t* pTimDev, uint32_t count) {
-    Plat_TimDev_SetCNT (pTimDev, count);
+    Plat_Tim_SetCNT (pTimDev, count);
 }
 
 static inline uint32_t TimDev_GetPrescaler (TimDevice_t* pTimDev) {
-    return Plat_TimDev_GetPrescaler (pTimDev);
+    return Plat_Tim_GetPrescaler (pTimDev);
 }
 
 static inline uint32_t TimDev_GetPeriod (TimDevice_t* pTimDev) {
-    return Plat_TimDev_GetPeriod (pTimDev);
+    return Plat_Tim_GetPeriod (pTimDev);
 }
 
 static inline uint32_t TimDev_GetCNT (TimDevice_t* pTimDev) {
@@ -84,11 +83,11 @@ static inline uint32_t TimDev_GetCNT (TimDevice_t* pTimDev) {
 }
 
 static inline uint32_t TimDev_GetClkFreqHz (TimDevice_t* pTimDev) {
-    return Plat_TimDev_GetClkFreqHz (pTimDev);
+    return Plat_Tim_GetClkFreqHz (pTimDev);
 }
 
 static inline void TimDev_SetInterruptEnabled (TimDevice_t* pTimDev, eTIM_INTERRUPT_FLAG_t flag, bool enabled) {
-    Plat_TimDev_SetInterruptEnabled (pTimDev, flag, enabled);
+    Plat_Tim_SetInterruptEnabled (pTimDev, flag, enabled);
 }
 
 static inline void TimDev_ClearInterruptFlag (TimDevice_t* pTimDev, eTIM_INTERRUPT_FLAG_t flag) {
@@ -130,7 +129,7 @@ static inline eSTATUS_t TimDev_InitBase (TimDevice_t* pOutTimDev) {
         .modeType    = eTIM_MODE_BASE,
         .irqPriority = 8U,
     };
-    return Plat_TimDev_Init (&cfg, pOutTimDev);
+    return Plat_Tim_Init (&cfg, pOutTimDev);
 }
 
 /*

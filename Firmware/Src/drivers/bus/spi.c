@@ -12,15 +12,35 @@
 
 #include "platform/platform.h"
 
-DRIVER_DEFINE_ARRAY (SPIDevice_t, SPIDevices, PLAT_SPI_MAX_DEVS);
+SpiHardware_t* Spi_GetHwCfg (eBUS_DEV_ID_t devId) {
+
+    for (uint32_t i = 0; i < e_nSpiDevices; ++i) {
+        SpiHardware_t* pHwCfg = &e_SpiHwCfgs[i];
+        if (pHwCfg->devId == devId) {
+            return pHwCfg;
+        }
+    }
+    return NULL;
+}
+
+SpiDevice_t* Spi_GetDevice (eBUS_DEV_ID_t devId) {
+
+    for (uint32_t i = 0; i < e_nSpiDevices; ++i) {
+        SpiDevice_t* pDev = &e_SpiDevices[i];
+        if (pDev->devId == devId) {
+            return pDev;
+        }
+    }
+    return NULL;
+}
 
 eSTATUS_t SPI_Init (BusDeviceCfg_t* pCfg, BusDeviceSPI_t* pOutBusDeviceSpi) {
 
     if (!pCfg || !pOutBusDeviceSpi) {
-        return eSTATUS_NULL_ARG;
+        return eSTATUS_FAIL;
     }
 
-    SPIDevice_t* pDev = Plat_SPI_Init (pCfg->busId);
+    SpiDevice_t* pDev = Plat_SPI_Init (pCfg->busId);
     if (!pDev) {
         return eSTATUS_FAIL;
     }
@@ -39,7 +59,7 @@ eSTATUS_t SPI_Init (BusDeviceCfg_t* pCfg, BusDeviceSPI_t* pOutBusDeviceSpi) {
 eSTATUS_t SPI_WriteRead_Block (BusDeviceSPI_t* pBusDeviceSpi, uint8_t const* pTx, uint8_t* pRx, uint32_t size) {
 
     if (!pBusDeviceSpi) {
-        return eSTATUS_NULL_ARG;
+        return eSTATUS_FAIL;
     }
     GPIO_SetLow (pBusDeviceSpi->pNSS);
     eSTATUS_t status = Plat_SPI_WriteRead_Block (pBusDeviceSpi->pDev, pTx, pRx, size);
@@ -50,7 +70,7 @@ eSTATUS_t SPI_WriteRead_Block (BusDeviceSPI_t* pBusDeviceSpi, uint8_t const* pTx
 eSTATUS_t SPI_WriteRegister (BusDeviceSPI_t* pBusDeviceSpi, uint8_t reg, uint8_t const* pData, uint32_t len) {
 
     if (!pBusDeviceSpi) {
-        return eSTATUS_NULL_ARG;
+        return eSTATUS_FAIL;
     }
 
     GPIO_SetLow (pBusDeviceSpi->pNSS);
@@ -67,7 +87,7 @@ eSTATUS_t SPI_WriteRegister (BusDeviceSPI_t* pBusDeviceSpi, uint8_t reg, uint8_t
 eSTATUS_t SPI_ReadRegister (BusDeviceSPI_t* pBusDeviceSpi, uint8_t reg, uint8_t* pData, uint32_t len) {
 
     if (!pBusDeviceSpi) {
-        return eSTATUS_NULL_ARG;
+        return eSTATUS_FAIL;
     }
 
     GPIO_SetLow (pBusDeviceSpi->pNSS);

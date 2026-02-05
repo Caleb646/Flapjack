@@ -119,23 +119,6 @@ void DelayMicroseconds (uint32_t us) {
 #endif // UNIT_TEST
 }
 
-// bool SysSEMEnable (void) {
-
-//     __HAL_RCC_HSEM_CLK_ENABLE ();
-//     return true;
-// }
-
-bool SysSem_Take (void) {
-
-    while (HAL_HSEM_FastTake (SYS_SEM_ID) != HAL_OK) {
-    }
-    return true;
-}
-
-void SysSem_Release (void) {
-
-    HAL_HSEM_Release (SYS_SEM_ID, 0);
-}
 
 
 // void fDelayMicroseconds (float us) {
@@ -157,25 +140,3 @@ void SysSem_Release (void) {
 
 // #endif // UNIT_TEST
 // }
-
-/* Source --> Betaflight: https://github.com/betaflight/betaflight/blob/master/src/main/build/atomic.h */
-void BasePriRestoreMem (uint8_t* val) {
-
-#ifndef UNIT_TEST
-
-    __set_BASEPRI (*val);
-
-#endif // UNIT_TEST
-}
-
-// set BASEPRI_MAX, with global memory barrier, returns true
-uint8_t BasePriSetMemRetVal (uint8_t prio) {
-
-#ifndef UNIT_TEST
-
-    __set_BASEPRI_MAX (prio);
-    return 1;
-
-#endif // UNIT_TEST
-    return 1;
-}

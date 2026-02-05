@@ -21,6 +21,8 @@ enum {
 };
 
 #define MOTOR_PROT_IS_DSHOT(PROT_TYPE) ((PROT_TYPE) == eMOTION_PROT_TYPE_DSHOT_150)
+#define MOTOR_PROT_MAKE_EXPAND(PROT_NAME) eMOTION_PROT_TYPE_##PROT_NAME
+#define MOTOR_PROT_MAKE(...)              MOTOR_PROT_MAKE_EXPAND (__VA_ARGS__)
 
 typedef uint8_t eMOTOR_ID_t;
 enum {
@@ -44,7 +46,7 @@ enum {
 
 typedef uint8_t eSERVO_ID_t;
 enum {
-    eSERVO_ID_NULL = 0,
+    eSERVO_ID_NONE = 0,
 
     eSERVO_1_ID,
     eSERVO_LEFT_MOTOR_ID = eSERVO_1_ID,
@@ -89,8 +91,8 @@ typedef struct MotorsDevice_s {
     eSTATUS_t (*fnUpdateMotors) (float const* pThrottles, uint32_t nThrottles);
 } MotorsDevice_t;
 
-CFG_DECLARE (MotorsCfg_t, MotorsCfg);
-CFG_DECLARE (ServosCfg_t, ServosCfg);
+FJ_DECLARE_SHARED (MotorsCfg_t, e_MotorsCfg);
+FJ_DECLARE_SHARED (ServosCfg_t, e_ServosCfg);
 FJ_DECLARE_SHARED (TimChannel_t, e_TimChans[TARG_MAX_SERVOS]);
 FJ_DECLARE_SHARED (MotorsDevice_t, e_MotorsDevice);
 

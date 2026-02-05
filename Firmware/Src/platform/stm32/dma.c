@@ -150,11 +150,11 @@ eSTATUS_t Plat_Dma_Init (DmaCfg_t const* pCfg, DmaDevice_t* pOutDmaDevice) {
         // direct mode for peripheral transfers
         pOutDmaDevice->handle.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
 
-        switch (pCfg->transferType) {
-        case eDMA_TRANSFER_TYPE_MEM_TO_PERIPH:
+        switch (pCfg->direction) {
+        case eDMA_DIRECTION_MEM_TO_PERIPH:
             pOutDmaDevice->handle.Init.Direction = DMA_MEMORY_TO_PERIPH;
             break;
-        case eDMA_TRANSFER_TYPE_PERIPH_TO_MEM:
+        case eDMA_DIRECTION_PERIPH_TO_MEM:
             pOutDmaDevice->handle.Init.Direction = DMA_PERIPH_TO_MEMORY;
             break;
         default: return eSTATUS_FAIL;
@@ -176,71 +176,71 @@ eSTATUS_t Plat_Dma_Init (DmaCfg_t const* pCfg, DmaDevice_t* pOutDmaDevice) {
     return eSTATUS_OK;
 }
 
-void Plat_Dma_SetTransferCfg (DmaDevice_t* pDmaDevice, uint32_t srcAddr, uint32_t dstAddr, size_t size) {
+// void Plat_Dma_SetTransferCfg (DmaDevice_t* pDmaDevice, uint32_t srcAddr, uint32_t dstAddr, size_t size) {
 
-    if (!pDmaDevice || !pDmaDevice->handle.Instance) {
-        return;
-    }
+//     if (!pDmaDevice || !pDmaDevice->handle.Instance) {
+//         return;
+//     }
 
-    /* Clear the DMAMUX synchro overrun flag */
-    DMA_HandleTypeDef* hdma        = &(pDmaDevice->handle);
-    hdma->DMAmuxChannelStatus->CFR = hdma->DMAmuxChannelStatusMask;
-    if (hdma->DMAmuxRequestGen != 0U) {
-        /* Clear the DMAMUX request generator overrun flag */
-        hdma->DMAmuxRequestGenStatus->RGCFR = hdma->DMAmuxRequestGenStatusMask;
-    }
+//     /* Clear the DMAMUX synchro overrun flag */
+//     DMA_HandleTypeDef* hdma        = &(pDmaDevice->handle);
+//     hdma->DMAmuxChannelStatus->CFR = hdma->DMAmuxChannelStatusMask;
+//     if (hdma->DMAmuxRequestGen != 0U) {
+//         /* Clear the DMAMUX request generator overrun flag */
+//         hdma->DMAmuxRequestGenStatus->RGCFR = hdma->DMAmuxRequestGenStatusMask;
+//     }
 
-    DMA_Base_Registers* regs_dma = (DMA_Base_Registers*)hdma->StreamBaseAddress;
-    /* Clear all interrupt flags at correct offset within the register */
-    regs_dma->IFCR = 0x3FUL << (hdma->StreamIndex & 0x1FU);
-    /* Clear DBM bit */
-    ((DMA_Stream_TypeDef*)hdma->Instance)->CR &= (uint32_t)(~DMA_SxCR_DBM);
-    /* Configure DMA Stream data length */
-    ((DMA_Stream_TypeDef*)hdma->Instance)->NDTR = size;
-    /* Peripheral to Memory */
-    if ((hdma->Init.Direction) == DMA_MEMORY_TO_PERIPH) {
-        /* Configure DMA Stream destination address */
-        ((DMA_Stream_TypeDef*)hdma->Instance)->PAR = dstAddr;
-        /* Configure DMA Stream source address */
-        ((DMA_Stream_TypeDef*)hdma->Instance)->M0AR = srcAddr;
-    }
-    /* Memory to Peripheral */
-    else {
-        /* Configure DMA Stream source address */
-        ((DMA_Stream_TypeDef*)hdma->Instance)->PAR = srcAddr;
-        /* Configure DMA Stream destination address */
-        ((DMA_Stream_TypeDef*)hdma->Instance)->M0AR = dstAddr;
-    }
-}
+//     DMA_Base_Registers* regs_dma = (DMA_Base_Registers*)hdma->StreamBaseAddress;
+//     /* Clear all interrupt flags at correct offset within the register */
+//     regs_dma->IFCR = 0x3FUL << (hdma->StreamIndex & 0x1FU);
+//     /* Clear DBM bit */
+//     ((DMA_Stream_TypeDef*)hdma->Instance)->CR &= (uint32_t)(~DMA_SxCR_DBM);
+//     /* Configure DMA Stream data length */
+//     ((DMA_Stream_TypeDef*)hdma->Instance)->NDTR = size;
+//     /* Peripheral to Memory */
+//     if ((hdma->Init.Direction) == DMA_MEMORY_TO_PERIPH) {
+//         /* Configure DMA Stream destination address */
+//         ((DMA_Stream_TypeDef*)hdma->Instance)->PAR = dstAddr;
+//         /* Configure DMA Stream source address */
+//         ((DMA_Stream_TypeDef*)hdma->Instance)->M0AR = srcAddr;
+//     }
+//     /* Memory to Peripheral */
+//     else {
+//         /* Configure DMA Stream source address */
+//         ((DMA_Stream_TypeDef*)hdma->Instance)->PAR = srcAddr;
+//         /* Configure DMA Stream destination address */
+//         ((DMA_Stream_TypeDef*)hdma->Instance)->M0AR = dstAddr;
+//     }
+// }
 
-void Plat_Dma_SetEnabled (DmaDevice_t* pDmaDevice, bool enable) {
+// void Plat_Dma_SetEnabled (DmaDevice_t* pDmaDevice, bool enable) {
 
-    if (!pDmaDevice || !pDmaDevice->handle.Instance) {
-        return;
-    }
+//     if (!pDmaDevice || !pDmaDevice->handle.Instance) {
+//         return;
+//     }
 
-    if (enable) {
-        __HAL_DMA_ENABLE (&(pDmaDevice->handle));
-    } else {
-        __HAL_DMA_DISABLE (&(pDmaDevice->handle));
-    }
-}
+//     if (enable) {
+//         __HAL_DMA_ENABLE (&(pDmaDevice->handle));
+//     } else {
+//         __HAL_DMA_DISABLE (&(pDmaDevice->handle));
+//     }
+// }
 
-void Plat_Dma_SetInterruptsEnabled (DmaDevice_t* pDmaDevice, bool enable) {
+// void Plat_Dma_SetInterruptsEnabled (DmaDevice_t* pDmaDevice, bool enable) {
 
-    if (!pDmaDevice || !pDmaDevice->handle.Instance) {
-        return;
-    }
+//     if (!pDmaDevice || !pDmaDevice->handle.Instance) {
+//         return;
+//     }
 
-    uint32_t flags = DMA_IT_TC; // Transfer Complete
-    // flags |= DMA_IT_HT;         // Half Transfer
-    flags |= DMA_IT_TE; // Transfer Error
-    // flags |= DMA_IT_DME;        // Direct Mode Error
-    // flags |= DMA_IT_FE;         // FIFO Error
+//     uint32_t flags = DMA_IT_TC; // Transfer Complete
+//     // flags |= DMA_IT_HT;         // Half Transfer
+//     flags |= DMA_IT_TE; // Transfer Error
+//     // flags |= DMA_IT_DME;        // Direct Mode Error
+//     // flags |= DMA_IT_FE;         // FIFO Error
 
-    if (enable) {
-        __HAL_DMA_ENABLE_IT (&(pDmaDevice->handle), flags);
-    } else {
-        __HAL_DMA_DISABLE_IT (&(pDmaDevice->handle), flags);
-    }
-}
+//     if (enable) {
+//         __HAL_DMA_ENABLE_IT (&(pDmaDevice->handle), flags);
+//     } else {
+//         __HAL_DMA_DISABLE_IT (&(pDmaDevice->handle), flags);
+//     }
+// }

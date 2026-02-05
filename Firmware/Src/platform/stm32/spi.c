@@ -11,54 +11,44 @@
 #include "drivers/io/gpio.h"
 #include "drivers/io/gpio_defs.h"
 
-#include "platform/stm32/platform.h"
+#include "platform/platform.h"
 
 #include "targets/target.h"
 
 // __HAL_RCC_SPI5_CLK_ENABLE ();
 
-typedef struct SPIHardware_s {
-    SPI_TypeDef* pInstance;
-    uint32_t volatile* pRcc;
-    uint32_t rccMask;
-    eGPIO_ID_t sckOpts[PLAT_SPI_MAX_PIN_SEL];
-    eGPIO_ID_t misoOpts[PLAT_SPI_MAX_PIN_SEL];
-    eGPIO_ID_t mosiOpts[PLAT_SPI_MAX_PIN_SEL];
-    uint8_t afOpts[PLAT_SPI_MAX_PIN_SEL];
-} SPIHardware_t;
+#define PORT(...) I_GPIO_ID_MAKE_PORTID_EXPAND (__VA_ARGS__)
+#define PIN(...)  GPIO_ID_MAKE_PINID (GET_SECOND (__VA_ARGS__))
 
-// TODO: this should be shared between cm4 and cm7
-// Shared memory gets zeroed out regardless of the default value.
-// So this setup should be done at runtime.
-// static SPIHardware_t g_SPIHw[PLAT_SPI_MAX_DEVS] = {
+FJ_DEFINE_SHARED (SpiDevice_t, e_SpiDevices[5]) = {
+#if TARG_SPI_ENABLED(2)
+    { .devId = eBUS_ID_SPI_2, .pInstance = NULL },
+#endif
+};
 
-//     [SPI_DEV_ID_TO_INDEX (eSPI_DEV_ID_2)] = { .pInstance = SPI2,
-//                                               .pRcc      = &(RCC->APB1LENR),
-//                                               .rccMask   = RCC_APB1LENR_SPI2EN,
-//                                               .sckOpts   = { PLAT_GPIO_ID_MAKE (A, 12) },
-//                                               .misoOpts  = { PLAT_GPIO_ID_MAKE (C, 2) },
-//                                               .mosiOpts  = { PLAT_GPIO_ID_MAKE (C, 3) },
-//                                               .afOpts    = { GPIO_AF5_SPI2 } }, // eSPI_DEV_ID_2
-// };
+FJ_DEFINE_SHARED (SpiHardware_t, e_SpiHwCfgs[]) = {
+#if TARG_SPI_ENABLED(2)
+    {
+    .devId      = eBUS_ID_SPI_2,
+    .pInstance  = SPI2,
+    .pRcc       = &(RCC->APB1LENR),
+    .rccMask    = RCC_APB1LENR_SPI2EN,
+    .sckGpioId  = GPIO_ID_MAKE (TARG_SPI_2_SCK),
+    .misoGpioId = GPIO_ID_MAKE (TARG_SPI_2_MISO),
+    .mosiGpioId = GPIO_ID_MAKE (TARG_SPI_2_MOSI),
+#if PORT(TARG_SPI_2_SCK) == PORT(A) && PIN(TARG_SPI_2_SCK) == PIN(0, 12) && \
+PORT(TARG_SPI_2_MISO) == PORT(C) && PIN(TARG_SPI_2_MISO) == PIN(0, 2) &&    \
+PORT(TARG_SPI_2_MOSI) == PORT(C) && PIN(TARG_SPI_2_MOSI) == PIN(0, 3)
+    .afId = GPIO_AF5_SPI2,
+#else
+#error Unsupported SPI2 pin configuration
+#endif // SPI2 pins
+    },
+#endif
+};
 
-FJ_STATIC SPIHardware_t Get_SPI_HwById (eSPI_DEV_ID_t devId) {
+FJ_DEFINE_SHARED (uint8_t, e_nSpiDevices) = sizeof (e_SpiHwCfgs) / sizeof (SpiHardware_t);
 
-    switch (devId) {
-    // case eSPI_DEV_ID_1: return { 0 };
-    case eSPI_DEV_ID_2:
-        return (SPIHardware_t){ .pInstance = SPI2,
-                                .pRcc      = &(RCC->APB1LENR),
-                                .rccMask   = RCC_APB1LENR_SPI2EN,
-                                .sckOpts   = { PLAT_GPIO_ID_MAKE (A, 12) },
-                                .misoOpts  = { PLAT_GPIO_ID_MAKE (C, 2) },
-                                .mosiOpts  = { PLAT_GPIO_ID_MAKE (C, 3) },
-                                .afOpts    = { GPIO_AF5_SPI2 } };
-    // case eSPI_DEV_ID_3: return g_SPIHw[SPI_DEV_ID_TO_INDEX (eSPI_DEV_ID_3)];
-    // case eSPI_DEV_ID_4: return g_SPIHw[SPI_DEV_ID_TO_INDEX (eSPI_DEV_ID_4)];
-    // case eSPI_DEV_ID_5: return g_SPIHw[SPI_DEV_ID_TO_INDEX (eSPI_DEV_ID_5)];
-    default: return (SPIHardware_t){ 0 };
-    }
-}
 
 void SPI1_IRQHandler (void) {
     // TODO
@@ -80,11 +70,11 @@ void SPI5_IRQHandler (void) {
     // TODO
 }
 
-SPIDevice_t* Plat_SPI_Init (eSPI_DEV_ID_t devId) {
+SpiDevice_t* Plat_SPI_Init (eBUS_DEV_ID_t devId) {
 
-    SPIDevice_t* pDev = SPIDevices_GetMutable (SPI_DEV_ID_TO_INDEX (devId));
-    SPIHardware_t hw  = Get_SPI_HwById (devId);
-    if (!pDev || !hw.pInstance) {
+    SpiDevice_t* pDev  = Spi_GetDevice (devId);
+    SpiHardware_t* pHw = Spi_GetHwCfg (devId);
+    if (!pDev || !pHw || !pHw->pInstance) {
         return NULL;
     }
 
@@ -93,62 +83,12 @@ SPIDevice_t* Plat_SPI_Init (eSPI_DEV_ID_t devId) {
         return pDev;
     }
 
-    eGPIO_ID_t sck = 0, miso = 0, mosi = 0;
-    switch (devId) {
-    case eSPI_DEV_ID_1:
-        sck  = TARG_SPI_1_SCK;
-        miso = TARG_SPI_1_MISO;
-        mosi = TARG_SPI_1_MOSI;
-        break;
-    case eSPI_DEV_ID_2:
-        sck  = TARG_SPI_2_SCK;
-        miso = TARG_SPI_2_MISO;
-        mosi = TARG_SPI_2_MOSI;
-        break;
-    case eSPI_DEV_ID_3:
-        sck  = TARG_SPI_3_SCK;
-        miso = TARG_SPI_3_MISO;
-        mosi = TARG_SPI_3_MOSI;
-        break;
-    case eSPI_DEV_ID_4:
-        sck  = TARG_SPI_4_SCK;
-        miso = TARG_SPI_4_MISO;
-        mosi = TARG_SPI_4_MOSI;
-        break;
-    case eSPI_DEV_ID_5:
-        sck  = TARG_SPI_5_SCK;
-        miso = TARG_SPI_5_MISO;
-        mosi = TARG_SPI_5_MOSI;
-        break;
-    }
-
-    // invalid gpio ids are zero
-    if (!sck || !miso || !mosi) {
-        return NULL;
-    }
-
     // enable rcc spi clock
-    *(hw.pRcc) |= hw.rccMask;
-    bool found = false;
-    // find the alternate function mapping that matches the configured pins
-    for (uint32_t i = 0; i < PLAT_SPI_MAX_PIN_SEL; ++i) {
-        // clang-format off
-        if (sck == hw.sckOpts[i] &&
-            miso == hw.misoOpts[i] &&
-            mosi == hw.mosiOpts[i]) {
-            GPIO_t* pSCK  = GPIO_Init (sck, devId, PLAT_GPIO_CFG_AF_PP_NOPULL, hw.afOpts[i]);
-            GPIO_t* pMISO = GPIO_Init (miso, devId, PLAT_GPIO_CFG_AF_PP_NOPULL, hw.afOpts[i]);
-            GPIO_t* pMOSI = GPIO_Init (mosi, devId, PLAT_GPIO_CFG_AF_PP_NOPULL, hw.afOpts[i]);
-            if (!pSCK || !pMISO || !pMOSI) {
-                return NULL;
-            }
-            found = true;
-            break;
-        }
-        // clang-format on
-    }
-
-    if (!found) {
+    *(pHw->pRcc) |= pHw->rccMask;
+    GPIO_t* pSCK  = GPIO_Init (pHw->sckGpioId, devId, PLAT_GPIO_CFG_AF_PP_NOPULL, pHw->afId);
+    GPIO_t* pMISO = GPIO_Init (pHw->misoGpioId, devId, PLAT_GPIO_CFG_AF_PP_NOPULL, pHw->afId);
+    GPIO_t* pMOSI = GPIO_Init (pHw->mosiGpioId, devId, PLAT_GPIO_CFG_AF_PP_NOPULL, pHw->afId);
+    if (!pSCK || !pMISO || !pMOSI) {
         return NULL;
     }
 
@@ -171,14 +111,14 @@ SPIDevice_t* Plat_SPI_Init (eSPI_DEV_ID_t devId) {
     LL_SPI_Init (pDev->pInstance, &defaultInit);
 
     pDev->devId     = devId;
-    pDev->pInstance = hw.pInstance;
+    pDev->pInstance = pHw->pInstance;
     return pDev;
 }
 
-eSTATUS_t Plat_SPI_WriteRead_Block (SPIDevice_t* pDev, uint8_t const* pTx, uint8_t* pRx, uint32_t size) {
+eSTATUS_t Plat_SPI_WriteRead_Block (SpiDevice_t* pDev, uint8_t const* pTx, uint8_t* pRx, uint32_t size) {
 
     if (!pDev || !pDev->pInstance) {
-        return eSTATUS_NULL_ARG;
+        return eSTATUS_FAIL;
     }
 
     LL_SPI_SetTransferSize (pDev->pInstance, size);
@@ -207,7 +147,7 @@ eSTATUS_t Plat_SPI_WriteRead_Block (SPIDevice_t* pDev, uint8_t const* pTx, uint8
     LL_SPI_Disable (pDev->pInstance);
 }
 
-bool Plat_SPI_IsBusy (SPIDevice_t* pDev) {
+bool Plat_SPI_IsBusy (SpiDevice_t* pDev) {
 
     if (!pDev || !pDev->pInstance) {
         return false;

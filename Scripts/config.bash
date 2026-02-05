@@ -13,7 +13,7 @@ export MSYS_EXE_URL="https://repo.msys2.org/distrib/x86_64/${MSYS_EXE_FNAME}"
 export MINGW64_GNU_BIN_PATH="${MSYS_DIR}/mingw64/bin"
 export ARM_GNU_PREFIX="arm-none-eabi"
 export ARM_GNU_BIN_PATH=${MINGW64_GNU_BIN_PATH}
-export CMAKE_TOOLCHAIN_FILE="${FJ_PROJECT_ROOT}/cmake/stm32-cmake/cmake/stm32_gcc.cmake"
+export CMAKE_TOOLCHAIN_FILE="${FJ_PROJECT_ROOT}/cmake/gcc_tc.cmake"
 export CMAKE_GENERATOR="MinGW Makefiles"
 # update path to include mingw gnu and arm gnu
 # export PATH="${MINGW64_GNU_BIN_PATH}:${ARM_GNU_BIN_PATH}:${PATH}"

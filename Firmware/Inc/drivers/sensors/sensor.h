@@ -8,26 +8,20 @@
 
 #include "cfg/cfg.h"
 
-#include "drivers/driver.h"
-
 #include "drivers/bus/bus_defs.h"
 
-typedef uint8_t SENSOR_TYPE_t;
-enum {
-    SENSOR_TYPE_NULL = 0,
-    SENSOR_TYPE_ACC  = 1,
-    SENSOR_TYPE_GYR  = 2,
-    SENSOR_TYPE_MAG  = 3,
-    SENSOR_TYPE_IMU  = 4,
-    SENSOR_TYPE_MARG = 5
-};
 
-typedef uint8_t SENSOR_ID_t;
-enum { SENSOR_ID_NULL = 0, SENSOR_ID_BMI323, SENSOR_ID_MMC5983 };
+typedef uint8_t eSENSOR_IFACE_t;
+#define eSENSOR_IFACE_NONE                   0U
+#define eSENSOR_IFACE_BMI323                 1U
+#define eSENSOR_IFACE_MMC5983                2U
+
+// SENSOR_IFACE_MAKE(BMI323) -> eSENSOR_IFACE_BMI323
+#define SENSOR_IFACE_MAKE_EXPAND(IFACE_NAME) eSENSOR_IFACE_##IFACE_NAME
+#define SENSOR_IFACE_MAKE(IFACE_NAME)        SENSOR_IFACE_MAKE_EXPAND (IFACE_NAME)
 
 typedef struct AccCfg_s {
-    SENSOR_TYPE_t type;
-    SENSOR_ID_t id;
+    eSENSOR_IFACE_t iface;
     BusDeviceCfg_t busCfg;
     eGPIO_ID_t extiGpioId;
     uint8_t alignment;
@@ -35,8 +29,7 @@ typedef struct AccCfg_s {
 } AccCfg_t;
 
 typedef struct GyroCfg_s {
-    SENSOR_TYPE_t type;
-    SENSOR_ID_t id;
+    eSENSOR_IFACE_t iface;
     BusDeviceCfg_t busCfg;
     eGPIO_ID_t extiGpioId;
     uint8_t alignment;
@@ -44,8 +37,7 @@ typedef struct GyroCfg_s {
 } GyroCfg_t;
 
 typedef struct MagCfg_s {
-    SENSOR_TYPE_t type;
-    SENSOR_ID_t id;
+    eSENSOR_IFACE_t iface;
     BusDeviceCfg_t busCfg;
     eGPIO_ID_t extiGpioId;
     uint8_t alignment;
@@ -98,35 +90,38 @@ typedef struct Mag_s {
     Vec3f filteredData;
 } Mag_t;
 
-CFG_DECLARE (AccCfg_t, AccCfg);
-CFG_DECLARE (GyroCfg_t, GyroCfg);
-CFG_DECLARE (MagCfg_t, MagCfg);
+// CFG_DECLARE (AccCfg_t, AccCfg);
+// CFG_DECLARE (GyroCfg_t, GyroCfg);
+// CFG_DECLARE (MagCfg_t, MagCfg);
 
 FJ_DECLARE_SHARED (Acc_t, e_Acc);
 FJ_DECLARE_SHARED (Gyro_t, e_Gyro);
 FJ_DECLARE_SHARED (Mag_t, e_Mag);
 
-eSTATUS_t Sensors_Init (void);
-
 static inline Acc_t* Acc_GetMutable (void) {
     return &e_Acc;
 }
-eSTATUS_t Acc_Update (bool forcePolling);
-// eSTATUS_t Acc_Filter (void);
+eSTATUS_t Acc_Init (void);
+eSTATUS_t Acc_Update (uint32_t currentTimeUs, bool forcePolling);
 bool Acc_IsAvailable (void);
+
 
 static inline Gyro_t* Gyro_GetMutable (void) {
     return &e_Gyro;
 }
-eSTATUS_t Gyro_Update (bool forcePolling);
-// eSTATUS_t Gyro_Filter (void);
+eSTATUS_t Gyro_Init (void);
+eSTATUS_t Gyro_Update (uint32_t currentTimeUs, bool forcePolling);
 bool Gyro_IsAvailable (void);
 
 static inline Mag_t* Mag_GetMutable (void) {
     return &e_Mag;
 }
-eSTATUS_t Mag_Update (bool forcePolling);
-// eSTATUS_t Mag_Filter (void);
+eSTATUS_t Mag_Init (void);
+eSTATUS_t Mag_Update (uint32_t currentTimeUs, bool forcePolling);
 bool Mag_IsAvailable (void);
+
+
+eSTATUS_t Baro_Init (void);
+eSTATUS_t Gps_Init (void);
 
 #endif // DRIVERS_SENSORS_INERTIAL_H

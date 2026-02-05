@@ -3,8 +3,6 @@
 
 #include "common.h"
 
-#include "core/core.h"
-
 #include "drivers/tim.h"
 #include "drivers/tim_defs.h"
 
@@ -15,27 +13,35 @@
 
 #include "targets/target.h"
 
-DRIVER_DEFINE_ARRAY (TimDevice_t*, TimDevices, TARG_MAX_TIMS);
 
-TimHwCfg_t* TimDev_Get_HwCfg (eTIM_DEVICE_ID_t devId) {
+TimDevice_t* Tim_GetById (eTIM_DEVICE_ID_t devId) {
 
-    for (uint32_t i = 0; i < e_nTimHwCfgs; ++i) {
-        if (e_TimHwCfgs[i].id == devId) {
+    for (uint32_t i = 0; i < e_nTimDevices; ++i) {
+        if (e_TimDevices[i].devId == devId) {
+            return &e_TimDevices[i];
+        }
+    }
+    return NULL;
+}
+
+TimHwCfg_t* Tim_GetHwCfgById (eTIM_DEVICE_ID_t devId) {
+    for (uint32_t i = 0; i < e_nTimDevices; ++i) {
+        if (e_TimHwCfgs[i].devId == devId) {
             return &e_TimHwCfgs[i];
         }
     }
     return NULL;
 }
 
-TimDmaReqMap_t* TimDev_Get_DmaReqMap (eTIM_DEVICE_ID_t devId) {
+// TimDmaReqMap_t* TimDev_Get_DmaReqMap (eTIM_DEVICE_ID_t devId) {
 
-    for (uint32_t i = 0; i < e_nTimDmaReqMaps; ++i) {
-        if (e_TimDmaReqMaps[i].id == devId) {
-            return &e_TimDmaReqMaps[i];
-        }
-    }
-    return NULL;
-}
+//     for (uint32_t i = 0; i < e_nTimDmaReqMaps; ++i) {
+//         if (e_TimDmaReqMaps[i].id == devId) {
+//             return &e_TimDmaReqMaps[i];
+//         }
+//     }
+//     return NULL;
+// }
 
 bool TimDev_HasDmaSupport (eTIM_DEVICE_ID_t timId) {
     return TimDev_Get_DmaReqMap (timId) != NULL;

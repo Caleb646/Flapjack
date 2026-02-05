@@ -3,31 +3,41 @@
 
 #include <stdint.h>
 
-#include "drivers/dma_defs.h"
-
 #include "platform/platform.h"
 
-#include "core/stl/ring_buff.h"
+#include "stl/ring.h"
+
+#include "drivers/dma_defs.h"
+
+#include "drivers/io/gpio_defs.h"
+
+#include "drivers/core/lock.h"
 
 typedef uint8_t eSERIAL_PORT_MODE_t;
 enum {
-    eSERIAL_PORT_MODE_NULL = 0,
-    eSERIAL_PORT_MODE_TX   = (1U << 0U),
-    eSERIAL_PORT_MODE_RX   = (1U << 1U)
+    eSERIAL_PORT_MODE_NONE   = 0,
+    eSERIAL_PORT_MODE_TX     = (1U << 0U),
+    eSERIAL_PORT_MODE_TX_DMA = (1U << 1U),
+    eSERIAL_PORT_MODE_RX     = (1U << 2U),
+    eSERIAL_PORT_MODE_RX_DMA = (1U << 3U)
 };
 
 typedef uint8_t eSERIAL_PORT_ID_t;
-enum {
-    eSERIAL_PORT_ID_NULL = 0,
-    eSERIAL_PORT_ID_UART1,
-    eSERIAL_PORT_ID_UART2,
-    eSERIAL_PORT_ID_UART3,
-    eSERIAL_PORT_ID_UART4,
-    eSERIAL_PORT_ID_UART5,
-    eSERIAL_PORT_COUNT = eSERIAL_PORT_ID_UART5
-};
+
+#define eSERIAL_PORT_ID_NONE   0U
+#define eSERIAL_PORT_ID_UART_1 1U
+#define eSERIAL_PORT_ID_UART_2 2U
+#define eSERIAL_PORT_ID_UART_3 3U
+#define eSERIAL_PORT_ID_UART_4 4U
+#define eSERIAL_PORT_ID_UART_5 5U
+#define eSERIAL_PORT_COUNT     5U
+
 // clang-format off
-#define SERIAL_PORT_ID_VALID(PORT_ID) ((PORT_ID) != eSERIAL_PORT_ID_NULL && (PORT_ID) < eSERIAL_PORT_COUNT)
+// SERIAL_PORT_ID_MAKE(UART_1) expands to eSERIAL_PORT_ID_UART_1
+#define SERIAL_PORT_ID_EXPAND(PORTNAME) eSERIAL_PORT_ID_##PORTNAME
+#define SERIAL_PORT_ID_MAKE(...) SERIAL_PORT_ID_EXPAND(__VA_ARGS__) 
+
+#define SERIAL_PORT_ID_VALID(PORT_ID) ((PORT_ID) != eSERIAL_PORT_ID_NONE && (PORT_ID) <= eSERIAL_PORT_COUNT)
 #define SERIAL_PORT_ID_TO_INDEX(PORT_ID) ((PORT_ID) - 1U)
 // clang-format on
 
@@ -67,9 +77,12 @@ typedef struct SerialPortCfg_s {
     eSERIAL_PORT_TYPE_t portType;
     uint16_t modes;
     uint16_t functions;
+    eIRQ_PRIO_t irqPrior;
 
     uint32_t rxBufferSize;
     uint32_t txBufferSize;
+
+    bool isShared;
 
 } SerialPortCfg_t;
 
@@ -78,7 +91,7 @@ typedef void (*SerialRxCallback_t) (SerialPort_t* pPort, uint8_t const* pData, u
 
 typedef struct SerialPortVtable_s {
     eSTATUS_t (*fnWrite) (SerialPort_t* pSerialPort, uint8_t const* pData, uint32_t size);
-    eSTATUS_t (*fnRead) (SerialPort_t* pSerialPort, uint8_t* pData, uint32_t size);
+    uint32_t (*fnRead) (SerialPort_t* pSerialPort, uint8_t* pData, uint32_t size);
     eSTATUS_t (*fnSetBaud) (SerialPort_t* pSerialPort, eSERIAL_PORT_BAUD_t baudrate);
     // eSTATUS_t (*fnSetRxCallback) (SerialPort_t* pSerialPort, SerialRxCallback_t fnCallback, void* pCallbackArg);
 } SerialPortVtable_t;
@@ -86,9 +99,13 @@ typedef struct SerialPortVtable_s {
 typedef struct SerialPort_s {
 
     eSERIAL_PORT_ID_t portId;
-    eSERIAL_PORT_MODE_t mode;
     eSERIAL_PORT_BAUD_t baudrate;
+    uint16_t modes;
     uint16_t functions;
+
+    uint32_t irqNum;
+    uint32_t irqPrior;
+    bool isShared;
 
     void* pSerialHwHandle;
 
@@ -98,11 +115,13 @@ typedef struct SerialPort_s {
     SerialPortVtable_t* pVtbl;
 
     bool volatile isRxBusy;
-    RingBuff rxRingBuff;
+    RingBuff_t volatile rxRingBuff;
+    SpinLock_t rxLock;
 
     bool volatile isTxBusy;
     uint32_t volatile txBytesInProgress;
-    RingBuff txRingBuff;
+    RingBuff_t volatile txRingBuff;
+    SpinLock_t txLock;
 
     DmaDevice_t* pRxDmaDev;
     DmaDevice_t* pTxDmaDev;

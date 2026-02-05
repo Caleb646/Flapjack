@@ -1,9 +1,19 @@
 #ifndef PLATFORM_STM32_H
 #define PLATFORM_STM32_H
 
-#include "hal.h"
+#include "stm32h7xx.h"
+#include "stm32h7xx_hal.h"
 
-#include "drivers/io/gpio_defs.h"
+#include "stm32h7xx_ll_bus.h"
+#include "stm32h7xx_ll_dma.h"
+#include "stm32h7xx_ll_gpio.h"
+#include "stm32h7xx_ll_rcc.h"
+#include "stm32h7xx_ll_spi.h"
+#include "stm32h7xx_ll_system.h"
+#include "stm32h7xx_ll_tim.h"
+
+#define PLAT_MAX_CORES             2U
+#define PLAT_CORE_ID_MAKE(NAME)    NAME##_CPUID
 
 #define PLAT_SPI_MAX_DEVS          5U
 #define PLAT_SPI_MAX_PIN_SEL       1U
@@ -22,21 +32,6 @@
 #define PLAT_GPIO_PIN_BITS         4U
 
 // clang-format off
-#define I_GPIO_ID_MAKE(PORT_ID, PIN_ID) ((eGPIO_ID_t)(PORT_ID) << PLAT_GPIO_PIN_BITS | (eGPIO_ID_t)(PIN_ID))
-#define PLAT_GPIO_ID_MAKE(PORT, PIN) I_GPIO_ID_MAKE(eGPIO_PORTID_##PORT, eGPIO_PINID_##PIN)
-// clang-format on
-
-// clang-format off
-
-// #define PLAT_GPIO_ID_TO_PORT_ID(GPIO_ID) ((eGPIO_PORTID_t)(((GPIO_ID) >> PLAT_GPIO_PIN_BITS) & 0x0FU))
-// #define PLAT_GPIO_ID_TO_PIN_ID(GPIO_ID)  ((eGPIO_PINID_t)((GPIO_ID) & 0x0FU))
-
-#define PLAT_GPIO_ID_TO_PORT_INDEX(GPIO_ID) (((GPIO_ID) >> PLAT_GPIO_PIN_BITS) - 1U)
-#define PLAT_GPIO_ID_TO_PIN_INDEX(GPIO_ID)  (((GPIO_ID) & 0x0FU) - 1U)
-#define PLAT_GPIO_ID_TO_INDEX(GPIO_ID)    (((PLAT_GPIO_ID_TO_PORT_INDEX (GPIO_ID)) * PLAT_GPIO_MAX_PINS) + (PLAT_GPIO_ID_TO_PIN_INDEX (GPIO_ID)))
-#define PLAT_GPIO_ID_IS_VALID(GPIO_ID)   (PLAT_GPIO_ID_TO_PORT_INDEX (GPIO_ID) != eGPIO_PORTID_NULL && PLAT_GPIO_ID_TO_PORT_INDEX (GPIO_ID) <= PLAT_GPIO_MAX_PORTS && \
-                                     PLAT_GPIO_ID_TO_PIN_INDEX (GPIO_ID) != eGPIO_PINID_NULL && PLAT_GPIO_ID_TO_PIN_INDEX (GPIO_ID) <= PLAT_GPIO_MAX_PINS)
-
 
 #define PLAT_GPIO_CFG_MAKE(MODE, PULL, SPEED) ((GPIOCfg_t){ .mode = (MODE), .pull = (PULL), .speed = (SPEED) })
 #define PLAT_GPIO_CFG_AF_PP_NOPULL            PLAT_GPIO_CFG_MAKE (GPIO_MODE_AF_PP, GPIO_NOPULL, GPIO_SPEED_FREQ_HIGH)
