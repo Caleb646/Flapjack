@@ -87,6 +87,18 @@ def install_msys():
         "Failed to install ARM GCC toolchain"
     )
 
+    print("Installing Clang Toolchain...")
+    run_msys_command(
+        'pacman -S --needed --noconfirm mingw-w64-x86_64-clang',
+        "Failed to install Clang toolchain"
+    )
+
+    print("Installing Clang Tidy...")
+    run_msys_command(
+        'pacman -S --needed --noconfirm mingw-w64-x86_64-clang-tools-extra',
+        "Failed to install Clang Tidy"
+    )
+
 
 def verify_tools():
 
@@ -119,8 +131,6 @@ def main():
     
     if verify_tools():
         print("SDK installation completed successfully!")
-        print("To build the firmware, add the following to your PATH:")
-        print(f"  {MINGW64_GNU_BIN_PATH}")
     else:
         print("SDK installation completed with errors!")
         print("Some required tools are missing.")
