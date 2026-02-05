@@ -221,8 +221,17 @@ void SystemClock_Config (void) {
     RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
     RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
 
-    /* Supply configuration update enable */
+#if defined(USE_PWR_LDO_SUPPLY) && defined(USE_PWR_DIRECT_SMPS_SUPPLY)
+#error "Only one of USE_PWR_LDO_SUPPLY or USE_PWR_DIRECT_SMPS_SUPPLY can be defined"
+#endif /* USE_PWR_LDO_SUPPLY && USE_PWR_DIRECT_SMPS_SUPPLY */
+
+#if defined(USE_PWR_DIRECT_SMPS_SUPPLY) && defined(SMPS)
     HAL_PWREx_ConfigSupply (PWR_DIRECT_SMPS_SUPPLY);
+#endif /* USE_PWR_DIRECT_SMPS_SUPPLY && SMPS */
+
+#if defined(USE_PWR_LDO_SUPPLY)
+    HAL_PWREx_ConfigSupply (PWR_LDO_SUPPLY);
+#endif /* USE_PWR_LDO_SUPPLY */
 
     /* Configure the main internal regulator output voltage */
     __HAL_PWR_VOLTAGESCALING_CONFIG (PWR_REGULATOR_VOLTAGE_SCALE1);
