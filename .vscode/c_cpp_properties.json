@@ -1,36 +1,14 @@
 {
     "configurations": [
         {
-            "name": "Linux WSL DEBUG",
-            "includePath": [
-                "${workspaceFolder}/**",
-                "${workspaceFolder}/CM4",
-                "${workspaceFolder}/CM7",
-                "${workspaceFolder}/Drivers",
-                "${workspaceFolder}/Middlewares"
-            ],
-            "defines": [
-                "DEBUG",
-                "CORE_CM4",
-                "CORE_CM7",
-                "USE_HAL_DRIVER",
-                "STM32H747xx",
-                "USE_PWR_DIRECT_SMPS_SUPPLY"
-        ],
-            "compilerPath": "/usr/bin/arm-none-eabi-gcc",
-            "cStandard": "c17",
-            "cppStandard": "gnu++17",
-            "intelliSenseMode": "gcc-arm",
-            "configurationProvider": "none"
-        },
-        {
             "name": "Windows DEBUG",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/CM4",
-                "${workspaceFolder}/CM7",
-                "${workspaceFolder}/Drivers",
-                "${workspaceFolder}/Middlewares"
+                "${workspaceFolder}/Firmware/Common/Inc",
+                "${workspaceFolder}/Firmware/CM4/Core/Inc",
+                "${workspaceFolder}/Firmware/CM7/Core/Inc",
+                "${workspaceFolder}/Vendor/STM32H7/CMSIS/Include",
+                "${workspaceFolder}/Vendor/STM32H7/STM32H7xx_HAL_Driver/Inc"
             ],
             "defines": [
                 // "UNIT_TEST", // Uncomment for unit tests
@@ -41,7 +19,7 @@
                 "STM32H747xx",
                 "USE_PWR_DIRECT_SMPS_SUPPLY"
         ],
-            "compilerPath": "C:/Program Files (x86)/GNU Arm Embedded Toolchain/10 2021.10/bin/arm-none-eabi-gcc",
+            "compilerPath": "${workspaceFolder}/Tools/msys/mingw64/bin/arm-none-eabi-gcc.exe",
             "cStandard": "c11",
             "intelliSenseMode": "gcc-arm",
             "configurationProvider": "none"
