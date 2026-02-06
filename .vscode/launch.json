@@ -11,6 +11,59 @@
             "cwd": "${workspaceFolder}/Tests/build",
             "environment": [],
             "preLaunchTask": "build tests"
+        },
+
+        {
+            "name": "Debug M7 Core",
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceFolder}/Build/${input:boardName}/Debug/m7core.elf",
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            "armToolchainPath": "${workspaceFolder}/Tools/msys/mingw64/bin",
+            "gdbPath": "${workspaceFolder}/Tools/msys/mingw64/bin/gdb-multiarch",
+            "configFiles": ["Scripts/stm32h747_dual_core.cfg"],
+            "targetId": "stm32h7x.cpu0",
+            "runToEntryPoint": "main",
+            "preLaunchTask": "build firmware debug",
+            "postLaunchCommands": [
+                "monitor halt",
+                "load"
+            ]
+        },
+        {
+            "name": "Debug M4 Core", 
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceFolder}/Build/${input:boardName}/Debug/m4core.elf",
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            "armToolchainPath": "${workspaceFolder}/Tools/msys/mingw64/bin",
+            "gdbPath": "${workspaceFolder}/Tools/msys/mingw64/bin/gdb-multiarch",
+            "configFiles": ["Scripts/stm32h747_dual_core.cfg"],
+            "targetId": "stm32h7x.cpu1",
+            "runToEntryPoint": "main",
+            "preLaunchTask": "build firmware debug",
+            "postLaunchCommands": [
+                "monitor halt",
+                "load"
+            ]
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Debug M7 & M4 Cores",
+            "configurations": ["Debug M7 Core", "Debug M4 Core"],
+            "preLaunchTask": "build firmware debug"
+        }
+    ],
+
+    "inputs": [
+        {
+            "id": "boardName",
+            "description": "Select board",  
+            "type": "pickString",
+            "options": ["nucleo-h747zi", "flapjack-v1"],
         }
     ]
 }

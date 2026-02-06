@@ -16,7 +16,7 @@ ARM_GNU_BIN_PATH = MINGW64_GNU_BIN_PATH
 
 CMAKE_GENERATOR = "MinGW Makefiles"
 
-VALID_BOARDS = ["DEV_BOARD", "MY_BOARD", "PROD_BOARD"]
+VALID_BOARDS = ["nucleo-h747zi", "flapjack-v1"]
 
 
 def parse_arguments():
@@ -27,7 +27,7 @@ def parse_arguments():
 Examples:
   fw_build.py {VALID_BOARDS[0]}
   fw_build.py {VALID_BOARDS[0]} --build-type Release
-  fw_build.py --board {VALID_BOARDS[1]} --build-type Debug
+  fw_build.py --board {VALID_BOARDS[0]} --build-type Debug
 
 Valid boards: {', '.join(VALID_BOARDS)}
         """

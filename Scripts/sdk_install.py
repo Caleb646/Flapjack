@@ -99,6 +99,12 @@ def install_msys():
         "Failed to install Clang Tidy"
     )
 
+    print("Installing OpenOCD...")
+    run_msys_command(
+        'pacman -S --needed --noconfirm mingw-w64-x86_64-openocd',
+        "Failed to install OpenOCD"
+    )
+
 
 def verify_tools():
 

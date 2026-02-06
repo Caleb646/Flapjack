@@ -1,23 +1,6 @@
-/**
- ******************************************************************************
- * @file           : main.c
- * @brief          : Main program body
- ******************************************************************************
- * @attention
- *
- * Copyright (c) 2025 STMicroelectronics.
- * All rights reserved.
- *
- * This software is licensed under terms that can be found in the LICENSE file
- * in the root directory of this software component.
- * If no LICENSE file comes with this software, it is provided AS-IS.
- *
- ******************************************************************************
- */
-#include "main.h"
-
 #include <stdio.h>
 
+#include "hal.h"
 #include "control.h"
 #include "fcstate.h"
 
@@ -47,9 +30,7 @@
 
 void SystemClock_Config (void);
 
-void TaskMotionControlUpdate (void* pvParameters) {
-
-    FJ_UNUSED (pvParameters);
+void TaskMotionControlUpdate (void) {
 
     uint32_t msLastUpdate    = GetMilliseconds ();
     uint32_t const msLogStep = MS_PER_LOG_DATA_UPDATE;
@@ -91,7 +72,7 @@ void TaskMotionControlUpdate (void* pvParameters) {
              */
             msLastUpdate = GetMilliseconds ();
             // Limit state checks to 1000Hz
-            vTaskDelay (pdMS_TO_TICKS (1));
+            Delay (1);
             continue;
         }
         /*

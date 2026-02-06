@@ -7,6 +7,28 @@
             "command": "cmake --build ./Tests/build --config Debug",
             "group": "build",
             "problemMatcher": []
+        },
+        {
+            "label": "build firmware debug",
+            "type": "shell",
+            "command": "python", 
+            "args": ["Scripts/fw_build.py", "${input:boardName}"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always", 
+                "focus": true,
+                "panel": "shared"
+            },
+            "problemMatcher": "$gcc"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "boardName",
+            "description": "Select board",  
+            "type": "pickString",
+            "options": ["nucleo-h747zi", "flapjack-v1"],
         }
     ]
 }

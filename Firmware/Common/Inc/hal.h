@@ -1,6 +1,16 @@
 #ifndef HAL_H
 #define HAL_H
 
+#ifndef UNIT_TEST
+
+// #include "cmsis_os.h"
+// #include "cmsis_gcc.h"
+#include "stm32h7xx.h"
+#include "stm32h7xx_hal.h"
+
+#endif
+
+
 #ifdef UNIT_TEST
 
 // #include "../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_dma.h"
@@ -967,12 +977,7 @@ extern void (*HAL_NVIC_DisableIRQ_Mock)(IRQn_Type IRQn);
 // clang-format on
 // #ifdef UNIT_TEST
 
-#else
-
-// #include "cmsis_os.h"
-#include "stm32h7xx.h"
-#include "stm32h7xx_hal.h"
-
-#endif
 
 #endif // HAL_H
+
+#endif

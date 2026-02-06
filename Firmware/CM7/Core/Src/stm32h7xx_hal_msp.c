@@ -19,7 +19,9 @@
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
-#include "main.h"
+#include "hal.h"
+
+#include "core/core.h"
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
@@ -57,6 +59,38 @@
 /* USER CODE BEGIN 0 */
 
 /* USER CODE END 0 */
+
+#define OSC32_OUT_Pin            GPIO_PIN_15
+#define OSC32_OUT_GPIO_Port      GPIOC
+#define OSC32_IN_Pin             GPIO_PIN_14
+#define OSC32_IN_GPIO_Port       GPIOC
+// #define STLINK_TX_GPIO_Pin GPIO_PIN_10
+// #define STLINK_TX_GPIO_Port GPIOA
+// #define STLINK_RX_GPIO_Pin GPIO_PIN_9
+// #define STLINK_RX_GPIO_Port GPIOA
+#define CEC_CK_MCO1_Pin          GPIO_PIN_8
+#define CEC_CK_MCO1_GPIO_Port    GPIOA
+#define SPI2_SCK_Pin             GPIO_PIN_12
+#define SPI2_SCK_GPIO_Port       GPIOA
+#define SPI2_NSS_Pin             GPIO_PIN_11
+#define SPI2_NSS_GPIO_Port       GPIOA
+// #define IMU_INT_GPIO_Pin              GPIO_PIN_7
+// #define IMU_INT_GPIO_Port        GPIOC
+// #define IMU_INT_EXTI_IRQn        EXTI9_5_IRQn
+#define OSC_OUT_Pin              GPIO_PIN_1
+#define OSC_OUT_GPIO_Port        GPIOH
+#define OSC_IN_Pin               GPIO_PIN_0
+#define OSC_IN_GPIO_Port         GPIOH
+#define PMOD_14_ARD_D3_Pin       GPIO_PIN_8
+#define PMOD_14_ARD_D3_GPIO_Port GPIOF
+#define PMOD_3_Pin               GPIO_PIN_2
+#define PMOD_3_GPIO_Port         GPIOC
+#define PMOD_2_Pin               GPIO_PIN_3
+#define PMOD_2_GPIO_Port         GPIOC
+#define ARD_D6_Pin               GPIO_PIN_7
+#define ARD_D6_GPIO_Port         GPIOJ
+#define ARD_D9_Pin               GPIO_PIN_6
+#define ARD_D9_GPIO_Port         GPIOJ
 
 void HAL_TIM_MspPostInit (TIM_HandleTypeDef* htim);
 /**
@@ -103,7 +137,7 @@ void HAL_SPI_MspInit (SPI_HandleTypeDef* hspi) {
         PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI2;
         PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
         if (HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct) != HAL_OK) {
-            Error_Handler ();
+            CriticalErrorHandler ();
         }
 
         /* Peripheral clock enable */
