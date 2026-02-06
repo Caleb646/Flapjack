@@ -62,16 +62,18 @@ set(FJ_SHARED_CFLAGS
     -Wstrict-aliasing
 )
 
+##################### CM7 Core Build ########################
+
 add_executable(m7core 
     ${STM32_SRCS}
     ${FW_COMMON_SRCS}
     ${FW_CM7_SRCS}
 )
 
-add_custom_command(TARGET m7core POST_BUILD
-    COMMAND ${CMAKE_SIZE} -A $<TARGET_FILE:m7core>
-    COMMENT "Size information for m7core"
-)
+# add_custom_command(TARGET m7core POST_BUILD
+#     COMMAND ${CMAKE_SIZE} -A $<TARGET_FILE:m7core>
+#     COMMENT "Size information for m7core"
+# )
 
 list(JOIN FJ_SHARED_CFLAGS " " FJ_SHARED_CFLAGS_STRING)
 set_source_files_properties(${FW_CM7_SRCS} PROPERTIES COMPILE_FLAGS ${FJ_SHARED_CFLAGS_STRING})
@@ -118,4 +120,73 @@ target_include_directories(m7core SYSTEM PRIVATE
 target_include_directories(m7core PRIVATE
     ${FW_COMMON_INCS}
     ${FW_CM7_INCS}
+)
+
+
+##################### CM4 Core Build ########################
+
+add_executable(m4core 
+    ${STM32_SRCS}
+    ${FW_COMMON_SRCS}
+    ${FW_CM4_SRCS}
+)
+
+# add_custom_command(TARGET m4core POST_BUILD
+#     COMMAND ${CMAKE_SIZE} -A $<TARGET_FILE:m4core>
+#     COMMENT "Size information for m4core"
+# )
+
+set_source_files_properties(${FW_CM4_SRCS} PROPERTIES COMPILE_FLAGS ${FJ_SHARED_CFLAGS_STRING})
+
+target_compile_options(m4core PRIVATE 
+    # use C11 standard with GNU extensions
+    -std=gnu11
+    # syscalls are simple stubs that return an error
+    --specs=nosys.specs
+    # use newlib nano for smaller footprint
+    --specs=nano.specs
+    -mcpu=cortex-m4
+    -mthumb 
+    -mfpu=fpv4-sp-d16 
+    -mfloat-abi=hard 
+    -fdata-sections 
+    -ffunction-sections
+)
+target_link_options(m4core PRIVATE 
+    -mcpu=cortex-m4 
+    -mfpu=fpv4-sp-d16 
+    -mfloat-abi=hard
+    -fdata-sections 
+    -ffunction-sections
+    -static
+    -mthumb
+    --specs=nosys.specs
+    --specs=nano.specs
+    -T${FW_CM4_LINKER_SCRIPT}
+    -Wl,--gc-sections
+    -Wl,--start-group -lc -lm -Wl,--end-group
+    -Wl,-Map=${CMAKE_CURRENT_BINARY_DIR}/m4core.map
+)
+
+target_compile_definitions(m4core PRIVATE
+    ${STM32_DEFINES}
+    ${FW_CM4_DEFINES}
+)
+# use SYSTEM for cmsis and hal includes to suppress warnings from CMSIS and HAL
+target_include_directories(m4core SYSTEM PRIVATE
+    ${STM32_INCS}
+)
+target_include_directories(m4core PRIVATE
+    ${FW_COMMON_INCS}
+    ${FW_CM4_INCS}
+)
+
+
+##################################################
+
+add_custom_target(size ALL
+    DEPENDS m7core m4core
+    COMMAND ${CMAKE_SIZE} -A $<TARGET_FILE:m7core>
+    COMMAND ${CMAKE_SIZE} -A $<TARGET_FILE:m4core>
+    COMMENT "Size information for both cores"
 )

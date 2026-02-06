@@ -28,13 +28,11 @@ set(FW_CM7_INCS
 )
 
 set(FW_CM7_SRCS
-    # ${FW_CM7_SRC_DIR}/main.c
     ${FW_CM7_SRC_DIR}/stm32h7xx_hal_msp.c
     ${FW_CM7_SRC_DIR}/stm32h7xx_it.c
     ${FW_CM7_SRC_DIR}/syscalls.c
     ${FW_CM7_SRC_DIR}/sysmem.c
     ${FW_CM7_ROOT_DIR}/Core/Startup/startup_stm32h747xihx.s
-    # ${FW_CM7_SRC_DIR}/cm7/startup_stm32h747xihx.s
 )
 
 set(FW_CM7_DEFINES
@@ -60,8 +58,6 @@ set(FW_CM4_INCS
 )
 
 set(FW_CM4_SRCS
-    # ${FW_CM4_SRC_DIR}/main.c
-    ${FW_CM4_SRC_DIR}/stm32h7xx_hal_msp.c
     ${FW_CM4_SRC_DIR}/stm32h7xx_it.c
     ${FW_CM4_SRC_DIR}/syscalls.c
     ${FW_CM4_SRC_DIR}/sysmem.c

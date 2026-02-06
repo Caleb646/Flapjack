@@ -97,7 +97,6 @@ def run_cmake_build(board_name, build_type):
     cmake_args = [
         "cmake",
         # "--fresh",
-        "-j",
         "-S", FJ_PROJECT_ROOT,
         "-B", output_dir,
         "-G", CMAKE_GENERATOR,
@@ -115,7 +114,7 @@ def run_cmake_build(board_name, build_type):
 
     print("Building project...")
     try:
-        subprocess.run(["cmake", "--build", output_dir], check=True, env=env)
+        subprocess.run(["cmake", "--build", output_dir, "-j"], check=True, env=env)
     except subprocess.CalledProcessError:
         print("ERROR: CMake build failed")
         sys.exit(1)

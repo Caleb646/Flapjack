@@ -94,9 +94,9 @@ regs Kusti, 23.10.2004
 #include <stdarg.h>
 
 void init_printf (void* putp, void (*putf) (void*, char));
-void tfp_printf (char* fmt, ...);
+void tfp_printf (char const* fmt, ...);
 void tfp_sprintf (char* s, char* fmt, ...);
-void tfp_format (void* putp, void (*putf) (void*, char), char* fmt, va_list va);
+void tfp_format (void* putp, void (*putf) (void*, char), char const* fmt, va_list va);
 
 // #define GCC_NODISCARD             __attribute__ ((__warn_unused_result__))
 // #define GCC_ALIGN_ADDR(balign)    __attribute__ ((aligned (balign)))
