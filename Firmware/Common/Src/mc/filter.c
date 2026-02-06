@@ -432,7 +432,7 @@ eSTATUS_t FilterInit (FilterInitConf_t conf, Filter_t* pOut) {
     bool status = FilterMadgwickInit (conf.madgwickConf, &pFilter->madgwick);
     RETURN_IF (status != true, eSTATUS_FAILURE, "Failed to init Madgwick filter");
 
-    pFilter->msLastUpdateTime = GetMilliseconds ();
+    pFilter->usLastUpdateTime = GetMicroseconds ();
     pFilter->isInitialized    = true;
     return eSTATUS_SUCCESS;
 }
@@ -471,8 +471,8 @@ Filter_Update (vFilter_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyro, Vec3
     }
 
     bool success = FilterMadgwickUpdate (&pFilter->madgwick, pAccel, pGyro, pMag, dt, pOutput);
-    if (success == true) {
-        pFilter->msLastUpdateTime = GetMilliseconds ();
+    if (success) {
+        pFilter->usLastUpdateTime = GetMicroseconds ();
     }
     return success ? eSTATUS_SUCCESS : eSTATUS_FAILURE;
 }

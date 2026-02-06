@@ -4,7 +4,6 @@
 #include "fcstate.h"
 #include "hal.h"
 
-
 #include "core/core.h"
 
 #include "conf/conf.h"
@@ -31,143 +30,24 @@
 
 void SystemClock_Config (void);
 
-void TaskMotionControlUpdate (void) {
-
-    uint32_t msLastUpdate    = GetMilliseconds ();
-    uint32_t const msLogStep = MS_PER_LOG_DATA_UPDATE;
-    LOG_INFO ("Motion control update task started");
-
-    if (FJ_LOOP_UPDATE_RATE_HZ > 1000U || FJ_LOOP_UPDATE_RATE_HZ < 0U) {
-        LOG_ERROR ("Sensor update rate invalid");
-    }
-
-    // TODO: TEMPORARY. should be done after receiving a start command
-    if (Device_StartAll () != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to start Device module");
-    }
-
-    if (MC_StartAll () != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to start Motion Control module");
-    }
-    FC_SET_RUNNING_OP_STATE ();
-
-    eSTATUS_t status      = eSTATUS_SUCCESS;
-    FCState_t fcState     = { 0 };
-    Vec3f currentAttitude = { 0.0F };
-    Vec3f targetAttitude  = { 0.0F };
-    Vec3f maxAttitude     = { 0.0F };
-    Vec3f pidAttitude     = { 0.0F };
-    float targetThrottle  = 0.0F;
-    float dt              = 0.0F;
-    Vec3f accel           = { 0.0F };
-    Vec3f gyro            = { 0.0F };
-    Vec3f mag             = { 0.0F };
-    Vec3f* pMagData       = NULL;
-
-    while (true) {
-
-        fcState = FCState_GetCopyOfActiveState ();
-        if (fcState.opState != eOP_STATE_RUNNING) {
-            /*
-             * Update msLastUpdate so dt does not get too large.
-             */
-            msLastUpdate = GetMilliseconds ();
-            // Limit state checks to 1000Hz
-            Delay (1);
-            continue;
-        }
-        /*
-         * TODO: notifications from IMU started breaking FreeRTOS.
-         * I am hitting this assert sometimes: configASSERT( listLIST_ITEM_CONTAINER( &( pxTCB->xEventListItem ) ) == NULL in tasks.c
-         */
-        // ulTaskNotifyTake (pdTRUE, pdMS_TO_TICKS (1000));
-        vIMU_t* pIMUDev    = IMU_GetMutableActiveDevice ();
-        vMag_t* pMagDev    = Mag_GetMutableActiveDevice ();
-        vFilter_t* pFilter = Filter_GetMutableActiveFilter ();
-        vPID_t* pPID       = PID_GetMutableActivePID ();
-        status             = eSTATUS_SUCCESS;
-        currentAttitude    = fcState.currentAttitude;
-        targetAttitude     = fcState.targetAttitude;
-        maxAttitude        = fcState.maxAttitude;
-        targetThrottle     = fcState.targetThrottle;
-        dt                 = ((float)GetMilliseconds () - (float)msLastUpdate) / 1000.0F;
-        // set to NULL each iteration
-        pMagData = NULL;
-
-        if (STATUS_FAIL (IMU_Update (pIMUDev, false, &accel, &gyro))) {
-            LOG_ERROR ("Failed to get IMU data");
-            continue;
-        }
-
-        // NOTE: Okay if magnetometer data is not available
-        if (STATUS_OK (Mag_Update (pMagDev, false, &mag))) {
-            pMagData = &mag;
-        }
-
-        status = Filter_Update (pFilter, &accel, &gyro, pMagData, dt, &currentAttitude);
-        if (STATUS_FAIL (status)) {
-            LOG_ERROR ("Failed to filter IMU data with Madgwick filter");
-            continue;
-        }
-
-
-        status = PID_Update (pPID, &currentAttitude, &targetAttitude, &maxAttitude, dt, &pidAttitude);
-        if (STATUS_FAIL (status)) {
-            LOG_ERROR ("Failed to update PID attitude");
-            continue;
-        }
-
-        status = Actuators_Update (pidAttitude, targetThrottle);
-        if (STATUS_FAIL (status)) {
-            LOG_ERROR ("Failed to write actuators");
-            continue;
-        }
-
-        if (FC_SET_CURRENT_ATTITUDE (currentAttitude) == false) {
-            LOG_ERROR ("Failed to set current attitude in FCState");
-            continue;
-        }
-
-        if ((GetMilliseconds () - msLastUpdate) >= msLogStep) {
-
-            Vec3f a   = accel;
-            Vec3f g   = gyro;
-            Vec3f ca  = currentAttitude;
-            Vec3f pid = pidAttitude;
-            pid.roll *= maxAttitude.roll;
-            pid.pitch *= maxAttitude.pitch;
-            pid.yaw *= maxAttitude.yaw;
-
-            // portENTER_CRITICAL ();
-            LOG_DATA_IMU_DATA (a, g);
-            LOG_DATA_CURRENT_ATTITUDE (ca);
-            LOG_DATA_CURRENT_PID_ATTITUDE (pid);
-            ActuatorsLogData ();
-            // portEXIT_CRITICAL ();
-        }
-
-        msLastUpdate = GetMilliseconds ();
-        // Limit loop to sensor update rate
-        Delay (1000U / FJ_LOOP_UPDATE_RATE_HZ);
-    }
-}
-
 int main (void) {
 
     HAL_Init ();
     SystemClock_Config ();
-
     /*HW semaphore Clock enable*/
     __HAL_RCC_HSEM_CLK_ENABLE ();
-
     /* Take HSEM */
     HAL_HSEM_FastTake (HSEM_ID_0);
     /* Release HSEM in order to notify the CPU2(CM4) */
     HAL_HSEM_Release (HSEM_ID_0, 0);
-
     /* Wait until CPU2 wakes up from stop mode */
     while (__HAL_RCC_GET_FLAG (RCC_FLAG_D2CKRDY) == RESET) {
     }
+
+    __HAL_RCC_SYSCFG_CLK_ENABLE ();
+    // enable CM4_SEV_IRQn so CM4 can send SEV to CM7
+    HAL_NVIC_SetPriority (CM4_SEV_IRQn, 9, 9);
+    HAL_NVIC_EnableIRQ (CM4_SEV_IRQn);
 
     if (Core_Init () != eSTATUS_SUCCESS) {
         CriticalErrorHandler ();
@@ -278,6 +158,10 @@ int main (void) {
     __HAL_HSEM_CLEAR_FLAG (__HAL_HSEM_SEMID_TO_MASK (HSEM_ID_0));
 
     HAL_Init ();
+
+    // enable CM4_SEV_IRQn so CM7 can send SEV to CM4
+    HAL_NVIC_SetPriority (CM7_SEV_IRQn, 9, 9);
+    HAL_NVIC_EnableIRQ (CM7_SEV_IRQn);
 
     if (Core_Init () != eSTATUS_SUCCESS) {
         CriticalErrorHandler ();

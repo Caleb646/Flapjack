@@ -48,7 +48,7 @@ typedef struct {
 typedef struct Filter_s {
     FilterLowPass_t lowpass;
     FilterMadgwick_t madgwick;
-    uint32_t msLastUpdateTime;
+    uint32_t usLastUpdateTime;
     bool isInitialized;
 } Filter_t;
 

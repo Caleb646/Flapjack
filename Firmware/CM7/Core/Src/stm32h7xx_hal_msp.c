@@ -93,30 +93,6 @@
 #define ARD_D9_GPIO_Port         GPIOJ
 
 void HAL_TIM_MspPostInit (TIM_HandleTypeDef* htim);
-/**
- * Initializes the Global MSP.
- */
-void HAL_MspInit (void) {
-
-    /* USER CODE BEGIN MspInit 0 */
-
-    /* USER CODE END MspInit 0 */
-
-    __HAL_RCC_SYSCFG_CLK_ENABLE ();
-
-    /* System interrupt init*/
-    /* PendSV_IRQn interrupt configuration */
-    HAL_NVIC_SetPriority (PendSV_IRQn, 15, 0);
-
-    /* Peripheral interrupt init */
-    /* CM4_SEV_IRQn interrupt configuration */
-    HAL_NVIC_SetPriority (CM4_SEV_IRQn, 9, 9);
-    HAL_NVIC_EnableIRQ (CM4_SEV_IRQn);
-
-    /* USER CODE BEGIN MspInit 1 */
-
-    /* USER CODE END MspInit 1 */
-}
 
 /**
  * @brief SPI MSP Initialization

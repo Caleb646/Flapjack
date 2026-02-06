@@ -17,6 +17,8 @@ set(FW_COMMON_SRCS
     # PARENT_SCOPE
 )
 
+######### CM7 ####################
+
 set(FW_CM7_ROOT_DIR "${FW_ROOT_DIR}/CM7")
 set(FW_CM7_INC_DIR "${FW_CM7_ROOT_DIR}/Core/Inc")
 set(FW_CM7_SRC_DIR "${FW_CM7_ROOT_DIR}/Core/Src")
@@ -46,6 +48,8 @@ set(FW_CM7_LINKER_SCRIPT
     
     # PARENT_SCOPE
 )
+
+################ CM4 ##########################
 
 set(FW_CM4_ROOT_DIR "${FW_ROOT_DIR}/CM4")
 set(FW_CM4_INC_DIR "${FW_CM4_ROOT_DIR}/Core/Inc")

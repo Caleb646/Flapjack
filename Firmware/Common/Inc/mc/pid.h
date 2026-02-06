@@ -33,6 +33,9 @@ typedef struct {
     Vec3f prevIntegral;
     uint32_t msLastUpdateTime;
     bool isInitialized;
+
+    // float pidData[AXIS_IDX_COUNT];
+    Vec3f pidData; //[AXIS_IDX_COUNT];
 } PID_t;
 
 typedef PID_t vPID_t;

@@ -12,7 +12,6 @@
 #include <string.h>
 
 
-
 #define IMU_LOG_CALIB_DATA(rslt, error) \
     LOG_DATA (LOG_DATA_TYPE_IMU_CALIB, "{\"rslt\":%u,\"error\":%u}", rslt, error)
 
@@ -226,8 +225,7 @@ typedef struct {
 typedef struct {
     eDEVICE_ID_t deviceId;
     eBUS_ID_t busId;
-    Vec3i rawAccel;
-    Vec3i rawGyro;
+
     IMUAccConf aconf;
     IMUGyroConf gconf;
     eSTATUS_t status;
@@ -239,6 +237,14 @@ typedef struct {
     bool isInitialized;
     bool volatile gyroDataUpdated;
     bool volatile accelDataUpdated;
+
+    Vec3i rawAccel;
+    Vec3f accelData;
+    Vec3f accelFilteredData;
+
+    Vec3i rawGyro;
+    Vec3f gyroData;
+    Vec3f gyroFilteredData;
 } IMU_t;
 
 // typedef IMU_t volatile vIMU_t;
