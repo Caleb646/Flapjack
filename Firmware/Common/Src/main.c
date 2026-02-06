@@ -148,7 +148,7 @@ void TaskMotionControlUpdate (void) {
 
         msLastUpdate = GetMilliseconds ();
         // Limit loop to sensor update rate
-        vTaskDelay (pdMS_TO_TICKS (1000U / FJ_LOOP_UPDATE_RATE_HZ));
+        Delay (1000U / FJ_LOOP_UPDATE_RATE_HZ);
     }
 }
 

@@ -76,7 +76,7 @@ STATIC eSTATUS_t ActuatorsArmMotor (Motor_t* pMotor) {
             return eSTATUS_FAILURE;
         }
         // NOTE: assumes DShot150 is used.
-        vTaskDelay (pdMS_TO_TICKS (msDelay));
+        Delay (msDelay);
     }
 
     // // Slowly increase the throttle to 15%
@@ -94,7 +94,6 @@ STATIC eSTATUS_t ActuatorsArmMotor (Motor_t* pMotor) {
     //             pMotor->motorId); return eSTATUS_FAILURE;
     //         }
     //     }
-    //     vTaskDelay (pdMS_TO_TICKS (msDelay));
     //     i += increment;
     // }
     LOG_INFO ("Armed motor ID %u", pMotor->motorId);
