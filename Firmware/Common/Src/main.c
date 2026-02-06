@@ -1,8 +1,9 @@
 #include <stdio.h>
 
-#include "hal.h"
 #include "control.h"
 #include "fcstate.h"
+#include "hal.h"
+
 
 #include "core/core.h"
 
