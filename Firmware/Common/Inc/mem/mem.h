@@ -14,7 +14,7 @@
 
 #else
 // #define SHARED_MEM_SECTION __attribute__ ((section (".shared_mem"))) volatile
-#define SHARED_MEM_SECTION __attribute__ ((section (".shared_mem")))
+#define SHARED_MEM_SECTION __attribute__ ((section (".shared_mem_bss")))
 
 #endif
 

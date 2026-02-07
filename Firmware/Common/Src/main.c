@@ -36,12 +36,25 @@ void SysTick_Handler (void) {
 
 void SystemClock_Config (void);
 
+extern uint32_t __SHARED_MEM_BSS_START__;
+extern uint32_t __SHARED_MEM_BSS_END__;
+extern uint32_t __SHARED_MEM_DATA_START__;
+extern uint32_t __SHARED_MEM_DATA_END__;
+extern uint32_t __SHARED_MEM_DATA_FLASH_START__;
+
 int main (void) {
 
     HAL_Init ();
     HAL_NVIC_EnableIRQ (SysTick_IRQn);
 
     SystemClock_Config ();
+
+    memset (&__SHARED_MEM_BSS_START__, 0, &__SHARED_MEM_BSS_END__ - &__SHARED_MEM_BSS_START__);
+    uint32_t const dataStart      = (uint32_t)(&__SHARED_MEM_DATA_START__);
+    uint32_t const dataEnd        = (uint32_t)(&__SHARED_MEM_DATA_END__);
+    uint32_t const dataSize       = dataEnd - dataStart;
+    uint32_t const dataFlashStart = (uint32_t)(&__SHARED_MEM_DATA_FLASH_START__);
+    memcpy ((void*)dataStart, (void*)dataFlashStart, dataSize);
 
     Spi_InitSystem ();
 

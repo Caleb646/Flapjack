@@ -54,9 +54,10 @@
 
 // TODO: setup TARG_SHARED_MEM_DATA_SECTION
 // #define FJ_DECLARE_SHARED(TYPE, NAME)                 extern TYPE NAME TARG_SHARED_MEM_DATA_SECTION
-#define FJ_DECLARE_SHARED(TYPE, NAME)                 extern TYPE NAME
+#define SHARED_MEM_DATA_SECTION                       __attribute__ ((section (".shared_mem_data")))
+#define FJ_DECLARE_SHARED(TYPE, NAME)                 extern TYPE NAME SHARED_MEM_DATA_SECTION
 // #define FJ_DEFINE_SHARED(TYPE, NAME)                  TYPE NAME TARG_SHARED_MEM_DATA_SECTION
-#define FJ_DEFINE_SHARED(TYPE, NAME)                  TYPE NAME
+#define FJ_DEFINE_SHARED(TYPE, NAME)                  TYPE NAME SHARED_MEM_DATA_SECTION
 
 #define CM7_IDX                                       0
 #define CM4_IDX                                       1
