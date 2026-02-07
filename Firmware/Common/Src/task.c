@@ -4,6 +4,7 @@
 #include "fcstate.h"
 #include "flight.h"
 #include "hal.h"
+#include "task.h"
 
 #include "core/core.h"
 
@@ -59,6 +60,11 @@ eSTATUS_t TaskIMUUpdate (uint32_t usCurrentTime) {
 
     vIMU_t* pIMUDev = IMU_GetMutableActiveDevice ();
     return IMU_Update (pIMUDev, false, &pIMUDev->accelData, &pIMUDev->gyroData);
+}
+
+eSTATUS_t TaskInterCoreSync (uint32_t usCurrentTime) {
+
+    return SyncProcessTasks ();
 }
 
 void TaskMotionControlUpdate (void) {

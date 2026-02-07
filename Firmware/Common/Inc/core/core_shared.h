@@ -58,6 +58,9 @@
 // #define FJ_DEFINE_SHARED(TYPE, NAME)                  TYPE NAME TARG_SHARED_MEM_DATA_SECTION
 #define FJ_DEFINE_SHARED(TYPE, NAME)                  TYPE NAME
 
+#define CM7_IDX                                       0
+#define CM4_IDX                                       1
+
 
 #define OR_0()                                        0U
 #define OR_1(a)                                       (a)

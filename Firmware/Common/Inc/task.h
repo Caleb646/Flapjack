@@ -1,0 +1,27 @@
+#ifndef TASK_H
+#define TASK_H
+
+#include <stdbool.h>
+#include <stdint.h>
+
+#include "core/core.h"
+
+typedef struct {
+    eSTATUS_t (*taskFunction) (uint32_t usCurrentTime);
+    char const* taskName;
+    uint32_t hzUpdate;
+    uint32_t usLastUpdateTime;
+    uint32_t usExpectedExecutionTime;
+    uint32_t usExecutionTimeSum;
+    uint32_t nExecutions;
+    bool isEnabled;
+} Task_t;
+
+eSTATUS_t TaskMixerUpdate (uint32_t usCurrentTime);
+eSTATUS_t TaskPIDUpdate (uint32_t usCurrentTime);
+eSTATUS_t TaskUpdateAttitude (uint32_t usCurrentTime);
+eSTATUS_t TaskIMUUpdate (uint32_t usCurrentTime);
+eSTATUS_t TaskInterCoreSync (uint32_t usCurrentTime);
+
+
+#endif /* TASK_H */

@@ -3,6 +3,7 @@
 #include "control.h"
 #include "fcstate.h"
 #include "hal.h"
+#include "scheduler.h"
 
 #include "core/core.h"
 
@@ -53,30 +54,25 @@ int main (void) {
         CriticalErrorHandler ();
     }
 
-    if (Control_Init () != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to init control module");
+    if (BOARD_CONF_INIT () != eSTATUS_SUCCESS) {
         CriticalErrorHandler ();
     }
 
-    Delay (1000);
-
-    if (ControlStart () != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to start control module");
+    if (Device_InitAll (BoardConfGet ()) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to init device module");
         CriticalErrorHandler ();
     }
 
-    uint32_t startTime = HAL_GetTick ();
-    uint32_t logStep   = 5000;
-
-    while (1) {
-        SyncProcessTasks ();
-        ControlProcess_RawCmds ();
-
-        if ((HAL_GetTick () - startTime) >= logStep) {
-            startTime = HAL_GetTick ();
-            LOG_INFO ("CM7 main loop running");
-        }
+    if (MC_InitAll () != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to init motion control module");
+        CriticalErrorHandler ();
     }
+    // TODO: Motors and Servos need to be started somewhere
+
+    Delay (250);
+
+    LOG_INFO ("Starting scheduler");
+    Scheduler_Main (CM7_IDX, FJ_LOOP_UPDATE_RATE_HZ);
 }
 
 void SystemClock_Config (void) {
@@ -167,30 +163,10 @@ int main (void) {
         CriticalErrorHandler ();
     }
 
-    if (Control_Init () != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to init control module");
-        CriticalErrorHandler ();
-    }
+    Delay (250);
 
-    Delay (1000);
-
-    if (ControlStart () != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to start control module");
-        CriticalErrorHandler ();
-    }
-
-    uint32_t startTime = HAL_GetTick ();
-    uint32_t logStep   = 5000;
-
-    while (1) {
-        SyncProcessTasks ();
-        ControlProcess_RawCmds ();
-
-        if ((HAL_GetTick () - startTime) >= logStep) {
-            startTime = HAL_GetTick ();
-            LOG_INFO ("CM4 main loop running");
-        }
-    }
+    LOG_INFO ("Starting scheduler");
+    Scheduler_Main (CM4_IDX, FJ_LOOP_UPDATE_RATE_HZ);
 }
 
 #endif // CORE_CM4
