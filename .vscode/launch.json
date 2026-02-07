@@ -17,20 +17,37 @@
             "name": "Debug M7 Core",
             "cwd": "${workspaceFolder}",
             "executable": "${workspaceFolder}/Build/${input:boardName}/Debug/m7core.elf",
+            "loadFiles": [
+                "${workspaceFolder}/Build/${input:boardName}/Debug/m7core.elf",
+                "${workspaceFolder}/Build/${input:boardName}/Debug/m4core.elf",
+            ],
             "request": "launch",
             "type": "cortex-debug",
             "servertype": "openocd",
             "armToolchainPath": "${workspaceFolder}/Tools/msys/mingw64/bin",
+            "serverpath": "${workspaceFolder}/Tools/msys/mingw64/bin/openocd",
             "gdbPath": "${workspaceFolder}/Tools/msys/mingw64/bin/gdb-multiarch",
-            "configFiles": ["Scripts/stm32h747_dual_core.cfg"],
-            "targetId": "stm32h7x.cpu0",
+            "svdFile": "${workspaceFolder}/Vendor/STM32H7/STM32H747_CM7.svd",
+            "device": "STM32H747XIHX",
+            "showDevDebugOutput": "raw",
+            "configFiles": ["interface/stlink.cfg", "target/stm32h7x_dual_bank.cfg"],
+            //"configFiles": ["interface/stlink.cfg", "target/stm32h7x.cfg"],
+            //"configFiles": ["${workspaceFolder}/Scripts/stm32h747_dual_core.cfg"],
+            //"targetId": "stm32h7x.cpu0",
             "runToEntryPoint": "main",
             "preLaunchTask": "build firmware debug",
-            "postLaunchCommands": [
-                "monitor halt",
-                "load"
-            ]
+            // "postLaunchCommands": [
+            //     "monitor halt",
+            //     "load"
+            // ]
         },
+
+
+
+
+
+
+
         {
             "name": "Debug M4 Core", 
             "cwd": "${workspaceFolder}",
@@ -40,7 +57,8 @@
             "servertype": "openocd",
             "armToolchainPath": "${workspaceFolder}/Tools/msys/mingw64/bin",
             "gdbPath": "${workspaceFolder}/Tools/msys/mingw64/bin/gdb-multiarch",
-            "configFiles": ["Scripts/stm32h747_dual_core.cfg"],
+            "showDevDebugOutput": "raw",
+            "configFiles": ["${workspaceFolder}/Scripts/stm32h747_dual_core.cfg"],
             "targetId": "stm32h7x.cpu1",
             "runToEntryPoint": "main",
             "preLaunchTask": "build firmware debug",

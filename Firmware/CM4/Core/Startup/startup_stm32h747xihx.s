@@ -95,22 +95,6 @@ LoopFillZerobss:
   cmp r2, r4
   bcc FillZerobss
 
-ZeroOutSharedMem:
-/* Zero fill the shared memory segment. */
-  ldr r2, =_shared_mem_start
-  ldr r4, =_shared_mem_end
-  movs r3, #0
-  b LoopFillZeroSharedMem
-
-FillZeroSharedMem:
-  str  r3, [r2]
-  adds r2, r2, #4
-
-LoopFillZeroSharedMem:
-  cmp r2, r4
-  bcc FillZeroSharedMem
-
-
 /* Call static constructors */
     bl __libc_init_array
 /* Call the application's entry point.*/

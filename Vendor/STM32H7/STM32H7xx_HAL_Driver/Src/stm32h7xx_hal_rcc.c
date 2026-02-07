@@ -772,11 +772,18 @@ __weak HAL_StatusTypeDef HAL_RCC_OscConfig(RCC_OscInitTypeDef  *RCC_OscInitStruc
         assert_param(IS_RCC_PLLR_VALUE(RCC_OscInitStruct->PLL.PLLR));
         assert_param(IS_RCC_PLLFRACN_VALUE(RCC_OscInitStruct->PLL.PLLFRACN));
 
+        uint32_t tt = __HAL_RCC_GET_FLAG (RCC_FLAG_PLLRDY);
+
         /* Disable the main PLL. */
         __HAL_RCC_PLL_DISABLE();
 
         /* Get Start Tick*/
         tickstart = HAL_GetTick();
+
+        uint32_t t1 = RCC->CR;
+        uint32_t t2 = RCC->BDCR;
+        uint32_t t3 = RCC->CSR;
+        uint32_t t4 = RCC->RSR;
 
         /* Wait till PLL is disabled */
         while (__HAL_RCC_GET_FLAG(RCC_FLAG_PLLRDY) != 0U)
@@ -818,6 +825,8 @@ __weak HAL_StatusTypeDef HAL_RCC_OscConfig(RCC_OscInitTypeDef  *RCC_OscInitStruc
 
         /* Enable PLL1FRACN . */
         __HAL_RCC_PLLFRACN_ENABLE();
+
+        uint32_t t5 = __HAL_RCC_GET_FLAG (RCC_FLAG_PLLRDY);
 
         /* Enable the main PLL. */
         __HAL_RCC_PLL_ENABLE();
