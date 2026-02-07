@@ -6,6 +6,29 @@
 #include "core/core.h"
 #include "hal.h"
 
+#define GPIO_ENABLE_CLOCK(gpio_port)       \
+    do {                                   \
+        if ((gpio_port) == GPIOA) {        \
+            __HAL_RCC_GPIOA_CLK_ENABLE (); \
+        } else if ((gpio_port) == GPIOB) { \
+            __HAL_RCC_GPIOB_CLK_ENABLE (); \
+        } else if ((gpio_port) == GPIOC) { \
+            __HAL_RCC_GPIOC_CLK_ENABLE (); \
+        } else if ((gpio_port) == GPIOD) { \
+            __HAL_RCC_GPIOD_CLK_ENABLE (); \
+        } else if ((gpio_port) == GPIOE) { \
+            __HAL_RCC_GPIOE_CLK_ENABLE (); \
+        } else if ((gpio_port) == GPIOF) { \
+            __HAL_RCC_GPIOF_CLK_ENABLE (); \
+        } else if ((gpio_port) == GPIOG) { \
+            __HAL_RCC_GPIOG_CLK_ENABLE (); \
+        } else if ((gpio_port) == GPIOH) { \
+            __HAL_RCC_GPIOH_CLK_ENABLE (); \
+        } else if ((gpio_port) == GPIOI) { \
+            __HAL_RCC_GPIOI_CLK_ENABLE (); \
+        }                                  \
+    } while (0)
+
 
 // #define TIM5_CH1_GPIO_Pin           GPIO_PIN_0
 // #define TIM5_CH1_GPIO_Port          GPIOA

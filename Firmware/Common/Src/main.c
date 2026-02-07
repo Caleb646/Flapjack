@@ -42,6 +42,9 @@ int main (void) {
     HAL_NVIC_EnableIRQ (SysTick_IRQn);
 
     SystemClock_Config ();
+
+    Spi_InitSystem ();
+
     /*HW semaphore Clock enable*/
     __HAL_RCC_HSEM_CLK_ENABLE ();
     /* Take HSEM */

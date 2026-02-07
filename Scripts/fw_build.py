@@ -96,27 +96,37 @@ def run_cmake_build(board_name, build_type):
     
     cmake_args = [
         "cmake",
-        # "--fresh",
+        "--fresh",
         "-S", FJ_PROJECT_ROOT,
         "-B", output_dir,
         "-G", CMAKE_GENERATOR,
         f"-DCMAKE_BUILD_TYPE={build_type}",
-        f"-DBOARD_NAME={board_name}"
+        f"-DBOARD_NAME={board_name}",
     ]
     
     print(f"CMAKE ARGS: {' '.join(cmake_args)}")
     print("Configuring project...")
     try:
-        subprocess.run(cmake_args, check=True, env=env)
+        subprocess.run(cmake_args, 
+                        stdout=open(os.path.join(output_dir, "cmake_configure.log"), "w"), 
+                        stderr=subprocess.STDOUT,
+                        check=True, 
+                        env=env
+                       )
     except subprocess.CalledProcessError:
-        print("ERROR: CMake configuration failed")
+        print(f"ERROR: CMake configuration failed. Check {os.path.join(output_dir, 'cmake_configure.log')} for details")
         sys.exit(1)
 
     print("Building project...")
     try:
-        subprocess.run(["cmake", "--build", output_dir, "-j"], check=True, env=env)
+        subprocess.run(["cmake", "--build", output_dir, "-j"], 
+                       stdout=open(os.path.join(output_dir, "cmake_build.log"), "w"), 
+                       stderr=subprocess.STDOUT,
+                       check=True, 
+                       env=env
+                       )
     except subprocess.CalledProcessError:
-        print("ERROR: CMake build failed")
+        print(f"ERROR: CMake build failed. Check {os.path.join(output_dir, 'cmake_build.log')} for details")
         sys.exit(1)
     
     print("Build completed successfully!")

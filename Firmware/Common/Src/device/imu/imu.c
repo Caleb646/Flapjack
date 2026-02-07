@@ -6,6 +6,9 @@
 #include "mem/mem.h"
 #include "peripheral/bus/bus.h"
 #include "peripheral/gpio.h"
+
+#include "target.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -54,8 +57,8 @@ static eSTATUS_t IMUSendCmd (vIMU_t const* pIMU, uint16_t cmd);
 static eSTATUS_t IMUGetFeatureStatus (vIMU_t const* pIMU, uint16_t featureRegAddr, IMU_FeatureReg_t* pOutStatus);
 static eSTATUS_t IMUGetINTStatus (vIMU_t const* pIMU, IMU_INTStatusReg_t* pOutStatus);
 static eSTATUS_t IMUGetSysStatus (vIMU_t const* pIMU, IMU_SysStatusReg_t* pOutStatus);
-static eSTATUS_t IMUReadReg (vIMU_t const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
-static eSTATUS_t IMUWriteReg (vIMU_t const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
+static eSTATUS_t IMUReadReg (vIMU_t* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
+static eSTATUS_t IMUWriteReg (vIMU_t* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
 static eSTATUS_t IMUUpdateRawGyro (vIMU_t* pIMU);
 static eSTATUS_t IMUUpdateRawAccel (vIMU_t* pIMU);
 static eSTATUS_t IMUSetAxesRemap (vIMU_t* pIMU, IMUAxesRemapConf remap);
@@ -241,49 +244,20 @@ STATIC eSTATUS_t IMUGetDeviceErr (vIMU_t* pIMU, IMUErr* pOutErr) {
     return eSTATUS_SUCCESS;
 }
 
-STATIC eSTATUS_t IMUReadReg (vIMU_t const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len) {
+STATIC eSTATUS_t IMUReadReg (vIMU_t* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len) {
 
-    uint8_t pTx[RW_BUFFER_SZ] = { 0 };
-    // set read mask for register address
-    pTx[0] = BMI3_SPI_RD_MASK | reg;
-
-    uint8_t pRx[RW_BUFFER_SZ] = { 0 };
-    /*
-     * NOTE: Position        Sent        Received
-     *       0               addr         0x00
-     *       1               0x00         dummy byte (0x00)
-     *       2               0x00         data byte 0
-     *       N               0x00         data byte N - 1
-     */
-    size_t totalSize = len + pIMU->nBusDummyBytes + 1;
-    if (totalSize > RW_BUFFER_SZ) {
-        return (eSTATUS_t)eIMU_RW_BUFFER_OVERFLOW;
-    }
-
-    eSTATUS_t status = BUS_WRITE_READ_BLOCK (pIMU->bus, pTx, pRx, totalSize);
+    eSTATUS_t status = SpiDev_ReadRegister (&pIMU->spiDev, reg, pBuf, len);
     if (status != eSTATUS_SUCCESS) {
         return (eSTATUS_t)eIMU_COM_FAILURE;
     }
-
     // Add 2 microsecond delay after vIMU_t read operation
     DelayMicroseconds (2);
-
-    // The first nBusDummyBytes + 1 (for the register address) are dummy bytes
-    memcpy (pBuf, &(pRx[pIMU->nBusDummyBytes + 1]), len);
     return eSTATUS_SUCCESS;
 }
 
-STATIC eSTATUS_t IMUWriteReg (vIMU_t const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len) {
+STATIC eSTATUS_t IMUWriteReg (vIMU_t* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len) {
 
-    uint8_t pTx[RW_BUFFER_SZ] = { 0 };
-    if (len + 1 > RW_BUFFER_SZ) {
-        return (eSTATUS_t)eIMU_RW_BUFFER_OVERFLOW;
-    }
-
-    pTx[0] = reg & BMI3_SPI_WR_MASK;
-    memcpy (&pTx[1], (void*)pBuf, len);
-
-    eSTATUS_t status = BUS_WRITE_BLOCK (pIMU->bus, pTx, len + 1);
+    eSTATUS_t status = SpiDev_WriteRegister (&pIMU->spiDev, reg, pBuf, len);
     if (status != eSTATUS_SUCCESS) {
         return (eSTATUS_t)eIMU_COM_FAILURE;
     }
@@ -800,24 +774,27 @@ eSTATUS_t IMUInit (IMUInitConf_t conf, IMU_t* pOutIMU, BusVTable_t* pBusOverride
         pIMU = pOutIMU;
     }
     memset (pIMU, 0, sizeof (vIMU_t));
-    pIMU->busId    = busId;
+    // pIMU->busId    = busId;
     pIMU->deviceId = deviceId;
     pIMU->aconf    = accConf;
     pIMU->gconf    = gyroConf;
     /* SPI reads have 1 dummy byte at the beginning */
     pIMU->nBusDummyBytes = BUS_ID_IS_SPI (busId) ? 1 : 0;
 
-    if (pBusOverride != NULL) {
-        pIMU->bus = *pBusOverride;
-    } else {
-        BUS_INIT (&status, device, *pBus, &pIMU->bus);
-        GOTO_IF (STATUS_FAIL (status), error, "Failed to init bus for imu");
-    }
+    status = SpiDev_Init (IMU_SPI_BUS_ID, IMU_SPI_NSS_GPIO_PORT, IMU_SPI_NSS_GPIO_PIN, &pIMU->spiDev);
+    GOTO_IF (STATUS_FAIL (status), error, "Failed to setup spi device for imu");
 
-    if (pIMU->bus.ReadBlocking == NULL || pIMU->bus.WriteBlocking == NULL || pIMU->bus.WriteReadBlocking == NULL) {
-        LOG_ERROR ("Bus for imu does not have read or write or write read function");
-        goto error;
-    }
+    // if (pBusOverride != NULL) {
+    //     pIMU->bus = *pBusOverride;
+    // } else {
+    //     BUS_INIT (&status, device, *pBus, &pIMU->bus);
+    //     GOTO_IF (STATUS_FAIL (status), error, "Failed to init bus for imu");
+    // }
+
+    // if (pIMU->bus.ReadBlocking == NULL || pIMU->bus.WriteBlocking == NULL || pIMU->bus.WriteReadBlocking == NULL) {
+    //     LOG_ERROR ("Bus for imu does not have read or write or write read function");
+    //     goto error;
+    // }
 
     /*
      * Soft reset vIMU_t and switch to SPI

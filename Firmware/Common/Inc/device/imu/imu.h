@@ -224,14 +224,15 @@ typedef struct {
 
 typedef struct {
     eDEVICE_ID_t deviceId;
-    eBUS_ID_t busId;
+    // eBUS_ID_t busId;
+    SpiDev_t spiDev;
 
     IMUAccConf aconf;
     IMUGyroConf gconf;
     eSTATUS_t status;
     uint32_t msLastAccUpdateTime;
     uint32_t msLastGyroUpdateTime;
-    BusVTable_t bus;
+    // BusVTable_t bus;
     uint8_t nBusDummyBytes;
     bool usingEXTIInterrupt;
     bool isInitialized;

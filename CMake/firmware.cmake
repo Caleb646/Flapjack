@@ -4,6 +4,7 @@ set(FW_COMMON_SRC_DIR "${FW_ROOT_DIR}/Common/Src")
 
 set(FW_COMMON_INCS
     ${FW_COMMON_INC_DIR}
+    ${FW_ROOT_DIR}/Targets
 
     # PARENT_SCOPE
 )
