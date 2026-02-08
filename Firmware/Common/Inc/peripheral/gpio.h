@@ -30,6 +30,15 @@
     } while (0)
 
 
+static inline void GPIO_SetHigh (GPIO_TypeDef* pPort, uint16_t pin) {
+    pPort->BSRR = (uint32_t)pin;
+}
+
+static inline void GPIO_SetLow (GPIO_TypeDef* pPort, uint16_t pin) {
+    pPort->BSRR = (uint32_t)pin << 16U;
+}
+
+
 // #define TIM5_CH1_GPIO_Pin           GPIO_PIN_0
 // #define TIM5_CH1_GPIO_Port          GPIOA
 // #define TIM5_CH2_GPIO_Pin           GPIO_PIN_1

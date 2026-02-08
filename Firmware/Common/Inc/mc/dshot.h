@@ -5,17 +5,40 @@
 #include "conf/conf.h"
 #include "conf/ids.h"
 #include "core/core.h"
+
 #include "hal.h"
+#include "target.h"
+
 #include "peripheral/dma.h"
 #include "peripheral/gpio.h"
 #include "peripheral/timer.h"
-
 
 #define DSHOT_DMA_BUFFER_SIZE 18U /* resolution + frame reset (2us) */
 #define DSHOT_FRAME_SIZE      16U
 #define DSHOT_MIN_THROTTLE    48U
 #define DSHOT_MAX_THROTTLE    2047U
 #define DSHOT_RANGE           (DSHOT_MAX_THROTTLE - DSHOT_MIN_THROTTLE)
+
+typedef struct {
+    uint32_t timerChannel;
+    GPIO_TypeDef* pPort;
+    uint16_t pin;
+} DShotBBMotorPin_t;
+
+typedef struct {
+    TIM_TypeDef* pTimerInstance;
+    uint32_t timerAf;
+    DShotBBMotorPin_t motorPins[TAR_MOTOR_COUNT ()];
+} DShotBBHardware_t;
+
+typedef struct {
+    TIM_HandleTypeDef timerHandle;
+    DShotBBHardware_t hardware;
+    uint32_t ticksFor_0;
+    uint32_t ticksFor_1;
+} DShotBB_t;
+
+FJ_DECLARE_SHARED (DShotBB_t, g_DShotBB);
 
 typedef uint8_t eDSHOT_OP_MODE_t;
 enum { eDSHOT_OP_MODE_BB_NO_TIMER = 0, eDSHOT_OP_MODE_BB_WITH_TIMER = 1, eDSHOT_OP_MODE_DMA = 2 };

@@ -21,11 +21,13 @@
 #define UART_1_AF              GPIO_AF7_USART1
 
 #define TIMER_8_ENABLED        1U
+#define TIMER_8_INSTANCE                         TIM8
 #define TIMER_8_AF             GPIO_AF3_TIM8
 #define TIMER_8_CH1_GPIO_PORT  GPIOC
 #define TIMER_8_CH1_GPIO_PIN   GPIO_PIN_6
 
 #define TIMER_13_ENABLED       1U
+#define TIMER_13_INSTANCE                        TIM13
 #define TIMER_13_AF            GPIO_AF9_TIM13
 #define TIMER_13_CH1_GPIO_PORT GPIOF
 #define TIMER_13_CH1_GPIO_PIN  GPIO_PIN_8
@@ -43,8 +45,10 @@
 #define SERVO_1_CHANNEL        CH1
 
 #define MOTOR_1_ENABLED        1U
+#define MOTOR_1_GPIO_PORT                        GPIOC
+#define MOTOR_1_GPIO_PIN                         GPIO_PIN_6
 #define MOTOR_1_TIMER          TIMER_8
-#define MOTOR_1_CHANNEL        CH1
+#define MOTOR_1_CHANNEL                          TIM_CHANNEL_1
 
 
 #endif // TARGETS_NUCLEO_H747ZI_H
