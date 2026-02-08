@@ -97,7 +97,7 @@ eSTATUS_t DShotBB_Init (void) {
     // so set alternate function only when using timer
     // gpioInit.Alternate = 0U;
     gpioInit.Alternate = pDShotBB->hardware.timerAf;
-    for (uint8_t i = 0; i < TAR_MOTOR_COUNT (); ++i) {
+    for (uint8_t i = 0; i < BRD_MOTOR_COUNT; ++i) {
         DShotBBMotorPin_t motorPin = pDShotBB->hardware.motorPins[i];
         if (!motorPin.pPort) {
             continue;
@@ -123,12 +123,12 @@ eSTATUS_t DShotBB_Init (void) {
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t DShotBB_Write (uint16_t motorVals[TAR_MOTOR_COUNT ()]) {
+eSTATUS_t DShotBB_Write (uint16_t motorVals[BRD_MOTOR_COUNT]) {
 
     DShotBB_t* pDShotBB                                         = &g_DShotBB;
     TIM_HandleTypeDef* pTimerHandle                             = &pDShotBB->timerHandle;
-    uint16_t buffers[TAR_MOTOR_COUNT ()][DSHOT_DMA_BUFFER_SIZE] = { 0 };
-    for (uint32_t i = 0; i < TAR_MOTOR_COUNT (); ++i) {
+    uint16_t buffers[BRD_MOTOR_COUNT][DSHOT_DMA_BUFFER_SIZE]    = { 0 };
+    for (uint32_t i = 0; i < BRD_MOTOR_COUNT; ++i) {
         uint16_t packet = DShotPreparePacket (motorVals[i]);
         for (uint16_t j = 0; j < 16U; ++j) {
             buffers[i][j] = (packet & 0x8000U) ? pDShotBB->ticksFor_1 : pDShotBB->ticksFor_0;
@@ -139,12 +139,12 @@ eSTATUS_t DShotBB_Write (uint16_t motorVals[TAR_MOTOR_COUNT ()]) {
     }
 
     __HAL_TIM_CLEAR_FLAG (pTimerHandle, TIM_FLAG_UPDATE);
-    for (uint32_t i = 0; i < TAR_MOTOR_COUNT (); ++i) {
+    for (uint32_t i = 0; i < BRD_MOTOR_COUNT; ++i) {
         __HAL_TIM_SET_COMPARE (pTimerHandle, pDShotBB->hardware.motorPins[i].timerChannel, buffers[i][0]);
     }
 
     __disable_irq ();
-    for (uint32_t i = 0; i < TAR_MOTOR_COUNT (); ++i) {
+    for (uint32_t i = 0; i < BRD_MOTOR_COUNT; ++i) {
         HAL_TIM_PWM_Start (pTimerHandle, pDShotBB->hardware.motorPins[i].timerChannel);
     }
 
@@ -153,13 +153,13 @@ eSTATUS_t DShotBB_Write (uint16_t motorVals[TAR_MOTOR_COUNT ()]) {
         while (__HAL_TIM_GET_FLAG (pTimerHandle, TIM_FLAG_UPDATE) == RESET) {
         }
         __HAL_TIM_CLEAR_FLAG (pTimerHandle, TIM_FLAG_UPDATE);
-        for (uint32_t i = 0; i < TAR_MOTOR_COUNT (); ++i) {
+        for (uint32_t i = 0; i < BRD_MOTOR_COUNT; ++i) {
             __HAL_TIM_SET_COMPARE (pTimerHandle, pDShotBB->hardware.motorPins[i].timerChannel, buffers[i][bitPos]);
         }
     }
 
     __enable_irq ();
-    for (uint32_t i = 0; i < TAR_MOTOR_COUNT (); ++i) {
+    for (uint32_t i = 0; i < BRD_MOTOR_COUNT; ++i) {
         HAL_TIM_PWM_Stop (pTimerHandle, pDShotBB->hardware.motorPins[i].timerChannel);
     }
     return eSTATUS_SUCCESS;

@@ -28,7 +28,7 @@ typedef struct {
 typedef struct {
     TIM_TypeDef* pTimerInstance;
     uint32_t timerAf;
-    DShotBBMotorPin_t motorPins[TAR_MOTOR_COUNT ()];
+    DShotBBMotorPin_t motorPins[BRD_MOTOR_COUNT];
 } DShotBBHardware_t;
 
 typedef struct {
@@ -39,6 +39,9 @@ typedef struct {
 } DShotBB_t;
 
 FJ_DECLARE_SHARED (DShotBB_t, g_DShotBB);
+
+eSTATUS_t DShotBB_Init (void);
+eSTATUS_t DShotBB_Write (uint16_t motorVals[BRD_MOTOR_COUNT]);
 
 typedef uint8_t eDSHOT_OP_MODE_t;
 enum { eDSHOT_OP_MODE_BB_NO_TIMER = 0, eDSHOT_OP_MODE_BB_WITH_TIMER = 1, eDSHOT_OP_MODE_DMA = 2 };

@@ -14,8 +14,6 @@
 #include <stdint.h>
 #include <string.h>
 
-
-
 #define MOTOR_VALID(pMOTOR) ((pMOTOR) != NULL && (pMOTOR)->isInitialized == true)
 
 VECTOR_DEFINE_STATIC_SHARED (Motor, Motor_t, MOTOR_COUNT);
