@@ -7,54 +7,44 @@
 #include "peripheral/bus/bus_core.h"
 #include "peripheral/gpio.h"
 
+#define UART_1_ID 0U
+#define UART_2_ID 1U
+#define UART_3_ID 2U
+#define UART_4_ID 3U
+#define UART_5_ID 4U
+#define UART_6_ID 5U
 
-typedef uint8_t eUART_BAUD_t;
-enum {
-    eUART_BAUD_9600 = 0,
-    eUART_BAUD_19200,
-    eUART_BAUD_38400,
-    eUART_BAUD_57600,
-    eUART_BAUD_115200,
-    eUART_BAUD_230400,
-};
+typedef uint8_t uart_id_t;
 
 typedef struct {
-    DeviceBoardConf_t deviceBoardConf;
-    BusBoardConf_t busBoardConf;
-} UARTInitConf_t;
+    USART_TypeDef* pInstance;
+    GPIO_TypeDef* pRx;
+    GPIO_TypeDef* pTx;
+    uint16_t rxPin;
+    uint16_t txPin;
+    uint32_t af;
+} UartHardware_t;
 
 typedef struct {
-    eBUS_ID_t busId;
-    eDEVICE_ID_t deviceId;
+    uart_id_t id;
     UART_HandleTypeDef handle;
-    BusCallback_t callbacks[eBUS_NUMBER_OF_CALLBACK_IDS];
-    bool isInitialized;
-} UARTBus_t;
+    UartHardware_t hardware;
+} Uart_t;
 
-// typedef UARTBus_t volatile vUARTBus_t;
-typedef UARTBus_t vUARTBus_t;
+typedef struct {
+    Uart_t* pUart;
+    struct {
+        uart_id_t id;
+        uint32_t baudRate;
+    } cfg;
+} UartPort_t;
 
-// clang-format off
-vUARTBus_t* UARTGetBusById (eBUS_ID_t busId);
-eSTATUS_t UARTInit (UARTInitConf_t conf, vUARTBus_t* pOutBus);
-eSTATUS_t UARTRead_Blocking (vUARTBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size);
-eSTATUS_t UARTWrite_Blocking (vUARTBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t const* pData, size_t size);
-eSTATUS_t UARTRead_IT (vUARTBus_t* pBus, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size);
-eSTATUS_t UARTRegisterCallback (vUARTBus_t* pBus, eDEVICE_ID_t deviceId, BusCallback_t callback);
-eSTATUS_t UARTEnableInterrupts (vUARTBus_t* pBus, uint32_t priority);
+FJ_DECLARE_SHARED (Uart_t, g_Uarts[]);
+FJ_DECLARE_SHARED (uint32_t, g_numUarts);
 
-#define UART_INIT(pSTATUS, DEVICE_BOARD_CONF, UART_BOARD_CONF) \
-    do {                                                       \
-        UARTInitConf_t conf  = { 0 };                          \
-        conf.deviceBoardConf = (DEVICE_BOARD_CONF);            \
-        conf.busBoardConf    = (UART_BOARD_CONF);              \
-        *(pSTATUS)           = UARTInit (conf, NULL);          \
-    } while (0)
-
-eSTATUS_t UART_READ_BLOCKING(void* pCtx, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size);
-eSTATUS_t UART_WRITE_BLOCKING(void* pCtx, eDEVICE_ID_t deviceId, uint8_t const* pData, size_t size);
-eSTATUS_t UART_READ_IT(void* pCtx, eDEVICE_ID_t deviceId, uint8_t* pData, size_t size);
-eSTATUS_t UART_REGISTER_CALLBACK(void* pCtx, eDEVICE_ID_t deviceId, BusCallback_t callback);
+eSTATUS_t Uart_InitSystem (void);
+eSTATUS_t UartPort_Init (UartPort_t* pOutPort);
+eSTATUS_t UartPort_Write (UartPort_t* pPort, uint8_t const* pData, uint32_t size);
 
 // clang-format on
 

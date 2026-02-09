@@ -251,6 +251,8 @@ typedef struct {
 // typedef IMU_t volatile vIMU_t;
 typedef IMU_t vIMU_t;
 
+FJ_DECLARE_SHARED (IMU_t, g_IMU);
+
 #ifdef UNIT_TEST
 
 eSTATUS_t IMUSendCmd (vIMU_t const* pIMU, uint16_t cmd);
@@ -274,7 +276,35 @@ IMUConvertRaw (IMU_ACC_RANGE aRange, Vec3i ra, IMU_GYRO_RANGE gRange, Vec3i rg, 
 
 #endif
 
-eSTATUS_t IMUInit (IMUInitConf_t conf, IMU_t* pOutIMU, BusVTable_t* pBusOverride);
+eSTATUS_t IMU_Init_ (IMUInitConf_t conf, vIMU_t* pOutIMU);
+static inline eSTATUS_t IMU_Init (void) {
+    IMUInitConf_t conf = { 0 };
+
+    IMUAccConf aconf = { 0 };
+    aconf.odr        = eIMU_ACC_ODR_400;
+    aconf.range      = eIMU_ACC_RANGE_2G;
+    aconf.avg        = eIMU_ACC_AVG_16;
+    aconf.bw         = eIMU_ACC_BW_HALF;
+    aconf.mode       = eIMU_ACC_MODE_HIGH_PERF;
+
+    IMUGyroConf gconf = { 0 };
+    gconf.odr         = eIMU_GYRO_ODR_400;
+    gconf.range       = eIMU_GYRO_RANGE_250;
+    gconf.avg         = eIMU_GYRO_AVG_16;
+    gconf.bw          = eIMU_GYRO_BW_HALF;
+    gconf.mode        = eIMU_GYRO_MODE_HIGH_PERF;
+
+    IMUAxesRemapConf axesRemap = { 0 };
+    axesRemap.remap            = eIMU_AXES_REMAP_YXZ;
+    axesRemap.xDir             = eIMU_AXES_DIR_INVERTED;
+    axesRemap.yDir             = eIMU_AXES_DIR_INVERTED;
+    axesRemap.zDir             = eIMU_AXES_DIR_INVERTED;
+
+    conf.aconf         = aconf;
+    conf.gconf         = gconf;
+    conf.axesRemapConf = axesRemap;
+    return IMU_Init_ (conf, &g_IMU);
+}
 eSTATUS_t IMUStart (vIMU_t* pIMU);
 eSTATUS_t IMUStop (vIMU_t* pIMU);
 eSTATUS_t IMUHandleErr (vIMU_t* pIMU);
@@ -287,37 +317,6 @@ eSTATUS_t IMUCompareConfs (IMUAccConf aconf, IMUGyroConf gconf, IMUAccConf aconf
 vIMU_t const* IMUGetActiveDevice (void);
 vIMU_t* IMU_GetMutableActiveDevice (void);
 void IMU2CPUInterruptHandler (vIMU_t* pIMU);
-
-#define IMU_INIT(pSTATUS, DEVICE_BOARD_CONF)                 \
-    do {                                                     \
-        IMUInitConf_t conf = { 0 };                          \
-                                                             \
-        IMUAccConf aconf = { 0 };                            \
-        aconf.odr        = eIMU_ACC_ODR_400;                 \
-        aconf.range      = eIMU_ACC_RANGE_2G;                \
-        aconf.avg        = eIMU_ACC_AVG_16;                  \
-        aconf.bw         = eIMU_ACC_BW_HALF;                 \
-        aconf.mode       = eIMU_ACC_MODE_HIGH_PERF;          \
-                                                             \
-        IMUGyroConf gconf = { 0 };                           \
-        gconf.odr         = eIMU_GYRO_ODR_400;               \
-        gconf.range       = eIMU_GYRO_RANGE_250;             \
-        gconf.avg         = eIMU_GYRO_AVG_16;                \
-        gconf.bw          = eIMU_GYRO_BW_HALF;               \
-        gconf.mode        = eIMU_GYRO_MODE_HIGH_PERF;        \
-                                                             \
-        IMUAxesRemapConf axesRemap = { 0 };                  \
-        axesRemap.remap            = eIMU_AXES_REMAP_YXZ;    \
-        axesRemap.xDir             = eIMU_AXES_DIR_INVERTED; \
-        axesRemap.yDir             = eIMU_AXES_DIR_INVERTED; \
-        axesRemap.zDir             = eIMU_AXES_DIR_INVERTED; \
-                                                             \
-        conf.aconf         = aconf;                          \
-        conf.gconf         = gconf;                          \
-        conf.axesRemapConf = axesRemap;                      \
-        conf.boardConf     = (DEVICE_BOARD_CONF);            \
-        *(pSTATUS)         = IMUInit (conf, NULL, NULL);     \
-    } while (0)
 
 
 #endif // SENSORS_IMU_H

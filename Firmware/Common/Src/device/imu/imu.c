@@ -43,7 +43,7 @@
 #define SYS_STATUS_GYRO_DATA_READY(SYS_STATUS_REG)  ((SYS_STATUS_REG).drdyGyro != 0U)
 #define SYS_STATUS_TEMP_DATA_READY(SYS_STATUS_REG)  ((SYS_STATUS_REG).drdyTemp != 0U)
 
-static SHARED_MEM_SECTION IMU_t gIMU = { 0 };
+FJ_DEFINE_SHARED (IMU_t, g_IMU);
 
 static eSTATUS_t IMUGetDeviceErr (vIMU_t* pIMU, IMUErr* pOutErr);
 static void IMU_LogFeatStatus (vIMU_t* pIMU);
@@ -753,7 +753,12 @@ STATIC eSTATUS_t IMUConvertRaw (IMU_ACC_RANGE aRange, Vec3i ra, IMU_GYRO_RANGE g
 }
 
 
-eSTATUS_t IMUInit (IMUInitConf_t conf, IMU_t* pOutIMU, BusVTable_t* pBusOverride) {
+eSTATUS_t IMU_Init_ (IMUInitConf_t conf, vIMU_t* pOutIMU) {
+
+    if (!pOutIMU) {
+        LOG_ERROR ("Output vIMU_t pointer is NULL");
+        return eSTATUS_FAILURE;
+    }
 
     IMUAccConf accConf             = conf.aconf;
     IMUGyroConf gyroConf           = conf.gconf;
@@ -762,24 +767,13 @@ eSTATUS_t IMUInit (IMUInitConf_t conf, IMU_t* pOutIMU, BusVTable_t* pBusOverride
     DeviceBoardConf_t device = conf.boardConf;
     eDEVICE_ID_t deviceId    = device.deviceId;
 
-    BusBoardConf_t* pBus   = conf.boardConf.generic.pBusBoardConf;
-    EXTIBoardConf_t* pExti = conf.boardConf.generic.pExtiBoardConf;
-    RETURN_IF_NULL (pBus, eSTATUS_FAILURE, "imu bus config is NULL");
-
     eSTATUS_t status = eSTATUS_SUCCESS;
-    eBUS_ID_t busId  = pBus->busId;
 
-    vIMU_t* pIMU = &gIMU;
-    if (pOutIMU != NULL) {
-        pIMU = pOutIMU;
-    }
+    IMU_t* pIMU = pOutIMU;
     memset (pIMU, 0, sizeof (vIMU_t));
-    // pIMU->busId    = busId;
     pIMU->deviceId = deviceId;
     pIMU->aconf    = accConf;
     pIMU->gconf    = gyroConf;
-    /* SPI reads have 1 dummy byte at the beginning */
-    pIMU->nBusDummyBytes = BUS_ID_IS_SPI (busId) ? 1 : 0;
 
     status = SpiDev_Init (IMU_SPI_BUS_ID, IMU_SPI_NSS_GPIO_PORT, IMU_SPI_NSS_GPIO_PIN, &pIMU->spiDev);
     GOTO_IF (STATUS_FAIL (status), error, "Failed to setup spi device for imu");
@@ -872,13 +866,13 @@ eSTATUS_t IMUInit (IMUInitConf_t conf, IMU_t* pOutIMU, BusVTable_t* pBusOverride
     // HAL_NVIC_SetPriority (IMU_INT_EXTI_IRQn, 8, 8);
     // HAL_NVIC_EnableIRQ (IMU_INT_EXTI_IRQn);
 
-    if (pExti != NULL) {
-        /* Enable acc, gyro, and temperature - data ready interrupts for pin INT1 */
-        status = IMUSetupInterrupts (pIMU);
-        GOTO_IF (STATUS_FAIL (status), error, "Failed to setup imu interrupts");
+    // if (pExti != NULL) {
+    //     /* Enable acc, gyro, and temperature - data ready interrupts for pin INT1 */
+    //     status = IMUSetupInterrupts (pIMU);
+    //     GOTO_IF (STATUS_FAIL (status), error, "Failed to setup imu interrupts");
 
-        pIMU->usingEXTIInterrupt = true;
-    }
+    //     pIMU->usingEXTIInterrupt = true;
+    // }
 
     pIMU->isInitialized = true;
     return eSTATUS_SUCCESS;
@@ -1118,18 +1112,18 @@ eSTATUS_t IMUCompareConfs (IMUAccConf aconf, IMUGyroConf gconf, IMUAccConf aconf
 
 vIMU_t const* IMUGetActiveDevice (void) {
 
-    if (IMU_VALID (&gIMU) == false) {
+    if (IMU_VALID (&g_IMU) == false) {
         // LOG_ERROR ("No active valid IMU device");
         return NULL;
     }
-    return &gIMU;
+    return &g_IMU;
 }
 
 vIMU_t* IMU_GetMutableActiveDevice (void) {
 
-    if (IMU_VALID (&gIMU) == false) {
+    if (IMU_VALID (&g_IMU) == false) {
         // LOG_ERROR ("No active valid IMU device");
         return NULL;
     }
-    return &gIMU;
+    return &g_IMU;
 }

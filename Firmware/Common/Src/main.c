@@ -9,9 +9,9 @@
 
 #include "conf/conf.h"
 
-#include "device/device.h"
 #include "device/imu/imu.h"
 #include "device/mag/mag.h"
+#include "device/serial/serial.h"
 
 #include "mc/filter.h"
 #include "mc/mc.h"
@@ -56,6 +56,7 @@ int main (void) {
     memcpy ((void*)dataStart, (void*)dataFlashStart, dataSize);
 
     Spi_InitSystem ();
+    Uart_InitSystem ();
 
     /*HW semaphore Clock enable*/
     __HAL_RCC_HSEM_CLK_ENABLE ();
@@ -76,14 +77,8 @@ int main (void) {
         CriticalErrorHandler ();
     }
 
-    if (BOARD_CONF_INIT () != eSTATUS_SUCCESS) {
-        CriticalErrorHandler ();
-    }
-
-    if (Device_InitAll (BoardConfGet ()) != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to init device module");
-        CriticalErrorHandler ();
-    }
+    SerialDebugInit ();
+    IMU_Init ();
 
     if (MC_InitAll () != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to init motion control module");

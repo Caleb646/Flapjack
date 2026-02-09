@@ -10,32 +10,16 @@
 #include <stdio.h>
 #include <string.h>
 
-
 typedef struct {
-    DeviceBoardConf_t boardConf;
-} SerialDebugInitConf_t;
-
-typedef struct {
-    eBUS_ID_t busId;
-    eDEVICE_ID_t deviceId;
-    BusVTable_t bus;
-    bool isInitialized;
+    UartPort_t port;
 } SerialDebug_t;
 
-// typedef SerialDebug_t volatile vSerialDebug_t;
-typedef SerialDebug_t vSerialDebug_t;
 
-eSTATUS_t SerialDebugInit (SerialDebugInitConf_t conf, SerialDebug_t* pOutSerial);
-eSTATUS_t SerialDebugStart (vSerialDebug_t* pSerial);
-vSerialDebug_t const* SerialDebugGetActiveDevice (void);
-vSerialDebug_t* SerialDebugGetMutableActiveDevice (void);
-vSerialDebug_t SerialDebugCopyOfActiveDevice (void);
+FJ_DECLARE_SHARED (SerialDebug_t, g_SerialDebug);
 
-#define SERIAL_DEBUG_INIT(pSTATUS, DEVICE_BOARD_CONF)              \
-    do {                                                           \
-        SerialDebugInitConf_t conf = { 0 };                        \
-        conf.boardConf             = (DEVICE_BOARD_CONF);          \
-        *(pSTATUS)                 = SerialDebugInit (conf, NULL); \
-    } while (0)
+eSTATUS_t SerialDebugInit_ (SerialDebug_t* pOutSerial);
+static inline eSTATUS_t SerialDebugInit (void) {
+    return SerialDebugInit_ (&g_SerialDebug);
+};
 
 #endif // DEVICE_SERIAL_SERIAL_H

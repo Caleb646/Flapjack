@@ -10,7 +10,6 @@
 
 #include "conf/conf.h"
 
-#include "device/device.h"
 #include "device/imu/imu.h"
 #include "device/mag/mag.h"
 

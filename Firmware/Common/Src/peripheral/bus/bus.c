@@ -51,29 +51,6 @@ eSTATUS_t BusInit (BusInitConf_t conf, BusVTable_t* pOutBusVTable) {
         pOutBusVTable->pCtx     = SPIGetBusById (busId);
         return eSTATUS_SUCCESS;
     }
-
-    if (BUS_ID_IS_UART (busId)) {
-
-        UART_INIT (&status, device, bus);
-        if (STATUS_FAIL (status)) {
-            return eSTATUS_FAILURE;
-        }
-
-        pOutBusVTable->ReadBlocking = UART_READ_BLOCKING;
-        pOutBusVTable->ReadIT       = UART_READ_IT;
-
-        pOutBusVTable->WriteBlocking = UART_WRITE_BLOCKING;
-
-        pOutBusVTable->WriteReadBlocking = NULL;
-
-        pOutBusVTable->TransactionsBlocking = NULL;
-
-        pOutBusVTable->RegisterCallback = UART_REGISTER_CALLBACK;
-
-        pOutBusVTable->deviceId = deviceId;
-        pOutBusVTable->pCtx     = UARTGetBusById (busId);
-        return eSTATUS_SUCCESS;
-    }
     // invalid bus type
     return eSTATUS_FAILURE;
 }

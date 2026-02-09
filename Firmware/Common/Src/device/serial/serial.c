@@ -4,85 +4,33 @@
 #include "hal.h"
 #include "mem/mem.h"
 #include "peripheral/bus/bus.h"
+#include "target.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
-#define SERIAL_VALID(pSERIAL) \
-    ((pSERIAL) != NULL && (pSERIAL)->isInitialized == true && (pSERIAL)->bus.WriteBlocking != NULL)
-static SHARED_MEM_SECTION SerialDebug_t g_SerialDebug = { 0 };
+
+FJ_DEFINE_SHARED (SerialDebug_t, g_SerialDebug) = {
+    .port = {
+        .cfg = {
+            .id       = BRD_GET_ID(SERIAL_DEBUG, UART),
+            .baudRate = 230400U,
+        },
+    }
+};
 
 static void SerialDebugSink (uint8_t const* pData, uint32_t len) {
-
-    if (SERIAL_VALID (&g_SerialDebug)) {
-        BUS_WRITE_BLOCK (g_SerialDebug.bus, pData, len);
-    }
+    UartPort_Write (&g_SerialDebug.port, pData, (uint16_t)len);
 }
 
-eSTATUS_t SerialDebugInit (SerialDebugInitConf_t conf, SerialDebug_t* pOutSerial) {
+eSTATUS_t SerialDebugInit_ (SerialDebug_t* pOutSerial) {
 
-    eSTATUS_t status             = eSTATUS_SUCCESS;
-    DeviceBoardConf_t deviceConf = conf.boardConf;
-    eDEVICE_ID_t deviceId        = deviceConf.deviceId;
-    BusBoardConf_t* pBusConf     = deviceConf.generic.pBusBoardConf;
-    if (pBusConf == NULL) {
+    SerialDebug_t* pSerial = pOutSerial;
+    eSTATUS_t status       = UartPort_Init (&pSerial->port);
+    if (STATUS_FAIL (status)) {
         return eSTATUS_FAILURE;
     }
-
-    eBUS_ID_t busId = pBusConf->busId;
-
-    SerialDebug_t* pSerial = &g_SerialDebug;
-    if (pOutSerial != NULL) {
-        pSerial = pOutSerial;
-    }
-
-    if (pSerial->isInitialized == true) {
-        return eSTATUS_FAILURE;
-    }
-
-    memset (pSerial, 0, sizeof (SerialDebug_t));
-    pSerial->busId    = busId;
-    pSerial->deviceId = deviceId;
-
-    BUS_INIT (&status, deviceConf, *pBusConf, &pSerial->bus);
-
-    if (pSerial->bus.WriteBlocking == NULL) {
-        goto error;
-    }
-
-    pSerial->isInitialized = true;
     LoggerAddSink (SerialDebugSink);
     return eSTATUS_SUCCESS;
-error:
-    memset (pSerial, 0, sizeof (SerialDebug_t));
-    return eSTATUS_FAILURE;
-}
-
-eSTATUS_t SerialDebugStart (vSerialDebug_t* pSerial) {
-
-    if (SERIAL_VALID (pSerial) == false) {
-        return eSTATUS_FAILURE;
-    }
-    return eSTATUS_SUCCESS;
-}
-
-vSerialDebug_t const* SerialDebugGetActiveDevice (void) {
-
-    if (SERIAL_VALID (&g_SerialDebug) == false) {
-        return NULL;
-    }
-    return &g_SerialDebug;
-}
-
-vSerialDebug_t* SerialDebugGetMutableActiveDevice (void) {
-
-    if (SERIAL_VALID (&g_SerialDebug) == false) {
-        return NULL;
-    }
-    return &g_SerialDebug;
-}
-
-vSerialDebug_t SerialDebugCopyOfActiveDevice (void) {
-    return g_SerialDebug;
 }
