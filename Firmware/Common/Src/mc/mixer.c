@@ -5,8 +5,8 @@
 
 #include "core/core.h"
 
-#include "mc/dshot.h"
 #include "mc/mixer.h"
+#include "mc/motors.h"
 #include "mc/pid.h"
 #include "mc/servos.h"
 
@@ -125,9 +125,9 @@ eSTATUS_t Mixer_Init_ (eMIXER_PROFILE_ID_t profileId, Mixer_t* pOutMixer) {
     pOutMixer->motorsMinThrottle = 0.0F;
     pOutMixer->motorsMaxThrottle = 1.0F;
 
-    eSTATUS_t status = DShotBB_Init ();
+    eSTATUS_t status = Motors_Init ();
     if (STATUS_FAIL (status)) {
-        LOG_ERROR ("Failed to initialize DShotBB");
+        LOG_ERROR ("Failed to initialize Motors");
         return status;
     }
 
@@ -171,9 +171,9 @@ eSTATUS_t Mixer_Update (uint32_t usCurrentTime) {
     }
 
     // TODO: go through motors api instead
-    status = DShotBB_Write (g_Mixer.motorOutputs);
+    status = Motors_Write (g_Mixer.motorOutputs);
     if (STATUS_FAIL (status)) {
-        LOG_ERROR ("Failed to write motor outputs to DShotBB");
+        LOG_ERROR ("Failed to write motor outputs to Motors");
         return status;
     }
     return eSTATUS_SUCCESS;

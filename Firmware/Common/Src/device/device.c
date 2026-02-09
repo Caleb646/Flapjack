@@ -8,9 +8,7 @@
 #include "device/gps/gps.h"
 #include "device/imu/imu.h"
 #include "device/mag/mag.h"
-#include "device/motor/motor.h"
 #include "device/serial/serial.h"
-#include "device/servo/servo.h"
 #include "hal.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -47,20 +45,9 @@ eSTATUS_t Device_InitAll (BoardConf_t* pBoardConf) {
         case eFLASH_DEVICE_ID: break;          // TODO
         case eRF_RECEIVER_DEVICE_ID: break;    // TODO
         case eCURRENT_SENSOR_DEVICE_ID: break; // TODO
-        default:
-            if (DEVICE_ID_IS_MOTOR (deviceId) == true) {
-                MOTOR_INIT (&status, *pDevConf);
-                RETURN_IF (STATUS_FAIL (status), status, "Failed to init motor %d", deviceId);
-                break;
-            }
-            if (DEVICE_ID_IS_SERVO (deviceId) == true) {
-                SERVO_INIT (&status, *pDevConf);
-                RETURN_IF (STATUS_FAIL (status), status, "Failed to init servo %d", deviceId);
-                break;
-            }
         }
+        return eSTATUS_SUCCESS;
     }
-    return eSTATUS_SUCCESS;
 }
 
 eSTATUS_t Device_StartAll (void) {

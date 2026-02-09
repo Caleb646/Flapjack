@@ -1,8 +1,8 @@
-// #include "conf/board.h"
-// #include "conf/ids.h"
-// #include "hal.h"
-// #include <stdbool.h>
-// #include <stdint.h>
+#include "conf/board.h"
+#include "conf/ids.h"
+#include "hal.h"
+#include <stdbool.h>
+#include <stdint.h>
 
 // /*
 //  * Timer Configuration
@@ -341,18 +341,18 @@
 //                                                   &leftMotor,
 //                                                   &rightMotor };
 
-// bool BoardConfInit_MyBoard (void) {
+bool BoardConfInit_MyBoard (void) {
 
-//     // link left and right motors to their servos
-//     leftMotor.motor.pLinkedServoBoardConf  = &leftMotorServo;
-//     rightMotor.motor.pLinkedServoBoardConf = &rightMotorServo;
-//     // link left and right servos to their motors
-//     leftMotorServo.servo.pLinkedMotorBoardConf  = &leftMotor;
-//     rightMotorServo.servo.pLinkedMotorBoardConf = &rightMotor;
+    // link left and right motors to their servos
+    // leftMotor.motor.pLinkedServoBoardConf  = &leftMotorServo;
+    // rightMotor.motor.pLinkedServoBoardConf = &rightMotorServo;
+    // // link left and right servos to their motors
+    // leftMotorServo.servo.pLinkedMotorBoardConf  = &leftMotor;
+    // rightMotorServo.servo.pLinkedMotorBoardConf = &rightMotor;
 
-//     ge_BoardConf.ppDeviceBoardConfs = gDeviceBoardConfs;
-//     ge_BoardConf.numDevices         = sizeof (gDeviceBoardConfs) / sizeof (gDeviceBoardConfs[0]);
+    // ge_BoardConf.ppDeviceBoardConfs = gDeviceBoardConfs;
+    // ge_BoardConf.numDevices         = sizeof (gDeviceBoardConfs) / sizeof (gDeviceBoardConfs[0]);
 
-//     ge_isBoardConfInitialized = true;
-//     return true;
-// }
+    // ge_isBoardConfInitialized = true;
+    return true;
+}

@@ -13,7 +13,6 @@
 #include "device/imu/imu.h"
 #include "device/mag/mag.h"
 
-#include "mc/actuators.h"
 #include "mc/filter.h"
 #include "mc/mc.h"
 #include "mc/pid.h"

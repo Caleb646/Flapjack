@@ -37,8 +37,5 @@ eSTATUS_t MC_StartAll (void) {
         return eSTATUS_FAILURE;
     }
 
-    status = ActuatorsStart ();
-    RETURN_IF (STATUS_FAIL (status), status, "Failed to start actuators");
-
     return status;
 }

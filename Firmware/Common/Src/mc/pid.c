@@ -3,8 +3,7 @@
 #include "conf/conf.h"
 #include "control.h"
 #include "core/core.h"
-#include "device/motor/motor.h"
-#include "device/servo/servo.h"
+
 #include "fcstate.h"
 #include "hal.h"
 #include "mc/dshot.h"
