@@ -71,32 +71,8 @@ enum {
     eCURRENT_SENSOR_DEVICE_ID,
     eSERIAL_DEBUG_DEVICE_ID,
 
-    eSERVO_ID_BEGIN__,
-    eSERVO_1_ID = eSERVO_ID_BEGIN__,
-    eSERVO_2_ID,
-    eSERVO_3_ID,
-    eSERVO_4_ID,
-    eSERVO_5_ID,
-    eSERVO_6_ID,
-    eSERVO_7_ID,
-    eSERVO_8_ID,
-    eSERVO_ID_END__,
-
-    eMOTOR_ID_BEGIN__,
-    eMOTOR_1_ID = eMOTOR_ID_BEGIN__,
-    eMOTOR_2_ID,
-    eMOTOR_ID_END__,
-
     eDEVICE_ID_MAX
 };
-
-#define SERVO_MAX_SERVOS       (eSERVO_ID_END__ - eSERVO_ID_BEGIN__)
-#define MOTOR_MAX_MOTORS       (eMOTOR_ID_END__ - eMOTOR_ID_BEGIN__)
-#define DEVICE_MAX_DEVICES     (eDEVICE_ID_MAX - 1U)
-#define SERVO_ID_TO_IDX(id)    ((id) - eSERVO_ID_BEGIN__)
-#define DEVICE_ID_IS_SERVO(id) ((id) >= eSERVO_ID_BEGIN__ && (id) < eSERVO_ID_END__)
-#define MOTOR_ID_TO_IDX(id)    ((id) - eMOTOR_ID_BEGIN__)
-#define DEVICE_ID_IS_MOTOR(id) ((id) >= eMOTOR_ID_BEGIN__ && (id) < eMOTOR_ID_END__)
 
 typedef uint8_t eBUS_ID_t;
 enum {
