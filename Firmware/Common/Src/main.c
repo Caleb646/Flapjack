@@ -2,6 +2,7 @@
 
 #include "control.h"
 #include "fcstate.h"
+#include "flight.h"
 #include "hal.h"
 #include "scheduler.h"
 
@@ -14,7 +15,6 @@
 #include "device/serial/serial.h"
 
 #include "mc/filter.h"
-#include "mc/mc.h"
 #include "mc/pid.h"
 
 #include "peripheral/bus/bus.h"
@@ -55,8 +55,13 @@ int main (void) {
     uint32_t const dataFlashStart = (uint32_t)(&__SHARED_MEM_DATA_FLASH_START__);
     memcpy ((void*)dataStart, (void*)dataFlashStart, dataSize);
 
-    Spi_InitSystem ();
-    Uart_InitSystem ();
+    if (STATUS_FAIL (Spi_InitSystem ())) {
+        CriticalErrorHandler ();
+    }
+
+    if (STATUS_FAIL (Uart_InitSystem ())) {
+        CriticalErrorHandler ();
+    }
 
     /*HW semaphore Clock enable*/
     __HAL_RCC_HSEM_CLK_ENABLE ();
@@ -73,18 +78,40 @@ int main (void) {
     HAL_NVIC_SetPriority (CM4_SEV_IRQn, 9, 9);
     HAL_NVIC_EnableIRQ (CM4_SEV_IRQn);
 
-    if (Core_Init () != eSTATUS_SUCCESS) {
+    eSTATUS_t status = Core_Init ();
+    if (STATUS_FAIL (status)) {
         CriticalErrorHandler ();
     }
 
-    SerialDebugInit ();
-    IMU_Init ();
-
-    if (MC_InitAll () != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to init motion control module");
+    status = SerialDebugInit ();
+    if (STATUS_FAIL (status)) {
         CriticalErrorHandler ();
     }
-    // TODO: Motors and Servos need to be started somewhere
+
+    status = IMU_Init ();
+    if (STATUS_FAIL (status)) {
+        LOG_ERROR ("Failed to init IMU");
+        CriticalErrorHandler ();
+    }
+
+    PID_INIT (&status);
+    if (STATUS_FAIL (status)) {
+        LOG_ERROR ("Failed to init PID");
+        CriticalErrorHandler ();
+    }
+
+    FILTER_INIT (&status);
+    if (STATUS_FAIL (status)) {
+        LOG_ERROR ("Failed to init filter");
+        CriticalErrorHandler ();
+    }
+
+    Vec3f* pStartingAttitude = &g_FlightData.currentAttitude;
+    status = FilterStart (Filter_GetMutableActiveFilter (), 500U, pStartingAttitude);
+    if (STATUS_FAIL (status)) {
+        LOG_ERROR ("Failed to start filter");
+        CriticalErrorHandler ();
+    }
 
     Delay (250);
 

@@ -14,7 +14,6 @@
 #include "device/mag/mag.h"
 
 #include "mc/filter.h"
-#include "mc/mc.h"
 #include "mc/mixer.h"
 #include "mc/pid.h"
 
