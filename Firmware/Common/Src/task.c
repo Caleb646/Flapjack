@@ -1,7 +1,6 @@
 #include <stdio.h>
 
 #include "control.h"
-#include "fcstate.h"
 #include "flight.h"
 #include "hal.h"
 #include "task.h"
@@ -46,7 +45,7 @@ eSTATUS_t TaskPIDUpdate (uint32_t usCurrentTime) {
     );
 }
 
-eSTATUS_t TaskUpdateAttitude (uint32_t usCurrentTime) {
+eSTATUS_t TaskAttitudeUpdate (uint32_t usCurrentTime) {
 
     FlightData_t* pFlightData = &g_FlightData;
     vIMU_t* pIMU              = IMU_GetMutableActiveDevice ();
@@ -65,4 +64,14 @@ eSTATUS_t TaskIMUUpdate (uint32_t usCurrentTime) {
 eSTATUS_t TaskInterCoreSync (uint32_t usCurrentTime) {
 
     return SyncProcessTasks ();
+}
+
+eSTATUS_t Task_RxUpdate (uint32_t usCurrentTime) {
+
+    return eSTATUS_FAILURE;
+}
+
+eSTATUS_t Task_RxProcessCmds (uint32_t usCurrentTime) {
+
+    return eSTATUS_FAILURE;
 }

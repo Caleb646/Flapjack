@@ -30,12 +30,10 @@ set(FW_CM7_INCS
     # PARENT_SCOPE
 )
 
-set(FW_CM7_SRCS
-    ${FW_CM7_SRC_DIR}/stm32h7xx_hal_msp.c
-    ${FW_CM7_SRC_DIR}/stm32h7xx_it.c
-    ${FW_CM7_SRC_DIR}/syscalls.c
-    ${FW_CM7_SRC_DIR}/sysmem.c
-    ${FW_CM7_ROOT_DIR}/Core/Startup/startup_stm32h747xihx.s
+
+file(GLOB_RECURSE FW_CM7_SRCS
+    "${FW_CM7_SRC_DIR}/*.c"
+    "${FW_CM7_SRC_DIR}/*.s"
 )
 
 set(FW_CM7_DEFINES
@@ -62,13 +60,9 @@ set(FW_CM4_INCS
     # PARENT_SCOPE
 )
 
-set(FW_CM4_SRCS
-    ${FW_CM4_SRC_DIR}/stm32h7xx_it.c
-    ${FW_CM4_SRC_DIR}/syscalls.c
-    ${FW_CM4_SRC_DIR}/sysmem.c
-    ${FW_CM4_ROOT_DIR}/Core/Startup/startup_stm32h747xihx.s
-
-    # PARENT_SCOPE
+file(GLOB_RECURSE FW_CM4_SRCS
+    "${FW_CM4_SRC_DIR}/*.c"
+    "${FW_CM4_SRC_DIR}/*.s"
 )
 
 set(FW_CM4_DEFINES

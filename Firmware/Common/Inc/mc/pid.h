@@ -6,7 +6,6 @@
 #include "control.h"
 #include "core/core.h"
 
-#include "fcstate.h"
 #include "hal.h"
 #include "mc/dshot.h"
 #include "peripheral/dma.h"

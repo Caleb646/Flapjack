@@ -2,7 +2,6 @@
 #include "conf/conf.h"
 #include "core/core.h"
 #include "core/log/logger.h"
-#include "fcstate.h"
 #include "hal.h"
 #include "mem/mem.h"
 #include "mem/queue.h"

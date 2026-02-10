@@ -1,7 +1,6 @@
 #include <stdio.h>
 
 #include "control.h"
-#include "fcstate.h"
 #include "flight.h"
 #include "hal.h"
 #include "scheduler.h"

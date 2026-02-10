@@ -158,13 +158,13 @@ eSTATUS_t SyncRegisterHandler (eSYNC_TASKID_t taskID, task_handler_fn_t fn) {
 
 eSTATUS_t SyncProcessTasks (void) {
 
-    if (SyncTaskQueue_IsEmpty () == true) {
+    if (SyncTaskQueue_IsEmpty ()) {
         return eSTATUS_SUCCESS;
     }
 
     DefaultTask task = { 0 };
     while (SyncTaskQueue_Pop (&task) == eSTATUS_SUCCESS) {
-        if (TASK_IS_VALID (&task) == false) {
+        if (!TASK_IS_VALID (&task)) {
             continue;
         }
         SyncTaskHeader const* pHeader = (SyncTaskHeader const*)&task;

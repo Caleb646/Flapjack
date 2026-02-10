@@ -3,7 +3,6 @@
 
 #include "core/core.h"
 #include "core/log/logger.h"
-#include "fcstate.h"
 #include "hal.h"
 #include "mem/mem.h"
 #include "peripheral/bus/uart.h"
@@ -55,12 +54,12 @@ typedef struct {
 
 typedef struct {
     CommandHeader_t header;
-    eOP_STATE_t requestedState;
+    uint8_t requestedState;
 } ChangeOpStateCmd;
 
 typedef struct {
     CommandHeader_t header;
-    eFLIGHT_MODE_t flightMode;
+    uint8_t flightMode;
 } ChangeFlightModeCmd;
 
 typedef struct {
