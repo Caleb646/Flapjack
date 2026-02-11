@@ -8,25 +8,48 @@
 #include <stdint.h>
 #include <string.h>
 
-#define UART_CREATE(UART_NUM)                            \
+#define UART_CREATE(TYPE, UART_NUM) \
     {                                                    \
-        .id = UART_##UART_NUM##_ID, .hardware = {        \
+        .id       = UART_##UART_NUM##_ID,                \
+        .hardware = {                                    \
             .pInstance = UART_##UART_NUM##_INSTANCE,     \
             .pRx       = UART_##UART_NUM##_RX_GPIO_PORT, \
             .pTx       = UART_##UART_NUM##_TX_GPIO_PORT, \
             .rxPin     = UART_##UART_NUM##_RX_GPIO_PIN,  \
             .txPin     = UART_##UART_NUM##_TX_GPIO_PIN,  \
             .af        = UART_##UART_NUM##_AF,           \
-        }                                                \
+            .irqId     = TYPE##UART_NUM##_IRQn,       \
+        },                                               \
+                                                  \
     }
-
 
 FJ_DEFINE_SHARED (Uart_t, g_Uarts[]) = {
 #if defined(UART_1_ENABLED) && UART_1_ENABLED == 1U
-    UART_CREATE (1),
+    UART_CREATE (USART, 1),
 #endif
 };
 FJ_DEFINE_SHARED (uint32_t, g_numUarts) = sizeof (g_Uarts) / sizeof (g_Uarts[0]);
+
+void Uart_IrqHandler (uart_id_t id) {
+
+    Uart_t* pUart = Uart_GetById (id);
+    if (pUart) {
+        USART_TypeDef* pInstance = pUart->hardware.pInstance;
+        if (__HAL_UART_GET_FLAG (&pUart->handle, UART_FLAG_RXNE) != RESET && pUart->rxCallback) {
+            pUart->rxCallback ((uint8_t*)&pInstance->RDR, 1U);
+        }
+        HAL_UART_IRQHandler (&pUart->handle);
+    }
+}
+
+#define UART_DEF_ISR(TYPE, UART_NUM)            \
+    void TYPE##UART_NUM##_IRQHandler (void) {   \
+        Uart_IrqHandler (UART_##UART_NUM##_ID); \
+    }
+
+#if defined(UART_1_ENABLED) && UART_1_ENABLED == 1U
+UART_DEF_ISR (USART, 1)
+#endif
 
 eSTATUS_t Uart_InitSystem (void) {
 
@@ -126,6 +149,13 @@ eSTATUS_t UartPort_Init (UartPort_t* pOutPort) {
             return eSTATUS_FAILURE;
         }
         __HAL_UART_ENABLE (&pUart->handle);
+    }
+
+    if (pOutPort->cfg.rxCallback) {
+        HAL_NVIC_SetPriority (pUart->hardware.irqId, pOutPort->cfg.irqPriority, 0);
+        HAL_NVIC_EnableIRQ (pUart->hardware.irqId);
+        pUart->rxCallback = pOutPort->cfg.rxCallback;
+        __HAL_UART_ENABLE_IT (&pUart->handle, UART_IT_RXNE);
     }
 
     pOutPort->pUart = pUart;

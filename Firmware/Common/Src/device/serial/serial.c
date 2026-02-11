@@ -10,25 +10,25 @@
 #include <stdio.h>
 #include <string.h>
 
-
+// clang-format off
 FJ_DEFINE_SHARED (SerialDebug_t, g_SerialDebug) = {
     .port = {
         .cfg = {
             .id       = BRD_GET_ID(SERIAL_DEBUG, UART),
-            .baudRate = 230400U,
+            .baudRate = SERIAL_DEBUG_BAUD_RATE
         },
     }
 };
+// clang-format on
 
 static void SerialDebugSink (uint8_t const* pData, uint32_t len) {
-    UartPort_Write (&g_SerialDebug.port, pData, (uint16_t)len);
+    UartPort_Write (&g_SerialDebug.port, pData, len);
 }
 
 eSTATUS_t SerialDebugInit_ (SerialDebug_t* pOutSerial) {
 
     SerialDebug_t* pSerial = pOutSerial;
-    eSTATUS_t status       = UartPort_Init (&pSerial->port);
-    if (STATUS_FAIL (status)) {
+    if (STATUS_FAIL (UartPort_Init (&pSerial->port))) {
         return eSTATUS_FAILURE;
     }
     LoggerAddSink (SerialDebugSink);

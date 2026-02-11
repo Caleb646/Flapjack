@@ -23,19 +23,25 @@ typedef struct {
     uint16_t rxPin;
     uint16_t txPin;
     uint32_t af;
+    uint32_t irqId;
 } UartHardware_t;
+
+typedef void (*UartRxCallback_t) (uint8_t const* pData, uint32_t len);
 
 typedef struct {
     uart_id_t id;
     UART_HandleTypeDef handle;
     UartHardware_t hardware;
+    UartRxCallback_t rxCallback;
 } Uart_t;
 
-typedef struct {
+typedef struct UartPort_s {
     Uart_t* pUart;
     struct {
         uart_id_t id;
         uint32_t baudRate;
+        UartRxCallback_t rxCallback;
+        uint8_t irqPriority;
     } cfg;
 } UartPort_t;
 
@@ -43,6 +49,7 @@ FJ_DECLARE_SHARED (Uart_t, g_Uarts[]);
 FJ_DECLARE_SHARED (uint32_t, g_numUarts);
 
 eSTATUS_t Uart_InitSystem (void);
+Uart_t* Uart_GetById (uart_id_t id);
 eSTATUS_t UartPort_Init (UartPort_t* pOutPort);
 eSTATUS_t UartPort_Write (UartPort_t* pPort, uint8_t const* pData, uint32_t size);
 

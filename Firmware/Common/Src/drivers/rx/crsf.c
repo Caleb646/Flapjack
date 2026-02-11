@@ -6,19 +6,55 @@
 #include "peripheral/bus/uart.h"
 
 #include "drivers/rx/crsf.h"
+#include "drivers/rx/rx.h"
 
 FJ_DEFINE_SHARED (CrsfFrame_t, s_CrsfFrame);
-FJ_DEFINE_SHARED (CrsfChannelsPayload_t, s_CrsfChannelsPayload);
 FJ_DEFINE_SHARED (UartPort_t*, s_pCrsfPort);
+FJ_DEFINE_SHARED (bool volatile, s_IsFrameComplete) = false;
 
 static uint8_t crc8 (uint8_t const* ptr, uint8_t len);
 
-// source: https://github.com/tbs-fpv/tbs-crsf-spec/blob/main/crsf.md
-eSTATUS_t Crsf_ProcessFrame (CrsfFrame_t const* pFrame) {
+// Source: https://github.com/betaflight/betaflight/blob/master/src/main/rx/crsf.c#L685
+eSTATUS_t Crsf_Bind (void) {
 
-    if (!pFrame) {
+    uint8_t bindFrame[] = {
+        CRSF_SYNC_BYTE,
+        0x07, // frame length
+        CRSF_FRAME_TYPE_COMMAND,
+        CRSF_ADDRESS_CRSF_RECEIVER,
+        CRSF_ADDRESS_FLIGHT_CONTROLLER,
+        CRSF_COMMAND_SUBCMD_RX,
+        CRSF_COMMAND_SUBCMD_RX_BIND,
+        0x9E, // Command CRC8
+        0xE8, // Packet CRC8
+    };
+    return UartPort_Write (s_pCrsfPort, bindFrame, sizeof (bindFrame));
+}
+
+eSTATUS_t Crsf_Init (UartPort_t* pPort) {
+
+    if (!pPort) {
         return eSTATUS_FAILURE;
     }
+
+    pPort->cfg.rxCallback = Crsf_DataReceivedHandler_;
+    if (STATUS_FAIL (UartPort_Init (pPort))) {
+        LOG_ERROR ("Failed to initialize RX UART port");
+        return eSTATUS_FAILURE;
+    }
+    s_pCrsfPort = pPort;
+    return eSTATUS_SUCCESS;
+}
+
+// source: https://github.com/tbs-fpv/tbs-crsf-spec/blob/main/crsf.md
+eSTATUS_t Crsf_ProcessFrame (uint32_t outChannels[RC_MAX_CHANNELS]) {
+
+    if (!outChannels || !s_IsFrameComplete) {
+        return eSTATUS_FAILURE;
+    }
+
+    CrsfFrame_t const* pFrame = &s_CrsfFrame;
+    s_IsFrameComplete         = false;
 
     uint8_t const frameLen = pFrame->header.length;
     if (frameLen < 2 || frameLen > CRSF_MAX_PAYLOAD_SIZE) {
@@ -35,47 +71,37 @@ eSTATUS_t Crsf_ProcessFrame (CrsfFrame_t const* pFrame) {
         if (frameLen != sizeof (CrsfChannelsPayload_t)) {
             return eSTATUS_FAILURE;
         }
-        memcpy (&s_CrsfChannelsPayload, &pFrame->bytes[3], sizeof (CrsfChannelsPayload_t));
+        CrsfChannelsPayload_t* pPayload = (CrsfChannelsPayload_t*)&pFrame->bytes[3];
+        outChannels[0]                  = pPayload->channel_1;
+        outChannels[1]                  = pPayload->channel_2;
+        outChannels[2]                  = pPayload->channel_3;
+        outChannels[3]                  = pPayload->channel_4;
+        outChannels[4]                  = pPayload->channel_5;
+        outChannels[5]                  = pPayload->channel_6;
+        outChannels[6]                  = pPayload->channel_7;
+        outChannels[7]                  = pPayload->channel_8;
+        outChannels[8]                  = pPayload->channel_9;
+        outChannels[9]                  = pPayload->channel_10;
+        outChannels[10]                 = pPayload->channel_11;
+        outChannels[11]                 = pPayload->channel_12;
+        outChannels[12]                 = pPayload->channel_13;
+        outChannels[13]                 = pPayload->channel_14;
+        outChannels[14]                 = pPayload->channel_15;
+        outChannels[15]                 = pPayload->channel_16;
         break;
     default: return eSTATUS_FAILURE;
     }
     return eSTATUS_SUCCESS;
 }
 
-// Source: https://github.com/betaflight/betaflight/blob/master/src/main/rx/crsf.c#L685
-eSTATUS_t Crsf_Bind (void) {
-
-    uint8_t bindFrame[] = {
-        CRSF_SYNC_BYTE,
-        0x07, // frame length
-        CRSF_FRAMETYPE_COMMAND,
-        CRSF_ADDRESS_CRSF_RECEIVER,
-        CRSF_ADDRESS_FLIGHT_CONTROLLER,
-        CRSF_COMMAND_SUBCMD_RX,
-        CRSF_COMMAND_SUBCMD_RX_BIND,
-        0x9E, // Command CRC8
-        0xE8, // Packet CRC8
-    };
-    return UartPort_Write (s_pCrsfPort, bindFrame, sizeof (bindFrame));
-}
-
-eSTATUS_t Crsf_Init (UartPort_t* pPort) {
-
-    if (!pPort || !pPort->pUart) {
-        return eSTATUS_FAILURE;
-    }
-    s_pCrsfPort = pPort;
-    return eSTATUS_SUCCESS;
-}
-
-eSTATUS_t Crsf_DataReceivedHandler (uint8_t const* pData, uint8_t len) {
+void Crsf_DataReceivedHandler_ (uint8_t const* pData, uint32_t len) {
 
     static uint8_t frameByteIdx          = 0;
     static uint32_t usFrameStartTime     = 0;
     static uint32_t const usFrameTimeout = (1000000 / 416666) * (CRSF_MAX_FRAME_SIZE * 8) * 2;
 
     if (!pData || !len) {
-        return eSTATUS_FAILURE;
+        return;
     }
 
     if (!frameByteIdx) {
@@ -90,12 +116,11 @@ eSTATUS_t Crsf_DataReceivedHandler (uint8_t const* pData, uint8_t len) {
     s_CrsfFrame.bytes[frameByteIdx++] = *pData;
     if (frameByteIdx >= 3) {
         if (frameByteIdx == s_CrsfFrame.header.length + 2) {
-            frameByteIdx     = 0;
-            usFrameStartTime = 0;
-            return Crsf_ProcessFrame (&s_CrsfFrame);
+            frameByteIdx      = 0;
+            usFrameStartTime  = 0;
+            s_IsFrameComplete = true;
         }
     }
-    return eSTATUS_SUCCESS;
 }
 
 

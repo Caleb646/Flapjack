@@ -19,6 +19,7 @@
 #define BRD_GET_GPIO_PORT(API, PERIPH)                    BRD_GET_ATTRIBUTE (API, PERIPH, GPIO_PORT)
 #define BRD_GET_GPIO_PIN(API, PERIPH)                     BRD_GET_ATTRIBUTE (API, PERIPH, GPIO_PIN)
 #define BRD_GET_AF(API, PERIPH)                           BRD_GET_ATTRIBUTE (API, PERIPH, AF)
+#define BRD_GET_BAUD_RATE(API, PERIPH)                    BRD_GET_ATTRIBUTE (API, PERIPH, BAUD_RATE)
 
 #define BRD_MOTOR_COUNT                                   (MOTOR_1_ENABLED + MOTOR_2_ENABLED)
 #define TAR_GET_MOTOR_PORT(MOTOR_NAME)                    MOTOR_NAME##_GPIO_PORT
