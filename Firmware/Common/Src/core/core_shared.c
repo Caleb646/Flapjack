@@ -65,7 +65,7 @@ float clipf32 (float v, float lower, float upper) {
 }
 
 float mapf32 (float v, float fromMin, float fromMax, float toMin, float toMax) {
-    if (fromMax == fromMin) {
+    if ((fromMin - fromMax) < 0.0001F) {
         return toMin;
     }
     return toMin + ((v - fromMin) / (fromMax - fromMin)) * (toMax - toMin);

@@ -7,7 +7,9 @@
 #include "core/log/logger.h"
 #include "device/imu/bmixxx.h"
 #include "hal.h"
-#include "peripheral/bus/bus.h"
+
+#include "drivers/bus/spi.h"
+
 #include <stdint.h>
 #include <string.h>
 
@@ -255,12 +257,12 @@ FJ_DECLARE_SHARED (IMU_t, g_IMU);
 
 #ifdef UNIT_TEST
 
-eSTATUS_t IMUSendCmd (vIMU_t const* pIMU, uint16_t cmd);
-eSTATUS_t IMUGetFeatureStatus (vIMU_t const* pIMU, uint16_t featureRegAddr, IMU_FeatureReg_t* pOutStatus);
-eSTATUS_t IMUGetINTStatus (vIMU_t const* pIMU, IMU_INTStatusReg_t*);
-eSTATUS_t IMUGetSysStatus (vIMU_t const* pIMU, IMU_SysStatusReg_t* pOutStatus);
-eSTATUS_t IMUReadReg (vIMU_t const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
-eSTATUS_t IMUWriteReg (vIMU_t const* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
+eSTATUS_t IMUSendCmd (vIMU_t* pIMU, uint16_t cmd);
+eSTATUS_t IMUGetFeatureStatus (vIMU_t* pIMU, uint16_t featureRegAddr, IMU_FeatureReg_t* pOutStatus);
+eSTATUS_t IMUGetINTStatus (vIMU_t* pIMU, IMU_INTStatusReg_t*);
+eSTATUS_t IMUGetSysStatus (vIMU_t* pIMU, IMU_SysStatusReg_t* pOutStatus);
+eSTATUS_t IMUReadReg (vIMU_t* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
+eSTATUS_t IMUWriteReg (vIMU_t* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
 eSTATUS_t IMUUpdateRawGyro (vIMU_t* pIMU);
 eSTATUS_t IMUUpdateRawAccel (vIMU_t* pIMU);
 eSTATUS_t IMUSetAxesRemap (vIMU_t* pIMU, IMUAxesRemapConf remap);
@@ -268,9 +270,9 @@ eSTATUS_t IMUSoftReset (vIMU_t* pIMU);
 eSTATUS_t IMUGetConf_ (vIMU_t* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf, uint8_t altConfFlag);
 eSTATUS_t IMUSetConf_ (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf, uint8_t altConfFlag);
 eSTATUS_t IMUCalibrate (vIMU_t* pIMU, uint8_t calibSelection, uint8_t applyCorrection);
-eSTATUS_t IMUSetupInterrupts (vIMU_t const* pIMU);
-eSTATUS_t IMUEnableInterrupts (vIMU_t const* pIMU);
-eSTATUS_t IMUDisableInterrupts (vIMU_t const* pIMU);
+eSTATUS_t IMUSetupInterrupts (vIMU_t* pIMU);
+eSTATUS_t IMUEnableInterrupts (vIMU_t* pIMU);
+eSTATUS_t IMUDisableInterrupts (vIMU_t* pIMU);
 eSTATUS_t
 IMUConvertRaw (IMU_ACC_RANGE aRange, Vec3i ra, IMU_GYRO_RANGE gRange, Vec3i rg, Vec3f* pAccelOut, Vec3f* pGyroOut);
 

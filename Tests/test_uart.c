@@ -1,4 +1,4 @@
-#include "peripheral/bus/uart.h"
+#include "drivers/serial/uart.h"
 #include "unity/unity.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -99,8 +99,7 @@ void dummy_callback (eBUS_ID_t busId) {
 void test_UARTRegisterCallback_NullBus_ReturnsFailure (void) {
 
 
-    eSTATUS_t status =
-    UARTRegisterCallback (NULL, eUART_CALLBACK_ID_RX, dummy_callback);
+    eSTATUS_t status = UARTRegisterCallback (NULL, eUART_CALLBACK_ID_RX, dummy_callback);
     TEST_ASSERT_EQUAL (eSTATUS_FAILURE, status);
 }
 
@@ -116,8 +115,7 @@ void test_UARTRegisterCallback_InvalidCallbackId_ReturnsFailure (void) {
     // Mark bus as initialized for validation
     test_bus.isInitialized = true;
 
-    eSTATUS_t status =
-    UARTRegisterCallback (&test_bus, eUART_CALLBACK_ID_MAX, dummy_callback);
+    eSTATUS_t status = UARTRegisterCallback (&test_bus, eUART_CALLBACK_ID_MAX, dummy_callback);
     TEST_ASSERT_EQUAL (eSTATUS_FAILURE, status);
 }
 
@@ -173,16 +171,13 @@ void test_UARTDataTransfer_FunctionSignatures (void) {
     uint8_t rxData[4];
 
     // These should return failure but not crash due to uninitialized bus
-    eSTATUS_t readStatus =
-    UARTRead_Blocking (&test_bus, eIMU_DEVICE_ID, rxData, sizeof (rxData));
+    eSTATUS_t readStatus = UARTRead_Blocking (&test_bus, eIMU_DEVICE_ID, rxData, sizeof (rxData));
     TEST_ASSERT_EQUAL (eSTATUS_FAILURE, readStatus);
 
-    eSTATUS_t writeStatus =
-    UARTWrite_Blocking (&test_bus, eIMU_DEVICE_ID, testData, sizeof (testData));
+    eSTATUS_t writeStatus = UARTWrite_Blocking (&test_bus, eIMU_DEVICE_ID, testData, sizeof (testData));
     TEST_ASSERT_EQUAL (eSTATUS_FAILURE, writeStatus);
 
-    eSTATUS_t readITStatus =
-    UARTRead_IT (&test_bus, eIMU_DEVICE_ID, rxData, sizeof (rxData));
+    eSTATUS_t readITStatus = UARTRead_IT (&test_bus, eIMU_DEVICE_ID, rxData, sizeof (rxData));
     TEST_ASSERT_EQUAL (eSTATUS_FAILURE, readITStatus);
 }
 
@@ -220,16 +215,13 @@ void test_UARTWrapperFunctions_Signatures (void) {
     uint8_t rxData[4];
 
     // Test wrapper functions exist and handle invalid context gracefully
-    eSTATUS_t readStatus =
-    UART_READ_BLOCKING (&test_bus, eIMU_DEVICE_ID, rxData, sizeof (rxData));
+    eSTATUS_t readStatus = UART_READ_BLOCKING (&test_bus, eIMU_DEVICE_ID, rxData, sizeof (rxData));
     TEST_ASSERT_EQUAL (eSTATUS_FAILURE, readStatus);
 
-    eSTATUS_t writeStatus =
-    UART_WRITE_BLOCKING (&test_bus, eIMU_DEVICE_ID, testData, sizeof (testData));
+    eSTATUS_t writeStatus = UART_WRITE_BLOCKING (&test_bus, eIMU_DEVICE_ID, testData, sizeof (testData));
     TEST_ASSERT_EQUAL (eSTATUS_FAILURE, writeStatus);
 
-    eSTATUS_t readITStatus =
-    UART_READ_IT (&test_bus, eIMU_DEVICE_ID, rxData, sizeof (rxData));
+    eSTATUS_t readITStatus = UART_READ_IT (&test_bus, eIMU_DEVICE_ID, rxData, sizeof (rxData));
     TEST_ASSERT_EQUAL (eSTATUS_FAILURE, readITStatus);
 }
 

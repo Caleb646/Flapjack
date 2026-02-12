@@ -1,10 +1,10 @@
 #ifndef PERIPHS_UART_H
 #define PERIPHS_UART_H
-#include "conf/board.h"
-#include "conf/conf.h"
-#include "core/core.h"
+
 #include "hal.h"
-#include "peripheral/bus/bus_core.h"
+
+#include "core/core.h"
+
 #include "peripheral/gpio.h"
 
 #define UART_1_ID 0U

@@ -1,6 +1,5 @@
 #include <stdio.h>
 
-#include "control.h"
 #include "flight.h"
 #include "hal.h"
 #include "task.h"
@@ -10,7 +9,8 @@
 #include "conf/conf.h"
 
 #include "device/imu/imu.h"
-#include "device/mag/mag.h"
+
+#include "drivers/sensors/mag/mag.h"
 
 #include "drivers/rx/rx.h"
 
@@ -20,7 +20,7 @@
 #include "mc/mixer.h"
 #include "mc/pid.h"
 
-#include "peripheral/bus/bus.h"
+
 #include "peripheral/dma.h"
 #include "peripheral/gpio.h"
 

@@ -1,5 +1,0 @@
-#ifndef PERIPHERAL_BUS_I2C_H
-#define PERIPHERAL_BUS_I2C_H
-
-
-#endif

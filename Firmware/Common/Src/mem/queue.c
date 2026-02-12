@@ -8,60 +8,9 @@
 // #define SEMAPHORE_ID            1U
 #define IS_QUEUE_SHARED(pQueue) ((pQueue)->processID != 0U)
 
-/*
- * Start at 1 because 0 is reserved for NON shared queues
- */
-static uint32_t g_ProcessID = 1;
-
-#ifndef UNIT_TEST
-
-static eSTATUS_t Queue_EnterCritical (Queue_t const* pQueue);
-static void Queue_ExitCritical (Queue_t const* pQueue);
-
-#endif // UNIT_TEST
-
-static eSTATUS_t Queue_EnterCritical (Queue_t const* pQueue) {
-    /*
-     * Disable interrupts before taking the semaphore.
-     * Do not want to enter an interrupt after taking the semaphore.
-     * That could result in a deadlock if the interrupt tries to take the same semaphore.
-     */
-    // TODO: should save the current interrupt state
-    // uint32_t primask = __get_PRIMASK ();
-
-#if 0
-    // __disable_irq ();
-    portDISABLE_INTERRUPTS ();
-    /*
-     * Ensure the disable irq does not get reordered by CPU or compiler
-     */
-    // __DMB ();
-    // clang-format off
-    int32_t timeout = 10000;
-    while(HAL_HSEM_Take (SEMAPHORE_ID, pQueue->processID) != HAL_OK && timeout-- > 0) {}
-    // clang-format on
-    if (timeout <= 0) {
-        // __enable_irq ();
-        portENABLE_INTERRUPTS ();
-        return eSTATUS_FAILURE;
-    }
-    /*
-     * Ensure enter critical stores/loads are completed
-     */
-    // __DMB ();
-#endif
-    return eSTATUS_SUCCESS;
-}
-
-static void Queue_ExitCritical (Queue_t const* pQueue) {
-#if 0
-    HAL_HSEM_Release (SEMAPHORE_ID, pQueue->processID);
-    portENABLE_INTERRUPTS ();
-    // __enable_irq ();
-#endif
-}
-
 eSTATUS_t QueueInit (Queue_t* pQueue, void* pBuffer, uint16_t capacity, uint16_t elementSize, bool isShared) {
+
+    FJ_UNUSED (isShared);
 
     if (pQueue == NULL || pBuffer == NULL || capacity == 0 || elementSize == 0) {
         return eSTATUS_FAILURE;
@@ -80,14 +29,6 @@ eSTATUS_t QueueInit (Queue_t* pQueue, void* pBuffer, uint16_t capacity, uint16_t
     pQueue->head        = 0;
     pQueue->tail        = 0;
     pQueue->count       = 0;
-
-    if (isShared == true) {
-        if ((g_ProcessID + 1U) > 256U) {
-            return eSTATUS_FAILURE;
-        }
-        pQueue->processID = g_ProcessID++;
-    }
-
     return eSTATUS_SUCCESS;
 }
 
@@ -155,23 +96,6 @@ eSTATUS_t Queue_Push (Queue_t* pQueue, void const* pElement) {
 
     // Update tail index (circular)
     pQueue->tail = (pQueue->tail + 1U) & (pQueue->capacity - 1U); // Use bitwise AND for circular indexing
-
-    /*
-     * NOTE: The reason for only protecting the count update is because
-     * right now the only way the queue is used is 1 core pushes and 1 core
-     * pops or 1 interrupt pushes and 1 core pops. There is not a case
-     * where 1 core pushes & pops while another core pushes & pops
-     */
-    if (IS_QUEUE_SHARED (pQueue) == true) {
-        if (Queue_EnterCritical (pQueue) != eSTATUS_SUCCESS) {
-            return eSTATUS_FAILURE;
-        }
-        pQueue->count++;
-        Queue_ExitCritical (pQueue);
-    } else {
-        pQueue->count++;
-    }
-
     return eSTATUS_SUCCESS;
 }
 
@@ -193,23 +117,6 @@ eSTATUS_t Queue_Pop (Queue_t* pQueue, void* pOutElement) {
 
     // Update head index (circular)
     pQueue->head = (pQueue->head + 1U) & (pQueue->capacity - 1U); // Use bitwise AND for circular indexing
-
-    /*
-     * NOTE: The reason for only protecting the count update is because
-     * right now the only way the queue is used is 1 core pushes and 1 core
-     * pops or 1 interrupt pushes and 1 core pops. There is not a case
-     * where 1 core pushes & pops while another core pushes & pops
-     */
-    if (IS_QUEUE_SHARED (pQueue) == true) {
-        if (Queue_EnterCritical (pQueue) != eSTATUS_SUCCESS) {
-            return eSTATUS_FAILURE;
-        }
-        pQueue->count--;
-        Queue_ExitCritical (pQueue);
-    } else {
-        pQueue->count--;
-    }
-
     return eSTATUS_SUCCESS;
 }
 

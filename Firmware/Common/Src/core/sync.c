@@ -76,7 +76,7 @@ STATIC eSTATUS_t SyncMailBoxWrite (uint32_t mbID, uint8_t const* pBuffer, uint32
     if (len > sizeof (MailBox_t) || pBuffer == NULL) {
         return eSTATUS_FAILURE;
     }
-    memcpy ((void*)SyncMailBoxGet (mbID), (void*)pBuffer, len);
+    memcpy ((void*)SyncMailBoxGet (mbID), (void const*)pBuffer, len);
     return eSTATUS_SUCCESS;
 }
 

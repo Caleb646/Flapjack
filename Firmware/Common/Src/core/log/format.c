@@ -91,9 +91,9 @@ static int a2d (char ch) {
         return -1;
 }
 
-static char a2i (char ch, char** src, int base, int* nump) {
-    char* p = *src;
-    int num = 0;
+static char a2i (char ch, char const** src, int base, int* nump) {
+    char const* p = *src;
+    int num       = 0;
     int digit;
     while ((digit = a2d (ch)) >= 0) {
         if (digit > base)

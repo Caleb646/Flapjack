@@ -1,6 +1,9 @@
 #ifndef TARGETS_TARGET_H
 #define TARGETS_TARGET_H
 
+// to disable redefinition warnings for default target macros
+#pragma GCC system_header
+
 #define TAR_NARG_(a1, a2, a3, a4, a5, a6, a7, a8, N, ...) N
 #define TAR_NARG(...)                                     TAR_NARG_ (__VA_ARGS__, 8, 7, 6, 5, 4, 3, 2, 1, 0)
 #define TAR_CONCAT_(A, B)                                 A##B
@@ -41,7 +44,6 @@
     TAR_GET_TIMER_INSTANCE (BRD_GET_SERVO_TIMER_NAME (SERVO_NAME))
 #define BRD_GET_SERVO_TIMER_AF(SERVO_NAME)      TAR_GET_TIMER_AF (BRD_GET_SERVO_TIMER_NAME (SERVO_NAME))
 #define BRD_GET_SERVO_TIMER_CHANNEL(SERVO_NAME) SERVO_NAME##_CHANNEL
-
 
 #include "nucleo_h747zi.h"
 

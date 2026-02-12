@@ -1,4 +1,4 @@
-#include "peripheral/bus/spi.h"
+#include "drivers/bus/spi.h"
 #include "unity/unity.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -70,12 +70,10 @@ void test_SPIDataTransfer_FunctionSignatures (void) {
     uint8_t rxData[4];
 
     // These should return failure but not crash
-    eSTATUS_t readStatus =
-    SPIRead_Blocking (&test_bus, eIMU_DEVICE_ID, rxData, sizeof (rxData));
+    eSTATUS_t readStatus = SPIRead_Blocking (&test_bus, eIMU_DEVICE_ID, rxData, sizeof (rxData));
     TEST_ASSERT_EQUAL (eSTATUS_FAILURE, readStatus);
 
-    eSTATUS_t writeStatus =
-    SPIWrite_Blocking (&test_bus, eIMU_DEVICE_ID, testData, sizeof (testData));
+    eSTATUS_t writeStatus = SPIWrite_Blocking (&test_bus, eIMU_DEVICE_ID, testData, sizeof (testData));
     TEST_ASSERT_EQUAL (eSTATUS_FAILURE, writeStatus);
 
     eSTATUS_t writeReadStatus =

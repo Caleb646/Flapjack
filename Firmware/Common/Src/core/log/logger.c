@@ -158,7 +158,7 @@ static void LoggerWriteChar (void* p, char ch) {
 
 eSTATUS_t LoggerAddSink (LoggerWriteToSink_t sink) {
 
-    if (sink == NULL || gCurrentSinkIdx >= MAX_NSINKS) {
+    if (!sink || gCurrentSinkIdx >= MAX_NSINKS) {
         return eSTATUS_FAILURE;
     }
     gLoggerSinks[gCurrentSinkIdx++] = sink;
@@ -167,15 +167,15 @@ eSTATUS_t LoggerAddSink (LoggerWriteToSink_t sink) {
 
 eSTATUS_t LoggerRemoveSink (LoggerWriteToSink_t fpSink) {
 
-    if (fpSink == NULL || gCurrentSinkIdx == 0U) {
+    if (!fpSink || !gCurrentSinkIdx) {
         return eSTATUS_FAILURE;
     }
-    for (uint32_t i = 0; i < gCurrentSinkIdx; ++i) {
+    for (uint8_t i = 0; i < gCurrentSinkIdx; ++i) {
         if (gLoggerSinks[i] == fpSink) {
 
             gLoggerSinks[i] = NULL;
             // Shift remaining sinks down
-            for (uint32_t j = i; j < gCurrentSinkIdx - 1; ++j) {
+            for (uint8_t j = i; j < gCurrentSinkIdx - 1; ++j) {
                 gLoggerSinks[j] = gLoggerSinks[j + 1];
             }
             --gCurrentSinkIdx;

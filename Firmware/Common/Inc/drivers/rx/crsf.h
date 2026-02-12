@@ -6,7 +6,7 @@
 
 #include "core/core.h"
 
-#include "peripheral/bus/uart.h"
+#include "drivers/serial/uart.h"
 
 #include "drivers/rx/rx.h"
 

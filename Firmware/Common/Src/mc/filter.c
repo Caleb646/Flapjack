@@ -2,7 +2,7 @@
 #include "core/core.h"
 #include "core/log/logger.h"
 #include "device/imu/imu.h"
-#include "device/mag/mag.h"
+#include "drivers/sensors/mag/mag.h"
 #include "hal.h"
 #include "mem/mem.h"
 #include <math.h>
@@ -77,10 +77,7 @@ bool FilterMadgwickUpdate_6DOF (FilterMadgwick_t* pFilter, Vec3f const* pAccel, 
     float twoSEq_2       = 2.0F * SEq_2;
     float twoSEq_3       = 2.0F * SEq_3;
 
-    norm = sqrtf (a_x * a_x + a_y * a_y + a_z * a_z);
-    if (norm == 0.0F) {
-        return false;
-    }
+    norm = sqrtf (a_x * a_x + a_y * a_y + a_z * a_z) + 0.0001F;
     norm = 1.0F / norm;
     a_x *= norm;
     a_y *= norm;
@@ -206,19 +203,13 @@ FilterMadgwickUpdate_9DOF (FilterMadgwick_t* pFilter, Vec3f const* pAccel, Vec3f
     float twom_y      = 2.0F * m_y;
     float twom_z      = 2.0F * m_z;
     // normalise the accelerometer measurement
-    norm = sqrtf (a_x * a_x + a_y * a_y + a_z * a_z);
-    if (norm == 0.0F) {
-        return false;
-    }
+    norm = sqrtf (a_x * a_x + a_y * a_y + a_z * a_z) + 0.0001F;
     norm = 1.0F / norm;
     a_x *= norm;
     a_y *= norm;
     a_z *= norm;
     // normalise the magnetometer measurement
-    norm = sqrtf (m_x * m_x + m_y * m_y + m_z * m_z);
-    if (norm == 0.0F) {
-        return false;
-    }
+    norm = sqrtf (m_x * m_x + m_y * m_y + m_z * m_z) + 0.0001F;
     norm = 1.0F / norm;
     m_x *= norm;
     m_y *= norm;
@@ -254,10 +245,9 @@ FilterMadgwickUpdate_9DOF (FilterMadgwick_t* pFilter, Vec3f const* pAccel, Vec3f
     SEqHatDot_3 = J_12or23 * f_2 - J_33 * f_3 - J_13or22 * f_1 - J_43 * f_4 + J_53 * f_5 + J_63 * f_6;
     SEqHatDot_4 = J_14or21 * f_1 + J_11or24 * f_2 - J_44 * f_4 - J_54 * f_5 + J_64 * f_6;
     // normalise the gradient to estimate direction of the gyroscope error
-    norm = sqrtf (SEqHatDot_1 * SEqHatDot_1 + SEqHatDot_2 * SEqHatDot_2 + SEqHatDot_3 * SEqHatDot_3 + SEqHatDot_4 * SEqHatDot_4);
-    if (norm == 0.0F) {
-        return false;
-    }
+    // clang-format off
+    norm = sqrtf (SEqHatDot_1 * SEqHatDot_1 + SEqHatDot_2 * SEqHatDot_2 + SEqHatDot_3 * SEqHatDot_3 + SEqHatDot_4 * SEqHatDot_4) + 0.0001F;
+    // clang-format on
     norm        = 1.0F / norm;
     SEqHatDot_1 = SEqHatDot_1 * norm;
     SEqHatDot_2 = SEqHatDot_2 * norm;
@@ -285,10 +275,7 @@ FilterMadgwickUpdate_9DOF (FilterMadgwick_t* pFilter, Vec3f const* pAccel, Vec3f
     SEq_3 += (SEqDot_omega_3 - (beta * SEqHatDot_3)) * dt;
     SEq_4 += (SEqDot_omega_4 - (beta * SEqHatDot_4)) * dt;
     // normalise quaternion
-    norm = sqrtf (SEq_1 * SEq_1 + SEq_2 * SEq_2 + SEq_3 * SEq_3 + SEq_4 * SEq_4);
-    if (norm == 0.0F) {
-        return false;
-    }
+    norm = sqrtf (SEq_1 * SEq_1 + SEq_2 * SEq_2 + SEq_3 * SEq_3 + SEq_4 * SEq_4) + 0.0001F;
     norm = 1.0F / norm;
     SEq_1 *= norm;
     SEq_2 *= norm;
@@ -325,14 +312,14 @@ FilterMadgwickUpdate_9DOF (FilterMadgwick_t* pFilter, Vec3f const* pAccel, Vec3f
 }
 
 STATIC bool
-FilterMadgwickWarmUp (FilterMadgwick_t* pFilter, vIMU_t* pIMU, vMag_t* pMag, uint32_t iterations, Vec3f* pOutAttitude) {
+FilterMadgwickWarmUp (FilterMadgwick_t* pFilter, vIMU_t* pIMU, Mag_t* pMag, uint32_t iterations, Vec3f* pOutAttitude) {
 
     if (pIMU == NULL) {
         pIMU = IMU_GetMutableActiveDevice ();
     }
 
     if (pMag == NULL) {
-        pMag = Mag_GetMutableActiveDevice ();
+        pMag = Mag_Get ();
     }
 
     float msStartTime = (float)GetMilliseconds ();
@@ -347,7 +334,7 @@ FilterMadgwickWarmUp (FilterMadgwick_t* pFilter, vIMU_t* pIMU, vMag_t* pMag, uin
         RETURN_IF (status != eSTATUS_SUCCESS, false, "Failed to poll IMU");
 
         if (pMag != NULL) {
-            status = Mag_Update (pMag, true, &mag);
+            status = Mag_Update_ (pMag, true, &mag);
             RETURN_IF (status != eSTATUS_SUCCESS, false, "Failed to poll Mag");
         }
 

@@ -3,7 +3,9 @@
 #include "core/core.h"
 #include "hal.h"
 #include "mem/mem.h"
-#include "peripheral/bus/bus.h"
+
+#include "drivers/serial/uart.h"
+
 #include "target.h"
 #include <stdbool.h>
 #include <stdint.h>

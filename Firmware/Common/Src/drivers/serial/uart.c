@@ -1,9 +1,12 @@
-#include "peripheral/bus/uart.h"
-#include "core/core.h"
 #include "hal.h"
-#include "mem/mem.h"
-#include "peripheral/gpio.h"
 #include "target.h"
+
+#include "core/core.h"
+
+#include "peripheral/gpio.h"
+
+#include "drivers/serial/uart.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -36,7 +39,8 @@ void Uart_IrqHandler (uart_id_t id) {
     if (pUart) {
         USART_TypeDef* pInstance = pUart->hardware.pInstance;
         if (__HAL_UART_GET_FLAG (&pUart->handle, UART_FLAG_RXNE) != RESET && pUart->rxCallback) {
-            pUart->rxCallback ((uint8_t*)&pInstance->RDR, 1U);
+            uint8_t data = (uint8_t)(pInstance->RDR);
+            pUart->rxCallback (&data, 1U);
         }
         HAL_UART_IRQHandler (&pUart->handle);
     }
@@ -167,7 +171,7 @@ eSTATUS_t UartPort_Write (UartPort_t* pPort, uint8_t const* pData, uint32_t size
     if (!pPort || !pData || size == 0U) {
         return eSTATUS_FAILURE;
     }
-    if (HAL_UART_Transmit (&pPort->pUart->handle, (uint8_t*)pData, size, HAL_MAX_DELAY) != HAL_OK) {
+    if (HAL_UART_Transmit (&pPort->pUart->handle, pData, size, HAL_MAX_DELAY) != HAL_OK) {
         return eSTATUS_FAILURE;
     }
     return eSTATUS_SUCCESS;

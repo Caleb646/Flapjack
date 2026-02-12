@@ -96,7 +96,7 @@ def run_cmake_build(board_name, build_type):
     
     cmake_args = [
         "cmake",
-        # "--fresh",
+        "--fresh",
         "-S", FJ_PROJECT_ROOT,
         "-B", output_dir,
         "-G", CMAKE_GENERATOR,

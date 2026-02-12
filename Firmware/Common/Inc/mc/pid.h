@@ -3,7 +3,6 @@
 
 #include "conf/board.h"
 #include "conf/conf.h"
-#include "control.h"
 #include "core/core.h"
 
 #include "hal.h"

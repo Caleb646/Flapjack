@@ -6,7 +6,7 @@
  * published by Sam Hocevar. See the COPYING file for more details.
  */
 
-#include "device/gps/parser/minmea.h"
+#include "drivers/sensors/gps/parser/minmea.h"
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
