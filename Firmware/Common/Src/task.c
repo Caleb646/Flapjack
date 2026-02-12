@@ -12,6 +12,10 @@
 #include "device/imu/imu.h"
 #include "device/mag/mag.h"
 
+#include "drivers/rx/rx.h"
+
+#include "fc/rc.h"
+
 #include "mc/filter.h"
 #include "mc/mixer.h"
 #include "mc/pid.h"
@@ -68,10 +72,18 @@ eSTATUS_t TaskInterCoreSync (uint32_t usCurrentTime) {
 
 eSTATUS_t Task_RxUpdate (uint32_t usCurrentTime) {
 
-    return eSTATUS_FAILURE;
+    static uint32_t usLastUpdateTime = 0;
+    uint32_t usDeltaTime             = usCurrentTime - usLastUpdateTime;
+    usLastUpdateTime                 = usCurrentTime;
+
+    return Rx_Update (usCurrentTime, usDeltaTime);
 }
 
-eSTATUS_t Task_RxProcessCmds (uint32_t usCurrentTime) {
+eSTATUS_t Task_RcUpdate (uint32_t usCurrentTime) {
 
-    return eSTATUS_FAILURE;
+    static uint32_t usLastUpdateTime = 0;
+    uint32_t usDeltaTime             = usCurrentTime - usLastUpdateTime;
+    usLastUpdateTime                 = usCurrentTime;
+
+    return Rc_Update (usCurrentTime, usDeltaTime);
 }

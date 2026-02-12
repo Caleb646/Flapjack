@@ -19,6 +19,11 @@ FJ_DEFINE_SHARED (Rx_t, g_Rx) = {
 eSTATUS_t Rx_Init (void) {
 
     Rx_t* pRx = &g_Rx;
+    for (uint32_t i = 0; i < RC_MAX_CHANNELS; ++i) {
+        pRx->channels[i] = RC_CHANNEL_MID;
+    }
+    pRx->channels[RC_CHANNEL_IDX_THROTTLE] = RC_CHANNEL_MIN;
+
     if (STATUS_FAIL (Crsf_Init (&pRx->port))) {
         LOG_ERROR ("Failed to initialize CRSF");
         return eSTATUS_FAILURE;
@@ -26,12 +31,7 @@ eSTATUS_t Rx_Init (void) {
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t Rx_FrameUpdate (void) {
-
-    return Crsf_ProcessFrame (g_Rx.channels);
-}
-
 eSTATUS_t Rx_Update (uint32_t usCurrentTime, uint32_t usDeltaTime) {
 
-    return eSTATUS_SUCCESS;
+    return Crsf_ProcessFrame (g_Rx.channels);
 }

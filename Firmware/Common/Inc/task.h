@@ -23,7 +23,7 @@ eSTATUS_t TaskAttitudeUpdate (uint32_t usCurrentTime);
 eSTATUS_t TaskIMUUpdate (uint32_t usCurrentTime);
 eSTATUS_t TaskInterCoreSync (uint32_t usCurrentTime);
 eSTATUS_t Task_RxUpdate (uint32_t usCurrentTime);
-eSTATUS_t Task_RxProcessCmds (uint32_t usCurrentTime);
+eSTATUS_t Task_RcUpdate (uint32_t usCurrentTime);
 
 
 #endif /* TASK_H */

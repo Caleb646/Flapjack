@@ -11,14 +11,15 @@
 FJ_DEFINE_SHARED(Task_t, m_SequentialTasks[][MAX_NUM_TASKS]) = {
  
     [CM7_IDX] = {
-        { .taskFunction = TaskIMUUpdate,        .taskName = "IMU_Update",        .hzUpdate = 0, .isEnabled = true },
-        { .taskFunction = TaskAttitudeUpdate,   .taskName = "Attitude_Update",   .hzUpdate = 0, .isEnabled = true },
-        { .taskFunction = TaskPIDUpdate,        .taskName = "PID_Update",        .hzUpdate = 0, .isEnabled = true },
-        { .taskFunction = TaskMixerUpdate,      .taskName = "Mixer_Update",      .hzUpdate = 0, .isEnabled = true },
+        { .taskFunction = Task_RcUpdate,        .taskName = "RC_Update",      .isEnabled = true },
+        { .taskFunction = TaskIMUUpdate,        .taskName = "IMU_Update",      .isEnabled = true },
+        { .taskFunction = TaskAttitudeUpdate,   .taskName = "Attitude_Update", .isEnabled = true },
+        { .taskFunction = TaskPIDUpdate,        .taskName = "PID_Update",      .isEnabled = true },
+        { .taskFunction = TaskMixerUpdate,      .taskName = "Mixer_Update",    .isEnabled = true },
     },
 
     [CM4_IDX] = {
-        // { TaskTelemetryRx,      "Telemetry_Rx",      0, 0, 200, true,  true },
+        { .taskFunction = Task_RxUpdate, .taskName = "Task_RxUpdate", .isEnabled = true },
         // { TaskCommandProcess,   "Command_Process",   0, 0, 300, true,  true },
         // { TaskSafetyCheck,      "Safety_Check",      0, 0, 100, true,  true },
         // { TaskStatusUpdate,     "Status_Update",     0, 0, 150, false, true },
@@ -28,11 +29,11 @@ FJ_DEFINE_SHARED(Task_t, m_SequentialTasks[][MAX_NUM_TASKS]) = {
 FJ_DEFINE_SHARED(Task_t, m_AsyncTasks[][MAX_NUM_TASKS]) = {
 
     [CM7_IDX] = {
-        { .taskFunction = TaskInterCoreSync,         .taskName = "InterCore_Sync", .hzUpdate = 0, .isEnabled = true },
+        { .taskFunction = TaskInterCoreSync, .taskName = "InterCore_Sync", .isEnabled = true },
     },
 
     [CM4_IDX] = {
-        { .taskFunction = TaskInterCoreSync,         .taskName = "InterCore_Sync", .hzUpdate = 0, .isEnabled = true },
+        { .taskFunction = TaskInterCoreSync, .taskName = "InterCore_Sync", .isEnabled = true },
     }
 };
 

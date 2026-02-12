@@ -16,8 +16,11 @@ typedef struct {
 FJ_DECLARE_SHARED (Rx_t, g_Rx);
 
 eSTATUS_t Rx_Init (void);
-uint32_t const* Rx_GetChannels (void);
 eSTATUS_t Rx_Update (uint32_t usCurrentTime, uint32_t usDeltaTime);
+
+static inline uint32_t const* Rx_GetChannels (void) {
+    return g_Rx.channels;
+}
 
 
 #endif /* DRIVERS_RX_RX_H */

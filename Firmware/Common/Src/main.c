@@ -9,6 +9,10 @@
 
 #include "conf/conf.h"
 
+#include "fc/rc.h"
+
+#include "drivers/rx/rx.h"
+
 #include "device/imu/imu.h"
 #include "device/mag/mag.h"
 #include "device/serial/serial.h"
@@ -102,6 +106,11 @@ int main (void) {
     FILTER_INIT (&status);
     if (STATUS_FAIL (status)) {
         LOG_ERROR ("Failed to init filter");
+        CriticalErrorHandler ();
+    }
+
+    if (STATUS_FAIL (Rc_Init ())) {
+        LOG_ERROR ("Failed to init RC");
         CriticalErrorHandler ();
     }
 
@@ -204,6 +213,11 @@ int main (void) {
     HAL_NVIC_EnableIRQ (CM7_SEV_IRQn);
 
     if (Core_Init () != eSTATUS_SUCCESS) {
+        CriticalErrorHandler ();
+    }
+
+    if (STATUS_FAIL (Rx_Init ())) {
+        LOG_ERROR ("Failed to initialize RX");
         CriticalErrorHandler ();
     }
 

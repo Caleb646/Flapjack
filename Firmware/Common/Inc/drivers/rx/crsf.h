@@ -13,6 +13,10 @@
 #define CRSF_MAX_FRAME_SIZE            64U
 #define CRSF_MAX_PAYLOAD_SIZE          58U
 
+#define CRSF_CHANNEL_MIN               508U
+#define CRSF_CHANNEL_MID               992U
+#define CRSF_CHANNEL_MAX               1496U
+
 #define CRSF_SYNC_BYTE                 0XC8
 
 #define CRSF_FRAME_TYPE_RC_CHANNELS    0x16U

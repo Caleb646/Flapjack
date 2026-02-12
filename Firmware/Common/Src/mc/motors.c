@@ -39,14 +39,14 @@ eSTATUS_t Motors_Arm_ (Motors_t* pMotors) {
     for (uint32_t i = 0; i < iterations; ++i) {
         /* NOTE: A DShot value of all 0s is a special command to
          * the esc to arm/disarm the motor depending on the esc's current state.
-         * The reason MotorWrite isn't used is because it uses a valid throttle value between > 48 and < 2048 */
+         * The reason MotorWrite isn't used is because it uses a
+         * valid throttle value between > 48 and < 2048 */
         if (DShotBB_Write (armThrottles) != eSTATUS_SUCCESS) {
             LOG_ERROR ("Failed to arm motor");
             return eSTATUS_FAILURE;
         }
         Delay (msDelay);
     }
-
     pMotors->armed = true;
     LOG_INFO ("Motors armed");
     return eSTATUS_SUCCESS;

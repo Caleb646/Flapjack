@@ -14,6 +14,18 @@ FJ_DEFINE_SHARED (bool volatile, s_IsFrameComplete) = false;
 
 static uint8_t crc8 (uint8_t const* ptr, uint8_t len);
 
+uint32_t Crsf_MapChannel (uint32_t crsfChannelVal) {
+
+    if (crsfChannelVal < CRSF_CHANNEL_MIN) {
+        return RC_CHANNEL_MIN;
+    }
+    if (crsfChannelVal > CRSF_CHANNEL_MAX) {
+        return RC_CHANNEL_MAX;
+    }
+    return ((crsfChannelVal - CRSF_CHANNEL_MIN) * (RC_CHANNEL_MAX - RC_CHANNEL_MIN) / (CRSF_CHANNEL_MAX - CRSF_CHANNEL_MIN)) +
+           RC_CHANNEL_MIN;
+}
+
 // Source: https://github.com/betaflight/betaflight/blob/master/src/main/rx/crsf.c#L685
 eSTATUS_t Crsf_Bind (void) {
 
@@ -61,7 +73,7 @@ eSTATUS_t Crsf_ProcessFrame (uint32_t outChannels[RC_MAX_CHANNELS]) {
         return eSTATUS_FAILURE;
     }
 
-    uint8_t const crc = crc8 (&pFrame->header.type, frameLen - 1);
+    uint8_t const crc = crc8 (&pFrame->bytes[2], frameLen - 1);
     if (crc != pFrame->bytes[frameLen + 1]) {
         return eSTATUS_FAILURE;
     }
@@ -72,22 +84,22 @@ eSTATUS_t Crsf_ProcessFrame (uint32_t outChannels[RC_MAX_CHANNELS]) {
             return eSTATUS_FAILURE;
         }
         CrsfChannelsPayload_t* pPayload = (CrsfChannelsPayload_t*)&pFrame->bytes[3];
-        outChannels[0]                  = pPayload->channel_1;
-        outChannels[1]                  = pPayload->channel_2;
-        outChannels[2]                  = pPayload->channel_3;
-        outChannels[3]                  = pPayload->channel_4;
-        outChannels[4]                  = pPayload->channel_5;
-        outChannels[5]                  = pPayload->channel_6;
-        outChannels[6]                  = pPayload->channel_7;
-        outChannels[7]                  = pPayload->channel_8;
-        outChannels[8]                  = pPayload->channel_9;
-        outChannels[9]                  = pPayload->channel_10;
-        outChannels[10]                 = pPayload->channel_11;
-        outChannels[11]                 = pPayload->channel_12;
-        outChannels[12]                 = pPayload->channel_13;
-        outChannels[13]                 = pPayload->channel_14;
-        outChannels[14]                 = pPayload->channel_15;
-        outChannels[15]                 = pPayload->channel_16;
+        outChannels[0]                  = Crsf_MapChannel (pPayload->channel_1);
+        outChannels[1]                  = Crsf_MapChannel (pPayload->channel_2);
+        outChannels[2]                  = Crsf_MapChannel (pPayload->channel_3);
+        outChannels[3]                  = Crsf_MapChannel (pPayload->channel_4);
+        outChannels[4]                  = Crsf_MapChannel (pPayload->channel_5);
+        outChannels[5]                  = Crsf_MapChannel (pPayload->channel_6);
+        outChannels[6]                  = Crsf_MapChannel (pPayload->channel_7);
+        outChannels[7]                  = Crsf_MapChannel (pPayload->channel_8);
+        outChannels[8]                  = Crsf_MapChannel (pPayload->channel_9);
+        outChannels[9]                  = Crsf_MapChannel (pPayload->channel_10);
+        outChannels[10]                 = Crsf_MapChannel (pPayload->channel_11);
+        outChannels[11]                 = Crsf_MapChannel (pPayload->channel_12);
+        outChannels[12]                 = Crsf_MapChannel (pPayload->channel_13);
+        outChannels[13]                 = Crsf_MapChannel (pPayload->channel_14);
+        outChannels[14]                 = Crsf_MapChannel (pPayload->channel_15);
+        outChannels[15]                 = Crsf_MapChannel (pPayload->channel_16);
         break;
     default: return eSTATUS_FAILURE;
     }

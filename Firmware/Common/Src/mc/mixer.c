@@ -102,6 +102,7 @@ void Mixer_MixServos (Mixer_t* pMixer, float const pidAttitude[AXIS_IDX_COUNT], 
     ServoMix_t const* pServoMix             = pProfile->pServoMix;
     uint16_t inputs[eSERVO_MIX_INPUT_COUNT] = { 0 };
     // TODO: Should PID be between -1 and 1 or another range????
+    // TODO: Some servos will need access to Rc channel data for flight mode switching
     inputs[eSERVO_MIX_INPUT_PID_ROLL] =
     (uint16_t)mapf32 (pidAttitude[AXIS_IDX_ROLL], -1.0F, 1.0F, SERVO_LEFT_US_DC, SERVO_RIGHT_US_DC);
 
@@ -149,7 +150,7 @@ eSTATUS_t Mixer_Init (void) {
 eSTATUS_t Mixer_Mix (uint32_t usCurrentTime) {
 
     // clang-format off
-    FlightData_t* pFlightData = &g_FlightData;
+    FlightData_t* pFlightData = Fc_Get();
     PID_t* pPidData = PID_GetMutableActivePID();
     float pidAttitude[AXIS_IDX_COUNT] = { pPidData->pidData.x, pPidData->pidData.y, pPidData->pidData.z };
     Mixer_MixMotors (&g_Mixer, pidAttitude, pFlightData->targetThrottle, g_Mixer.motorOutputs);
@@ -164,16 +165,19 @@ eSTATUS_t Mixer_Mix (uint32_t usCurrentTime) {
 
 eSTATUS_t Mixer_Update (uint32_t usCurrentTime) {
 
+    if (!Fc_IsArmed ()) {
+        return eSTATUS_FAILURE;
+    }
+
     eSTATUS_t status = Servos_Write (g_Mixer.servoOutputs);
     if (STATUS_FAIL (status)) {
         LOG_ERROR ("Failed to write servo outputs");
         return status;
     }
 
-    // TODO: go through motors api instead
     status = Motors_Write (g_Mixer.motorOutputs);
     if (STATUS_FAIL (status)) {
-        LOG_ERROR ("Failed to write motor outputs to Motors");
+        LOG_ERROR ("Failed to write motor outputs");
         return status;
     }
     return eSTATUS_SUCCESS;
