@@ -886,19 +886,6 @@ error:
     return eSTATUS_FAILURE;
 }
 
-eSTATUS_t IMUStart (vIMU_t* pIMU) {
-
-    // TODO: just check if imu has a valid exti config
-    FJ_UNUSED (pIMU);
-    // if (SENSOR_UPDATE_MODE_IS_INTERRUPT == true) {
-    //     if (IMUEnableInterrupts (pIMU) != eSTATUS_SUCCESS) {
-    //         LOG_ERROR ("Failed to enable vIMU_t interrupts");
-    //         return eSTATUS_FAILURE;
-    //     }
-    // }
-    return eSTATUS_SUCCESS;
-}
-
 /*
  * Called by the interrupt handler
  */
@@ -1015,15 +1002,6 @@ eSTATUS_t IMU_Update (vIMU_t* pIMU, bool forcePolling, Vec3f* pOutputAccel, Vec3
         status = IMUUpdate_ (pIMU, forcePolling, pOutputAccel, pOutputGyro);
     }
     return status;
-}
-
-eSTATUS_t IMUStop (vIMU_t* pIMU) {
-
-    if (IMUDisableInterrupts (pIMU) != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to disable vIMU_t interrupts");
-        return eSTATUS_FAILURE;
-    }
-    return eSTATUS_SUCCESS;
 }
 
 /*

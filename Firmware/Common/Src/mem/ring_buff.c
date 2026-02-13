@@ -55,43 +55,17 @@
         }                                    \
     } while (0)
 
-/**
- * \brief           Initialize buffer handle to default values with size and buffer data array
- * \param[in]       buff: Buffer handle
- * \param[in]       size: Size of `buffdata` in units of bytes
- *                      Maximum number of bytes buffer can hold is `size - 1`
- * \return          `1` on success, `0` otherwise
- */
-RINGBUFF_VOLATILE RingBuff* RingBuffCreate (void* pBuff, size_t size) {
-
-    if (pBuff == NULL || size == 0 || size < (sizeof (RingBuff) + 1)) {
-        return NULL;
-    }
-    // TODO: setting the ring buffer to zero is a bug
-    // If another core already initialized and wrote to the buffer
-    // then this will overwrite the data.
-    // Should check if magic1 and magic2 are set to valid values
-    // before setting the buffer to zero.
-    RINGBUFF_VOLATILE RingBuff* pRingBuf = (RingBuff*)pBuff;
-    BUF_MEMSET ((void*)pRingBuf, 0x00, sizeof (RingBuff));
-
-    pRingBuf->size = size - sizeof (RingBuff);
-    pRingBuf->buff = ((uint8_t*)((uintptr_t)pBuff) + sizeof (RingBuff));
-
-    pRingBuf->magic1 = 0xDEADBEEF;
-    pRingBuf->magic2 = ~0xDEADBEEF;
-
-    return pRingBuf;
-}
-
 uint8_t RingBuffInit (void* pData, size_t size, RINGBUFF_VOLATILE RingBuff* pOutBuff) {
 
-    if (pOutBuff == NULL || pData == NULL || size == 0) {
+    if (!pOutBuff || !pData || !size) {
         return 0;
     }
 
     BUF_MEMSET ((void*)pOutBuff, 0, sizeof (RingBuff));
-    BUF_MEMSET (pData, 0, size);
+    // Assume pData is already zeroed. Because if not and
+    // pData is shared between two cores but the ring buffer is not,
+    // pData will be zeroed twice and could have valid data.
+    // BUF_MEMSET (pData, 0, size);;
     pOutBuff->size   = size;
     pOutBuff->buff   = (uint8_t*)pData;
     pOutBuff->magic1 = 0xDEADBEEF;

@@ -1,6 +1,9 @@
 #ifndef CFGS_CFG_H
 #define CFGS_CFG_H
 
+// to disable redefinition warnings for default target macros
+#pragma GCC system_header
+
 #define CFG_PRIMARY_LOGGER                   CM4_CPUID
 #define CFG_LOGGER_SHOULD_BLOCK_ON_OVERWRITE 1U
 #define LOG_DATA_TYPE_ATTITUDE               "attitude"

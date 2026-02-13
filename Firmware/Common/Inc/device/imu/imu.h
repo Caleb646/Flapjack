@@ -304,8 +304,6 @@ static inline eSTATUS_t IMU_Init (void) {
     conf.axesRemapConf = axesRemap;
     return IMU_Init_ (conf, &g_IMU);
 }
-eSTATUS_t IMUStart (vIMU_t* pIMU);
-eSTATUS_t IMUStop (vIMU_t* pIMU);
 eSTATUS_t IMUHandleErr (vIMU_t* pIMU);
 eSTATUS_t IMU_Update (vIMU_t* pIMU, bool forcePolling, Vec3f* pOutputAccel, Vec3f* pOutputGyro);
 eSTATUS_t IMUGetConf (vIMU_t* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf);

@@ -10,7 +10,6 @@
 #include "drivers/timer.h"
 
 
-
 FJ_DEFINE_SHARED (ServoHardware_t, g_ServosHardware[BRD_SERVO_COUNT]) = {
     { .pTimerInstance = BRD_GET_SERVO_TIMER_INSTANCE (SERVO_1),
       .timerAf        = BRD_GET_SERVO_TIMER_AF (SERVO_1),
@@ -68,7 +67,7 @@ eSTATUS_t Servos_Init (void) {
         TIM_OC_InitTypeDef sConfig = { 0 };
         sConfig.OCMode             = TIM_OCMODE_PWM1;
         sConfig.OCPolarity         = TIM_OCPOLARITY_HIGH;
-        sConfig.Pulse              = 0U;
+        sConfig.Pulse              = 0U; // default to 0 us pulse width (servo off)
         sConfig.OCNPolarity        = TIM_OCNPOLARITY_HIGH;
         sConfig.OCFastMode         = TIM_OCFAST_DISABLE;
         sConfig.OCIdleState        = TIM_OCIDLESTATE_RESET;

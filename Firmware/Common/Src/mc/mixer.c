@@ -143,7 +143,7 @@ eSTATUS_t Mixer_Init_ (eMIXER_PROFILE_ID_t profileId, Mixer_t* pOutMixer) {
 
 
 eSTATUS_t Mixer_Init (void) {
-
+    // TODO: set profileId based on cfg file
     return Mixer_Init_ (eMIXER_PROFILE_TILT_ROTOR, &g_Mixer);
 }
 

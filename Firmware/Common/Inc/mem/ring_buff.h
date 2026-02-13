@@ -102,7 +102,6 @@ typedef struct RingBuff_ {
 
 #endif
 
-RINGBUFF_VOLATILE RingBuff* RingBuffCreate (void* buffdata, size_t size);
 uint8_t RingBuffInit (void* pData, size_t size, RINGBUFF_VOLATILE RingBuff* pOutBuff);
 bool RingBuffIsValid (RINGBUFF_VOLATILE RingBuff* buff);
 void RingBuffFree (RINGBUFF_VOLATILE RingBuff* buff);

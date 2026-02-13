@@ -50,11 +50,8 @@
 #define AXIS_IDX_YAW                                  2
 #define AXIS_IDX_THROTTLE                             3
 
-// TODO: setup TARG_SHARED_MEM_DATA_SECTION
-// #define FJ_DECLARE_SHARED(TYPE, NAME)                 extern TYPE NAME TARG_SHARED_MEM_DATA_SECTION
 #define SHARED_MEM_DATA_SECTION                       __attribute__ ((section (".shared_mem_data")))
 #define FJ_DECLARE_SHARED(TYPE, NAME)                 extern TYPE NAME SHARED_MEM_DATA_SECTION
-// #define FJ_DEFINE_SHARED(TYPE, NAME)                  TYPE NAME TARG_SHARED_MEM_DATA_SECTION
 #define FJ_DEFINE_SHARED(TYPE, NAME)                  TYPE NAME SHARED_MEM_DATA_SECTION
 
 #define CM7_IDX                                       0
