@@ -9,8 +9,8 @@ FJ_DEFINE_SHARED (Rx_t, g_Rx) = {
     .channels = {0},
     .port = {
         .cfg = {
-            .id = BRD_GET_ID(RX, UART),
-            .baudRate = RX_UART_BAUD_RATE,
+            .id = BRD_GET_UART_ID(RX),
+            .baudRate = BRD_GET_BAUD_RATE(RX),
             .irqPriority = 5,
         },
     },

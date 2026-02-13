@@ -3,25 +3,24 @@
 #include "flight.h"
 #include "hal.h"
 #include "scheduler.h"
+#include "target.h"
 
 #include "core/core.h"
 
-#include "target.h"
-
 #include "fc/rc.h"
-
-#include "drivers/rx/rx.h"
-
-#include "device/imu/imu.h"
-#include "device/serial/serial.h"
-
-#include "drivers/sensors/mag/mag.h"
 
 #include "mc/filter.h"
 #include "mc/pid.h"
 
 #include "drivers/dma.h"
 #include "drivers/io/gpio.h"
+
+#include "drivers/rx/rx.h"
+
+#include "drivers/sensors/mag/mag.h"
+
+#include "device/imu/imu.h"
+#include "device/serial/serial.h"
 
 
 #ifndef HSEM_ID_0

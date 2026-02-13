@@ -17,8 +17,8 @@
 FJ_DEFINE_SHARED (SerialDebug_t, g_SerialDebug) = {
     .port = {
         .cfg = {
-            .id       = BRD_GET_ID(SERIAL_DEBUG, UART),
-            .baudRate = SERIAL_DEBUG_BAUD_RATE
+            .id       = BRD_GET_UART_ID(SERIAL_DEBUG),
+            .baudRate = BRD_GET_BAUD_RATE(SERIAL_DEBUG)
         },
     }
 };

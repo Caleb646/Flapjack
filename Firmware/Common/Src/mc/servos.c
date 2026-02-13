@@ -11,11 +11,11 @@
 
 
 FJ_DEFINE_SHARED (ServoHardware_t, g_ServosHardware[BRD_SERVO_COUNT]) = {
-    { .pTimerInstance = BRD_GET_SERVO_TIMER_INSTANCE (SERVO_1),
-      .timerAf        = BRD_GET_SERVO_TIMER_AF (SERVO_1),
-      .timerChannel   = BRD_GET_SERVO_TIMER_CHANNEL (SERVO_1),
-      .pPort          = BRD_GET_SERVO_PORT (SERVO_1),
-      .pin            = BRD_GET_SERVO_PIN (SERVO_1) },
+    { .pTimerInstance = BRD_GET_TIMER_INSTANCE (SERVO_1),
+      .timerAf        = BRD_GET_TIMER_AF (SERVO_1),
+      .timerChannel   = BRD_GET_TIMER_CHANNEL (SERVO_1),
+      .pPort          = BRD_GET_GPIO_PORT (SERVO_1),
+      .pin            = BRD_GET_GPIO_PIN (SERVO_1) },
 };
 
 FJ_DEFINE_SHARED (TIM_HandleTypeDef, g_ServoTimerHandles[2U]) = { 0 };

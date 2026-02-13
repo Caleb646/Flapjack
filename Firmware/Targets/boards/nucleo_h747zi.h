@@ -1,7 +1,6 @@
 #ifndef TARGETS_NUCLEO_H747ZI_H
 #define TARGETS_NUCLEO_H747ZI_H
 
-
 #define BOARD_NAME             "nucleo_h747zi"
 
 #define SPI_2_ENABLED          1U
@@ -34,6 +33,7 @@
 #define SERIAL_DEBUG_BAUD_RATE 230400U
 
 #define IMU_ENABLED            1U
+#define IMU_SPI                SPI_2
 #define IMU_SPI_BUS_ID         eSPI_2_BUS_ID
 #define IMU_SPI_NSS_GPIO_PORT  GPIOA
 #define IMU_SPI_NSS_GPIO_PIN   GPIO_PIN_11
@@ -52,7 +52,7 @@
 
 #define RX_ENABLED             1U
 #define RX_UART                UART_1
-#define RX_UART_BAUD_RATE      230400U
+#define RX_BAUD_RATE           230400U
 
 
 #endif // TARGETS_NUCLEO_H747ZI_H

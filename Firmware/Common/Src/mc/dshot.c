@@ -9,21 +9,20 @@
 #include "drivers/timer.h"
 
 
-
 #include <stdint.h>
 
 
 FJ_DEFINE_SHARED (DShotBB_t, g_DShotBB) = {
     .timerHandle = { 0 },
-    .hardware    = { .pTimerInstance = TAR_GET_MOTOR_TIMER_INSTANCE (MOTOR_1),
-                     .timerAf        = TAR_GET_MOTOR_TIMER_AF (MOTOR_1),
-                     .motorPins      = { { .timerChannel = TAR_GET_MOTOR_TIMER_CHANNEL (MOTOR_1),
-                                           .pPort        = TAR_GET_MOTOR_PORT (MOTOR_1),
-                                           .pin          = TAR_GET_MOTOR_PIN (MOTOR_1) },
+    .hardware    = { .pTimerInstance = BRD_GET_TIMER_INSTANCE (MOTOR_1),
+                     .timerAf        = BRD_GET_TIMER_AF (MOTOR_1),
+                     .motorPins      = { { .timerChannel = BRD_GET_TIMER_CHANNEL (MOTOR_1),
+                                           .pPort        = BRD_GET_GPIO_PORT (MOTOR_1),
+                                           .pin          = BRD_GET_GPIO_PIN (MOTOR_1) },
 #if defined(MOTOR_2_ENABLED) && (MOTOR_2_ENABLED == 1U)
-                                 { .timerChannel = TAR_GET_MOTOR_TIMER_CHANNEL (MOTOR_2),
-                                   .pPort        = TAR_GET_MOTOR_PORT (MOTOR_2),
-                                   .pin          = TAR_GET_MOTOR_PIN (MOTOR_2) }
+                                 { .timerChannel = BRD_GET_TIMER_CHANNEL (MOTOR_2),
+                                   .pPort        = BRD_GET_GPIO_PORT (MOTOR_2),
+                                   .pin          = BRD_GET_GPIO_PIN (MOTOR_2) }
 #endif
                   } }
 };
