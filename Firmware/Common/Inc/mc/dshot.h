@@ -4,14 +4,11 @@
 #include "hal.h"
 #include "target.h"
 
-#include "conf/board.h"
-#include "conf/conf.h"
-#include "conf/ids.h"
-
 #include "core/core.h"
 
-#include "peripheral/gpio.h"
-#include "peripheral/timer.h"
+#include "drivers/io/gpio.h"
+#include "drivers/timer.h"
+
 
 #define DSHOT_DMA_BUFFER_SIZE 18U /* resolution + frame reset (2us) */
 #define DSHOT_FRAME_SIZE      16U

@@ -1,10 +1,12 @@
 #ifndef LOG_H
 #define LOG_H
 
-#include "conf/conf.h"
+#include "hal.h"
+#include "target.h"
+
 #include "core/core_shared.h"
 #include "core/log/format.h"
-#include "hal.h"
+
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>

@@ -1,8 +1,9 @@
 #include "device/serial/serial.h"
-#include "conf/conf.h"
 #include "core/core.h"
 #include "hal.h"
 #include "mem/mem.h"
+#include "target.h"
+
 
 #include "drivers/serial/uart.h"
 

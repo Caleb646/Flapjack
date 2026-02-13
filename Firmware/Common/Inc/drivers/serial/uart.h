@@ -5,7 +5,7 @@
 
 #include "core/core.h"
 
-#include "peripheral/gpio.h"
+#include "drivers/io/gpio.h"
 
 #define UART_1_ID 0U
 #define UART_2_ID 1U

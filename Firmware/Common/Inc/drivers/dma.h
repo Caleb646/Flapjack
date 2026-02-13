@@ -1,8 +1,11 @@
-#ifndef DMA_H
-#define DMA_H
-#include "core/core.h"
-#include "core/log/logger.h"
+#ifndef DRIVERS_DMA_H
+#define DRIVERS_DMA_H
+
 #include "hal.h"
+#include "target.h"
+
+#include "core/core.h"
+
 #include <stdint.h>
 
 
@@ -77,4 +80,4 @@ eSTATUS_t DMAEnableInterrupts (eDMA_STREAM_ID_t streamId, uint32_t priority);
         *(pSTATUS)         = DMAInit (conf, pOUT_DMASTREAM_ID);        \
     } while (0)
 
-#endif /* DMA_H */
+#endif /* DRIVERS_DMA_H */

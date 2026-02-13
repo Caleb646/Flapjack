@@ -6,7 +6,7 @@
 
 #include "core/core.h"
 
-#include "conf/conf.h"
+#include "target.h"
 
 #include "fc/rc.h"
 
@@ -20,9 +20,8 @@
 #include "mc/filter.h"
 #include "mc/pid.h"
 
-
-#include "peripheral/dma.h"
-#include "peripheral/gpio.h"
+#include "drivers/dma.h"
+#include "drivers/io/gpio.h"
 
 
 #ifndef HSEM_ID_0

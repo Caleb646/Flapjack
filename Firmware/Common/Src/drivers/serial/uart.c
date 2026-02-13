@@ -3,7 +3,7 @@
 
 #include "core/core.h"
 
-#include "peripheral/gpio.h"
+#include "drivers/io/gpio.h"
 
 #include "drivers/serial/uart.h"
 

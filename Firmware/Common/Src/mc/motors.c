@@ -24,7 +24,7 @@ eSTATUS_t Motors_Write_ (Motors_t* pMotors, float throttles[BRD_MOTOR_COUNT]) {
     for (uint32_t i = 0; i < BRD_MOTOR_COUNT; ++i) {
         dshotThrottles[i] =
         DSHOT_MIN_THROTTLE +
-        (uint16_t)(clipf32 (throttles[i], MOTOR_MIN_THROTTLE, MOTOR_MAX_THROTTLE) * (float)DSHOT_RANGE);
+        (uint16_t)(clipf32 (throttles[i], CFG_MOTOR_MIN_THROTTLE, CFG_MOTOR_MAX_THROTTLE) * (float)DSHOT_RANGE);
     }
 
     return DShotBB_Write (dshotThrottles);

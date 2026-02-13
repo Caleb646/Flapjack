@@ -29,9 +29,9 @@
 #define CFG_PID_THROTTLE_D                   0.05F
 #define CFG_PID_INTEGRAL_LIMIT               25.0F
 
-#define MOTOR_MIN_THROTTLE                   0.20F // 20% throttle
-#define MOTOR_MAX_THROTTLE                   0.40F // 40% throttle
-#define MOTOR_STARTUP_THROTTLE               0.25F // 25% throttle
+#define CFG_MOTOR_MIN_THROTTLE               0.20F // 20% throttle
+#define CFG_MOTOR_MAX_THROTTLE               0.40F // 40% throttle
+#define CFG_MOTOR_STARTUP_THROTTLE           0.25F // 25% throttle
 
 /*
  * PID mixing magnitudes for the Motors. They determine how much each PID axis contributes to the motor throttle.

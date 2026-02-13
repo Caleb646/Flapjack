@@ -6,8 +6,10 @@
 
 #include "core/core.h"
 
-#include "peripheral/gpio.h"
-#include "peripheral/timer.h"
+#include "drivers/io/gpio.h"
+#include "drivers/timer.h"
+
+
 
 FJ_DEFINE_SHARED (ServoHardware_t, g_ServosHardware[BRD_SERVO_COUNT]) = {
     { .pTimerInstance = BRD_GET_SERVO_TIMER_INSTANCE (SERVO_1),

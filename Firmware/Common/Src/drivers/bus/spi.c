@@ -5,7 +5,7 @@
 
 #include "drivers/bus/spi.h"
 
-#include "peripheral/gpio.h"
+#include "drivers/io/gpio.h"
 
 #include <stdbool.h>
 #include <stdint.h>

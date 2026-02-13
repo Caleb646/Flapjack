@@ -13,10 +13,6 @@
 #include <stdint.h>
 #include <string.h>
 
-typedef struct {
-    DeviceBoardConf_t boardConf;
-} MagInitConf_t;
-
 typedef struct Mag_s {
     SpiDev_t spiDev;
     Vec3u rawData;

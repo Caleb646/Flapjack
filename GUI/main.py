@@ -365,7 +365,7 @@ class FlightControlTab(QtWidgets.QWidget):
         self.v_forward = 0
         self.v_right = 0
         # MOTOR STARTUP THROTTLE is between 0 and 1 so * by 100
-        self.v_throttle = int(CONF.MOTOR_STARTUP_THROTTLE * CONF.CMD_TYPE_VELOCITY_CHANGE_MAX)
+        self.v_throttle = int(CONF.CFG_MOTOR_STARTUP_THROTTLE * CONF.CMD_TYPE_VELOCITY_CHANGE_MAX)
         
         self.setup_ui()
         

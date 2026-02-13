@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "peripheral/gpio.h"
+#include "drivers/io/gpio.h"
 
 #include "core/core.h"
 

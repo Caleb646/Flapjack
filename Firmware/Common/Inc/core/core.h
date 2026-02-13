@@ -2,6 +2,7 @@
 #define CORE_CORE_H
 
 #include "core/core_shared.h"
+#include "core/ids.h"
 #include "core/log/logger.h"
 #include "core/sync.h"
 

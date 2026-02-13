@@ -1,12 +1,11 @@
 #ifndef PERIPHS_SPI_H
 #define PERIPHS_SPI_H
 
-#include "conf/board.h"
-#include "conf/conf.h"
 #include "core/core.h"
 #include "hal.h"
+#include "target.h"
 
-#include "peripheral/gpio.h"
+#include "drivers/io/gpio.h"
 
 #include <stdint.h>
 #include <string.h>

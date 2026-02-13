@@ -1,12 +1,10 @@
 #ifndef SENSORS_IMU_H
 #define SENSORS_IMU_H
 
-#include "conf/board.h"
-#include "conf/conf.h"
 #include "core/core.h"
-#include "core/log/logger.h"
 #include "device/imu/bmixxx.h"
 #include "hal.h"
+#include "target.h"
 
 #include "drivers/bus/spi.h"
 
@@ -221,7 +219,6 @@ typedef struct {
     IMUAccConf aconf;
     IMUGyroConf gconf;
     IMUAxesRemapConf axesRemapConf;
-    DeviceBoardConf_t boardConf;
 } IMUInitConf_t;
 
 typedef struct {

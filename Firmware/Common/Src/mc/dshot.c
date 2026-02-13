@@ -5,8 +5,10 @@
 
 #include "core/core.h"
 
-#include "peripheral/gpio.h"
-#include "peripheral/timer.h"
+#include "drivers/io/gpio.h"
+#include "drivers/timer.h"
+
+
 
 #include <stdint.h>
 

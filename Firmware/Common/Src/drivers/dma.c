@@ -1,8 +1,12 @@
-#include "peripheral/dma.h"
-#include "core/core.h"
-#include "core/log/logger.h"
 #include "hal.h"
+#include "target.h"
+
+#include "core/core.h"
+
+#include "drivers/dma.h"
+
 #include "mem/mem.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>

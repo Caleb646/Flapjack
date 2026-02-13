@@ -1,13 +1,14 @@
 #include "device/imu/imu.h"
-#include "conf/conf.h"
 #include "core/core.h"
 #include "core/log/logger.h"
 #include "device/imu/bmixxx.h"
 #include "mem/mem.h"
+#include "target.h"
+
 
 #include "drivers/bus/spi.h"
 
-#include "peripheral/gpio.h"
+#include "drivers/io/gpio.h"
 
 #include "target.h"
 
@@ -766,8 +767,7 @@ eSTATUS_t IMU_Init_ (IMUInitConf_t conf, vIMU_t* pOutIMU) {
     IMUGyroConf gyroConf           = conf.gconf;
     IMUAxesRemapConf axesRemapConf = conf.axesRemapConf;
 
-    DeviceBoardConf_t device = conf.boardConf;
-    eDEVICE_ID_t deviceId    = device.deviceId;
+    eDEVICE_ID_t deviceId = eIMU_DEVICE_ID;
 
     eSTATUS_t status = eSTATUS_SUCCESS;
 
