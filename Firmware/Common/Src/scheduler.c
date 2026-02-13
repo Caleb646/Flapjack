@@ -37,10 +37,10 @@ FJ_DEFINE_SHARED(Task_t, m_AsyncTasks[][MAX_NUM_TASKS]) = {
     }
 };
 
-static uint32_t ExecuteTask (Task_t* pTask, uint32_t usCurrentTime) {
+static uint32_t ExecuteTask (Task_t* pTask, uint32_t usCurrentTime, uint32_t usDeltaTime) {
 
     uint32_t usTaskStart    = GetMicroseconds ();
-    eSTATUS_t status        = pTask->taskFunction (usTaskStart);
+    eSTATUS_t status        = pTask->taskFunction (usTaskStart, usDeltaTime);
     uint32_t usTaskDuration = GetMicroseconds () - usTaskStart;
     if (STATUS_FAIL (status)) {
         LOG_ERROR ("Task %s failed with status %d", pTask->taskName, status);
@@ -73,7 +73,7 @@ void Scheduler_Main (uint32_t coreIdx, uint32_t loopRateHz) {
                 continue;
             }
 
-            uint32_t usTaskDuration = ExecuteTask (pTask, usLoopStart);
+            uint32_t usTaskDuration = ExecuteTask (pTask, usLoopStart, usLoopStart - pTask->usLastUpdateTime);
             if (usTaskDuration > usRemaining) {
                 LOG_WARN ("Main loop exceeded time budget during task %s", pTask->taskName);
                 usRemaining = 0;
@@ -93,7 +93,7 @@ void Scheduler_Main (uint32_t coreIdx, uint32_t loopRateHz) {
                 continue;
             }
 
-            uint32_t usTaskDuration = ExecuteTask (pTask, usLoopStart);
+            uint32_t usTaskDuration = ExecuteTask (pTask, usLoopStart, usLoopStart - pTask->usLastUpdateTime);
             if (usTaskDuration > usRemaining) {
                 LOG_WARN ("Async Task %s exceeded time budget", pTask->taskName);
                 usRemaining = 0;

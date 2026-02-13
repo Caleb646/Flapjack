@@ -44,13 +44,11 @@
     for (TYPE* pElement = &((ARRAY)[0]); pElement <= &((ARRAY)[ARRAY_SIZE (ARRAY) - 1U]); ++pElement)
 #define FOR_EACH_CONST(TYPE, ARRAY)                   FOR_EACH (TYPE const, ARRAY)
 
-#define AXIS_IDX_COUNT                                3
+#define AXIS_IDX_COUNT                                4
 #define AXIS_IDX_ROLL                                 0
 #define AXIS_IDX_PITCH                                1
 #define AXIS_IDX_YAW                                  2
-#define AXIS_IDX_X                                    0
-#define AXIS_IDX_Y                                    1
-#define AXIS_IDX_Z                                    2
+#define AXIS_IDX_THROTTLE                             3
 
 // TODO: setup TARG_SHARED_MEM_DATA_SECTION
 // #define FJ_DECLARE_SHARED(TYPE, NAME)                 extern TYPE NAME TARG_SHARED_MEM_DATA_SECTION

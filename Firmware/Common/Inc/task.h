@@ -7,7 +7,7 @@
 #include "core/core.h"
 
 typedef struct {
-    eSTATUS_t (*taskFunction) (uint32_t usCurrentTime);
+    eSTATUS_t (*taskFunction) (uint32_t usCurrentTime, uint32_t usDeltaTime);
     char const* taskName;
     uint32_t hzUpdate;
     uint32_t usLastUpdateTime;
@@ -17,13 +17,13 @@ typedef struct {
     bool isEnabled;
 } Task_t;
 
-eSTATUS_t TaskMixerUpdate (uint32_t usCurrentTime);
-eSTATUS_t TaskPIDUpdate (uint32_t usCurrentTime);
-eSTATUS_t TaskAttitudeUpdate (uint32_t usCurrentTime);
-eSTATUS_t TaskIMUUpdate (uint32_t usCurrentTime);
-eSTATUS_t TaskInterCoreSync (uint32_t usCurrentTime);
-eSTATUS_t Task_RxUpdate (uint32_t usCurrentTime);
-eSTATUS_t Task_RcUpdate (uint32_t usCurrentTime);
+eSTATUS_t TaskMixerUpdate (uint32_t usCurrentTime, uint32_t usDeltaTime);
+eSTATUS_t TaskPIDUpdate (uint32_t usCurrentTime, uint32_t usDeltaTime);
+eSTATUS_t TaskAttitudeUpdate (uint32_t usCurrentTime, uint32_t usDeltaTime);
+eSTATUS_t TaskIMUUpdate (uint32_t usCurrentTime, uint32_t usDeltaTime);
+eSTATUS_t TaskInterCoreSync (uint32_t usCurrentTime, uint32_t usDeltaTime);
+eSTATUS_t Task_RxUpdate (uint32_t usCurrentTime, uint32_t usDeltaTime);
+eSTATUS_t Task_RcUpdate (uint32_t usCurrentTime, uint32_t usDeltaTime);
 
 
 #endif /* TASK_H */

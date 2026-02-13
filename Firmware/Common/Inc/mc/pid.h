@@ -1,67 +1,46 @@
 #ifndef MC_PID_H
 #define MC_PID_H
 
-#include "conf/board.h"
-#include "conf/conf.h"
+#include "flight.h"
+#include "target.h"
+
 #include "core/core.h"
 
-#include "hal.h"
-#include "mc/dshot.h"
-#include "peripheral/dma.h"
-#include "peripheral/timer.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 
+typedef struct {
+    float p, i, d;
+    float integralLimit;
+    float prevError;
+    float prevIntegral;
+} PidAxis_t;
 
 typedef struct {
-    float rollP, rollI, rollD;
-    float pitchP, pitchI, pitchD;
-    float yawP, yawI, yawD;
-    float integralLimit;
-} PIDInitConf_t;
 
-typedef struct {
-    float rollP, rollI, rollD;
-    float pitchP, pitchI, pitchD;
-    float yawP, yawI, yawD;
-    float integralLimit;
-    Vec3f prevError;
-    Vec3f prevIntegral;
-    uint32_t msLastUpdateTime;
-    bool isInitialized;
+    PidAxis_t axes[AXIS_IDX_COUNT];
+    float data[AXIS_IDX_COUNT];
+    uint32_t usLastUpdateTime;
 
-    // float pidData[AXIS_IDX_COUNT];
-    Vec3f pidData; //[AXIS_IDX_COUNT];
-} PID_t;
+} Pid_t;
 
-typedef PID_t vPID_t;
+FJ_DECLARE_SHARED (Pid_t, g_Pid);
 
-// clang-format off
+static inline Pid_t* Pid_Get (void) {
+    return &g_Pid;
+};
 
-eSTATUS_t PIDInit (PIDInitConf_t conf);
-eSTATUS_t PIDStart (vPID_t* pPID);
-eSTATUS_t PIDStop (vPID_t* pPID);
-eSTATUS_t PID_Update (vPID_t* pPID, Vec3f const* currentAttitude, Vec3f const* targetAttitude, Vec3f const* maxAttitude, float dt, Vec3f* pOut);
-vPID_t const* PIDGetActivePID (void);
-vPID_t * PID_GetMutableActivePID (void);
+eSTATUS_t Pid_Init_ (Pid_t* pOutPid);
+static inline eSTATUS_t Pid_Init (void) {
+    return Pid_Init_ (&g_Pid);
+}
 
-// clang-format on
-
-#define PID_INIT(pSTATUS)                                 \
-    do {                                                  \
-        PIDInitConf_t conf = { 0 };                       \
-        conf.rollI         = PID_STARTING_ROLL_I;         \
-        conf.rollD         = PID_STARTING_ROLL_D;         \
-        conf.pitchP        = PID_STARTING_PITCH_P;        \
-        conf.pitchI        = PID_STARTING_PITCH_I;        \
-        conf.pitchD        = PID_STARTING_PITCH_D;        \
-        conf.yawP          = PID_STARTING_YAW_P;          \
-        conf.yawI          = PID_STARTING_YAW_I;          \
-        conf.yawD          = PID_STARTING_YAW_D;          \
-        conf.integralLimit = PID_STARTING_INTEGRAL_LIMIT; \
-        *(pSTATUS)         = PIDInit (conf);              \
-    } while (0)
+float Pid_UpdateAxis_ (PidAxis_t* pAxis, float current, float target, float dt);
+eSTATUS_t Pid_Update_ (Pid_t* pPid, FlightData_t* pFlightData, uint32_t usCurrentTime, uint32_t usDeltaTime);
+static inline eSTATUS_t Pid_Update (uint32_t usCurrentTime, uint32_t usDeltaTime) {
+    return Pid_Update_ (Pid_Get (), Fc_Get (), usCurrentTime, usDeltaTime);
+}
 
 
 #endif // MC_PID_H

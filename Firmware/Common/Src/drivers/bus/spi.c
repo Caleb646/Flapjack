@@ -1,4 +1,3 @@
-
 #include "hal.h"
 #include "target.h"
 

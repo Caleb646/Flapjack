@@ -83,20 +83,20 @@ FJ_DEFINE_SHARED (Mixer_t, g_Mixer) = {
     }
 };
 
-void Mixer_MixMotors (Mixer_t* pMixer, float const pidAttitude[AXIS_IDX_COUNT], float targetThrottle, float motorOutputs[BRD_MOTOR_COUNT]) {
+void Mixer_MixMotors (Mixer_t* pMixer, float const pidData[AXIS_IDX_COUNT], float motorOutputs[BRD_MOTOR_COUNT]) {
 
     MixerProfile_t const* pProfile = pMixer->pCurrentProfile;
     MotorMix_t const* pMix         = pProfile->pMotorMix;
     for (uint32_t i = 0; i < pProfile->motorCount; ++i) {
-        float mixedThrottle = pMix[i].throttle * targetThrottle;
-        mixedThrottle += pMix[i].pitch * ABS_F32 (pidAttitude[AXIS_IDX_PITCH]);
-        mixedThrottle += pMix[i].roll * pidAttitude[AXIS_IDX_ROLL];
-        mixedThrottle += pMix[i].yaw * pidAttitude[AXIS_IDX_YAW];
+        float mixedThrottle = pMix[i].throttle * pidData[AXIS_IDX_THROTTLE];
+        mixedThrottle += pMix[i].pitch * ABS_F32 (pidData[AXIS_IDX_PITCH]);
+        mixedThrottle += pMix[i].roll * pidData[AXIS_IDX_ROLL];
+        mixedThrottle += pMix[i].yaw * pidData[AXIS_IDX_YAW];
         motorOutputs[i] = clipf32 (mixedThrottle, pMixer->motorsMinThrottle, pMixer->motorsMaxThrottle);
     }
 }
 
-void Mixer_MixServos (Mixer_t* pMixer, float const pidAttitude[AXIS_IDX_COUNT], float targetThrottle, uint16_t servoOutputs[BRD_SERVO_COUNT]) {
+void Mixer_MixServos (Mixer_t* pMixer, float const pidData[AXIS_IDX_COUNT], uint16_t servoOutputs[BRD_SERVO_COUNT]) {
 
     MixerProfile_t const* pProfile          = pMixer->pCurrentProfile;
     ServoMix_t const* pServoMix             = pProfile->pServoMix;
@@ -104,15 +104,15 @@ void Mixer_MixServos (Mixer_t* pMixer, float const pidAttitude[AXIS_IDX_COUNT], 
     // TODO: Should PID be between -1 and 1 or another range????
     // TODO: Some servos will need access to Rc channel data for flight mode switching
     inputs[eSERVO_MIX_INPUT_PID_ROLL] =
-    (uint16_t)mapf32 (pidAttitude[AXIS_IDX_ROLL], -1.0F, 1.0F, SERVO_LEFT_US_DC, SERVO_RIGHT_US_DC);
+    (uint16_t)mapf32 (pidData[AXIS_IDX_ROLL], -1.0F, 1.0F, SERVO_LEFT_US_DC, SERVO_RIGHT_US_DC);
 
     for (uint32_t mixIdx = 0; mixIdx < pProfile->servoMixCount; ++mixIdx) {
         float mixedInput = 0.0F;
         switch (pServoMix[mixIdx].inputIndex) {
-        case eSERVO_MIX_INPUT_PID_ROLL: mixedInput = pidAttitude[AXIS_IDX_ROLL]; break;
-        case eSERVO_MIX_INPUT_PID_PITCH: mixedInput = pidAttitude[AXIS_IDX_PITCH]; break;
-        case eSERVO_MIX_INPUT_PID_YAW: mixedInput = pidAttitude[AXIS_IDX_YAW]; break;
-        case eSERVO_MIX_INPUT_PID_THROTTLE: mixedInput = targetThrottle; break;
+        case eSERVO_MIX_INPUT_PID_ROLL: mixedInput = pidData[AXIS_IDX_ROLL]; break;
+        case eSERVO_MIX_INPUT_PID_PITCH: mixedInput = pidData[AXIS_IDX_PITCH]; break;
+        case eSERVO_MIX_INPUT_PID_YAW: mixedInput = pidData[AXIS_IDX_YAW]; break;
+        case eSERVO_MIX_INPUT_PID_THROTTLE: mixedInput = pidData[AXIS_IDX_THROTTLE]; break;
         default: break;
         }
         // TODO: Scale mixedInput to appropriate servo output range
@@ -149,17 +149,11 @@ eSTATUS_t Mixer_Init (void) {
 
 eSTATUS_t Mixer_Mix (uint32_t usCurrentTime) {
 
-    // clang-format off
-    FlightData_t* pFlightData = Fc_Get();
-    PID_t* pPidData = PID_GetMutableActivePID();
-    float pidAttitude[AXIS_IDX_COUNT] = { pPidData->pidData.x, pPidData->pidData.y, pPidData->pidData.z };
-    Mixer_MixMotors (&g_Mixer, pidAttitude, pFlightData->targetThrottle, g_Mixer.motorOutputs);
-
-    // NOTE: depending on the current mixer profile, some servos may not be used. 
+    Mixer_MixMotors (&g_Mixer, Pid_Get ()->data, g_Mixer.motorOutputs);
+    // NOTE: depending on the current mixer profile, some servos may not be used.
     // Make sure to set unused servo outputs to 0.
-    memset(g_Mixer.servoOutputs, 0, sizeof (g_Mixer.servoOutputs));
-    Mixer_MixServos (&g_Mixer, pidAttitude, pFlightData->targetThrottle, g_Mixer.servoOutputs);
-    // clang-format on
+    memset (g_Mixer.servoOutputs, 0, sizeof (g_Mixer.servoOutputs));
+    Mixer_MixServos (&g_Mixer, Pid_Get ()->data, g_Mixer.servoOutputs);
     return eSTATUS_SUCCESS;
 }
 

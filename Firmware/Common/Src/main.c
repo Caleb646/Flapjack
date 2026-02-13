@@ -86,19 +86,16 @@ int main (void) {
         CriticalErrorHandler ();
     }
 
-    status = SerialDebugInit ();
-    if (STATUS_FAIL (status)) {
+    if (STATUS_FAIL (SerialDebugInit ())) {
         CriticalErrorHandler ();
     }
 
-    status = IMU_Init ();
-    if (STATUS_FAIL (status)) {
+    if (STATUS_FAIL (IMU_Init ())) {
         LOG_ERROR ("Failed to init IMU");
         CriticalErrorHandler ();
     }
 
-    PID_INIT (&status);
-    if (STATUS_FAIL (status)) {
+    if (STATUS_FAIL (Pid_Init ())) {
         LOG_ERROR ("Failed to init PID");
         CriticalErrorHandler ();
     }
@@ -114,17 +111,20 @@ int main (void) {
         CriticalErrorHandler ();
     }
 
-    Vec3f* pStartingAttitude = &g_FlightData.currentAttitude;
-    status = FilterStart (Filter_GetMutableActiveFilter (), 500U, pStartingAttitude);
+    Vec3f startingAttitude = { 0.0F };
+    status = FilterStart (Filter_GetMutableActiveFilter (), 500U, &startingAttitude);
     if (STATUS_FAIL (status)) {
         LOG_ERROR ("Failed to start filter");
         CriticalErrorHandler ();
     }
+    Fc_Get ()->current[AXIS_IDX_ROLL]  = startingAttitude.roll;
+    Fc_Get ()->current[AXIS_IDX_PITCH] = startingAttitude.pitch;
+    Fc_Get ()->current[AXIS_IDX_YAW]   = startingAttitude.yaw;
 
     Delay (250);
 
     LOG_INFO ("Starting scheduler");
-    Scheduler_Main (CM7_IDX, FJ_LOOP_UPDATE_RATE_HZ);
+    Scheduler_Main (CM7_IDX, CFG_LOOP_UPDATE_RATE_HZ);
 }
 
 void SystemClock_Config (void) {
@@ -224,7 +224,7 @@ int main (void) {
     Delay (250);
 
     LOG_INFO ("Starting scheduler");
-    Scheduler_Main (CM4_IDX, FJ_LOOP_UPDATE_RATE_HZ);
+    Scheduler_Main (CM4_IDX, CFG_LOOP_UPDATE_RATE_HZ);
 }
 
 #endif // CORE_CM4

@@ -16,13 +16,13 @@
 // #define PUTCHAR_PROTOTYPE int fputc (int ch, FILE* f)
 // #endif
 
-#if LOGGER_SHOULD_BLOCK_ON_OVERWRITE == 1
+#if CFG_LOGGER_SHOULD_BLOCK_ON_OVERWRITE == 1
 #define LOGGER_WRITE_CHAR(ch) LoggerWriteChar_Blocking (ch)
 #else
 #define LOGGER_WRITE_CHAR(ch) LoggerWriteChar_NonBlocking (ch)
 #endif
 
-#define PRIMARY_LOGGER_IS_ME() (HAL_GetCurrentCPUID () == PRIMARY_LOGGER_ROLE)
+#define PRIMARY_LOGGER_IS_ME() (HAL_GetCurrentCPUID () == CFG_PRIMARY_LOGGER)
 #define TEMP_BUFFER_SIZE       512U
 #define MAX_NSINKS             4U
 
