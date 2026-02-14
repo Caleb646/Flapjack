@@ -61,7 +61,9 @@ def make_letter(points, offset=(0, 0, 0), color=(1, 1, 1)):
         b = np.array(line[1]) + np.array(offset)
         pts.extend([a, b])
     pts = np.array(pts)
-    colors = np.tile(color, (len(pts), 1))
+    if len(color) == 3:
+        color = [*color, 1.0]  # Add alpha channel
+    colors = np.tile(np.array(color), (len(pts), 1))
     return GLLinePlotItem(pos=pts, color=colors, width=2, antialias=True)
 
 def make_axis_line(direction, color):
@@ -70,7 +72,9 @@ def make_axis_line(direction, color):
     color: tuple of 3 floats (r, g, b)
     """
     pos = np.array([[0, 0, 0], direction])
-    color_array = np.array([color, color])
+    if len(color) == 3:
+        color = [*color, 1.0]  # Add alpha channel
+    color_array = np.array([color, color]) # * 255
     return GLLinePlotItem(pos=pos, color=color_array, width=3.0, antialias=True)
 
 class FlightViewer(QtWidgets.QWidget):
