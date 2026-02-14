@@ -79,24 +79,24 @@ eSTATUS_t Spi_InitSystem (void) {
 #endif
 
     for (uint32_t i = 0; i < g_nSpiBuses; ++i) {
+
+        GPIO_ENABLE_CLOCK (g_SpiBuses[i].hardware.pSck);
+        GPIO_ENABLE_CLOCK (g_SpiBuses[i].hardware.pMiso);
+        GPIO_ENABLE_CLOCK (g_SpiBuses[i].hardware.pMosi);
+
         GPIO_InitTypeDef gpioInit = { 0 };
         gpioInit.Mode             = GPIO_MODE_AF_PP;
         gpioInit.Pull             = GPIO_NOPULL;
         gpioInit.Speed            = GPIO_SPEED_FREQ_VERY_HIGH;
+        gpioInit.Alternate        = g_SpiBuses[i].hardware.af;
 
-        gpioInit.Alternate = g_SpiBuses[i].hardware.af;
-        gpioInit.Pin       = g_SpiBuses[i].hardware.sckPin;
-        GPIO_ENABLE_CLOCK (g_SpiBuses[i].hardware.pSck);
+        gpioInit.Pin = g_SpiBuses[i].hardware.sckPin;
         HAL_GPIO_Init (g_SpiBuses[i].hardware.pSck, &gpioInit);
 
-        gpioInit.Alternate = g_SpiBuses[i].hardware.af;
-        gpioInit.Pin       = g_SpiBuses[i].hardware.misoPin;
-        GPIO_ENABLE_CLOCK (g_SpiBuses[i].hardware.pMiso);
+        gpioInit.Pin = g_SpiBuses[i].hardware.misoPin;
         HAL_GPIO_Init (g_SpiBuses[i].hardware.pMiso, &gpioInit);
 
-        gpioInit.Alternate = g_SpiBuses[i].hardware.af;
-        gpioInit.Pin       = g_SpiBuses[i].hardware.mosiPin;
-        GPIO_ENABLE_CLOCK (g_SpiBuses[i].hardware.pMosi);
+        gpioInit.Pin = g_SpiBuses[i].hardware.mosiPin;
         HAL_GPIO_Init (g_SpiBuses[i].hardware.pMosi, &gpioInit);
 
         SPI_HandleTypeDef* pHandle = &g_SpiBuses[i].handle;

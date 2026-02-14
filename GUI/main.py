@@ -211,7 +211,7 @@ class FlightViewer(QtWidgets.QWidget):
             self.buffer = self.buffer[end + 1:]
             try:
                 data = json.loads(message)
-                if data.get("type") == CONF.LOG_DATA_TYPE_DEBUG:
+                if data.get("type") == "debug":
                     msg = json.dumps(data)
                     if self.debug_log:
                         self.debug_log.write(msg + "\n")
@@ -237,6 +237,7 @@ class FlightViewer(QtWidgets.QWidget):
                         actuator_data = data.get("data", {})
                         self.actuator_tab.add_actuator_data(actuator_data)
             except json.JSONDecodeError:
+                self.append_debug_console(str(message), "[ERROR]")
                 print(f"Failed to decode JSON: {message}")
                 continue
 

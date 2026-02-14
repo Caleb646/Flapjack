@@ -1,10 +1,13 @@
-#include "core/log/logger.h"
+#include "hal.h"
+#include "target.h"
+
+#include "core/core.h"
 #include "core/core_shared.h"
 #include "core/log/format.h"
-#include "core/sync.h"
-#include "hal.h"
-#include "mem/mem.h"
+#include "core/log/logger.h"
+
 #include "mem/ring_buff.h"
+
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -27,13 +30,13 @@
 #define MAX_NSINKS             4U
 
 // NOLINTBEGIN
-static SHARED_MEM_SECTION LoggerWriteToSink_t gLoggerSinks[MAX_NSINKS] = { 0 };
-static SHARED_MEM_SECTION uint8_t gCurrentSinkIdx                      = 0U;
-static SHARED_MEM_SECTION uint8_t gCM4RingBufStorage[1024]             = { 0 };
-static SHARED_MEM_SECTION uint8_t gCM7RingBufStorage[4096]             = { 0 };
-static SHARED_MEM_SECTION RingBuff g_CM4_RingBuf                       = { 0 };
-static SHARED_MEM_SECTION RingBuff g_CM7_RingBuf                       = { 0 };
-static SHARED_MEM_SECTION bool gLoggerInitialized                      = false;
+static SHARED_MEM_BSS_SECTION LoggerWriteToSink_t gLoggerSinks[MAX_NSINKS] = { 0 };
+static SHARED_MEM_BSS_SECTION uint8_t gCurrentSinkIdx                      = 0U;
+static SHARED_MEM_BSS_SECTION uint8_t gCM4RingBufStorage[1024]             = { 0 };
+static SHARED_MEM_BSS_SECTION uint8_t gCM7RingBufStorage[4096]             = { 0 };
+static SHARED_MEM_BSS_SECTION RingBuff g_CM4_RingBuf                       = { 0 };
+static SHARED_MEM_BSS_SECTION RingBuff g_CM7_RingBuf                       = { 0 };
+static SHARED_MEM_BSS_SECTION bool gLoggerInitialized                      = false;
 // static uint8_t ga_TempReadBuffer[TEMP_BUFFER_SIZE]                     = { 0 };
 
 // typedef RingBuff volatile vRingBuff_t;
@@ -59,7 +62,7 @@ static eSTATUS_t LoggerSyncUARTTaskHandler (DefaultTask const* pTask) {
 
 static eSTATUS_t LoggerWriteToSinks (vRingBuff_t* pRingBuf, uint32_t totalLen) {
 
-    if (RingBuffIsValid (pRingBuf) != true) {
+    if (!RingBuffIsValid (pRingBuf)) {
         return eSTATUS_FAILURE;
     }
 
@@ -194,27 +197,24 @@ eSTATUS_t LoggerInit (void) {
         return eSTATUS_FAILURE;
     }
 
-    if (gLoggerInitialized == true) {
-        return eSTATUS_SUCCESS;
+    __disable_irq ();
+    LockTake ();
+
+    if (gLoggerInitialized) {
+        goto end;
     }
 
-    ATOMIC_BLOCK_LOCAL (eNVIC_PRIO_LVL_MAX) {
+    gCurrentSinkIdx = 0U;
+    memset ((void*)gLoggerSinks, 0, sizeof (gLoggerSinks));
 
+    bool ok = true;
+    ok &= RingBuffInit (gCM4RingBufStorage, sizeof (gCM4RingBufStorage), &g_CM4_RingBuf);
+    ok &= RingBuffInit (gCM7RingBufStorage, sizeof (gCM7RingBufStorage), &g_CM7_RingBuf);
+    if (ok) {
         gLoggerInitialized = true;
-        LockTake ();
-
-        gCurrentSinkIdx = 0U;
-        memset ((void*)gLoggerSinks, 0, sizeof (gLoggerSinks));
-
-        bool ok = true;
-        ok &= RingBuffInit (gCM4RingBufStorage, sizeof (gCM4RingBufStorage), &g_CM4_RingBuf);
-        ok &= RingBuffInit (gCM7RingBufStorage, sizeof (gCM7RingBufStorage), &g_CM7_RingBuf);
-        if (ok != true) {
-            gLoggerInitialized = false;
-            return eSTATUS_FAILURE;
-        }
-        LockRelease ();
     }
-
+end:
+    LockRelease ();
+    __enable_irq ();
     return eSTATUS_SUCCESS;
 }

@@ -17,9 +17,9 @@ typedef struct {
     GPIO_TypeDef* pSck;
     GPIO_TypeDef* pMiso;
     GPIO_TypeDef* pMosi;
-    uint16_t sckPin;
-    uint16_t misoPin;
-    uint16_t mosiPin;
+    uint32_t sckPin;
+    uint32_t misoPin;
+    uint32_t mosiPin;
     uint32_t af;
 } SpiHardware_t;
 

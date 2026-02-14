@@ -20,8 +20,8 @@ typedef struct {
     USART_TypeDef* pInstance;
     GPIO_TypeDef* pRx;
     GPIO_TypeDef* pTx;
-    uint16_t rxPin;
-    uint16_t txPin;
+    uint32_t rxPin;
+    uint32_t txPin;
     uint32_t af;
     uint32_t irqId;
 } UartHardware_t;

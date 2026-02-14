@@ -19,7 +19,7 @@
 typedef struct {
     uint32_t timerChannel;
     GPIO_TypeDef* pPort;
-    uint16_t pin;
+    uint32_t pin;
 } DShotBBMotorPin_t;
 
 typedef struct {

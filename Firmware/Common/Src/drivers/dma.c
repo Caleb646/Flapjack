@@ -12,7 +12,7 @@
 #include <string.h>
 
 
-static SHARED_MEM_SECTION DMAStream_t gDMAStreams[eDMA_STREAM_MAX] = { 0 };
+static SHARED_MEM_BSS_SECTION DMAStream_t gDMAStreams[eDMA_STREAM_MAX] = { 0 };
 
 /**
  * @brief This function handles DMA1 stream0 global interrupt.

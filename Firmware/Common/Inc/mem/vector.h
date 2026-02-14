@@ -94,9 +94,9 @@ void* Vector_Data (Vector_t const* pVector);
     static Vector_t g_##NAME##_vector = { 0 };                \
     VECTOR_DEFINE_FUNCTIONS_ONLY (NAME, TYPE, CAPACITY, IS_SHARED)
 
-#define VECTOR_DEFINE_STATIC_SHARED(NAME, TYPE, CAPACITY)         \
-    static SHARED_MEM_SECTION TYPE g_##NAME##_buffer[(CAPACITY)]; \
-    static SHARED_MEM_SECTION Vector_t g_##NAME##_vector = { 0 }; \
+#define VECTOR_DEFINE_STATIC_SHARED(NAME, TYPE, CAPACITY)             \
+    static SHARED_MEM_BSS_SECTION TYPE g_##NAME##_buffer[(CAPACITY)]; \
+    static SHARED_MEM_BSS_SECTION Vector_t g_##NAME##_vector = { 0 }; \
     VECTOR_DEFINE_FUNCTIONS_ONLY (NAME, TYPE, CAPACITY, true)
 
 #endif // MEM_VECTOR_H

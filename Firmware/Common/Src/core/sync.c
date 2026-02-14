@@ -1,7 +1,7 @@
 #include "core/sync.h"
 #include "core/core_shared.h"
 #include "hal.h"
-#include "mem/mem.h"
+
 #include "mem/queue.h"
 #include <stdbool.h>
 #include <string.h>
@@ -16,7 +16,7 @@
     TASK_TYPE_IS_VALID (((SyncTaskHeader*)(pTASK))->taskID)               \
     )
 
-static SHARED_MEM_SECTION MailBox_t ga_MailBoxes[MAILBOX_COUNT] = { 0 };
+static SHARED_MEM_BSS_SECTION MailBox_t ga_MailBoxes[MAILBOX_COUNT] = { 0 };
 static task_handler_fn_t ga_Handlers[eSYNC_TASKID_MAX]          = { 0 };
 QUEUE_DEFINE_STATIC (SyncTask, DefaultTask, TASK_QUEUE_CAPACITY, true);
 
@@ -73,9 +73,6 @@ STATIC vMailBox_t* SyncMailBoxGet (uint32_t mbID) {
 
 STATIC eSTATUS_t SyncMailBoxWrite (uint32_t mbID, uint8_t const* pBuffer, uint32_t len) {
 
-    if (len > sizeof (MailBox_t) || pBuffer == NULL) {
-        return eSTATUS_FAILURE;
-    }
     memcpy ((void*)SyncMailBoxGet (mbID), (void const*)pBuffer, len);
     return eSTATUS_SUCCESS;
 }
@@ -83,16 +80,8 @@ STATIC eSTATUS_t SyncMailBoxWrite (uint32_t mbID, uint8_t const* pBuffer, uint32
 STATIC eSTATUS_t SyncMailBoxWriteNotify (uint32_t mbID, uint8_t const* pBuffer, uint32_t len) {
 
     eSTATUS_t status = SyncMailBoxWrite (mbID, pBuffer, len);
-    if (status != eSTATUS_SUCCESS) {
-        return eSTATUS_FAILURE;
-    }
-
-#ifndef UNIT_TEST
-
     asm volatile ("dsb");
     asm volatile ("sev");
-
-#endif
     return eSTATUS_SUCCESS;
 }
 

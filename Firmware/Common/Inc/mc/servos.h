@@ -19,7 +19,7 @@ typedef struct {
     uint32_t timerAf;
     uint32_t timerChannel;
     GPIO_TypeDef* pPort;
-    uint16_t pin;
+    uint32_t pin;
 } ServoHardware_t;
 
 typedef struct {

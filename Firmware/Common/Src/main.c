@@ -22,39 +22,42 @@
 #include "device/imu/imu.h"
 #include "device/serial/serial.h"
 
-
 #ifndef HSEM_ID_0
 #define HSEM_ID_0 (0U)
 #endif
-
-#ifdef CORE_CM7
 
 void SysTick_Handler (void) {
 
     HAL_IncTick ();
 }
 
+static bool SHARED_MEM_BSS_SECTION s_IsCM4Stuck = false;
+
+#ifdef CORE_CM7
+
 void SystemClock_Config (void);
 
-extern uint32_t __SHARED_MEM_BSS_START__;
-extern uint32_t __SHARED_MEM_BSS_END__;
-extern uint32_t __SHARED_MEM_DATA_START__;
-extern uint32_t __SHARED_MEM_DATA_END__;
-extern uint32_t __SHARED_MEM_DATA_FLASH_START__;
+extern void __SHARED_MEM_BSS_START__;
+extern void __SHARED_MEM_BSS_END__;
+extern void __SHARED_MEM_DATA_START__;
+extern void __SHARED_MEM_DATA_END__;
+extern void __SHARED_MEM_DATA_FLASH_START__;
 
 int main (void) {
 
     HAL_Init ();
     HAL_NVIC_EnableIRQ (SysTick_IRQn);
-
+    __HAL_RCC_HSEM_CLK_ENABLE ();
     SystemClock_Config ();
 
-    memset (&__SHARED_MEM_BSS_START__, 0, &__SHARED_MEM_BSS_END__ - &__SHARED_MEM_BSS_START__);
-    uint32_t const dataStart      = (uint32_t)(&__SHARED_MEM_DATA_START__);
-    uint32_t const dataEnd        = (uint32_t)(&__SHARED_MEM_DATA_END__);
-    uint32_t const dataSize       = dataEnd - dataStart;
-    uint32_t const dataFlashStart = (uint32_t)(&__SHARED_MEM_DATA_FLASH_START__);
-    memcpy ((void*)dataStart, (void*)dataFlashStart, dataSize);
+    uint32_t const bssStart = (uint32_t)&__SHARED_MEM_BSS_START__;
+    uint32_t const bssEnd   = (uint32_t)&__SHARED_MEM_BSS_END__;
+    memset ((void*)bssStart, 0, bssEnd - bssStart);
+
+    uint32_t const dataStart      = (uint32_t)&__SHARED_MEM_DATA_START__;
+    uint32_t const dataEnd        = (uint32_t)&__SHARED_MEM_DATA_END__;
+    uint32_t const dataFlashStart = (uint32_t)&__SHARED_MEM_DATA_FLASH_START__;
+    memcpy ((void*)dataStart, (void*)dataFlashStart, dataEnd - dataStart);
 
     if (STATUS_FAIL (Spi_InitSystem ())) {
         CriticalErrorHandler ();
@@ -64,8 +67,15 @@ int main (void) {
         CriticalErrorHandler ();
     }
 
-    /*HW semaphore Clock enable*/
-    __HAL_RCC_HSEM_CLK_ENABLE ();
+    eSTATUS_t status = Core_Init ();
+    if (STATUS_FAIL (status)) {
+        CriticalErrorHandler ();
+    }
+
+    if (STATUS_FAIL (SerialDebugInit ())) {
+        CriticalErrorHandler ();
+    }
+
     /* Take HSEM */
     HAL_HSEM_FastTake (HSEM_ID_0);
     /* Release HSEM in order to notify the CPU2(CM4) */
@@ -76,16 +86,19 @@ int main (void) {
 
     __HAL_RCC_SYSCFG_CLK_ENABLE ();
     // enable CM4_SEV_IRQn so CM4 can send SEV to CM7
-    HAL_NVIC_SetPriority (CM4_SEV_IRQn, 9, 9);
-    HAL_NVIC_EnableIRQ (CM4_SEV_IRQn);
+    // HAL_NVIC_SetPriority (CM4_SEV_IRQn, 9, 9);
+    // HAL_NVIC_EnableIRQ (CM4_SEV_IRQn);
 
-    eSTATUS_t status = Core_Init ();
-    if (STATUS_FAIL (status)) {
-        CriticalErrorHandler ();
-    }
 
-    if (STATUS_FAIL (SerialDebugInit ())) {
-        CriticalErrorHandler ();
+    // TODO: remove
+    uint32_t tempStart = GetMilliseconds ();
+    while (true) {
+        SyncProcessTasks ();
+        uint32_t tempCurrent = GetMilliseconds ();
+        if (tempCurrent - tempStart >= 1000) {
+            tempStart = tempCurrent;
+            LOG_INFO ("System initialized. Starting main loop.");
+        }
     }
 
     if (STATUS_FAIL (IMU_Init ())) {
@@ -206,12 +219,28 @@ int main (void) {
     HAL_Init ();
     HAL_NVIC_EnableIRQ (SysTick_IRQn);
 
+    __HAL_RCC_SYSCFG_CLK_ENABLE ();
     // enable CM4_SEV_IRQn so CM7 can send SEV to CM4
-    HAL_NVIC_SetPriority (CM7_SEV_IRQn, 9, 9);
-    HAL_NVIC_EnableIRQ (CM7_SEV_IRQn);
+    // HAL_NVIC_SetPriority (CM7_SEV_IRQn, 9, 9);
+    // HAL_NVIC_EnableIRQ (CM7_SEV_IRQn);
+
+    // TODO: remove
+    // while (true) {
+    // }
 
     if (Core_Init () != eSTATUS_SUCCESS) {
+        s_IsCM4Stuck = true;
         CriticalErrorHandler ();
+    }
+
+    // TODO: remove
+    uint32_t tempStart = GetMilliseconds ();
+    while (true) {
+        SyncProcessTasks ();
+        if (GetMilliseconds () - tempStart >= 1000) {
+            tempStart = GetMilliseconds ();
+            LOG_INFO ("System initialized. Starting main loop.");
+        }
     }
 
     if (STATUS_FAIL (Rx_Init ())) {

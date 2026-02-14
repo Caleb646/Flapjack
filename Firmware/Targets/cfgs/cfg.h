@@ -4,7 +4,8 @@
 // to disable redefinition warnings for default target macros
 #pragma GCC system_header
 
-#define CFG_PRIMARY_LOGGER                   CM4_CPUID
+// #define CFG_PRIMARY_LOGGER                   CM4_CPUID
+#define CFG_PRIMARY_LOGGER                   CM7_CPUID
 #define CFG_LOGGER_SHOULD_BLOCK_ON_OVERWRITE 1U
 #define LOG_DATA_TYPE_ATTITUDE               "attitude"
 #define LOG_DATA_TYPE_PID_ATTITUDE           "pid_attitude"

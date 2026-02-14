@@ -89,13 +89,20 @@ eSTATUS_t Uart_InitSystem (void) {
         UartHardware_t* pHardware   = &pUart->hardware;
         UART_HandleTypeDef* pHandle = &pUart->handle;
 
+        GPIO_ENABLE_CLOCK (pHardware->pRx);
+        GPIO_ENABLE_CLOCK (pHardware->pTx);
+
         GPIO_InitTypeDef gpioInit = {
             .Mode      = GPIO_MODE_AF_PP,
             .Pull      = GPIO_NOPULL,
             .Speed     = GPIO_SPEED_FREQ_VERY_HIGH,
             .Alternate = pHardware->af,
         };
+
+        gpioInit.Pin = pHardware->rxPin;
         HAL_GPIO_Init (pHardware->pRx, &gpioInit);
+
+        gpioInit.Pin = pHardware->txPin;
         HAL_GPIO_Init (pHardware->pTx, &gpioInit);
 
         pHandle->Instance                    = pHardware->pInstance;
@@ -118,6 +125,10 @@ eSTATUS_t Uart_InitSystem (void) {
         }
 
         if (HAL_UARTEx_SetRxFifoThreshold (pHandle, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK) {
+            return eSTATUS_FAILURE;
+        }
+
+        if (HAL_UARTEx_DisableFifoMode (pHandle) != HAL_OK) {
             return eSTATUS_FAILURE;
         }
     }
@@ -145,7 +156,7 @@ eSTATUS_t UartPort_Init (UartPort_t* pOutPort) {
     }
 
     uint32_t baudRate = pOutPort->cfg.baudRate;
-    if (baudRate != 0U) {
+    if (baudRate) {
 
         __HAL_UART_DISABLE (&pUart->handle);
         pUart->handle.Init.BaudRate = baudRate;
@@ -168,7 +179,7 @@ eSTATUS_t UartPort_Init (UartPort_t* pOutPort) {
 
 eSTATUS_t UartPort_Write (UartPort_t* pPort, uint8_t const* pData, uint32_t size) {
 
-    if (!pPort || !pData || size == 0U) {
+    if (!pPort || !pData || !size) {
         return eSTATUS_FAILURE;
     }
     if (HAL_UART_Transmit (&pPort->pUart->handle, pData, size, HAL_MAX_DELAY) != HAL_OK) {

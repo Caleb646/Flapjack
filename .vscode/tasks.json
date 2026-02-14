@@ -21,6 +21,30 @@
                 "panel": "shared"
             },
             "problemMatcher": "$gcc"
+        },
+
+        {
+            "label": "flash firmware",
+            "type": "shell",
+            "command": "${workspaceFolder}/Tools/msys/mingw64/bin/openocd",
+            "args": [
+                "-f", "interface/stlink.cfg",
+                "-f", "target/stm32h7x_dual_bank.cfg",
+                "-c", "init",
+                "-c", "reset halt",
+                "-c", "flash write_image erase Build/${input:boardName}/Debug/m7core.elf",
+                "-c", "flash write_image erase Build/${input:boardName}/Debug/m4core.elf",
+                "-c", "reset run",
+                "-c", "shutdown"
+            ],
+            "dependsOn": "build firmware debug",
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
         }
     ],
     "inputs": [

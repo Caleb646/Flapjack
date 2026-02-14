@@ -49,9 +49,9 @@ void Queue_Clear (Queue_t* pQueue);
     static Queue_t g_##NAME##_queue = { 0 };                 \
     QUEUE_DEFINE_FUNCTIONS_ONLY (NAME, TYPE, CAPACITY, IS_SHARED)
 
-#define QUEUE_DEFINE_STATIC_SHARED(NAME, TYPE, CAPACITY)          \
-    static SHARED_MEM_SECTION TYPE g_##NAME##_buffer[(CAPACITY)]; \
-    static SHARED_MEM_SECTION Queue_t g_##NAME##_queue = { 0 };   \
+#define QUEUE_DEFINE_STATIC_SHARED(NAME, TYPE, CAPACITY)              \
+    static SHARED_MEM_BSS_SECTION TYPE g_##NAME##_buffer[(CAPACITY)]; \
+    static SHARED_MEM_BSS_SECTION Queue_t g_##NAME##_queue = { 0 };   \
     QUEUE_DEFINE_FUNCTIONS_ONLY (NAME, TYPE, CAPACITY, true)
 
 #endif // MEM_QUEUE_H

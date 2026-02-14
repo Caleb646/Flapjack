@@ -96,6 +96,7 @@ eSTATUS_t Queue_Push (Queue_t* pQueue, void const* pElement) {
 
     // Update tail index (circular)
     pQueue->tail = (pQueue->tail + 1U) & (pQueue->capacity - 1U); // Use bitwise AND for circular indexing
+    pQueue->count++;
     return eSTATUS_SUCCESS;
 }
 
@@ -115,6 +116,7 @@ eSTATUS_t Queue_Pop (Queue_t* pQueue, void* pOutElement) {
     // Copy the element from the head position
     memcpy (pOutElement, pHeadLocation, pQueue->elementSize);
 
+    pQueue->count--;
     // Update head index (circular)
     pQueue->head = (pQueue->head + 1U) & (pQueue->capacity - 1U); // Use bitwise AND for circular indexing
     return eSTATUS_SUCCESS;

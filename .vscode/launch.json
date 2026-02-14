@@ -34,8 +34,29 @@
             //"configFiles": ["interface/stlink.cfg", "target/stm32h7x.cfg"],
             //"configFiles": ["${workspaceFolder}/Scripts/stm32h747_dual_core.cfg"],
             //"targetId": "stm32h7x.cpu0",
-            "runToEntryPoint": "main",
+            // "runToEntryPoint": "main",
             "preLaunchTask": "build firmware debug",
+        
+            "numberOfProcessors": 2,
+            "targetProcessor": 0,
+            "chainedConfigurations": {
+                "enabled": true,
+                "waitOnEvent": "postInit",
+                "detached": false,                         // Set this to true for JLink/STLink, false for most other type servers
+                // "detached": true,                         // Set this to true for JLink/STLink, false for most other type servers
+                "lifecycleManagedByParent": true,
+                "launches": [                              // Array of launches. Order is respected
+                    // {
+                    //     "name": "Debug M4 Core",     // Name of another configuration
+                    // }
+                ]
+            },
+            // "serverArgs": [
+            //     "-l", "1",
+            //     "-m", "0", // option is used to indicate which Core the debugger will be connected
+            //     "-k", // connect under reset
+            //     "-t","-s" // indicate that the ST-LINK probe is shared
+            // ],
             // "postLaunchCommands": [
             //     "monitor halt",
             //     "load"
@@ -56,16 +77,21 @@
             "type": "cortex-debug",
             "servertype": "openocd",
             "armToolchainPath": "${workspaceFolder}/Tools/msys/mingw64/bin",
+            "serverpath": "${workspaceFolder}/Tools/msys/mingw64/bin/openocd",
             "gdbPath": "${workspaceFolder}/Tools/msys/mingw64/bin/gdb-multiarch",
             "showDevDebugOutput": "raw",
-            "configFiles": ["${workspaceFolder}/Scripts/stm32h747_dual_core.cfg"],
+            "configFiles": ["interface/stlink.cfg", "target/stm32h7x_dual_bank.cfg"],
             "targetId": "stm32h7x.cpu1",
-            "runToEntryPoint": "main",
-            "preLaunchTask": "build firmware debug",
-            "postLaunchCommands": [
-                "monitor halt",
-                "load"
-            ]
+
+            // "numberOfProcessors": 2,
+            "targetProcessor": 1
+            // "targetId": "stm32h7x.cpu1",
+            // "runToEntryPoint": "main",
+            // "preLaunchTask": "build firmware debug",
+            // "postLaunchCommands": [
+            //     "monitor halt",
+            //     "load"
+            // ]
         }
     ],
     "compounds": [

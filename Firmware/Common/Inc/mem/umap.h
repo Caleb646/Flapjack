@@ -140,11 +140,11 @@ bool UMap_DefaultEqual (void const* pKey1, void const* pKey2, uint16_t keySize);
     UMAP_DEFINE_FUNCTIONS_ONLY (NAME, KEY_TYPE, VALUE_TYPE, CAPACITY, IS_SHARED)
 
 
-#define UMAP_DEFINE_STATIC_SHARED(NAME, KEY_TYPE, VALUE_TYPE, CAPACITY)   \
-    static SHARED_MEM_SECTION KEY_TYPE g_##NAME##_keys[(CAPACITY)];       \
-    static SHARED_MEM_SECTION VALUE_TYPE g_##NAME##_values[(CAPACITY)];   \
-    static SHARED_MEM_SECTION UMapEntry_t g_##NAME##_entries[(CAPACITY)]; \
-    static SHARED_MEM_SECTION UMap_t g_##NAME##_umap = { 0 };             \
+#define UMAP_DEFINE_STATIC_SHARED(NAME, KEY_TYPE, VALUE_TYPE, CAPACITY)       \
+    static SHARED_MEM_BSS_SECTION KEY_TYPE g_##NAME##_keys[(CAPACITY)];       \
+    static SHARED_MEM_BSS_SECTION VALUE_TYPE g_##NAME##_values[(CAPACITY)];   \
+    static SHARED_MEM_BSS_SECTION UMapEntry_t g_##NAME##_entries[(CAPACITY)]; \
+    static SHARED_MEM_BSS_SECTION UMap_t g_##NAME##_umap = { 0 };             \
     UMAP_DEFINE_FUNCTIONS_ONLY (NAME, KEY_TYPE, VALUE_TYPE, CAPACITY, true)
 
 #define UMAP_FOR_EACH(pUMAP, KEY_TYPE, VALUE_TYPE, FN, ...) \
