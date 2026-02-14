@@ -67,8 +67,7 @@ int main (void) {
         CriticalErrorHandler ();
     }
 
-    eSTATUS_t status = Core_Init ();
-    if (STATUS_FAIL (status)) {
+    if (STATUS_FAIL (Core_Init ())) {
         CriticalErrorHandler ();
     }
 
@@ -89,17 +88,15 @@ int main (void) {
     // HAL_NVIC_SetPriority (CM4_SEV_IRQn, 9, 9);
     // HAL_NVIC_EnableIRQ (CM4_SEV_IRQn);
 
-
-    // TODO: remove
-    uint32_t tempStart = GetMilliseconds ();
-    while (true) {
-        SyncProcessTasks ();
-        uint32_t tempCurrent = GetMilliseconds ();
-        if (tempCurrent - tempStart >= 1000) {
-            tempStart = tempCurrent;
-            LOG_INFO ("System initialized. Starting main loop.");
-        }
-    }
+    // uint32_t tempStart = GetMilliseconds ();
+    // while (true) {
+    //     SyncProcessTasks ();
+    //     uint32_t tempCurrent = GetMilliseconds ();
+    //     if (tempCurrent - tempStart >= 1000) {
+    //         tempStart = tempCurrent;
+    //         LOG_INFO ("System initialized. Starting main loop.");
+    //     }
+    // }
 
     if (STATUS_FAIL (IMU_Init ())) {
         LOG_ERROR ("Failed to init IMU");
@@ -111,6 +108,7 @@ int main (void) {
         CriticalErrorHandler ();
     }
 
+    eSTATUS_t status = eSTATUS_SUCCESS;
     FILTER_INIT (&status);
     if (STATUS_FAIL (status)) {
         LOG_ERROR ("Failed to init filter");
@@ -233,15 +231,14 @@ int main (void) {
         CriticalErrorHandler ();
     }
 
-    // TODO: remove
-    uint32_t tempStart = GetMilliseconds ();
-    while (true) {
-        SyncProcessTasks ();
-        if (GetMilliseconds () - tempStart >= 1000) {
-            tempStart = GetMilliseconds ();
-            LOG_INFO ("System initialized. Starting main loop.");
-        }
-    }
+    // uint32_t tempStart = GetMilliseconds ();
+    // while (true) {
+    //     SyncProcessTasks ();
+    //     if (GetMilliseconds () - tempStart >= 1000) {
+    //         tempStart = GetMilliseconds ();
+    //         LOG_INFO ("System initialized. Starting main loop.");
+    //     }
+    // }
 
     if (STATUS_FAIL (Rx_Init ())) {
         LOG_ERROR ("Failed to initialize RX");
