@@ -130,8 +130,6 @@ int main (void) {
     Fc_Get ()->current[AXIS_IDX_PITCH] = startingAttitude.pitch;
     Fc_Get ()->current[AXIS_IDX_YAW]   = startingAttitude.yaw;
 
-    Delay (250);
-
     LOG_INFO ("Starting scheduler");
     Scheduler_Main (CM7_IDX, CFG_LOOP_UPDATE_RATE_HZ);
 }
@@ -222,10 +220,6 @@ int main (void) {
     // HAL_NVIC_SetPriority (CM7_SEV_IRQn, 9, 9);
     // HAL_NVIC_EnableIRQ (CM7_SEV_IRQn);
 
-    // TODO: remove
-    // while (true) {
-    // }
-
     if (Core_Init () != eSTATUS_SUCCESS) {
         s_IsCM4Stuck = true;
         CriticalErrorHandler ();
@@ -244,8 +238,6 @@ int main (void) {
         LOG_ERROR ("Failed to initialize RX");
         CriticalErrorHandler ();
     }
-
-    Delay (250);
 
     LOG_INFO ("Starting scheduler");
     Scheduler_Main (CM4_IDX, CFG_LOOP_UPDATE_RATE_HZ);

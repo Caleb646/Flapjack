@@ -1,11 +1,12 @@
-#include "device/serial/serial.h"
-#include "core/core.h"
 #include "hal.h"
-#include "mem/mem.h"
+#include "target.h"
+
+#include "core/core.h"
 
 #include "drivers/serial/uart.h"
 
-#include "target.h"
+#include "device/serial/serial.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -24,6 +25,10 @@ FJ_DEFINE_SHARED (SerialDebug_t, g_SerialDebug) = {
 
 static void SerialDebugSink (uint8_t const* pData, uint32_t len) {
     UartPort_Write (&g_SerialDebug.port, pData, len);
+
+    for (uint32_t i = 0; i < len; ++i) {
+        ITM_SendChar (pData[i]);
+    }
 }
 
 eSTATUS_t SerialDebugInit_ (SerialDebug_t* pOutSerial) {
@@ -32,6 +37,6 @@ eSTATUS_t SerialDebugInit_ (SerialDebug_t* pOutSerial) {
     if (STATUS_FAIL (UartPort_Init (&pSerial->port))) {
         return eSTATUS_FAILURE;
     }
-    LoggerAddSink (SerialDebugSink);
-    return eSTATUS_SUCCESS;
+
+    return LoggerAddSink (SerialDebugSink);
 }

@@ -36,6 +36,16 @@
             //"targetId": "stm32h7x.cpu0",
             // "runToEntryPoint": "main",
             "preLaunchTask": "build firmware debug",
+
+            "swoConfig": {
+                "enabled": true,
+                "cpuFrequency": 480000000,
+                "source": "probe",
+                "swoFrequency": 2000000,
+                "decoders": [
+                    { "type": "console", "label": "ITM Console", "port": 0, "encoding": "utf8" }
+                ]
+            },
         
             "numberOfProcessors": 2,
             "targetProcessor": 0,
