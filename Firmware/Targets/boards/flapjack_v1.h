@@ -13,7 +13,7 @@
 
 #define TIMER_12_ENABLED       1U
 #define TIMER_12_INSTANCE      TIM12
-#define TIMER_12_AF            GPIO_AF9_TIM12
+#define TIMER_12_AF            GPIO_AF2_TIM12
 
 // left motor servo
 #define SERVO_1_ENABLED        1U
@@ -48,6 +48,7 @@
 #define SPI_1_MISO_GPIO_PIN    GPIO_PIN_6
 #define SPI_1_MOSI_GPIO_PORT   GPIOA
 #define SPI_1_MOSI_GPIO_PIN    GPIO_PIN_7
+#define SPI_1_AF               GPIO_AF5_SPI1
 
 #define IMU_ENABLED            1U
 #define IMU_SPI_BUS_ID         eSPI_1_BUS_ID
@@ -60,6 +61,7 @@
 #define UART_1_TX_GPIO_PIN     GPIO_PIN_14
 #define UART_1_RX_GPIO_PORT    GPIOB
 #define UART_1_RX_GPIO_PIN     GPIO_PIN_15
+#define UART_1_AF              GPIO_AF7_USART1
 
 #define UART_2_ENABLED         1U
 #define UART_2_INSTANCE        USART2
@@ -67,6 +69,7 @@
 #define UART_2_TX_GPIO_PIN     GPIO_PIN_5
 #define UART_2_RX_GPIO_PORT    GPIOD
 #define UART_2_RX_GPIO_PIN     GPIO_PIN_6
+#define UART_2_AF              GPIO_AF7_USART2
 
 #define UART_3_ENABLED         1U
 #define UART_3_INSTANCE        USART3
@@ -74,6 +77,7 @@
 #define UART_3_TX_GPIO_PIN     GPIO_PIN_10
 #define UART_3_RX_GPIO_PORT    GPIOB
 #define UART_3_RX_GPIO_PIN     GPIO_PIN_11
+#define UART_3_AF              GPIO_AF7_USART3
 
 #define SERIAL_DEBUG_ENABLED   1U
 #define SERIAL_DEBUG_UART      UART_1
@@ -81,11 +85,11 @@
 
 #define GPS_ENABLED            1U
 #define GPS_UART               UART_2
-#define GPS_UART_BAUD_RATE     115200U
+#define GPS_BAUD_RATE          115200U
 
 #define RX_ENABLED             1U
 #define RX_UART                UART_3
-#define RX_UART_BAUD_RATE      416666U
+#define RX_BAUD_RATE           416666U
 
 
 #endif

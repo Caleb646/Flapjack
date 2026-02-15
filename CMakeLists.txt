@@ -29,9 +29,12 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 project(FlapJack C ASM)
 
 set(FJ_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+include(cmake/board.cmake)
 include(cmake/stm32.cmake)
 include(cmake/firmware.cmake)
 
+message(STATUS "Building for board: ${BOARD_NAME}")
+message(STATUS "Board defines: ${BOARD_DEFINES}")
 
 set(FJ_SHARED_CFLAGS
     # -std=c11
@@ -112,7 +115,9 @@ target_link_options(m7core PRIVATE
 target_compile_definitions(m7core PRIVATE
     ${STM32_DEFINES}
     ${FW_CM7_DEFINES}
+    ${BOARD_DEFINES}
 )
+
 # use SYSTEM for cmsis and hal includes to suppress warnings from CMSIS and HAL
 target_include_directories(m7core SYSTEM PRIVATE
     ${STM32_INCS}
@@ -171,6 +176,7 @@ target_link_options(m4core PRIVATE
 target_compile_definitions(m4core PRIVATE
     ${STM32_DEFINES}
     ${FW_CM4_DEFINES}
+    ${BOARD_DEFINES}
 )
 # use SYSTEM for cmsis and hal includes to suppress warnings from CMSIS and HAL
 target_include_directories(m4core SYSTEM PRIVATE

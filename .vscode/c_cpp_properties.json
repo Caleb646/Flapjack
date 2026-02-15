@@ -18,7 +18,9 @@
                 "CORE_CM7",
                 "USE_HAL_DRIVER",
                 "STM32H747xx",
-                "USE_PWR_DIRECT_SMPS_SUPPLY"
+                // "USE_PWR_DIRECT_SMPS_SUPPLY",
+                "USE_PWR_LDO_SUPPLY",
+                "BOARD_FLAPJACK_V1"
         ],
             "compilerPath": "${workspaceFolder}/Tools/msys/mingw64/bin/arm-none-eabi-gcc.exe",
             "cStandard": "c11",

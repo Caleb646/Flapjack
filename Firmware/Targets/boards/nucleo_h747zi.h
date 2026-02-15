@@ -10,7 +10,7 @@
 #define SPI_2_MISO_GPIO_PIN    GPIO_PIN_2
 #define SPI_2_MOSI_GPIO_PORT   GPIOC
 #define SPI_2_MOSI_GPIO_PIN    GPIO_PIN_3
-#define SPI_2_AF               GPIO_AF5_SPI1
+#define SPI_2_AF               GPIO_AF5_SPI2
 
 #define UART_1_ENABLED         1U
 #define UART_1_INSTANCE        USART1

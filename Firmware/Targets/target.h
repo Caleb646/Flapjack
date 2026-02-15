@@ -36,7 +36,13 @@
 #define SERVO_2_ENABLED                                   0U
 #define BRD_SERVO_COUNT                                   (SERVO_1_ENABLED + SERVO_2_ENABLED)
 
+#if defined(BOARD_NUCLEO_H747ZI)
 #include "boards/nucleo_h747zi.h"
+#elif defined(BOARD_FLAPJACK_V1)
+#include "boards/flapjack_v1.h"
+#else
+#error "Invalid board"
+#endif
 #include "cfgs/cfg.h"
 
 #endif // TARGETS_TARGET_H

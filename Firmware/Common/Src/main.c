@@ -138,21 +138,18 @@ void SystemClock_Config (void) {
     RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
     RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
 
-#if defined(USE_PWR_LDO_SUPPLY) && defined(USE_PWR_DIRECT_SMPS_SUPPLY)
-#error "Only one of USE_PWR_LDO_SUPPLY or USE_PWR_DIRECT_SMPS_SUPPLY can be defined"
-#endif /* USE_PWR_LDO_SUPPLY && USE_PWR_DIRECT_SMPS_SUPPLY */
-
-#if defined(USE_PWR_DIRECT_SMPS_SUPPLY) && defined(SMPS)
+#if defined(USE_PWR_DIRECT_SMPS_SUPPLY)
+#warning "Using SMPS power supply. Ensure that the board is configured for SMPS and not LDO!"
     HAL_PWREx_ConfigSupply (PWR_DIRECT_SMPS_SUPPLY);
 #endif /* USE_PWR_DIRECT_SMPS_SUPPLY && SMPS */
 
 #if defined(USE_PWR_LDO_SUPPLY)
+#warning "Using LDO power supply. Ensure that the board is configured for LDO and not SMPS!"
     HAL_PWREx_ConfigSupply (PWR_LDO_SUPPLY);
 #endif /* USE_PWR_LDO_SUPPLY */
 
     /* Configure the main internal regulator output voltage */
     __HAL_PWR_VOLTAGESCALING_CONFIG (PWR_REGULATOR_VOLTAGE_SCALE1);
-
     while (!__HAL_PWR_GET_FLAG (PWR_FLAG_VOSRDY)) {
     }
 
@@ -174,6 +171,14 @@ void SystemClock_Config (void) {
     RCC_OscInitStruct.PLL.PLLRGE          = RCC_PLL1VCIRANGE_2;
     RCC_OscInitStruct.PLL.PLLVCOSEL       = RCC_PLL1VCOWIDE;
     RCC_OscInitStruct.PLL.PLLFRACN        = 0;
+#if HSE_VALUE == 0U
+#warning "HSE_VALUE is not defined or set to 0. HSE oscillator will be disabled. Ensure that HSE_VALUE is set correctly if using an external crystal."
+#endif
+    if (HSE_VALUE == 0U) {
+        RCC_OscInitStruct.HSEState = RCC_HSE_OFF;
+        RCC_OscInitStruct.OscillatorType &= ~RCC_OSCILLATORTYPE_HSE;
+        RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+    }
     if (HAL_RCC_OscConfig (&RCC_OscInitStruct) != HAL_OK) {
         CriticalErrorHandler ();
     }
