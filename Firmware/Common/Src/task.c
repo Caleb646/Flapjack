@@ -24,7 +24,6 @@
 #include "drivers/io/gpio.h"
 
 
-
 eSTATUS_t TaskMixerUpdate (uint32_t usCurrentTime, uint32_t usDeltaTime) {
 
     if (STATUS_FAIL (Mixer_Mix (usCurrentTime))) {
@@ -69,6 +68,24 @@ eSTATUS_t TaskIMUUpdate (uint32_t usCurrentTime, uint32_t usDeltaTime) {
 eSTATUS_t TaskInterCoreSync (uint32_t usCurrentTime, uint32_t usDeltaTime) {
 
     return SyncProcessTasks ();
+}
+
+eSTATUS_t Task_LogData (uint32_t usCurrentTime, uint32_t usDeltaTime) {
+
+    // Vec3f a   = IMU_GetMutableActiveDevice ()->accelData;
+    // Vec3f g   = IMU_GetMutableActiveDevice ()->gyroData;
+    // Vec3f ca  = Fc_Get ()->current;
+    // Vec3f pid = Pid_Get ()->data;
+    // pid.roll *= maxAttitude.roll;
+    // pid.pitch *= maxAttitude.pitch;
+    // pid.yaw *= maxAttitude.yaw;
+
+    // // portENTER_CRITICAL ();
+    // LOG_DATA_IMU_DATA (a, g);
+    // LOG_DATA_CURRENT_ATTITUDE (ca);
+    // LOG_DATA_CURRENT_PID_ATTITUDE (pid);
+
+    return eSTATUS_SUCCESS;
 }
 
 eSTATUS_t Task_RxUpdate (uint32_t usCurrentTime, uint32_t usDeltaTime) {
