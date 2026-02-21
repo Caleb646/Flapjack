@@ -38,7 +38,7 @@
 /* < and > delimits a message */
 #define LOG_(lvl, ...)                                                                                                  \
     do {                                                                                                                \
-        PRINT ("<{\"type\":\"debug\",\"lvl\":\"%s\",\"core\":\"%s\",\"file\":\"%s\",\"function\":\"%s\",\"line\":%u,\"msg\":\"", lvl, __CORE_NAME__, __FILENAME__, __func__, __LINE__); \
+        PRINT ("<{\"type\":\"debug\",\"lvl\":\"%s\",\"core\":\"%s\",\"function\":\"%s\",\"line\":%u,\"msg\":\"", lvl, __CORE_NAME__, __func__, __LINE__); \
         PRINT (__VA_ARGS__);                                                                                           \
         PRINT ("\"}>\r\n");                                                                                            \
     } while (0)
@@ -49,7 +49,7 @@
 
 #define LOG_ERROR_IF(cond, ...) \
     do {                                 \
-        if ((cond) == true) {                     \
+        if ((cond)) {                     \
             LOG_ERROR (__VA_ARGS__);    \
         }                                \
     } while (0)
@@ -59,7 +59,7 @@
 
 #define RETURN_IF(cond, retval, ...)                \
     do {                                    \
-        if ((cond) == true) {               \
+        if ((cond)) {               \
             LOG_ERROR (__VA_ARGS__);        \
             return (retval);                \
         }                                   \
@@ -69,7 +69,7 @@
 
 #define GOTO_IF(cond, label, ...)          \
     do {                                    \
-        if ((cond) == true) {               \
+        if ((cond)) {               \
             LOG_ERROR (__VA_ARGS__);        \
             goto label;                     \
         }                                   \
@@ -85,6 +85,23 @@
         PRINT (fmt, __VA_ARGS__);                      \
         PRINT ("}>\r\n");                            \
     } while (0)
+
+
+#define _LOG_JSON_2(key1, val1) "\"%s\":%s", #key1, #val1
+#define _LOG_JSON_4(key1, val1, key2, val2) "\"%s\":%s,\"%s\":%s", #key1, #val1, #key2, #val2
+#define _LOG_JSON_6(key1, val1, key2, val2, key3, val3) "\"%s\":%s,\"%s\":%s,\"%s\":%s", #key1, #val1, #key2, #val2, #key3, #val3
+#define _LOG_JSON_8(key1, val1, key2, val2, key3, val3, key4, val4) "\"%s\":%s,\"%s\":%s,\"%s\":%s,\"%s\":%s", #key1, #val1, #key2, #val2, #key3, #val3, #key4, #val4
+
+#define LOG_4_FLOATS(type, k1, v1, k2, v2, k3, v3, k4, v4) \
+    LOG_DATA (type, "{" _LOG_JSON_8 (k1, "%d", k2, "%d", k3, "%d", k4, "%d") "}", \
+              (int16_t)((v1) * 1000.0F), (int16_t)((v2) * 1000.0F), (int16_t)((v3) * 1000.0F), (int16_t)((v4) * 1000.0F))
+
+#define LOG_8_FLOATS(type, k1, v1, k2, v2, k3, v3, k4, v4, k5, v5, k6, v6, k7, v7, k8, v8) \
+    LOG_DATA (type, "{" _LOG_JSON_8 (k1, "%d", k2, "%d", k3, "%d", k4, "%d") "," _LOG_JSON_8 (k5, "%d", k6, "%d", k7, "%d", k8, "%d") "}", \
+              (int16_t)((v1) * 1000.0F), (int16_t)((v2) * 1000.0F), (int16_t)((v3) * 1000.0F), (int16_t)((v4) * 1000.0F), \
+              (int16_t)((v5) * 1000.0F), (int16_t)((v6) * 1000.0F), (int16_t)((v7) * 1000.0F), (int16_t)((v8) * 1000.0F))
+
+#define LOG_IMU_DATA(accel, gyro) LOG_8_FLOATS ("imu_data", ax, accel.x, ay, accel.y, az, accel.z, aw, 0.0F, gx, gyro.x, gy, gyro.y, gz, gyro.z, gw, 0.0F)
 
 #define LOG_DATA_IMU_CALIB(calib) \
     LOG_DATA (LOG_DATA_TYPE_IMU_CALIB, "{\"rslt\":%d,\"err\":%d}", (calib).result, (calib).err, (calib).gyro.z)

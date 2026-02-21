@@ -52,3 +52,12 @@ eSTATUS_t Pid_Update_ (Pid_t* pPid, FlightData_t* pFlightData, uint32_t usCurren
     pPid->usLastUpdateTime = usCurrentTime;
     return eSTATUS_SUCCESS;
 }
+
+void Pid_LogData_ (Pid_t* pPid) {
+    
+    LOG_4_FLOATS(LOG_DATA_TYPE_PID_ATTITUDE, 
+        roll, pPid->data[AXIS_IDX_ROLL], 
+        pitch, pPid->data[AXIS_IDX_PITCH], 
+        yaw, pPid->data[AXIS_IDX_YAW], 
+        throttle, pPid->data[AXIS_IDX_THROTTLE]);
+}

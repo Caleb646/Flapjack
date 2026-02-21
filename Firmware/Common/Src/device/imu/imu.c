@@ -345,7 +345,7 @@ STATIC eSTATUS_t IMUSetAxesRemap (vIMU_t* pIMU, IMUAxesRemapConf remap) {
             LOG_INFO ("vIMU_t axis remap successful");
             return eSTATUS_SUCCESS;
         }
-        HAL_Delay (1);
+        Delay (1);
     }
 
     if (STATUS_FAIL (status)) {
@@ -367,28 +367,28 @@ STATIC eSTATUS_t IMUSoftReset (vIMU_t* pIMU) {
         return status;
     }
 
-    HAL_Delay (100);
+    Delay (100);
     /* Perform dummy read to switch from I3C/I2C to SPI */
     if (status == eSTATUS_SUCCESS) {
         uint8_t dummyBytes[2] = { 0 };
         status                = IMUReadReg (pIMU, BMI3_REG_CHIP_ID, dummyBytes, 2);
     }
 
-    HAL_Delay (100);
+    Delay (100);
     /* Enable feature engine */
     if (status == eSTATUS_SUCCESS) {
         uint8_t featureData[2] = { 0x2C, 0x01 };
         status                 = IMUWriteReg (pIMU, BMI3_REG_FEATURE_IO2, featureData, 2);
     }
 
-    HAL_Delay (100);
+    Delay (100);
     /* Enable feature status bit */
     if (status == eSTATUS_SUCCESS) {
         uint8_t featureIOStatus[2] = { BMI3_ENABLE, 0 };
         status = IMUWriteReg (pIMU, BMI3_REG_FEATURE_IO_STATUS, featureIOStatus, 2);
     }
 
-    HAL_Delay (100);
+    Delay (100);
     /* Enable feature engine bit */
     if (status == eSTATUS_SUCCESS) {
         uint8_t featureEngine[2] = { BMI3_ENABLE, 0 };
@@ -401,7 +401,7 @@ STATIC eSTATUS_t IMUSoftReset (vIMU_t* pIMU) {
         uint8_t regData[2] = { 0 };
 
         while (loop++ <= 20) {
-            HAL_Delay (100);
+            Delay (100);
             status = IMUReadReg (pIMU, BMI3_REG_FEATURE_IO1, regData, 2);
             if (status == eSTATUS_SUCCESS) {
                 if (regData[0] & (uint16_t)BMI3_FEATURE_ENGINE_ENABLE_MASK) {
@@ -575,7 +575,7 @@ STATIC eSTATUS_t IMUCalibrate (vIMU_t* pIMU, uint8_t calibSelection, uint8_t app
     IMUGyroConf gconf;
     eSTATUS_t status = IMUGetConf (pIMU, &aconf, &gconf);
     RETURN_IF (STATUS_FAIL (status), status, "Failed to get IMU configuration to save before calibration");
-    HAL_Delay (100);
+    Delay (100);
 
     /* Set the ACC config to be what the self calibration expects */
     IMUAccConf calibAConf = { 0 };
@@ -586,7 +586,7 @@ STATIC eSTATUS_t IMUCalibrate (vIMU_t* pIMU, uint8_t calibSelection, uint8_t app
     calibAConf.bw         = aconf.bw;
     status                = IMUSetConf (pIMU, &calibAConf, NULL);
     RETURN_IF (STATUS_FAIL (status), status, "Failed to set IMU accelerometer configuration for calibration");
-    HAL_Delay (100);
+    Delay (100);
 
     /* Store alt configs and then disable them */
     IMUAccConf altAConf;
@@ -598,12 +598,12 @@ STATIC eSTATUS_t IMUCalibrate (vIMU_t* pIMU, uint8_t calibSelection, uint8_t app
     altGConf.mode = eIMU_GYRO_MODE_DISABLE;
     status        = IMUSetAltConf (pIMU, &altAConf, &altGConf);
     GOTO_IF (STATUS_FAIL (status), error, "Failed to disable IMU alternate configuration before calibration");
-    HAL_Delay (100);
+    Delay (100);
 
     /* Trigger the self calibration */
     status = IMUSendCmd (pIMU, BMI3_CMD_SELF_CALIB_TRIGGER);
     GOTO_IF (STATUS_FAIL (status), error, "Failed to send IMU self-calibration trigger command");
-    HAL_Delay (100);
+    Delay (100);
 
     /* Check that the self calibration has started */
     {
@@ -622,7 +622,7 @@ STATIC eSTATUS_t IMUCalibrate (vIMU_t* pIMU, uint8_t calibSelection, uint8_t app
     {
         for (uint8_t idx = 0; idx < 10U; idx++) {
             /* A delay of 1000ms (100ms * 10(limit)) is required to perform self calibration */
-            HAL_Delay (100);
+            Delay (100);
             IMU_INTStatusReg_t INTStatus = { 0 };
             status                       = IMUGetINTStatus (pIMU, &INTStatus);
             GOTO_IF (STATUS_FAIL (status), error, "Failed to get IMU interrupt status during self-calibration");
@@ -641,12 +641,12 @@ STATIC eSTATUS_t IMUCalibrate (vIMU_t* pIMU, uint8_t calibSelection, uint8_t app
             IMU_LogError (pIMU);
         }
     }
-    HAL_Delay (20);
+    Delay (20);
 /* Restore configs */
 error:
     status = IMUSetConf (pIMU, &aconf, &gconf);
     status = IMUSetAltConf (pIMU, &altAConf, &altGConf);
-    HAL_Delay (100);
+    Delay (100);
     return status;
 }
 
@@ -942,7 +942,7 @@ STATIC bool IMUUpdatefromPolling (vIMU_t* pIMU) {
             break;
         }
         DelayMicroseconds (10);
-        // HAL_Delay (1);
+        // Delay (1);
     }
 
     if (accelRdy == false) {
@@ -1093,19 +1093,17 @@ eSTATUS_t IMUCompareConfs (IMUAccConf aconf, IMUGyroConf gconf, IMUAccConf aconf
     return eSTATUS_SUCCESS;
 }
 
-vIMU_t const* IMUGetActiveDevice (void) {
+void Imu_LogData_ (vIMU_t* pIMU) {
 
-    if (IMU_VALID (&g_IMU) == false) {
-        // LOG_ERROR ("No active valid IMU device");
-        return NULL;
-    }
-    return &g_IMU;
+    // clang-format off
+    LOG_8_FLOATS (LOG_DATA_TYPE_IMU_DATA, ax, pIMU->accelData.x, ay, pIMU->accelData.y, az, pIMU->accelData.z, aw, 0.0F,
+                   gx, pIMU->gyroData.x, gy, pIMU->gyroData.y, gz, pIMU->gyroData.z, gw, 0.0F);
+    // clang-format on
 }
 
-vIMU_t* IMU_GetMutableActiveDevice (void) {
+vIMU_t* Imu_Get (void) {
 
-    if (IMU_VALID (&g_IMU) == false) {
-        // LOG_ERROR ("No active valid IMU device");
+    if (!IMU_VALID (&g_IMU)) {
         return NULL;
     }
     return &g_IMU;

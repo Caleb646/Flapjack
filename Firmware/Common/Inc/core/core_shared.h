@@ -74,6 +74,8 @@
 #define CONCAT(a, b)                                  CONCAT_ (a, b)
 #define VALUES(NAME, ...)                             CONCAT (NAME, NARG (__VA_ARGS__)) (__VA_ARGS__)
 
+#define HZ_TO_US(HZ)                                  (1000000U / (HZ))
+
 typedef int8_t eSTATUS_t;
 enum {
     eSTATUS_FAILURE        = -126,

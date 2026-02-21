@@ -311,8 +311,11 @@ eSTATUS_t IMUGetAltConf (vIMU_t* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf);
 eSTATUS_t IMUSetConf (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf);
 eSTATUS_t IMUSetAltConf (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf);
 eSTATUS_t IMUCompareConfs (IMUAccConf aconf, IMUGyroConf gconf, IMUAccConf aconf2, IMUGyroConf gconf2);
-vIMU_t const* IMUGetActiveDevice (void);
-vIMU_t* IMU_GetMutableActiveDevice (void);
+void Imu_LogData_ (vIMU_t* pIMU);
+static inline void Imu_LogData (void) {
+    Imu_LogData_ (&g_IMU);
+}
+vIMU_t* Imu_Get (void);
 void IMU2CPUInterruptHandler (vIMU_t* pIMU);
 
 

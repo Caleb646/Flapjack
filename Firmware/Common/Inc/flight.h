@@ -21,6 +21,11 @@ typedef struct FlightData_s {
 
 FJ_DECLARE_SHARED (FlightData_t, g_FlightData);
 
+void Fc_LogData_ (FlightData_t* pFlightData);
+static inline void Fc_LogData (void) {
+    Fc_LogData_ (&g_FlightData);
+}
+
 static inline FlightData_t* Fc_Get (void) {
     return &g_FlightData;
 }

@@ -315,7 +315,7 @@ STATIC bool
 FilterMadgwickWarmUp (FilterMadgwick_t* pFilter, vIMU_t* pIMU, Mag_t* pMag, uint32_t iterations, Vec3f* pOutAttitude) {
 
     if (pIMU == NULL) {
-        pIMU = IMU_GetMutableActiveDevice ();
+        pIMU = Imu_Get ();
     }
 
     if (pMag == NULL) {

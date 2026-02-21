@@ -30,10 +30,15 @@ FJ_DEFINE_SHARED(Task_t, m_AsyncTasks[][MAX_NUM_TASKS]) = {
 
     [CM7_IDX] = {
         { .taskFunction = TaskInterCoreSync, .taskName = "InterCore_Sync", .isEnabled = true },
+        // for now let main core handle logging flight data
+        // because if not the data will need be synchronized
+        { .taskFunction = Task_LogFlightData,      .taskName = "Log_FlightData", .hzUpdate = 10,    .isEnabled = true },
+        { .taskFunction = Task_LogHeartBeat, .taskName = "Log_HeartBeat", .hzUpdate = 10, .isEnabled = true },
     },
 
     [CM4_IDX] = {
         { .taskFunction = TaskInterCoreSync, .taskName = "InterCore_Sync", .isEnabled = true },
+        { .taskFunction = Task_LogHeartBeat, .taskName = "Log_HeartBeat", .hzUpdate = 10, .isEnabled = true },
     }
 };
 
@@ -89,7 +94,7 @@ void Scheduler_Main (uint32_t coreIdx, uint32_t loopRateHz) {
         for (uint32_t i = 0; i < MAX_NUM_TASKS; ++i) {
 
             Task_t* pTask = pAsync[i];
-            if (!pTask->isEnabled || (usLoopStart - pTask->usLastUpdateTime) < (1000000 / pTask->hzUpdate)) {
+            if (!pTask->isEnabled || (usLoopStart - pTask->usLastUpdateTime) < HZ_TO_US (pTask->hzUpdate)) {
                 continue;
             }
 

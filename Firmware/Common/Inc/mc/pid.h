@@ -31,6 +31,11 @@ static inline Pid_t* Pid_Get (void) {
     return &g_Pid;
 };
 
+void Pid_LogData_ (Pid_t* pPid);
+static inline void Pid_LogData (void) {
+    Pid_LogData_ (&g_Pid);
+}
+
 eSTATUS_t Pid_Init_ (Pid_t* pOutPid);
 static inline eSTATUS_t Pid_Init (void) {
     return Pid_Init_ (&g_Pid);

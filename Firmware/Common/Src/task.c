@@ -41,7 +41,7 @@ eSTATUS_t TaskPIDUpdate (uint32_t usCurrentTime, uint32_t usDeltaTime) {
 eSTATUS_t TaskAttitudeUpdate (uint32_t usCurrentTime, uint32_t usDeltaTime) {
 
     FlightData_t* pFlightData = Fc_Get ();
-    vIMU_t* pIMU              = IMU_GetMutableActiveDevice ();
+    vIMU_t* pIMU              = Imu_Get ();
     vFilter_t* pFilter        = Filter_GetMutableActiveFilter ();
     float dt                  = ((float)usCurrentTime - (float)usDeltaTime) / 1000000.0F;
 
@@ -61,7 +61,7 @@ eSTATUS_t TaskAttitudeUpdate (uint32_t usCurrentTime, uint32_t usDeltaTime) {
 
 eSTATUS_t TaskIMUUpdate (uint32_t usCurrentTime, uint32_t usDeltaTime) {
 
-    vIMU_t* pIMUDev = IMU_GetMutableActiveDevice ();
+    vIMU_t* pIMUDev = Imu_Get ();
     return IMU_Update (pIMUDev, false, &pIMUDev->accelData, &pIMUDev->gyroData);
 }
 
@@ -70,20 +70,17 @@ eSTATUS_t TaskInterCoreSync (uint32_t usCurrentTime, uint32_t usDeltaTime) {
     return SyncProcessTasks ();
 }
 
-eSTATUS_t Task_LogData (uint32_t usCurrentTime, uint32_t usDeltaTime) {
+eSTATUS_t Task_LogHeartBeat (uint32_t usCurrentTime, uint32_t usDeltaTime) {
 
-    // Vec3f a   = IMU_GetMutableActiveDevice ()->accelData;
-    // Vec3f g   = IMU_GetMutableActiveDevice ()->gyroData;
-    // Vec3f ca  = Fc_Get ()->current;
-    // Vec3f pid = Pid_Get ()->data;
-    // pid.roll *= maxAttitude.roll;
-    // pid.pitch *= maxAttitude.pitch;
-    // pid.yaw *= maxAttitude.yaw;
+    LOG_INFO ("Heartbeat");
+    return eSTATUS_SUCCESS;
+}
 
-    // // portENTER_CRITICAL ();
-    // LOG_DATA_IMU_DATA (a, g);
-    // LOG_DATA_CURRENT_ATTITUDE (ca);
-    // LOG_DATA_CURRENT_PID_ATTITUDE (pid);
+eSTATUS_t Task_LogFlightData (uint32_t usCurrentTime, uint32_t usDeltaTime) {
+
+    Imu_LogData ();
+    Fc_LogData ();
+    Pid_LogData ();
 
     return eSTATUS_SUCCESS;
 }
