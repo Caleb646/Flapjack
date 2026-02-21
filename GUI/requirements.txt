@@ -5,3 +5,4 @@ PyOpenGL_accelerate
 PyOpenGL
 trimesh
 dacite
+pyserial

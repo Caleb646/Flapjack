@@ -12,6 +12,7 @@ import trimesh
 import os
 import struct
 import conf
+import serial.tools.list_ports
 
 CONF = conf.conf_init()
 
@@ -106,9 +107,15 @@ class FlightViewer(QtWidgets.QWidget):
         main_layout.addWidget(self.tab_widget)
 
         self.setup_serial_controls(main_layout)
-        
+
+        ports = serial.tools.list_ports.comports()  # List available serial ports for debugging
+        stlink_comport = "COM4"
+        for port in ports:
+            if "STLink Virtual COM Port" in port.description:
+                stlink_comport = str(port.device)
+        print(f"Using serial port for STLink: {stlink_comport}")
         self.serial = QSerialPort(
-            "COM4",
+            stlink_comport,
             # baudRate=QtSerialPort.QSerialPort.Baud115200,
             readyRead=self.receive
         )
