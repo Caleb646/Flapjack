@@ -50,10 +50,43 @@
 #define SPI_1_MOSI_GPIO_PIN    GPIO_PIN_7
 #define SPI_1_AF               GPIO_AF5_SPI1
 
+#define SPI_3_ENABLED               1U
+#define SPI_3_SCK_GPIO_PORT         GPIOC
+#define SPI_3_SCK_GPIO_PIN          GPIO_PIN_10
+#define SPI_3_MISO_GPIO_PORT        GPIOC
+#define SPI_3_MISO_GPIO_PIN         GPIO_PIN_11
+#define SPI_3_MOSI_GPIO_PORT        GPIOC
+#define SPI_3_MOSI_GPIO_PIN         GPIO_PIN_12
+#define SPI_3_AF                    GPIO_AF5_SPI3
+
+#define SPI_5_ENABLED               1U
+#define SPI_5_SCK_GPIO_PORT         GPIOF
+#define SPI_5_SCK_GPIO_PIN          GPIO_PIN_7
+#define SPI_5_MISO_GPIO_PORT        GPIOF
+#define SPI_5_MISO_GPIO_PIN         GPIO_PIN_8
+#define SPI_5_MOSI_GPIO_PORT        GPIOF
+#define SPI_5_MOSI_GPIO_PIN         GPIO_PIN_9
+#define SPI_5_AF                    GPIO_AF5_SPI5
+
 #define IMU_ENABLED            1U
 #define IMU_SPI_BUS_ID         eSPI_1_BUS_ID
 #define IMU_SPI_NSS_GPIO_PORT  GPIOC
 #define IMU_SPI_NSS_GPIO_PIN   GPIO_PIN_4
+
+#define EXT_FLASH_ENABLED           1U
+#define EXT_FLASH_SPI_BUS_ID        eSPI_3_BUS_ID
+#define EXT_FLASH_SPI_NSS_GPIO_PORT GPIOA
+#define EXT_FLASH_SPI_NSS_GPIO_PIN  GPIO_PIN_15
+
+#define MAG_ENABLED                 1U
+#define MAG_SPI_BUS_ID              eSPI_5_BUS_ID
+#define MAG_SPI_NSS_GPIO_PORT       GPIOF
+#define MAG_SPI_NSS_GPIO_PIN        GPIO_PIN_4
+
+#define BARO_ENABLED                1U
+#define BARO_SPI_BUS_ID             eSPI_5_BUS_ID
+#define BARO_SPI_NSS_GPIO_PORT      GPIOF
+#define BARO_SPI_NSS_GPIO_PIN       GPIO_PIN_6
 
 #define UART_1_ENABLED         1U
 #define UART_1_INSTANCE        USART1

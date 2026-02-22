@@ -11,7 +11,6 @@
 #include <stdint.h>
 #include <string.h>
 
-// eSPI_1_BUS_ID
 #define SPI_CREATE(INSTANCE, SPI_NAME)                             \
     {                                                              \
         .id = e##SPI_NAME##_BUS_ID, .handle = { 0 }, .hardware = { \
@@ -27,24 +26,52 @@
     }
 
 FJ_DEFINE_SHARED (SpiBus_t, g_SpiBuses[]) = {
-#if defined(SPI_1_ENABLED) && SPI_1_ENABLED == 1U
+#if BRD_IS_ENABLED(SPI_1)
     SPI_CREATE (SPI1, SPI_1),
 #endif
-#if defined(SPI_2_ENABLED) && SPI_2_ENABLED == 1U
+#if BRD_IS_ENABLED(SPI_2)
     SPI_CREATE (SPI2, SPI_2),
 #endif
-#if defined(SPI_3_ENABLED) && SPI_3_ENABLED == 1U
+#if BRD_IS_ENABLED(SPI_3)
     SPI_CREATE (SPI3, SPI_3),
 #endif
-#if defined(SPI_4_ENABLED) && SPI_4_ENABLED == 1U
+#if BRD_IS_ENABLED(SPI_4)
     SPI_CREATE (SPI4, SPI_4),
 #endif
-#if defined(SPI_5_ENABLED) && SPI_5_ENABLED == 1U
+#if BRD_IS_ENABLED(SPI_5)
     SPI_CREATE (SPI5, SPI_5),
 #endif
 };
 
-FJ_DEFINE_SHARED (uint32_t, g_nSpiBuses) = sizeof (g_SpiBuses) / sizeof (g_SpiBuses[0]);
+FJ_DEFINE_SHARED (uint32_t, g_NumSpiBuses) = sizeof (g_SpiBuses) / sizeof (g_SpiBuses[0]);
+
+void Spi_IrqHandler (eBUS_ID_t busId) {
+    SpiBus_t* pBus = Spi_GetBusById (busId);
+    if (pBus) {
+        HAL_SPI_IRQHandler (&pBus->handle);
+    }
+}
+
+#define SPI_DEF_IRQ_HANDLER(BUS_ID)              \
+    void SPI##BUS_ID##_IRQHandler (void) {       \
+        Spi_IrqHandler (eSPI_##BUS_ID##_BUS_ID); \
+    }
+
+#if BRD_IS_ENABLED(SPI_1)
+SPI_DEF_IRQ_HANDLER (1)
+#endif
+#if BRD_IS_ENABLED(SPI_2)
+SPI_DEF_IRQ_HANDLER (2)
+#endif
+#if BRD_IS_ENABLED(SPI_3)
+SPI_DEF_IRQ_HANDLER (3)
+#endif
+#if BRD_IS_ENABLED(SPI_4)
+SPI_DEF_IRQ_HANDLER (4)
+#endif
+#if BRD_IS_ENABLED(SPI_5)
+SPI_DEF_IRQ_HANDLER (5)
+#endif
 
 eSTATUS_t Spi_InitSystem (void) {
 
@@ -66,20 +93,18 @@ eSTATUS_t Spi_InitSystem (void) {
     HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct);
 
     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI4;
-    PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI45CLKSOURCE_PCLK2;
+    PeriphClkInitStruct.Spi123ClockSelection = 0U;
+    PeriphClkInitStruct.Spi45ClockSelection  = RCC_SPI45CLKSOURCE_PCLK2;
     __HAL_RCC_SPI4_CLK_ENABLE ();
     HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct);
 
     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI5;
-    PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI45CLKSOURCE_PCLK2;
+    PeriphClkInitStruct.Spi123ClockSelection = 0U;
+    PeriphClkInitStruct.Spi45ClockSelection  = RCC_SPI45CLKSOURCE_PCLK2;
     __HAL_RCC_SPI5_CLK_ENABLE ();
     HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct);
 
-#if defined(SPI_2_ENABLED) && SPI_2_ENABLED == 1U
-    GPIO_ENABLE_CLOCK (SPI_2_SCK_GPIO_PORT);
-#endif
-
-    for (uint32_t i = 0; i < g_nSpiBuses; ++i) {
+    for (uint32_t i = 0; i < g_NumSpiBuses; ++i) {
 
         GPIO_ENABLE_CLOCK (g_SpiBuses[i].hardware.pSck);
         GPIO_ENABLE_CLOCK (g_SpiBuses[i].hardware.pMiso);
@@ -134,7 +159,7 @@ eSTATUS_t Spi_InitSystem (void) {
 
 SpiBus_t* Spi_GetBusById (eBUS_ID_t busId) {
 
-    for (uint32_t i = 0; i < g_nSpiBuses; ++i) {
+    for (uint32_t i = 0; i < g_NumSpiBuses; ++i) {
         if (g_SpiBuses[i].id == busId) {
             return &g_SpiBuses[i];
         }
@@ -234,7 +259,7 @@ eSTATUS_t SpiDev_ReadRegister (SpiDev_t* pDev, uint8_t reg, uint8_t* pOutData, u
     HAL_GPIO_WritePin (pDev->cfg.pNssPort, pDev->cfg.nssPin, GPIO_PIN_SET);
     // return (status == eSTATUS_SUCCESS && status2 == eSTATUS_SUCCESS) ? eSTATUS_SUCCESS : eSTATUS_FAILURE;
 
-    return (status == HAL_OK /*&& status2 == HAL_OK*/) ? eSTATUS_SUCCESS : eSTATUS_FAILURE;
+    return (status == HAL_OK && status2 == HAL_OK) ? eSTATUS_SUCCESS : eSTATUS_FAILURE;
 }
 
 eSTATUS_t SpiDev_WriteRead (SpiDev_t* pDev, uint8_t const* pTxData, uint8_t* pRxData, uint16_t size) {

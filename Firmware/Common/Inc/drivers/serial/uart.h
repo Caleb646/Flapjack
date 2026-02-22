@@ -46,7 +46,7 @@ typedef struct UartPort_s {
 } UartPort_t;
 
 FJ_DECLARE_SHARED (Uart_t, g_Uarts[]);
-FJ_DECLARE_SHARED (uint32_t, g_numUarts);
+FJ_DECLARE_SHARED (uint32_t, g_NumUarts);
 
 eSTATUS_t Uart_InitSystem (void);
 Uart_t* Uart_GetById (uart_id_t id);

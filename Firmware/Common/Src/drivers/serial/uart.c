@@ -27,11 +27,23 @@
     }
 
 FJ_DEFINE_SHARED (Uart_t, g_Uarts[]) = {
-#if defined(UART_1_ENABLED) && UART_1_ENABLED == 1U
+#if BRD_IS_ENABLED(UART_1)
     UART_CREATE (USART, 1),
 #endif
+#if BRD_IS_ENABLED(UART_2)
+    UART_CREATE (USART, 2),
+#endif
+#if BRD_IS_ENABLED(UART_3)
+    UART_CREATE (USART, 3),
+#endif
+#if BRD_IS_ENABLED(UART_4)
+    UART_CREATE (UART, 4),
+#endif
+#if BRD_IS_ENABLED(UART_5)
+    UART_CREATE (UART, 5),
+#endif
 };
-FJ_DEFINE_SHARED (uint32_t, g_numUarts) = sizeof (g_Uarts) / sizeof (g_Uarts[0]);
+FJ_DEFINE_SHARED (uint32_t, g_NumUarts) = sizeof (g_Uarts) / sizeof (g_Uarts[0]);
 
 void Uart_IrqHandler (uart_id_t id) {
 
@@ -51,8 +63,20 @@ void Uart_IrqHandler (uart_id_t id) {
         Uart_IrqHandler (UART_##UART_NUM##_ID); \
     }
 
-#if defined(UART_1_ENABLED) && UART_1_ENABLED == 1U
+#if BRD_IS_ENABLED(UART_1)
 UART_DEF_ISR (USART, 1)
+#endif
+#if BRD_IS_ENABLED(UART_2)
+UART_DEF_ISR (USART, 2)
+#endif
+#if BRD_IS_ENABLED(UART_3)
+UART_DEF_ISR (USART, 3)
+#endif
+#if BRD_IS_ENABLED(UART_4)
+UART_DEF_ISR (UART, 4)
+#endif
+#if BRD_IS_ENABLED(UART_5)
+UART_DEF_ISR (UART, 5)
 #endif
 
 eSTATUS_t Uart_InitSystem (void) {
@@ -83,7 +107,23 @@ eSTATUS_t Uart_InitSystem (void) {
     }
     __HAL_RCC_USART3_CLK_ENABLE ();
 
-    for (uint32_t i = 0; i < g_numUarts; ++i) {
+    PeriphClkInitStruct.PeriphClockSelection      = RCC_PERIPHCLK_UART4;
+    PeriphClkInitStruct.Usart16ClockSelection     = 0U;
+    PeriphClkInitStruct.Usart234578ClockSelection = RCC_USART234578CLKSOURCE_D2PCLK1;
+    if (HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct) != HAL_OK) {
+        return eSTATUS_FAILURE;
+    }
+    __HAL_RCC_UART4_CLK_ENABLE ();
+
+    PeriphClkInitStruct.PeriphClockSelection      = RCC_PERIPHCLK_UART5;
+    PeriphClkInitStruct.Usart16ClockSelection     = 0U;
+    PeriphClkInitStruct.Usart234578ClockSelection = RCC_USART234578CLKSOURCE_D2PCLK1;
+    if (HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct) != HAL_OK) {
+        return eSTATUS_FAILURE;
+    }
+    __HAL_RCC_UART5_CLK_ENABLE ();
+
+    for (uint32_t i = 0; i < g_NumUarts; ++i) {
 
         Uart_t* pUart               = &g_Uarts[i];
         UartHardware_t* pHardware   = &pUart->hardware;
@@ -137,7 +177,7 @@ eSTATUS_t Uart_InitSystem (void) {
 
 Uart_t* Uart_GetById (uart_id_t id) {
 
-    for (uint32_t i = 0; i < g_numUarts; ++i) {
+    for (uint32_t i = 0; i < g_NumUarts; ++i) {
         if (g_Uarts[i].id == id) {
             return &g_Uarts[i];
         }

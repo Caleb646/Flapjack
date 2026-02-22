@@ -45,8 +45,9 @@ typedef struct {
 } SpiDevTransaction_t;
 
 FJ_DECLARE_SHARED (SpiBus_t, g_SpiBuses[]);
-FJ_DECLARE_SHARED (uint32_t, g_nSpiBuses);
+FJ_DECLARE_SHARED (uint32_t, g_NumSpiBuses);
 
+SpiBus_t* Spi_GetBusById (eBUS_ID_t busId);
 eSTATUS_t Spi_InitSystem (void);
 eSTATUS_t SpiDev_Init (SpiDev_t* pOutDev);
 eSTATUS_t SpiDev_Write (SpiDev_t* pDev, uint8_t const* pData, uint16_t size);

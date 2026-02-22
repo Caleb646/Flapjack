@@ -1,6 +1,5 @@
-
-
 #include "hal.h"
+#include "target.h"
 
 #include "core/core.h"
 
@@ -12,16 +11,17 @@
 #include <stdint.h>
 #include <string.h>
 
-
-#define MAX_BUFFER_SIZE      12U
-#define NCONTROL_REGISTERS   4U
+#define NUM_CONTROL_REGISTERS 4U
 #define CONTROL_REG2IDX(REG) ((REG) - MMC5983_INT_CTRL_0_REG)
 #define MAG_UNSIGNED_MAX     ((1U << 18U) - 1U)
 #define MAG_SIGNED_POS_MAX   (1U << 17U)
-#define MAG_VALID(pMAG)      ((pMAG) != NULL && (pMAG)->isInitialized == true)
+#define MAG_VALID(pMAG)         ((pMAG) && (pMAG)->isInitialized)
+
+#if BRD_IS_ENABLED(MAG)
+#endif
 
 FJ_DEFINE_SHARED (Mag_t, g_Mag)                                    = { 0 };
-FJ_DEFINE_SHARED (uint8_t, s_ControlRegisters[NCONTROL_REGISTERS]) = { 0 };
+FJ_DEFINE_SHARED (uint8_t, s_ControlRegisters[NUM_CONTROL_REGISTERS]) = { 0 };
 
 STATIC eSTATUS_t MagRead (Mag_t* pMag, uint8_t reg, uint8_t* pData, uint16_t size) {
 
@@ -41,7 +41,7 @@ STATIC bool MagControlRegWrite (Mag_t* pMag, uint8_t reg, uint8_t bitMask, bool 
 
     uint8_t* pValue = &s_ControlRegisters[CONTROL_REG2IDX (reg)];
     *pValue |= bitMask;
-    if (doWrite == true) {
+    if (doWrite) {
         if (MagWrite (pMag, reg, pValue, 1U) != eSTATUS_SUCCESS) {
             *pValue &= ~(uint32_t)bitMask; // unset the bit on failure
             LOG_ERROR ("Failed to write MAG control register");

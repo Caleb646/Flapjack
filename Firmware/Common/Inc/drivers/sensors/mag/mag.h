@@ -2,6 +2,7 @@
 #define DEVICE_MAG_MAG_H
 
 #include "hal.h"
+#include "target.h"
 
 #include "core/core.h"
 
