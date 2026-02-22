@@ -40,29 +40,40 @@ eSTATUS_t TaskPIDUpdate (uint32_t usCurrentTime, uint32_t usDeltaTime) {
 
 eSTATUS_t TaskAttitudeUpdate (uint32_t usCurrentTime, uint32_t usDeltaTime) {
 
-    FlightData_t* pFlightData = Fc_Get ();
-    vIMU_t* pIMU              = Imu_Get ();
-    vFilter_t* pFilter        = Filter_GetMutableActiveFilter ();
+    eSTATUS_t status          = eSTATUS_SUCCESS;
+    Flight_t* pFlight         = Fc_Get ();
+    IMU_t* pIMU               = Imu_Get ();
+    Mag_t* pMag               = Mag_Get ();
     float dt                  = ((float)usCurrentTime - (float)usDeltaTime) / 1000000.0F;
 
-    Vec3f outputAttitude = { 0.0F };
-    // TODO: add option for using magnetometer data in the filter
-    eSTATUS_t status = Filter_Update (pFilter, &pIMU->accelData, &pIMU->gyroData, NULL, dt, &outputAttitude);
-    if (STATUS_FAIL (status)) {
-        LOG_ERROR ("Failed to update filter");
+    if (!pIMU && !pMag) {
+        LOG_ERROR ("No sensors available for attitude update");
         return eSTATUS_FAILURE;
     }
-    pFlightData->current[AXIS_IDX_ROLL]  = outputAttitude.roll;
-    pFlightData->current[AXIS_IDX_PITCH] = outputAttitude.pitch;
-    pFlightData->current[AXIS_IDX_YAW]   = outputAttitude.yaw;
 
+    Vec3f outputAttitude = { 0.0F };
+    if (!pMag) {
+        status =
+        MadgwickFilter_Update (&pFlight->attitudeFilter, &pIMU->accelData, &pIMU->gyroData, NULL, dt, &outputAttitude);
+    } else {
+        status =
+        MadgwickFilter_Update (&pFlight->attitudeFilter, &pIMU->accelData, &pIMU->gyroData, &pMag->normedData, dt, &outputAttitude);
+    }
+    pFlight->current[AXIS_IDX_ROLL]  = outputAttitude.roll;
+    pFlight->current[AXIS_IDX_PITCH] = outputAttitude.pitch;
+    pFlight->current[AXIS_IDX_YAW]   = outputAttitude.yaw;
     return status;
 }
 
-eSTATUS_t TaskIMUUpdate (uint32_t usCurrentTime, uint32_t usDeltaTime) {
+eSTATUS_t TaskImu_Update (uint32_t usCurrentTime, uint32_t usDeltaTime) {
 
     vIMU_t* pIMUDev = Imu_Get ();
     return IMU_Update (pIMUDev, false, &pIMUDev->accelData, &pIMUDev->gyroData);
+}
+
+eSTATUS_t TaskMag_Update (uint32_t usCurrentTime, uint32_t usDeltaTime) {
+
+    return Mag_Update (false);
 }
 
 eSTATUS_t TaskInterCoreSync (uint32_t usCurrentTime, uint32_t usDeltaTime) {

@@ -82,21 +82,8 @@ int main (void) {
     /* Wait until CPU2 wakes up from stop mode */
     while (__HAL_RCC_GET_FLAG (RCC_FLAG_D2CKRDY) == RESET) {
     }
-
     __HAL_RCC_SYSCFG_CLK_ENABLE ();
-    // enable CM4_SEV_IRQn so CM4 can send SEV to CM7
-    // HAL_NVIC_SetPriority (CM4_SEV_IRQn, 9, 9);
-    // HAL_NVIC_EnableIRQ (CM4_SEV_IRQn);
 
-    // uint32_t tempStart = GetMilliseconds ();
-    // while (true) {
-    //     SyncProcessTasks ();
-    //     uint32_t tempCurrent = GetMilliseconds ();
-    //     if (tempCurrent - tempStart >= 1000) {
-    //         tempStart = tempCurrent;
-    //         LOG_INFO ("System initialized. Starting main loop.");
-    //     }
-    // }
 
     if (STATUS_FAIL (IMU_Init ())) {
         LOG_ERROR ("Failed to init IMU");
@@ -108,9 +95,7 @@ int main (void) {
         CriticalErrorHandler ();
     }
 
-    eSTATUS_t status = eSTATUS_SUCCESS;
-    FILTER_INIT (&status);
-    if (STATUS_FAIL (status)) {
+    if (STATUS_FAIL (Fc_Init ())) {
         LOG_ERROR ("Failed to init filter");
         CriticalErrorHandler ();
     }
@@ -119,16 +104,6 @@ int main (void) {
         LOG_ERROR ("Failed to init RC");
         CriticalErrorHandler ();
     }
-
-    Vec3f startingAttitude = { 0.0F };
-    status = FilterStart (Filter_GetMutableActiveFilter (), 500U, &startingAttitude);
-    if (STATUS_FAIL (status)) {
-        LOG_ERROR ("Failed to start filter");
-        CriticalErrorHandler ();
-    }
-    Fc_Get ()->current[AXIS_IDX_ROLL]  = startingAttitude.roll;
-    Fc_Get ()->current[AXIS_IDX_PITCH] = startingAttitude.pitch;
-    Fc_Get ()->current[AXIS_IDX_YAW]   = startingAttitude.yaw;
 
     LOG_INFO ("Starting scheduler");
     Scheduler_Main (CM7_IDX, CFG_LOOP_UPDATE_RATE_HZ);

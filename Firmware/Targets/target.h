@@ -4,10 +4,16 @@
 // to disable redefinition warnings for default target macros
 #pragma GCC system_header
 
+// #define BRD_STRINGIFY_(x)                                 "" #x
+// #define BRD_STRINGIFY(...)                                BRD_STRINGIFY_ (__VA_ARGS__)
 #define BRD_NARG_(a1, a2, a3, a4, a5, a6, a7, a8, N, ...) N
 #define BRD_NARG(...)                                     BRD_NARG_ (__VA_ARGS__, 8, 7, 6, 5, 4, 3, 2, 1, 0)
 #define BRD_CONCAT_(A, B)                                 A##B
 #define BRD_CONCAT(...)                                   BRD_CONCAT_ (__VA_ARGS__)
+
+// #define BRD_IS_ENABLED_(NAME)                             ({ (__builtin_strcmp ("" #NAME, BRD_STRINGIFY_ (NAME)) == 0); })
+// #define BRD_IS_ENABLED__(...)                             BRD_IS_ENABLED_ (__VA_ARGS__)
+// #define BRD_IS_ENABLED(NAME)                              BRD_IS_ENABLED__ (BRD_CONCAT (NAME, _ENABLED))
 
 #define BRD_GET_NAME(API, PERIPH)                         BRD_CONCAT (API, _##PERIPH)
 #define BRD_GET_2(API, ATTR)                              BRD_CONCAT (API, _##ATTR)

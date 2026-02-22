@@ -10,7 +10,7 @@
 #define PI_F 3.14159265359F
 
 #define MADG_TEST_INIT(ERROR_DEGS, DRIFT_DEGS)                 \
-    FilterMadgwick_t filter = { 0 };                           \
+    MadgwickFilter_t filter = { 0 };                           \
     do {                                                       \
         FilterMadgwickInitConf_t conf = { 0 };                 \
         conf.gyroMeasureErrorDegs     = (ERROR_DEGS);          \

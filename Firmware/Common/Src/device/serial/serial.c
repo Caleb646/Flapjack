@@ -24,8 +24,8 @@ FJ_DEFINE_SHARED (SerialDebug_t, g_SerialDebug) = {
 // clang-format on
 
 static void SerialDebugSink (uint8_t const* pData, uint32_t len) {
-    UartPort_Write (&g_SerialDebug.port, pData, len);
 
+    UartPort_Write (&g_SerialDebug.port, pData, len);
     for (uint32_t i = 0; i < len; ++i) {
         ITM_SendChar (pData[i]);
     }

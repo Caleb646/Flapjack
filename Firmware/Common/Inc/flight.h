@@ -6,7 +6,13 @@
 
 #include "core/core.h"
 
-typedef struct FlightData_s {
+#include "mc/filter.h"
+
+#include "device/imu/imu.h"
+
+#include "drivers/sensors/mag/mag.h"
+
+typedef struct Flight_s {
 
     bool isArmed;
 
@@ -17,21 +23,32 @@ typedef struct FlightData_s {
     float currentAltitude;
     float targetAltitude;
 
-} FlightData_t;
+    // LowPassFilter_t accelFilter;
+    // LowPassFilter_t gyroFilter;
+    MadgwickFilter_t attitudeFilter;
 
-FJ_DECLARE_SHARED (FlightData_t, g_FlightData);
+} Flight_t;
 
-void Fc_LogData_ (FlightData_t* pFlightData);
-static inline void Fc_LogData (void) {
-    Fc_LogData_ (&g_FlightData);
+FJ_DECLARE_SHARED (Flight_t, g_Flight);
+
+eSTATUS_t Fc_WarmUp_ (Flight_t* pFlight, uint32_t msWarmUpTime, IMU_t* pIMU, Mag_t* pMag);
+
+eSTATUS_t Fc_Init_ (Flight_t* pOutFlight);
+static inline eSTATUS_t Fc_Init (void) {
+    return Fc_Init_ (&g_Flight);
 }
 
-static inline FlightData_t* Fc_Get (void) {
-    return &g_FlightData;
+void Fc_LogData_ (Flight_t* pFlightData);
+static inline void Fc_LogData (void) {
+    Fc_LogData_ (&g_Flight);
+}
+
+static inline Flight_t* Fc_Get (void) {
+    return &g_Flight;
 }
 
 static inline bool Fc_IsArmed (void) {
-    return g_FlightData.isArmed;
+    return g_Flight.isArmed;
 }
 
 

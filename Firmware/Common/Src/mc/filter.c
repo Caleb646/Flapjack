@@ -1,29 +1,19 @@
-#include "mc/filter.h"
-#include "core/core.h"
-#include "core/log/logger.h"
-#include "device/imu/imu.h"
-#include "drivers/sensors/mag/mag.h"
 #include "hal.h"
+#include "target.h"
+
 #include "mem/mem.h"
+
+#include "core/core.h"
+
+#include "mc/filter.h"
+
+#include "device/imu/imu.h"
+
+#include "drivers/sensors/mag/mag.h"
+
 #include <math.h>
 #include <stdbool.h>
 #include <string.h>
-
-
-#define FILTER_VALID(pF) ((pF) != NULL && (pF)->isInitialized == true)
-
-static SHARED_MEM_BSS_SECTION Filter_t gFilter = { 0 };
-
-// clang-format off
-#ifndef UNIT_TEST
-
-static bool FilterMadgwickUpdate (FilterMadgwick_t* pFilter,Vec3f const* pAccel,Vec3f const* pGyro,Vec3f const* pMag,float dt,Vec3f* pOutAttitude);
-static bool FilterMadgwickUpdate_6DOF (FilterMadgwick_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyroDegs, float dt);
-static bool FilterMadgwickUpdate_9DOF (FilterMadgwick_t* pFilter,Vec3f const* pAccel,Vec3f const* pGyro,Vec3f const* pMag,float dt);
-static bool FilterMadgwickInit (FilterMadgwickInitConf_t conf, FilterMadgwick_t* pOut);
-
-#endif
-// clang-format on
 
 /*
  * The filter expects the accel and gyro data to be in the FRD coordinate
@@ -33,8 +23,7 @@ static bool FilterMadgwickInit (FilterMadgwickInitConf_t conf, FilterMadgwick_t*
  * 1g, 0) then the returned attitude will move towards (0, -90, 0).
  * Which is incorrect so the IMU data needs to be in FRD frame.
  */
-STATIC
-bool FilterMadgwickUpdate_6DOF (FilterMadgwick_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyroDegs, float dt) {
+void MadgwickFilter_Update_6DOF_ (MadgwickFilter_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyroDegs, float dt) {
     // Source: https://courses.cs.washington.edu/courses/cse474/17wi/labs/l4/madgwick_internal_report.pdf
 
     // convert degrees per second to radians per second
@@ -131,12 +120,9 @@ bool FilterMadgwickUpdate_6DOF (FilterMadgwick_t* pFilter, Vec3f const* pAccel, 
     pFilter->qEst.q2 = SEq_2;
     pFilter->qEst.q3 = SEq_3;
     pFilter->qEst.q4 = SEq_4;
-
-    return true;
 }
 
-STATIC bool
-FilterMadgwickUpdate_9DOF (FilterMadgwick_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyro, Vec3f const* pMag, float dt) {
+void MadgwickFilter_Update_9DOF_ (MadgwickFilter_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyro, Vec3f const* pMag, float dt) {
 
     float SEq_1 = pFilter->qEst.q1;
     float SEq_2 = pFilter->qEst.q2;
@@ -307,80 +293,32 @@ FilterMadgwickUpdate_9DOF (FilterMadgwick_t* pFilter, Vec3f const* pAccel, Vec3f
     pFilter->gbias.x = w_bx;
     pFilter->gbias.y = w_by;
     pFilter->gbias.z = w_bz;
-
-    return true;
 }
 
-STATIC bool
-FilterMadgwickWarmUp (FilterMadgwick_t* pFilter, vIMU_t* pIMU, Mag_t* pMag, uint32_t iterations, Vec3f* pOutAttitude) {
+eSTATUS_t
+MadgwickFilter_Update (MadgwickFilter_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyro, Vec3f const* pMag, float dt, Vec3f* pOutAttitude) {
 
-    if (pIMU == NULL) {
-        pIMU = Imu_Get ();
+    if (!pFilter || !pAccel || !pGyro || dt <= 0.0F) {
+        return eSTATUS_FAILURE;
     }
 
-    if (pMag == NULL) {
-        pMag = Mag_Get ();
-    }
-
-    float msStartTime = (float)GetMilliseconds ();
-    RETURN_IF_NULL (pIMU, false, "No IMU device available");
-
-    for (uint32_t i = 0; i < iterations; ++i) {
-
-        Vec3f accel      = { 0.0F };
-        Vec3f gyro       = { 0.0F };
-        Vec3f mag        = { 0.0F };
-        eSTATUS_t status = IMU_Update (pIMU, true, &accel, &gyro);
-        RETURN_IF (status != eSTATUS_SUCCESS, false, "Failed to poll IMU");
-
-        if (pMag != NULL) {
-            status = Mag_Update_ (pMag, true, &mag);
-            RETURN_IF (status != eSTATUS_SUCCESS, false, "Failed to poll Mag");
-        }
-
-        float dt = ((float)GetMilliseconds () - msStartTime) / 1000.0F; // Convert ms to seconds
-        if (dt <= 0.0F) {
-            continue;
-        }
-        msStartTime = (float)GetMilliseconds ();
-
-        bool success = true;
-        if (pMag != NULL) {
-            success = FilterMadgwickUpdate (pFilter, &accel, &gyro, &mag, dt, pOutAttitude);
-        } else {
-            success = FilterMadgwickUpdate (pFilter, &accel, &gyro, NULL, dt, pOutAttitude);
-        }
-        RETURN_IF (success == false, false, "Madgwick update failed");
-    }
-    return true;
-}
-
-STATIC bool FilterMadgwickInit (FilterMadgwickInitConf_t conf, FilterMadgwick_t* pOut) {
-
-    float gyroMeasureErrorDegs = conf.gyroMeasureErrorDegs;
-    float gyroMeasureDriftDegs = conf.gyroMeasureDriftDegs;
-
-    memset ((void*)pOut, 0, sizeof (FilterMadgwick_t));
-    pOut->beta    = sqrtf (3.0F / 4.0F) * DEG2RAD (gyroMeasureErrorDegs);
-    pOut->zeta    = sqrtf (3.0F / 4.0F) * DEG2RAD (gyroMeasureDriftDegs);
-    pOut->qEst.q1 = 1.0F;
-    pOut->qEst.q2 = 0.0F;
-    pOut->qEst.q3 = 0.0F;
-    pOut->qEst.q4 = 0.0F;
-    return true;
-}
-
-STATIC bool
-FilterMadgwickUpdate (FilterMadgwick_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyro, Vec3f const* pMag, float dt, Vec3f* pOutAttitude) {
-
-    if (pMag == NULL) {
-        if (FilterMadgwickUpdate_6DOF (pFilter, pAccel, pGyro, dt) == false) {
-            return false;
-        }
+    if (!pMag) {
+        MadgwickFilter_Update_6DOF_ (pFilter, pAccel, pGyro, dt);
     } else {
-        if (FilterMadgwickUpdate_9DOF (pFilter, pAccel, pGyro, pMag, dt) == false) {
-            return false;
-        }
+        MadgwickFilter_Update_9DOF_ (pFilter, pAccel, pGyro, pMag, dt);
+    }
+
+    if (pOutAttitude) {
+        MadgwickFilter_QuatToEuler (pFilter, pOutAttitude);
+    }
+    pFilter->usLastUpdateTime = GetMicroseconds ();
+    return eSTATUS_SUCCESS;
+}
+
+void MadgwickFilter_QuatToEuler (MadgwickFilter_t const* pFilter, Vec3f* pOutEuler) {
+
+    if (!pFilter || !pOutEuler) {
+        return;
     }
 
     float q1 = pFilter->qEst.q1;
@@ -397,85 +335,35 @@ FilterMadgwickUpdate (FilterMadgwick_t* pFilter, Vec3f const* pAccel, Vec3f cons
      *
      * NOTE: atan and asin are NON reentrant
      */
-    pOutAttitude->yaw =
-    RAD2DEG (atan2f (2.0F * q2 * q3 - 2.0F * q1 * q4, 2.0F * q1 * q1 + 2.0F * q2 * q2 - 1));
+    pOutEuler->yaw = RAD2DEG (atan2f (2.0F * q2 * q3 - 2.0F * q1 * q4, 2.0F * q1 * q1 + 2.0F * q2 * q2 - 1));
 
-    pOutAttitude->pitch = RAD2DEG (-asinf (2.0F * q2 * q4 + 2.0F * q1 * q3));
+    pOutEuler->pitch = RAD2DEG (-asinf (2.0F * q2 * q4 + 2.0F * q1 * q3));
 
-    pOutAttitude->roll =
+    pOutEuler->roll =
     RAD2DEG (atan2f (2.0F * q3 * q4 - 2.0F * q1 * q2, 2.0F * q1 * q1 + 2.0F * q4 * q4 - 1.0F));
-
-    return true;
 }
 
-eSTATUS_t FilterInit (FilterInitConf_t conf, Filter_t* pOut) {
+eSTATUS_t MadgwickFilter_Init (MadgwickFilter_t* pFilter) {
 
-    vFilter_t* pFilter = &gFilter;
-    if (pOut != NULL) {
-        pFilter = pOut;
+    if (!pFilter) {
+        return eSTATUS_FAILURE;
     }
-
-    memset ((void*)pFilter, 0, sizeof (vFilter_t));
-    bool status = FilterMadgwickInit (conf.madgwickConf, &pFilter->madgwick);
-    RETURN_IF (status != true, eSTATUS_FAILURE, "Failed to init Madgwick filter");
-
     pFilter->usLastUpdateTime = GetMicroseconds ();
-    pFilter->isInitialized    = true;
+    pFilter->bx               = 1.0F;
+    pFilter->bz               = 0.0F;
+    pFilter->beta             = sqrtf (3.0F / 4.0F) * DEG2RAD (pFilter->cfg.gyroMeasureErrorDegs);
+    pFilter->zeta             = sqrtf (3.0F / 4.0F) * DEG2RAD (pFilter->cfg.gyroMeasureDriftDegs);
+    pFilter->qEst.q1          = 1.0F;
+    pFilter->qEst.q2          = 0.0F;
+    pFilter->qEst.q3          = 0.0F;
+    pFilter->qEst.q4          = 0.0F;
     return eSTATUS_SUCCESS;
 }
 
-/*
- * If pOutAttitude is not NULL then the filters will warm up and return
- * the attitude in pOutAttitude.
- */
-eSTATUS_t FilterStart (vFilter_t* pFilter, uint32_t warmUpIterations, Vec3f* pOutAttitude) {
+eSTATUS_t LowPassFilter_Init (LowPassFilter_t* pFilter) {
 
-    if (FILTER_VALID (pFilter) == false) {
-        return eSTATUS_FAILURE;
-    }
-
-    bool success = true;
-    if (pOutAttitude != NULL) {
-        success &= FilterMadgwickWarmUp (&pFilter->madgwick, NULL, NULL, warmUpIterations, pOutAttitude);
-    }
-
-    return success ? eSTATUS_SUCCESS : eSTATUS_FAILURE;
-}
-
-eSTATUS_t FilterStop (vFilter_t* pFilter) {
-
-    if (FILTER_VALID (pFilter) == false) {
+    if (!pFilter || pFilter->cfg.alpha < 0.0F || pFilter->cfg.alpha > 1.0F) {
         return eSTATUS_FAILURE;
     }
     return eSTATUS_SUCCESS;
-}
-
-eSTATUS_t
-Filter_Update (vFilter_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyro, Vec3f const* pMag, float dt, Vec3f* pOutput) {
-
-    if (FILTER_VALID (pFilter) == false || pOutput == NULL) {
-        return eSTATUS_FAILURE;
-    }
-
-    bool success = FilterMadgwickUpdate (&pFilter->madgwick, pAccel, pGyro, pMag, dt, pOutput);
-    if (success) {
-        pFilter->usLastUpdateTime = GetMicroseconds ();
-    }
-    return success ? eSTATUS_SUCCESS : eSTATUS_FAILURE;
-}
-
-vFilter_t const* FilterGetActiveFilter (void) {
-
-    if (FILTER_VALID (&gFilter) == false) {
-        return NULL;
-    }
-    return &gFilter;
-}
-
-vFilter_t* Filter_GetMutableActiveFilter (void) {
-
-    if (FILTER_VALID (&gFilter) == false) {
-        return NULL;
-    }
-    return &gFilter;
 }

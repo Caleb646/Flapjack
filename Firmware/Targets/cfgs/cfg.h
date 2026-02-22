@@ -17,6 +17,9 @@
 // main control loop update rate in Hz
 #define CFG_LOOP_UPDATE_RATE_HZ              200U
 
+#define CFG_GYRO_MEASURE_ERROR_DEGS          5.0F
+#define CFG_GYRO_MEASURE_DRIFT_DEGS          0.2F
+
 #define CFG_PID_MIN_VALUE                    0.0F
 #define CFG_PID_MAX_VALUE                    5.0F
 #define CFG_PID_ROLL_P                       0.2F

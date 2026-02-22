@@ -42,7 +42,7 @@ float Pid_UpdateAxis_ (PidAxis_t* pAxis, float current, float target, float dt) 
     return clipf32 ((pAxis->p * error) + (pAxis->i * integral) - (pAxis->d * derivative), CFG_PID_MIN_VALUE, CFG_PID_MAX_VALUE);
 }
 
-eSTATUS_t Pid_Update_ (Pid_t* pPid, FlightData_t* pFlightData, uint32_t usCurrentTime, uint32_t usDeltaTime) {
+eSTATUS_t Pid_Update_ (Pid_t* pPid, Flight_t* pFlightData, uint32_t usCurrentTime, uint32_t usDeltaTime) {
 
     float dt = (float)usDeltaTime / 1000000.0F;
     for (uint32_t i = 0; i < AXIS_IDX_COUNT; ++i) {

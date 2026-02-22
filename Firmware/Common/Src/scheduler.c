@@ -12,7 +12,7 @@ FJ_DEFINE_SHARED(Task_t, m_SequentialTasks[][MAX_NUM_TASKS]) = {
  
     [CM7_IDX] = {
         { .taskFunction = Task_RcUpdate,        .taskName = "RC_Update",      .isEnabled = true },
-        { .taskFunction = TaskIMUUpdate,        .taskName = "IMU_Update",      .isEnabled = true },
+        { .taskFunction = TaskImu_Update,        .taskName = "IMU_Update",      .isEnabled = true },
         { .taskFunction = TaskAttitudeUpdate,   .taskName = "Attitude_Update", .isEnabled = true },
         { .taskFunction = TaskPIDUpdate,        .taskName = "PID_Update",      .isEnabled = true },
         { .taskFunction = TaskMixerUpdate,      .taskName = "Mixer_Update",    .isEnabled = true },

@@ -20,7 +20,8 @@ typedef struct {
 eSTATUS_t TaskMixerUpdate (uint32_t usCurrentTime, uint32_t usDeltaTime);
 eSTATUS_t TaskPIDUpdate (uint32_t usCurrentTime, uint32_t usDeltaTime);
 eSTATUS_t TaskAttitudeUpdate (uint32_t usCurrentTime, uint32_t usDeltaTime);
-eSTATUS_t TaskIMUUpdate (uint32_t usCurrentTime, uint32_t usDeltaTime);
+eSTATUS_t TaskImu_Update (uint32_t usCurrentTime, uint32_t usDeltaTime);
+eSTATUS_t TaskMag_Update (uint32_t usCurrentTime, uint32_t usDeltaTime);
 eSTATUS_t TaskInterCoreSync (uint32_t usCurrentTime, uint32_t usDeltaTime);
 eSTATUS_t Task_LogHeartBeat (uint32_t usCurrentTime, uint32_t usDeltaTime);
 eSTATUS_t Task_LogFlightData (uint32_t usCurrentTime, uint32_t usDeltaTime);
