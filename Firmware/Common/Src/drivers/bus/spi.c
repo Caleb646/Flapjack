@@ -10,6 +10,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+
 // eSPI_1_BUS_ID
 #define SPI_CREATE(INSTANCE, SPI_NAME)                             \
     {                                                              \
@@ -167,6 +168,41 @@ eSTATUS_t SpiDev_Init (SpiDev_t* pOutDev) {
     return eSTATUS_SUCCESS;
 }
 
+eSTATUS_t SpiDev_WriteRead_ (SpiDev_t* pDev, uint8_t const* pTx, uint8_t* pRx, uint32_t size) {
+
+    if (!pDev || !pDev->pBus || !pDev->pBus->hardware.pInstance) {
+        return eSTATUS_FAILURE;
+    }
+
+    SPI_TypeDef* pInstance = pDev->pBus->hardware.pInstance;
+
+    LL_SPI_SetTransferSize (pInstance, size);
+    LL_SPI_Enable (pInstance);
+    LL_SPI_StartMasterTransfer (pInstance);
+    while (size) {
+
+        while (!LL_SPI_IsActiveFlag_TXP (pInstance)) {
+        }
+
+        uint8_t b = pTx ? *(pTx++) : 0xFF;
+        LL_SPI_TransmitData8 (pInstance, b);
+
+        while (!LL_SPI_IsActiveFlag_RXP (pInstance)) {
+        }
+
+        b = LL_SPI_ReceiveData8 (pInstance);
+        if (pRx) {
+            *(pRx++) = b;
+        }
+        --size;
+    }
+    while (!LL_SPI_IsActiveFlag_EOT (pInstance)) {
+    }
+    LL_SPI_ClearFlag_TXTF (pInstance);
+    LL_SPI_Disable (pInstance);
+    return eSTATUS_SUCCESS;
+}
+
 eSTATUS_t SpiDev_Write (SpiDev_t* pDev, uint8_t const* pData, uint16_t size) {
 
     HAL_GPIO_WritePin (pDev->cfg.pNssPort, pDev->cfg.nssPin, GPIO_PIN_RESET);
@@ -191,12 +227,14 @@ eSTATUS_t SpiDev_ReadRegister (SpiDev_t* pDev, uint8_t reg, uint8_t* pOutData, u
 
     HAL_GPIO_WritePin (pDev->cfg.pNssPort, pDev->cfg.nssPin, GPIO_PIN_RESET);
     reg |= 0x80U; // set read bit
-    HAL_StatusTypeDef status = HAL_SPI_TransmitReceive (&pDev->pBus->handle, &reg, NULL, 1U, HAL_MAX_DELAY);
-    HAL_StatusTypeDef status2 =
-    HAL_SPI_TransmitReceive (&pDev->pBus->handle, NULL, pOutData, size, HAL_MAX_DELAY);
+    HAL_StatusTypeDef status = HAL_SPI_Transmit (&pDev->pBus->handle, &reg, 1U, HAL_MAX_DELAY);
+    HAL_StatusTypeDef status2 = HAL_SPI_Receive (&pDev->pBus->handle, pOutData, size, HAL_MAX_DELAY);
+    // eSTATUS_t status  = SpiDev_WriteRead_ (pDev, &reg, NULL, 1U);
+    // eSTATUS_t status2 = SpiDev_WriteRead_ (pDev, NULL, pOutData, size);
     HAL_GPIO_WritePin (pDev->cfg.pNssPort, pDev->cfg.nssPin, GPIO_PIN_SET);
+    // return (status == eSTATUS_SUCCESS && status2 == eSTATUS_SUCCESS) ? eSTATUS_SUCCESS : eSTATUS_FAILURE;
 
-    return (status == HAL_OK && status2 == HAL_OK) ? eSTATUS_SUCCESS : eSTATUS_FAILURE;
+    return (status == HAL_OK /*&& status2 == HAL_OK*/) ? eSTATUS_SUCCESS : eSTATUS_FAILURE;
 }
 
 eSTATUS_t SpiDev_WriteRead (SpiDev_t* pDev, uint8_t const* pTxData, uint8_t* pRxData, uint16_t size) {

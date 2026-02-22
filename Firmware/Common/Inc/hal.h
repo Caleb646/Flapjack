@@ -7,6 +7,7 @@
 // #include "cmsis_gcc.h"
 #include "stm32h7xx.h"
 #include "stm32h7xx_hal.h"
+#include "stm32h7xx_ll_spi.h"
 
 #endif
 

@@ -67,9 +67,9 @@
             //     "-k", // connect under reset
             //     "-t","-s" // indicate that the ST-LINK probe is shared
             // ],
-            "openOCDLaunchCommands": [
-                "monitor reset halt",
-            ]
+            // "openOCDLaunchCommands": [
+            //     "monitor reset halt",
+            // ]
         },
 
 

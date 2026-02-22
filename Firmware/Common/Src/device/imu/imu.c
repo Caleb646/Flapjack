@@ -249,12 +249,19 @@ STATIC eSTATUS_t IMUGetDeviceErr (vIMU_t* pIMU, IMUErr* pOutErr) {
 
 STATIC eSTATUS_t IMUReadReg (vIMU_t* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len) {
 
-    eSTATUS_t status = SpiDev_ReadRegister (&pIMU->spiDev, reg, pBuf, len);
+    static uint8_t pRx[RW_BUFFER_SZ] = { 0 };
+    uint32_t totalSize               = len + pIMU->nBusDummyBytes;
+    if (totalSize > RW_BUFFER_SZ) {
+        return (eSTATUS_t)eIMU_RW_BUFFER_OVERFLOW;
+    }
+
+    eSTATUS_t status = SpiDev_ReadRegister (&pIMU->spiDev, reg, pRx, totalSize);
     if (status != eSTATUS_SUCCESS) {
         return (eSTATUS_t)eIMU_COM_FAILURE;
     }
     // Add 2 microsecond delay after vIMU_t read operation
     DelayMicroseconds (2);
+    memcpy (pBuf, &(pRx[pIMU->nBusDummyBytes]), len);
     return eSTATUS_SUCCESS;
 }
 
@@ -373,6 +380,9 @@ STATIC eSTATUS_t IMUSoftReset (vIMU_t* pIMU) {
         uint8_t dummyBytes[2] = { 0 };
         status                = IMUReadReg (pIMU, BMI3_REG_CHIP_ID, dummyBytes, 2);
     }
+
+    uint8_t pChipID[2] = { 0 };
+    status             = IMUReadReg (pIMU, BMI3_REG_CHIP_ID, pChipID, 2U);
 
     Delay (100);
     /* Enable feature engine */
@@ -777,6 +787,7 @@ eSTATUS_t IMU_Init_ (IMUInitConf_t conf, vIMU_t* pOutIMU) {
     pIMU->aconf    = accConf;
     pIMU->gconf    = gyroConf;
 
+    pIMU->nBusDummyBytes      = 1;
     pIMU->spiDev.cfg.busId    = IMU_SPI_BUS_ID;
     pIMU->spiDev.cfg.pNssPort = IMU_SPI_NSS_GPIO_PORT;
     pIMU->spiDev.cfg.nssPin   = IMU_SPI_NSS_GPIO_PIN;

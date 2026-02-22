@@ -2,11 +2,10 @@
 
 #include "flight.h"
 #include "hal.h"
+#include "target.h"
 #include "task.h"
 
 #include "core/core.h"
-
-#include "target.h"
 
 #include "device/imu/imu.h"
 
@@ -22,7 +21,6 @@
 
 #include "drivers/dma.h"
 #include "drivers/io/gpio.h"
-
 
 eSTATUS_t TaskMixerUpdate (uint32_t usCurrentTime, uint32_t usDeltaTime) {
 
