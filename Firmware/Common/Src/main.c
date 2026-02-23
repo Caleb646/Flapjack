@@ -71,7 +71,7 @@ int main (void) {
         CriticalErrorHandler ();
     }
 
-    if (STATUS_FAIL (SerialDebugInit ())) {
+    if (STATUS_FAIL (SerialDebug_Init ())) {
         CriticalErrorHandler ();
     }
 
@@ -84,9 +84,13 @@ int main (void) {
     }
     __HAL_RCC_SYSCFG_CLK_ENABLE ();
 
-
     if (STATUS_FAIL (IMU_Init ())) {
         LOG_ERROR ("Failed to init IMU");
+        CriticalErrorHandler ();
+    }
+
+    if (STATUS_FAIL (Mag_Init ())) {
+        LOG_ERROR ("Failed to init MAG");
         CriticalErrorHandler ();
     }
 

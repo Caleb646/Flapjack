@@ -19,6 +19,7 @@ typedef struct Mag_s {
     Vec3u rawData;
     Vec3f normedData;
     uint32_t usLastUpdateTime;
+    bool const isEnabled;
     bool isInitialized;
     bool usingEXTIInterrupt;
     bool dataUpdated;
@@ -27,14 +28,21 @@ typedef struct Mag_s {
 FJ_DECLARE_SHARED (Mag_t, g_Mag);
 
 static inline Mag_t* Mag_Get (void) {
-    if (!g_Mag.isInitialized) {
+    if (!g_Mag.isInitialized || !g_Mag.isEnabled) {
         return NULL;
     }
     return &g_Mag;
 }
 
+static inline bool Mag_IsEnabled (void) {
+    return g_Mag.isEnabled;
+}
+
 eSTATUS_t Mag_Init_ (Mag_t* pOutMag);
 static inline eSTATUS_t Mag_Init (void) {
+    if (!Mag_IsEnabled ()) {
+        return eSTATUS_SUCCESS;
+    }
     return Mag_Init_ (&g_Mag);
 }
 

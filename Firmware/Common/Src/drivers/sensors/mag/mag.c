@@ -15,12 +15,20 @@
 #define CONTROL_REG2IDX(REG) ((REG) - MMC5983_INT_CTRL_0_REG)
 #define MAG_UNSIGNED_MAX     ((1U << 18U) - 1U)
 #define MAG_SIGNED_POS_MAX   (1U << 17U)
-#define MAG_VALID(pMAG)         ((pMAG) && (pMAG)->isInitialized)
+#define MAG_VALID(pMAG)       ((pMAG) && (pMAG)->isInitialized && (pMAG)->isEnabled)
 
+FJ_DEFINE_SHARED (Mag_t, g_Mag)                                    = {
 #if BRD_IS_ENABLED(MAG)
+        .spiDev = {
+            .cfg  = {
+                .busId       = MAG_SPI_BUS_ID,
+                .pNssPort    = MAG_SPI_NSS_GPIO_PORT,
+                .nssPin      = MAG_SPI_NSS_GPIO_PIN,
+            },
+        },
+        .isEnabled = true,
 #endif
-
-FJ_DEFINE_SHARED (Mag_t, g_Mag)                                    = { 0 };
+ };
 FJ_DEFINE_SHARED (uint8_t, s_ControlRegisters[NUM_CONTROL_REGISTERS]) = { 0 };
 
 STATIC eSTATUS_t MagRead (Mag_t* pMag, uint8_t reg, uint8_t* pData, uint16_t size) {
