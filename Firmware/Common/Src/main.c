@@ -31,7 +31,10 @@ void SysTick_Handler (void) {
     HAL_IncTick ();
 }
 
-static bool SHARED_MEM_BSS_SECTION s_IsCM4Stuck = false;
+FJ_DEFINE_SHARED (bool volatile, s_IsCM4Stuck)     = false;
+FJ_DEFINE_SHARED (bool volatile, s_IsSystemInited) = false;
+FJ_DEFINE_SHARED (bool volatile, s_IsCM4Ready)     = false;
+
 
 #ifdef CORE_CM7
 
@@ -59,22 +62,6 @@ int main (void) {
     uint32_t const dataFlashStart = (uint32_t)&__SHARED_MEM_DATA_FLASH_START__;
     memcpy ((void*)dataStart, (void*)dataFlashStart, dataEnd - dataStart);
 
-    if (STATUS_FAIL (Spi_InitSystem ())) {
-        CriticalErrorHandler ();
-    }
-
-    if (STATUS_FAIL (Uart_InitSystem ())) {
-        CriticalErrorHandler ();
-    }
-
-    if (STATUS_FAIL (Core_Init ())) {
-        CriticalErrorHandler ();
-    }
-
-    if (STATUS_FAIL (SerialDebug_Init ())) {
-        CriticalErrorHandler ();
-    }
-
     /* Take HSEM */
     HAL_HSEM_FastTake (HSEM_ID_0);
     /* Release HSEM in order to notify the CPU2(CM4) */
@@ -83,6 +70,23 @@ int main (void) {
     while (__HAL_RCC_GET_FLAG (RCC_FLAG_D2CKRDY) == RESET) {
     }
     __HAL_RCC_SYSCFG_CLK_ENABLE ();
+
+    if (STATUS_FAIL (Spi_InitSystem ())) {
+        CriticalErrorHandler ();
+    }
+    if (STATUS_FAIL (Uart_InitSystem ())) {
+        CriticalErrorHandler ();
+    }
+    if (STATUS_FAIL (Core_Init ())) {
+        CriticalErrorHandler ();
+    }
+    if (STATUS_FAIL (SerialDebug_Init ())) {
+        CriticalErrorHandler ();
+    }
+    s_IsSystemInited = true;
+    while (!s_IsCM4Ready) {
+        // allow cm4 to initialize logger
+    };
 
     if (STATUS_FAIL (IMU_Init ())) {
         LOG_ERROR ("Failed to init IMU");
@@ -172,6 +176,14 @@ void SystemClock_Config (void) {
     RCC_ClkInitStruct.APB3CLKDivider = RCC_APB3_DIV1;
     RCC_ClkInitStruct.APB1CLKDivider = RCC_APB1_DIV1;
     RCC_ClkInitStruct.APB2CLKDivider = RCC_APB2_DIV1;
+
+    // If HSE is not used HSI (64MHz) is used as the HCLK. APB1 and APB2 max is 50MHz, so set dividers to 2 (32MHz)
+    if (HSE_VALUE == 0U) {
+        RCC_ClkInitStruct.APB1CLKDivider = RCC_APB1_DIV2;
+        RCC_ClkInitStruct.APB2CLKDivider = RCC_APB2_DIV2;
+    }
+
+
     RCC_ClkInitStruct.APB4CLKDivider = RCC_APB4_DIV1;
 
     if (HAL_RCC_ClockConfig (&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK) {
@@ -184,11 +196,11 @@ void SystemClock_Config (void) {
 #ifdef CORE_CM4
 
 int main (void) {
+
     /*HW semaphore Clock enable*/
     __HAL_RCC_HSEM_CLK_ENABLE ();
     /* Activate HSEM notification for Cortex-M4*/
     HAL_HSEM_ActivateNotification (__HAL_HSEM_SEMID_TO_MASK (HSEM_ID_0));
-
     /* Domain D2 goes to STOP mode (Cortex-M4 in deep-sleep) waiting for Cortex-M7 */
     HAL_PWREx_ClearPendingEvent ();
     HAL_PWREx_EnterSTOPMode (PWR_MAINREGULATOR_ON, PWR_STOPENTRY_WFE, PWR_D2_DOMAIN);
@@ -204,11 +216,18 @@ int main (void) {
     // HAL_NVIC_SetPriority (CM7_SEV_IRQn, 9, 9);
     // HAL_NVIC_EnableIRQ (CM7_SEV_IRQn);
 
+    while (!s_IsSystemInited) {
+        // wait until CM7 has initialized the system before proceeding with any
+        // initialization that may rely on the system being initialized
+    }
+
     if (Core_Init () != eSTATUS_SUCCESS) {
         s_IsCM4Stuck = true;
         CriticalErrorHandler ();
     }
+    s_IsCM4Ready = true;
 
+    // TODO: remove temporary
     // uint32_t tempStart = GetMilliseconds ();
     // while (true) {
     //     SyncProcessTasks ();

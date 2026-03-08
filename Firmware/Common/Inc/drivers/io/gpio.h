@@ -26,6 +26,10 @@
             __HAL_RCC_GPIOH_CLK_ENABLE (); \
         } else if ((gpio_port) == GPIOI) { \
             __HAL_RCC_GPIOI_CLK_ENABLE (); \
+        } else if ((gpio_port) == GPIOJ) { \
+            __HAL_RCC_GPIOJ_CLK_ENABLE (); \
+        } else if ((gpio_port) == GPIOK) { \
+            __HAL_RCC_GPIOK_CLK_ENABLE (); \
         }                                  \
     } while (0)
 

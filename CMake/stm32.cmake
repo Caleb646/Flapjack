@@ -64,9 +64,4 @@ set(STM32_DEFINES
     USE_HAL_DRIVER
     USE_FULL_LL_DRIVER
     STM32H747xx
-    # TODO needs to be configurable. This can brick the board if wrong.
-    # USE_PWR_DIRECT_SMPS_SUPPLY
-    # USE_PWR_LDO_SUPPLY
-
-    # PARENT_SCOPE
 )

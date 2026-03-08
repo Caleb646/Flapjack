@@ -111,15 +111,20 @@ class FlightViewer(QtWidgets.QWidget):
         ports = serial.tools.list_ports.comports()  # List available serial ports for debugging
         stlink_comport = "COM4"
         for port in ports:
+            if "USB to UART Bridge" in port.description:
+                stlink_comport = str(port.device)
+                break
             if "STLink Virtual COM Port" in port.description:
                 stlink_comport = str(port.device)
-        print(f"Using serial port for STLink: {stlink_comport}")
+                break
+        print(f"Using serial port [{stlink_comport}] and device [{port.description}]")
         self.serial = QSerialPort(
             stlink_comport,
             # baudRate=QtSerialPort.QSerialPort.Baud115200,
             readyRead=self.receive
         )
         if not self.serial.setBaudRate(230400, QSerialPort.AllDirections):
+        # if not self.serial.setBaudRate(9600, QSerialPort.AllDirections):
             raise RuntimeError("Could not set baud rate for serial port")
         self.buffer = b""
 

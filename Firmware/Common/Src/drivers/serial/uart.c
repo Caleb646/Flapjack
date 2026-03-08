@@ -123,6 +123,14 @@ eSTATUS_t Uart_InitSystem (void) {
     }
     __HAL_RCC_UART5_CLK_ENABLE ();
 
+
+    // HAL_NVIC_SetPriority (USART1_IRQn, 5, 0);
+    // HAL_NVIC_EnableIRQ (USART1_IRQn);
+    // __HAL_UART_ENABLE_IT (&g_Uarts[0].handle, UART_IT_ERR);
+    // __HAL_UART_ENABLE_IT (&g_Uarts[0].handle, UART_IT_NE);
+    //__HAL_UART_ENABLE_IT (&g_Uarts[0]->handle, UART_IT_);
+
+
     for (uint32_t i = 0; i < g_NumUarts; ++i) {
 
         Uart_t* pUart               = &g_Uarts[i];

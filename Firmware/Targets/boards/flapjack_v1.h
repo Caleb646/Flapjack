@@ -94,7 +94,7 @@
 #define UART_1_TX_GPIO_PIN     GPIO_PIN_14
 #define UART_1_RX_GPIO_PORT    GPIOB
 #define UART_1_RX_GPIO_PIN     GPIO_PIN_15
-#define UART_1_AF              GPIO_AF7_USART1
+#define UART_1_AF                   GPIO_AF4_USART1
 
 #define UART_2_ENABLED         1U
 #define UART_2_INSTANCE        USART2
@@ -113,16 +113,20 @@
 #define UART_3_AF              GPIO_AF7_USART3
 
 #define SERIAL_DEBUG_ENABLED   1U
-#define SERIAL_DEBUG_UART      UART_1
+// #define SERIAL_DEBUG_UART           UART_3 // UART_1
+#define SERIAL_DEBUG_UART           UART_1
 #define SERIAL_DEBUG_BAUD_RATE 230400U
+// #define SERIAL_DEBUG_BAUD_RATE      9600U
+
+#define RX_ENABLED                  1U
+// #define RX_UART                  UART_2
+#define RX_UART                     UART_3
+#define RX_BAUD_RATE                416666U
 
 #define GPS_ENABLED            1U
-#define GPS_UART               UART_2
+// #define GPS_UART                 UART_3
+#define GPS_UART                    UART_2
 #define GPS_BAUD_RATE          115200U
-
-#define RX_ENABLED             1U
-#define RX_UART                UART_3
-#define RX_BAUD_RATE           416666U
 
 
 #endif

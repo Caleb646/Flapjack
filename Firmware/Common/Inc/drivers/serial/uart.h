@@ -12,7 +12,6 @@
 #define UART_3_ID 2U
 #define UART_4_ID 3U
 #define UART_5_ID 4U
-#define UART_6_ID 5U
 
 typedef uint8_t uart_id_t;
 

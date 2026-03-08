@@ -134,6 +134,7 @@ eSTATUS_t Spi_InitSystem (void) {
         pHandle->Init.CLKPhase     = SPI_PHASE_1EDGE;
         // Manage NSS manually
         pHandle->Init.NSS               = SPI_NSS_SOFT;
+        // TODO: check SPI clock speed because it is not always 64MHz and adjust prescaler accordingly
         pHandle->Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_64;
         pHandle->Init.FirstBit          = SPI_FIRSTBIT_MSB;
         pHandle->Init.TIMode            = SPI_TIMODE_DISABLE;
