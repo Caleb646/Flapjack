@@ -26,6 +26,34 @@
             "cStandard": "c11",
             "intelliSenseMode": "gcc-arm",
             "configurationProvider": "none"
+        },
+
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/Firmware/Targets",
+                "${workspaceFolder}/Firmware/Common/Inc",
+                "${workspaceFolder}/Firmware/CM4/Core/Inc",
+                "${workspaceFolder}/Firmware/CM7/Core/Inc",
+                "${workspaceFolder}/Vendor/STM32H7/CMSIS/Include",
+                "${workspaceFolder}/Vendor/STM32H7/STM32H7xx_HAL_Driver/Inc"
+            ],
+            "defines": [
+                // "UNIT_TEST", // Uncomment for unit tests
+                "DEBUG",
+                "CORE_CM4",
+                "CORE_CM7",
+                "USE_HAL_DRIVER",
+                "STM32H747xx",
+                // "USE_PWR_DIRECT_SMPS_SUPPLY",
+                "USE_PWR_LDO_SUPPLY",
+                "BOARD_FLAPJACK_V1"
+        ],
+            "compilerPath": "${workspaceFolder}/Tools/arm-gnu/bin/arm-none-eabi-gcc",
+            "cStandard": "c11",
+            "intelliSenseMode": "gcc-arm",
+            "configurationProvider": "none"
         }
     ],
     "version": 4
