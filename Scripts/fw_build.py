@@ -6,15 +6,20 @@ import subprocess
 import argparse
 from pathlib import Path
 
+PLATFORM = sys.platform
+
 FJ_PROJECT_ROOT = str(Path(__file__).parent.parent)
 FJ_BUILD_ROOT_DIR_PATH = os.path.join(FJ_PROJECT_ROOT, "Build")
 FJ_TOOLS_ROOT_DIR_PATH = os.path.join(FJ_PROJECT_ROOT, "Tools")
 
-MSYS_DIR = os.path.join(FJ_TOOLS_ROOT_DIR_PATH, "msys")
-MINGW64_GNU_BIN_PATH = os.path.join(MSYS_DIR, "mingw64", "bin")
-ARM_GNU_BIN_PATH = MINGW64_GNU_BIN_PATH
-
-CMAKE_GENERATOR = "MinGW Makefiles"
+if PLATFORM == "win32":
+    MSYS_DIR = os.path.join(FJ_TOOLS_ROOT_DIR_PATH, "msys")
+    MINGW64_GNU_BIN_PATH = os.path.join(MSYS_DIR, "mingw64", "bin")
+    ARM_GNU_BIN_PATH = MINGW64_GNU_BIN_PATH
+    CMAKE_GENERATOR = "MinGW Makefiles"
+else:
+    ARM_GNU_BIN_PATH = os.path.join(FJ_TOOLS_ROOT_DIR_PATH, "arm-gnu", "bin")
+    CMAKE_GENERATOR = "Unix Makefiles"
 
 VALID_BOARDS = ["nucleo-h747zi", "flapjack-v1"]
 
@@ -62,18 +67,21 @@ Valid boards: {', '.join(VALID_BOARDS)}
 
 
 def verify_toolchain():
-    required_paths = [
-        MSYS_DIR,
-        MINGW64_GNU_BIN_PATH,
-        os.path.join(MINGW64_GNU_BIN_PATH, "mingw32-make.exe"),
-        ARM_GNU_BIN_PATH
-    ]
-    
-    missing_paths = []
-    for path in required_paths:
-        if not os.path.exists(path):
-            missing_paths.append(path)
-    
+    if PLATFORM == "win32":
+        required_paths = [
+            MSYS_DIR,
+            MINGW64_GNU_BIN_PATH,
+            os.path.join(MINGW64_GNU_BIN_PATH, "mingw32-make.exe"),
+            os.path.join(ARM_GNU_BIN_PATH, "arm-none-eabi-gcc.exe"),
+        ]
+    else:
+        required_paths = [
+            ARM_GNU_BIN_PATH,
+            os.path.join(ARM_GNU_BIN_PATH, "arm-none-eabi-gcc"),
+        ]
+
+    missing_paths = [p for p in required_paths if not os.path.exists(p)]
+
     if missing_paths:
         print("ERROR: Required toolchain paths are missing:")
         for path in missing_paths:
@@ -84,7 +92,10 @@ def verify_toolchain():
 
 def run_cmake_build(board_name, build_type):
     env = os.environ.copy()
-    env["PATH"] = f"{MINGW64_GNU_BIN_PATH}{os.pathsep}{ARM_GNU_BIN_PATH}{os.pathsep}{env['PATH']}"
+    if PLATFORM == "win32":
+        env["PATH"] = f"{MINGW64_GNU_BIN_PATH}{os.pathsep}{ARM_GNU_BIN_PATH}{os.pathsep}{env['PATH']}"
+    else:
+        env["PATH"] = f"{ARM_GNU_BIN_PATH}{os.pathsep}{env['PATH']}"
     output_dir = os.path.join(FJ_BUILD_ROOT_DIR_PATH, board_name, build_type)
     cmake_args = [
         "cmake",

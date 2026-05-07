@@ -11,7 +11,7 @@
         {
             "label": "build firmware debug",
             "type": "shell",
-            "command": "python", 
+            "command": "python3",
             "args": ["Scripts/fw_build.py", "${input:boardName}"],
             "group": "build",
             "presentation": {
@@ -26,7 +26,7 @@
         {
             "label": "flash firmware",
             "type": "shell",
-            "command": "${workspaceFolder}/Tools/msys/mingw64/bin/openocd",
+            "command": "${workspaceFolder}/Tools/openocd/bin/openocd",
             "args": [
                 "-f", "interface/stlink.cfg",
                 "-f", "target/stm32h7x_dual_bank.cfg",

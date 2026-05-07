@@ -2,10 +2,10 @@
     "C_Cpp.intelliSenseEngine": "default",
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "xaver.clang-format",
-    "clang-format.executable": "${workspaceRoot}/Tools/msys/mingw64/bin/clang-format",
+    "clang-format.executable": "${workspaceRoot}/Tools/llvm/bin/clang-format",
     "workbench.editor.wrapTabs": true,
     "C_Cpp.codeAnalysis.clangTidy.enabled": true,
-    "C_Cpp.codeAnalysis.clangTidy.path": "${workspaceFolder}/Tools/msys/mingw64/bin/clang-tidy",
+    "C_Cpp.codeAnalysis.clangTidy.path": "${workspaceFolder}/Tools/llvm/bin/clang-tidy",
     "C_Cpp.codeAnalysis.clangTidy.args": [
         "--config-file=${workspaceFolder}/.clang-tidy"
     ],

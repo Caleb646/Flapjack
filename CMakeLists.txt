@@ -29,9 +29,9 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 project(FlapJack C ASM)
 
 set(FJ_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-include(cmake/board.cmake)
-include(cmake/stm32.cmake)
-include(cmake/firmware.cmake)
+include(CMake/board.cmake)
+include(CMake/stm32.cmake)
+include(CMake/firmware.cmake)
 
 message(STATUS "Building for board: ${BOARD_NAME}")
 message(STATUS "Board defines: ${BOARD_DEFINES}")
