@@ -32,10 +32,10 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/Firmware/Targets",
-                "${workspaceFolder}/Firmware/Common/Inc",
-                "${workspaceFolder}/Firmware/CM4/Core/Inc",
-                "${workspaceFolder}/Firmware/CM7/Core/Inc",
+                "${workspaceFolder}/Firmware/target",
+                "${workspaceFolder}/Firmware/inc",
+                "${workspaceFolder}/Firmware/mcu/cm4/inc",
+                "${workspaceFolder}/Firmware/mcu/cm7/inc",
                 "${workspaceFolder}/Vendor/STM32H7/CMSIS/Include",
                 "${workspaceFolder}/Vendor/STM32H7/STM32H7xx_HAL_Driver/Inc"
             ],

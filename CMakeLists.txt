@@ -1,9 +1,12 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.20)
 
 ######## Toolchain setup start ###########
 
 set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_SYSTEM_PROCESSOR arm)
+
+set(FLAPJACK_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+set(TOOLCHAIN_BIN_PATH "${FLAPJACK_ROOT}/Tools/arm-gnu/bin")
 
 find_program(CMAKE_C_COMPILER arm-none-eabi-gcc HINTS ${TOOLCHAIN_BIN_PATH})
 find_program(CMAKE_CXX_COMPILER arm-none-eabi-g++ HINTS ${TOOLCHAIN_BIN_PATH})
@@ -12,9 +15,6 @@ find_program(CMAKE_AR arm-none-eabi-ar HINTS ${TOOLCHAIN_BIN_PATH})
 find_program(CMAKE_OBJCOPY arm-none-eabi-objcopy HINTS ${TOOLCHAIN_BIN_PATH})
 find_program(CMAKE_OBJDUMP arm-none-eabi-objdump HINTS ${TOOLCHAIN_BIN_PATH})
 find_program(CMAKE_SIZE arm-none-eabi-size HINTS ${TOOLCHAIN_BIN_PATH})
-
-get_filename_component(STM32_CMAKE_DIR ${CMAKE_CURRENT_LIST_FILE} DIRECTORY)
-list(APPEND CMAKE_MODULE_PATH ${STM32_CMAKE_DIR})
 
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
@@ -28,30 +28,32 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 
 project(FlapJack C ASM)
 
-set(FJ_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-include(CMake/board.cmake)
-include(CMake/stm32.cmake)
-include(CMake/firmware.cmake)
+set(TESTS_ROOT "${FLAPJACK_ROOT}/Tests")
+set(FIRMWARE_ROOT "${FLAPJACK_ROOT}/Firmware")
+set(MCU_ROOT "${FIRMWARE_ROOT}/mcu")
+set(TARGET_ROOT "${FIRMWARE_ROOT}/target")
 
-message(STATUS "Building for board: ${BOARD_NAME}")
-message(STATUS "Board defines: ${BOARD_DEFINES}")
+set(FIRMWARE_DEFINES "")
 
-set(FJ_SHARED_CFLAGS
-    # -std=c11
-    # -pedantic
-    # -pedantic-errors
-    # -Werror
+set(FIRMWARE_INCS
+    "${FIRMWARE_ROOT}/inc"
+)
+
+file(GLOB_RECURSE FIRMWARE_SRCS
+    "${FIRMWARE_ROOT}/src/*.c"
+    "${FIRMWARE_ROOT}/src/*.s"
+)
+
+set(TARGETS "")
+set(CFLAGS
     -Wall
     -Wextra
-    # -Waggregate-return
     -Wbad-function-cast
     -Wcast-align
     -Wcast-qual
     -Wfloat-equal
     -Wformat=2
     -Winline
-    # -Wmissing-declarations
-    # -Wmissing-prototypes
     -Wnested-externs
     -Wpointer-arith
     -Wredundant-decls
@@ -64,193 +66,44 @@ set(FJ_SHARED_CFLAGS
     -Wwrite-strings
     -Wstrict-aliasing
 )
+list(JOIN CFLAGS " " CFLAGS_STRING)
 
-##################### CM7 Core Build ########################
+if(HIL_TEST STREQUAL "True")
 
-add_executable(m7core 
-    ${STM32_SRCS}
-    ${FW_COMMON_SRCS}
-    ${FW_CM7_SRCS}
-)
-
-# add_custom_command(TARGET m7core POST_BUILD
-#     COMMAND ${CMAKE_SIZE} -A $<TARGET_FILE:m7core>
-#     COMMENT "Size information for m7core"
-# )
-
-list(JOIN FJ_SHARED_CFLAGS " " FJ_SHARED_CFLAGS_STRING)
-set_source_files_properties(${FW_CM7_SRCS} PROPERTIES COMPILE_FLAGS ${FJ_SHARED_CFLAGS_STRING})
-set_source_files_properties(${FW_COMMON_SRCS} PROPERTIES COMPILE_FLAGS ${FJ_SHARED_CFLAGS_STRING})
-
-target_compile_options(m7core PRIVATE 
-    # use C11 standard with GNU extensions
-    -std=gnu11
-    # syscalls are simple stubs that return an error
-    --specs=nosys.specs
-    # use newlib nano for smaller footprint
-    --specs=nano.specs
-    -mcpu=cortex-m7
-    -mthumb 
-    -mfpu=fpv5-sp-d16 
-    -mfloat-abi=hard 
-    -fdata-sections 
-    -ffunction-sections
-)
-target_link_options(m7core PRIVATE 
-    -mcpu=cortex-m7 
-    -mfpu=fpv5-sp-d16 
-    -mfloat-abi=hard
-    -fdata-sections 
-    -ffunction-sections
-    -static
-    -mthumb
-    --specs=nosys.specs
-    --specs=nano.specs
-    -T${FW_CM7_LINKER_SCRIPT}
-    -Wl,--gc-sections
-    -Wl,--start-group -lc -lm -Wl,--end-group
-    -Wl,-Map=${CMAKE_CURRENT_BINARY_DIR}/m7core.map
-)
-
-target_compile_definitions(m7core PRIVATE
-    ${STM32_DEFINES}
-    ${FW_CM7_DEFINES}
-    ${BOARD_DEFINES}
-)
-
-# use SYSTEM for cmsis and hal includes to suppress warnings from CMSIS and HAL
-target_include_directories(m7core SYSTEM PRIVATE
-    ${STM32_INCS}
-)
-target_include_directories(m7core PRIVATE
-    ${FW_COMMON_INCS}
-    ${FW_CM7_INCS}
-)
-
-
-##################### CM4 Core Build ########################
-
-add_executable(m4core 
-    ${STM32_SRCS}
-    ${FW_COMMON_SRCS}
-    ${FW_CM4_SRCS}
-)
-
-# add_custom_command(TARGET m4core POST_BUILD
-#     COMMAND ${CMAKE_SIZE} -A $<TARGET_FILE:m4core>
-#     COMMENT "Size information for m4core"
-# )
-
-set_source_files_properties(${FW_CM4_SRCS} PROPERTIES COMPILE_FLAGS ${FJ_SHARED_CFLAGS_STRING})
-
-target_compile_options(m4core PRIVATE 
-    # use C11 standard with GNU extensions
-    -std=gnu11
-    # syscalls are simple stubs that return an error
-    --specs=nosys.specs
-    # use newlib nano for smaller footprint
-    --specs=nano.specs
-    -mcpu=cortex-m4
-    -mthumb 
-    -mfpu=fpv4-sp-d16 
-    -mfloat-abi=hard 
-    -fdata-sections 
-    -ffunction-sections
-)
-target_link_options(m4core PRIVATE 
-    -mcpu=cortex-m4 
-    -mfpu=fpv4-sp-d16 
-    -mfloat-abi=hard
-    -fdata-sections 
-    -ffunction-sections
-    -static
-    -mthumb
-    --specs=nosys.specs
-    --specs=nano.specs
-    -T${FW_CM4_LINKER_SCRIPT}
-    -Wl,--gc-sections
-    -Wl,--start-group -lc -lm -Wl,--end-group
-    -Wl,-Map=${CMAKE_CURRENT_BINARY_DIR}/m4core.map
-)
-
-target_compile_definitions(m4core PRIVATE
-    ${STM32_DEFINES}
-    ${FW_CM4_DEFINES}
-    ${BOARD_DEFINES}
-)
-# use SYSTEM for cmsis and hal includes to suppress warnings from CMSIS and HAL
-target_include_directories(m4core SYSTEM PRIVATE
-    ${STM32_INCS}
-)
-target_include_directories(m4core PRIVATE
-    ${FW_COMMON_INCS}
-    ${FW_CM4_INCS}
-)
-
-
-##################### HW Test Build (CM7 only, Nucleo H747ZI) ########################
-
-if(HW_TEST)
-
-    set(HW_TEST_COMMON_SRCS ${FW_COMMON_SRCS})
-    list(REMOVE_ITEM HW_TEST_COMMON_SRCS "${FW_COMMON_SRC_DIR}/main.c")
-
-    add_executable(hw_test_m7core
-        ${STM32_SRCS}
-        ${HW_TEST_COMMON_SRCS}
-        ${FW_CM7_SRCS}
-        ${FW_ROOT_DIR}/HwTests/hw_test_main.c
-        ${FW_ROOT_DIR}/HwTests/hw_test_dshot.c
+    file(GLOB_RECURSE HIL_SRCS
+        "${TESTS_ROOT}/HIL/*.c"
+        "${TESTS_ROOT}/HIL/*.s"
+        "${TESTS_ROOT}/unity/*.c"
+        "${TESTS_ROOT}/unity/*.s"
     )
+    set(HIL_INCS
+        "${TESTS_ROOT}/HIL"
+        "${TESTS_ROOT}/unity"
+    )
+    list(APPEND FIRMWARE_INCS "${HIL_INCS}")
+    list(APPEND FIRMWARE_SRCS "${HIL_SRCS}")
+    list(APPEND FIRMWARE_DEFINES "UNITY_INCLUDE_CONFIG_H")
 
-    target_compile_options(hw_test_m7core PRIVATE
-        -std=gnu11
-        --specs=nosys.specs
-        --specs=nano.specs
-        -mcpu=cortex-m7
-        -mthumb
-        -mfpu=fpv5-sp-d16
-        -mfloat-abi=hard
-        -fdata-sections
-        -ffunction-sections
-    )
-    target_link_options(hw_test_m7core PRIVATE
-        -mcpu=cortex-m7
-        -mfpu=fpv5-sp-d16
-        -mfloat-abi=hard
-        -fdata-sections
-        -ffunction-sections
-        -static
-        -mthumb
-        --specs=nosys.specs
-        --specs=nano.specs
-        -T${FW_CM7_LINKER_SCRIPT}
-        -Wl,--gc-sections
-        -Wl,--start-group -lc -lm -Wl,--end-group
-        -Wl,-Map=${CMAKE_CURRENT_BINARY_DIR}/hw_test_m7core.map
-    )
-    target_compile_definitions(hw_test_m7core PRIVATE
-        ${STM32_DEFINES}
-        ${FW_CM7_DEFINES}
-        ${BOARD_DEFINES}
-        HW_TEST
-    )
-    target_include_directories(hw_test_m7core SYSTEM PRIVATE
-        ${STM32_INCS}
-    )
-    target_include_directories(hw_test_m7core PRIVATE
-        ${FW_COMMON_INCS}
-        ${FW_CM7_INCS}
-        ${FW_ROOT_DIR}/HwTests
-    )
+else()
+
+    list(APPEND FIRMWARE_SRCS "${FIRMWARE_ROOT}/main.c")
 
 endif()
 
-##################################################
+include("${TARGET_ROOT}/target.cmake")
+
+message(STATUS "Building for board: ${BOARD_NAME}")
+message(STATUS "Board defines: ${BOARD_DEFINES}")
+
+set(SIZE_COMMANDS "")
+foreach(target IN LISTS TARGETS)
+    list(APPEND SIZE_COMMANDS 
+        COMMAND ${CMAKE_SIZE} -A $<TARGET_FILE:${target}>
+    )
+endforeach()
 
 add_custom_target(size ALL
-    DEPENDS m7core m4core
-    COMMAND ${CMAKE_SIZE} -A $<TARGET_FILE:m7core>
-    COMMAND ${CMAKE_SIZE} -A $<TARGET_FILE:m4core>
-    COMMENT "Size information for both cores"
+    DEPENDS ${TARGETS}
+    ${SIZE_COMMANDS}
+    COMMENT "Reporting size for all MCU cores: ${TARGETS}"
 )

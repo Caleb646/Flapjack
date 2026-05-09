@@ -1,9 +1,16 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.20)
 
-project(DroneTests C)
+project(FlapjackTests C)
 
 include(CTest)
 enable_testing()
+
+cmake_path(GET CMAKE_CURRENT_SOURCE_DIR PARENT_PATH PRJ_ROOT)
+set(TEST_ROOT "${PRJ_ROOT}/Tests")
+set(HIL_ROOT "${TEST_ROOT}/HIL")
+set(UNITTEST_ROOT "${TEST_ROOT}/UnitTest")
+
+set(FIRMWARE_ROOT "${PRJ_ROOT}/Firmware")
 
 include(FetchContent)
 FetchContent_Declare(unity
@@ -11,6 +18,9 @@ FetchContent_Declare(unity
     GIT_TAG        v2.5.2
 )
 FetchContent_MakeAvailable(unity)
+
+target_compile_definitions(unity PUBLIC UNITY_INCLUDE_CONFIG_H)
+target_include_directories(unity PUBLIC "${HIL_ROOT}")
 
 set(UNITY_SRC "${unity_SOURCE_DIR}/src/unity.c")
 set(UNITY_INC "${unity_SOURCE_DIR}/src")
@@ -31,7 +41,7 @@ add_library(drone_common_obj OBJECT
     ${COMMON_SRC_DIR}/mem/queue.c
     ${COMMON_SRC_DIR}/mem/umap.c
     ${COMMON_SRC_DIR}/mem/ring_buff.c
-    stubs/hal_stub.c
+    ${UNITTEST_ROOT}/stubs/hal_stub.c
 )
 
 add_library(drone_peripherals_obj OBJECT
@@ -66,7 +76,7 @@ foreach(lib
     target_include_directories(${lib} PRIVATE
         ${COMMON_INC_DIR}
         ${TARGETS_INC_DIR}
-        stubs
+        ${UNITTEST_ROOT}/stubs
     )
     target_compile_definitions(${lib} PRIVATE ${COMMON_DEFS})
 endforeach()
@@ -74,13 +84,13 @@ endforeach()
 function(add_test_exe test_name)
     cmake_parse_arguments(TEST "" "" "OBJECTS" ${ARGN})
 
-    add_executable(${test_name} ${test_name}.c)
+    add_executable(${test_name} ${UNITTEST_ROOT}/${test_name}.c)
     target_sources(${test_name} PRIVATE ${UNITY_SRC})
     target_include_directories(${test_name} PRIVATE
         ${UNITY_INC}
         ${COMMON_INC_DIR}
         ${TARGETS_INC_DIR}
-        stubs
+        ${UNITTEST_ROOT}/stubs
     )
     target_compile_definitions(${test_name} PRIVATE ${COMMON_DEFS})
     target_link_libraries(${test_name} PRIVATE drone_common_obj ${TEST_OBJECTS} m)

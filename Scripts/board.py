@@ -283,6 +283,7 @@ def cmd_build(args: argparse.Namespace) -> None:
         "-G", _CMAKE_GENERATOR,
         f"-DCMAKE_BUILD_TYPE={args.config}",
         f"-DBOARD_NAME={args.board}",
+        f"-DHIL_TEST={args.build_tests == True}"
     ]
     print(f"Configuring …  ({' '.join(cmake_args)})")
     try:
@@ -322,22 +323,17 @@ def _find_openocd(override: str | None) -> str:
 
 
 def _flash(board: str, config: str, run_tests: bool, openocd: str) -> None:
-    if run_tests:
-        elf    = PROJECT_ROOT / "build" / "hw_test" / "hw_test_m7core.elf"
-        target = _TARGET_SINGLE
-        cmds   = [f"program {elf} verify reset exit"]
-    else:
-        m7     = BUILD_ROOT / board / config / "m7core.elf"
-        m4     = BUILD_ROOT / board / config / "m4core.elf"
-        target = _TARGET_DUAL
-        cmds   = [
-            "init",
-            "reset halt",
-            f"flash write_image erase {m7}",
-            f"flash write_image erase {m4}",
-            "reset run",
-            "shutdown",
-        ]
+    m7     = BUILD_ROOT / board / config / "cm7.elf"
+    m4     = BUILD_ROOT / board / config / "cm4.elf"
+    target = _TARGET_DUAL
+    cmds   = [
+        "init",
+        "reset halt",
+        f"flash write_image erase {m7}",
+        f"flash write_image erase {m4}",
+        "reset run",
+        "shutdown",
+    ]
 
     cmd = [openocd, "-f", _IFACE_CFG, "-f", target]
     for c in cmds:
@@ -366,8 +362,18 @@ def _run_tests(port: str, baud: int, timeout: float) -> None:
         print(f"ERROR: {e}")
         sys.exit(2)
 
-    passed = total = 0
-    found_results = False
+    # Unity output format:
+    #   file.c:42:test_name:PASS
+    #   file.c:42:test_name:FAIL:Expected X Was Y
+    #   -----------------------
+    #   N Tests N Failures N Ignored
+    #   OK  (or FAIL)
+    _result_re  = re.compile(r'^.+:\d+:.+:(PASS|FAIL.*)$')
+    _summary_re = re.compile(r'^(\d+) Tests (\d+) Failures \d+ Ignored$')
+
+    failures = 0
+    total = 0
+    found_summary = False
     deadline = time.monotonic() + timeout
 
     while time.monotonic() < deadline:
@@ -383,29 +389,25 @@ def _run_tests(port: str, baud: int, timeout: float) -> None:
 
         print(line)
 
-        if line.startswith("TEST:"):
-            parts = line.split(":")
-            if len(parts) >= 3:
-                if parts[2] == "PASS":
-                    passed += 1
-                    total  += 1
-                elif parts[2] == "FAIL":
-                    total += 1
-        elif line.startswith("RESULTS:"):
-            m = re.match(r"RESULTS:(\d+)/(\d+)\s+(PASS|FAIL)", line)
-            if m:
-                passed, total = int(m.group(1)), int(m.group(2))
-                found_results = True
-                break
+        if _result_re.match(line):
+            total += 1
+            if ":FAIL" in line:
+                failures += 1
+        elif m := _summary_re.match(line):
+            total    = int(m.group(1))
+            failures = int(m.group(2))
+            found_summary = True
+            break
 
     ser.close()
 
-    if not found_results:
-        print(f"\nERROR: Timed out after {timeout}s waiting for RESULTS line.")
+    if not found_summary:
+        print(f"\nERROR: Timed out after {timeout}s waiting for Unity summary line.")
         sys.exit(2)
 
+    passed = total - failures
     print(f"\n{'='*40}\nResult: {passed}/{total} tests passed\n{'='*40}")
-    sys.exit(0 if passed == total else 1)
+    sys.exit(0 if failures == 0 else 1)
 
 
 def cmd_flash(args: argparse.Namespace) -> None:
@@ -438,6 +440,8 @@ def main() -> None:
                          help="Target board")
     p_build.add_argument("--config", "-c", default="Debug", choices=CONFIGS,
                          help="Build configuration")
+    p_build.add_argument("--build-tests", "-t", action="store_true",
+                         help="Build HW-test firmware")
 
     # ── flash ──────────────────────────────────────────────────────────────────
     p_flash = sub.add_parser("flash", help="Flash firmware and optionally run HIL tests",

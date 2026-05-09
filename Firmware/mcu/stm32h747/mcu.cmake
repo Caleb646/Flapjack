@@ -1,4 +1,8 @@
-set(CMSIS_ROOT_DIR "${FJ_ROOT_DIR}/Vendor/STM32H7/CMSIS")
+
+set(CM7_ROOT "${MCU_ROOT}/cm7")
+set(CM4_ROOT "${MCU_ROOT}/cm4")
+
+set(CMSIS_ROOT_DIR "${FLAPJACK_ROOT}/Vendor/STM32H7/CMSIS")
 set(CMSIS_INC_DIR "${CMSIS_ROOT_DIR}/Include")
 set(CMSIS_DEVICE_INC_DIR "${CMSIS_ROOT_DIR}/Device/ST/STM32H7xx/Include")
 
@@ -13,7 +17,7 @@ set(CMSIS_SRCS
     # ${BOOT_FILE}
 )
 
-set(STM32_HAL_ROOT_DIR "${FJ_ROOT_DIR}/Vendor/STM32H7/STM32H7xx_HAL_Driver")
+set(STM32_HAL_ROOT_DIR "${FLAPJACK_ROOT}/Vendor/STM32H7/STM32H7xx_HAL_Driver")
 set(STM32_HAL_INC_DIR "${STM32_HAL_ROOT_DIR}/Inc")
 set(STM32_HAL_SRC_DIR "${STM32_HAL_ROOT_DIR}/Src")
 
@@ -49,15 +53,11 @@ set(STM32_HAL_SRCS
 set(STM32_INCS
     ${CMSIS_INCS}
     ${STM32_HAL_INCS}
-
-    # PARENT_SCOPE
 )
 
 set(STM32_SRCS
     ${CMSIS_SRCS}
     ${STM32_HAL_SRCS}
-
-    # PARENT_SCOPE
 )
 
 set(STM32_DEFINES
@@ -65,3 +65,6 @@ set(STM32_DEFINES
     USE_FULL_LL_DRIVER
     STM32H747xx
 )
+
+include("${CM7_ROOT}/mcu.cmake")
+include("${CM4_ROOT}/mcu.cmake")
