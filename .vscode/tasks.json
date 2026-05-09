@@ -9,35 +9,33 @@
             "problemMatcher": []
         },
         {
-            "label": "build firmware debug",
+            "label": "build firmware",
             "type": "shell",
             "command": "python3",
-            "args": ["Scripts/fw_build.py", "${input:boardName}"],
+            "args": [
+                "Scripts/board.py", "build",
+                "--board", "${input:boardName}",
+                "--config", "${input:buildConfig}"
+            ],
             "group": "build",
             "presentation": {
                 "echo": true,
-                "reveal": "always", 
+                "reveal": "always",
                 "focus": true,
                 "panel": "shared"
             },
             "problemMatcher": "$gcc"
         },
-
         {
             "label": "flash firmware",
             "type": "shell",
-            "command": "${workspaceFolder}/Tools/openocd/bin/openocd",
+            "command": "python3",
             "args": [
-                "-f", "interface/stlink.cfg",
-                "-f", "target/stm32h7x_dual_bank.cfg",
-                "-c", "init",
-                "-c", "reset halt",
-                "-c", "flash write_image erase Build/${input:boardName}/Debug/m7core.elf",
-                "-c", "flash write_image erase Build/${input:boardName}/Debug/m4core.elf",
-                "-c", "reset run",
-                "-c", "shutdown"
+                "Scripts/board.py", "flash",
+                "--board", "${input:boardName}",
+                "--config", "${input:buildConfig}"
             ],
-            "dependsOn": "build firmware debug",
+            "dependsOn": "build firmware",
             "problemMatcher": [],
             "presentation": {
                 "echo": true,
@@ -45,14 +43,68 @@
                 "focus": false,
                 "panel": "shared"
             }
+        },
+        {
+            "label": "flash firmware + run HIL tests",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "Scripts/board.py", "flash",
+                "--board", "${input:boardName}",
+                "--config", "${input:buildConfig}",
+                "--run-tests",
+                "--port", "${input:serialPort}",
+                "--baud", "${input:baudRate}"
+            ],
+            "dependsOn": "build firmware",
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "install SDK",
+            "type": "shell",
+            "command": "python3",
+            "args": ["Scripts/board.py", "install"],
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared"
+            }
         }
     ],
     "inputs": [
         {
             "id": "boardName",
-            "description": "Select board",  
+            "description": "Select board",
             "type": "pickString",
-            "options": ["nucleo-h747zi", "flapjack-v1"],
+            "options": ["nucleo-h747zi", "flapjack-v1"]
+        },
+        {
+            "id": "buildConfig",
+            "description": "Build configuration",
+            "type": "pickString",
+            "options": ["Debug", "Release"],
+            "default": "Debug"
+        },
+        {
+            "id": "serialPort",
+            "description": "Serial port for UART output",
+            "type": "promptString",
+            "default": "/dev/ttyACM0"
+        },
+        {
+            "id": "baudRate",
+            "description": "Baud rate",
+            "type": "pickString",
+            "options": ["230400", "115200", "921600"],
+            "default": "230400"
         }
     ]
 }

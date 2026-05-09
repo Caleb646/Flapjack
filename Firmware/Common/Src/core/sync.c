@@ -80,8 +80,10 @@ STATIC eSTATUS_t SyncMailBoxWrite (uint32_t mbID, uint8_t const* pBuffer, uint32
 STATIC eSTATUS_t SyncMailBoxWriteNotify (uint32_t mbID, uint8_t const* pBuffer, uint32_t len) {
 
     eSTATUS_t status = SyncMailBoxWrite (mbID, pBuffer, len);
+#ifndef UNIT_TEST
     asm volatile ("dsb");
     asm volatile ("sev");
+#endif
     return eSTATUS_SUCCESS;
 }
 

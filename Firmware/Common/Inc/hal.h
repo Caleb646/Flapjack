@@ -278,15 +278,83 @@ typedef struct
   uint32_t TISEL;    
 } TIM_TypeDef;
 
+extern TIM_TypeDef g_TIM1;
+extern TIM_TypeDef g_TIM2;
+extern TIM_TypeDef g_TIM3;
+extern TIM_TypeDef g_TIM4;
 extern TIM_TypeDef g_TIM5;
+extern TIM_TypeDef g_TIM6;
+extern TIM_TypeDef g_TIM7;
 extern TIM_TypeDef g_TIM8;
 extern TIM_TypeDef g_TIM12;
 extern TIM_TypeDef g_TIM13;
+extern TIM_TypeDef g_TIM14;
+extern TIM_TypeDef g_TIM15;
+extern TIM_TypeDef g_TIM16;
+extern TIM_TypeDef g_TIM17;
 
+#define TIM1                ((TIM_TypeDef *) &g_TIM1)
+#define TIM2                ((TIM_TypeDef *) &g_TIM2)
+#define TIM3                ((TIM_TypeDef *) &g_TIM3)
+#define TIM4                ((TIM_TypeDef *) &g_TIM4)
 #define TIM5                ((TIM_TypeDef *) &g_TIM5)
+#define TIM6                ((TIM_TypeDef *) &g_TIM6)
+#define TIM7                ((TIM_TypeDef *) &g_TIM7)
 #define TIM8                ((TIM_TypeDef *) &g_TIM8)
 #define TIM12               ((TIM_TypeDef *) &g_TIM12)
 #define TIM13               ((TIM_TypeDef *) &g_TIM13)
+#define TIM14               ((TIM_TypeDef *) &g_TIM14)
+#define TIM15               ((TIM_TypeDef *) &g_TIM15)
+#define TIM16               ((TIM_TypeDef *) &g_TIM16)
+#define TIM17               ((TIM_TypeDef *) &g_TIM17)
+
+#define TIM_FLAG_UPDATE                    0x00000001U
+#define RESET                              0U
+#define __HAL_TIM_GET_FLAG(htim, flag)     (((htim)->Instance->SR & (flag)) == (flag))
+#define __HAL_TIM_CLEAR_FLAG(htim, flag)   ((htim)->Instance->SR = ~(flag))
+
+void __enable_irq(void);
+
+#define __HAL_RCC_HSEM_CLK_ENABLE()
+#define __HAL_HSEM_SEMID_TO_MASK(semid) (1U << (semid))
+HAL_StatusTypeDef HAL_HSEM_FastTake(uint32_t SemID);
+void              HAL_HSEM_Release(uint32_t SemID, uint32_t ProcessID);
+void              HAL_HSEM_ActivateNotification(uint32_t SemMask);
+void              HAL_HSEM_DeactivateNotification(uint32_t SemMask);
+
+void HAL_Init(void);
+void HAL_IncTick(void);
+
+#define GPIO_MODE_AF_PP                    0x00000002U
+#define GPIO_MODE_INPUT                    0x00000000U
+#define GPIO_MODE_OUTPUT_PP                0x00000001U
+#define GPIO_NOPULL                        0x00000000U
+#define GPIO_PULLUP                        0x00000001U
+#define GPIO_PULLDOWN                      0x00000002U
+#define GPIO_SPEED_FREQ_LOW                0x00000000U
+#define GPIO_SPEED_FREQ_MEDIUM             0x00000001U
+#define GPIO_SPEED_FREQ_HIGH               0x00000002U
+#define GPIO_SPEED_FREQ_VERY_HIGH          0x00000003U
+
+#define GPIO_AF1_TIM1                      0x01U
+#define GPIO_AF1_TIM2                      0x01U
+#define GPIO_AF2_TIM3                      0x02U
+#define GPIO_AF2_TIM4                      0x02U
+#define GPIO_AF2_TIM5                      0x02U
+#define GPIO_AF3_TIM8                      0x03U
+#define GPIO_AF9_TIM12                     0x09U
+#define GPIO_AF9_TIM13                     0x09U
+#define GPIO_AF9_TIM14                     0x09U
+#define GPIO_AF4_I2C1                      0x04U
+#define GPIO_AF5_SPI1                      0x05U
+#define GPIO_AF5_SPI2                      0x05U
+#define GPIO_AF5_SPI3                      0x05U
+#define GPIO_AF5_SPI4                      0x05U
+#define GPIO_AF5_SPI5                      0x05U
+#define GPIO_AF6_SPI3                      0x06U
+#define GPIO_AF7_USART1                    0x07U
+#define GPIO_AF7_USART2                    0x07U
+#define GPIO_AF7_USART3                    0x07U
 
 #define DMA_REQUEST_TIM8_CH1         47U  
 #define DMA_REQUEST_TIM8_CH2         48U  
@@ -353,10 +421,23 @@ extern TIM_TypeDef g_TIM13;
 #define TIM_DMA_ID_COM                    0x0005U
 #define TIM_DMA_ID_TRIGGER                0x0006U
 
+#define __HAL_RCC_TIM1_CLK_ENABLE()
+#define __HAL_RCC_TIM2_CLK_ENABLE()
+#define __HAL_RCC_TIM3_CLK_ENABLE()
+#define __HAL_RCC_TIM4_CLK_ENABLE()
 #define __HAL_RCC_TIM5_CLK_ENABLE()
+#define __HAL_RCC_TIM6_CLK_ENABLE()
+#define __HAL_RCC_TIM7_CLK_ENABLE()
 #define __HAL_RCC_TIM8_CLK_ENABLE()
+#define __HAL_RCC_TIM9_CLK_ENABLE()
+#define __HAL_RCC_TIM10_CLK_ENABLE()
+#define __HAL_RCC_TIM11_CLK_ENABLE()
 #define __HAL_RCC_TIM12_CLK_ENABLE()
 #define __HAL_RCC_TIM13_CLK_ENABLE()
+#define __HAL_RCC_TIM14_CLK_ENABLE()
+#define __HAL_RCC_TIM15_CLK_ENABLE()
+#define __HAL_RCC_TIM16_CLK_ENABLE()
+#define __HAL_RCC_TIM17_CLK_ENABLE()
 
 #define __HAL_TIM_SET_PRESCALER(htim, value)     ((htim)->Instance->PSC = (value))
 #define __HAL_TIM_SET_AUTORELOAD(htim, value)    ((htim)->Instance->ARR = (value))
@@ -701,7 +782,7 @@ HAL_StatusTypeDef HAL_SPI_Init(SPI_HandleTypeDef *hspi);
 HAL_StatusTypeDef HAL_SPI_DeInit(SPI_HandleTypeDef *hspi);
 HAL_StatusTypeDef HAL_SPI_Transmit(SPI_HandleTypeDef *hspi, uint8_t *pData, uint16_t Size, uint32_t Timeout);
 HAL_StatusTypeDef HAL_SPI_Receive(SPI_HandleTypeDef *hspi, uint8_t *pData, uint16_t Size, uint32_t Timeout);
-HAL_StatusTypeDef HAL_SPI_TransmitReceive(SPI_HandleTypeDef *hspi, uint8_t *pTxData, uint8_t *pRxData, uint16_t Size, uint32_t Timeout);
+HAL_StatusTypeDef HAL_SPI_TransmitReceive(SPI_HandleTypeDef *hspi, const uint8_t *pTxData, uint8_t *pRxData, uint16_t Size, uint32_t Timeout);
 HAL_StatusTypeDef HAL_RCCEx_PeriphCLKConfig(RCC_PeriphCLKInitTypeDef *PeriphClkInit);
 
 // UART Word Length definitions
@@ -913,7 +994,7 @@ HAL_StatusTypeDef HAL_UARTEx_SetRxFifoThreshold(UART_HandleTypeDef *huart, uint3
 HAL_StatusTypeDef HAL_UARTEx_DisableFifoMode(UART_HandleTypeDef *huart);
 
 typedef HAL_StatusTypeDef (*HAL_SPI_Transmit_CB) (SPI_HandleTypeDef* hspi, uint8_t* pData, uint16_t Size, uint32_t Timeout);
-typedef HAL_StatusTypeDef (*HAL_SPI_TransmitReceive_CB) (SPI_HandleTypeDef* hspi, uint8_t* pTxData, uint8_t* pRxData, uint16_t Size, uint32_t Timeout);
+typedef HAL_StatusTypeDef (*HAL_SPI_TransmitReceive_CB) (SPI_HandleTypeDef* hspi, const uint8_t* pTxData, uint8_t* pRxData, uint16_t Size, uint32_t Timeout);
 typedef HAL_StatusTypeDef (*HAL_UART_Transmit_CB) (UART_HandleTypeDef* huart, const uint8_t* pData, uint16_t Size, uint32_t Timeout);
 
 // Function pointer declarations for mocking
@@ -938,7 +1019,7 @@ extern HAL_StatusTypeDef (*HAL_SPI_Init_Mock)(SPI_HandleTypeDef* hspi);
 extern HAL_StatusTypeDef (*HAL_SPI_DeInit_Mock)(SPI_HandleTypeDef* hspi);
 extern HAL_StatusTypeDef (*HAL_SPI_Transmit_Mock)(SPI_HandleTypeDef* hspi, uint8_t* pData, uint16_t Size, uint32_t Timeout);
 extern HAL_StatusTypeDef (*HAL_SPI_Receive_Mock)(SPI_HandleTypeDef* hspi, uint8_t* pData, uint16_t Size, uint32_t Timeout);
-extern HAL_StatusTypeDef (*HAL_SPI_TransmitReceive_Mock)(SPI_HandleTypeDef* hspi, uint8_t* pTxData, uint8_t* pRxData, uint16_t Size, uint32_t Timeout);
+extern HAL_StatusTypeDef (*HAL_SPI_TransmitReceive_Mock)(SPI_HandleTypeDef* hspi, const uint8_t* pTxData, uint8_t* pRxData, uint16_t Size, uint32_t Timeout);
 
 // UART function pointers
 extern HAL_StatusTypeDef (*HAL_UART_Init_Mock)(UART_HandleTypeDef* huart);

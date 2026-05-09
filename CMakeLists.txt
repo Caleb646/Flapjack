@@ -188,6 +188,64 @@ target_include_directories(m4core PRIVATE
 )
 
 
+##################### HW Test Build (CM7 only, Nucleo H747ZI) ########################
+
+if(HW_TEST)
+
+    set(HW_TEST_COMMON_SRCS ${FW_COMMON_SRCS})
+    list(REMOVE_ITEM HW_TEST_COMMON_SRCS "${FW_COMMON_SRC_DIR}/main.c")
+
+    add_executable(hw_test_m7core
+        ${STM32_SRCS}
+        ${HW_TEST_COMMON_SRCS}
+        ${FW_CM7_SRCS}
+        ${FW_ROOT_DIR}/HwTests/hw_test_main.c
+        ${FW_ROOT_DIR}/HwTests/hw_test_dshot.c
+    )
+
+    target_compile_options(hw_test_m7core PRIVATE
+        -std=gnu11
+        --specs=nosys.specs
+        --specs=nano.specs
+        -mcpu=cortex-m7
+        -mthumb
+        -mfpu=fpv5-sp-d16
+        -mfloat-abi=hard
+        -fdata-sections
+        -ffunction-sections
+    )
+    target_link_options(hw_test_m7core PRIVATE
+        -mcpu=cortex-m7
+        -mfpu=fpv5-sp-d16
+        -mfloat-abi=hard
+        -fdata-sections
+        -ffunction-sections
+        -static
+        -mthumb
+        --specs=nosys.specs
+        --specs=nano.specs
+        -T${FW_CM7_LINKER_SCRIPT}
+        -Wl,--gc-sections
+        -Wl,--start-group -lc -lm -Wl,--end-group
+        -Wl,-Map=${CMAKE_CURRENT_BINARY_DIR}/hw_test_m7core.map
+    )
+    target_compile_definitions(hw_test_m7core PRIVATE
+        ${STM32_DEFINES}
+        ${FW_CM7_DEFINES}
+        ${BOARD_DEFINES}
+        HW_TEST
+    )
+    target_include_directories(hw_test_m7core SYSTEM PRIVATE
+        ${STM32_INCS}
+    )
+    target_include_directories(hw_test_m7core PRIVATE
+        ${FW_COMMON_INCS}
+        ${FW_CM7_INCS}
+        ${FW_ROOT_DIR}/HwTests
+    )
+
+endif()
+
 ##################################################
 
 add_custom_target(size ALL

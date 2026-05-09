@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "flight.h"
 #include "hal.h"

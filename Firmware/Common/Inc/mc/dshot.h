@@ -16,6 +16,11 @@
 #define DSHOT_MAX_THROTTLE    2047U
 #define DSHOT_RANGE           (DSHOT_MAX_THROTTLE - DSHOT_MIN_THROTTLE)
 
+/* Timing constants for DShot150 at 64 MHz timer clock (HSI / APB prescaler) */
+#define DSHOT_ARR         426U  /* auto-reload: 427 ticks = 6.67 us per bit */
+#define DSHOT_TICKS_FOR_1 320U  /* 75% high = 5.0 us */
+#define DSHOT_TICKS_FOR_0 160U  /* 37.5% high = 2.5 us */
+
 typedef struct {
     uint32_t timerChannel;
     GPIO_TypeDef* pPort;
@@ -39,5 +44,9 @@ FJ_DECLARE_SHARED (DShotBB_t, g_DShotBB);
 
 eSTATUS_t DShotBB_Init (void);
 eSTATUS_t DShotBB_Write (uint16_t motorVals[BRD_MOTOR_COUNT]);
+
+#ifdef UNIT_TEST
+uint16_t DShotPreparePacket (uint16_t value);
+#endif
 
 #endif /* __MOTION_CONTROL_DSHOT_H__ */

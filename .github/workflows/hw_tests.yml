@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # ---------------------------------------------------------------
+  # Layer 1: Host unit tests (runs on any ubuntu runner, no hardware)
+  # ---------------------------------------------------------------
+  host-tests:
+    name: Host unit tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: sudo apt-get install -y cmake gcc g++ make
+
+      - name: Configure
+        run: cmake -S Tests -B build/tests -DCMAKE_BUILD_TYPE=Debug
+
+      - name: Build
+        run: cmake --build build/tests --parallel
+
+      - name: Run
+        run: ctest --test-dir build/tests --output-on-failure
+
+  # ---------------------------------------------------------------
+  # Layer 2: Hardware-in-the-loop tests (self-hosted runner with
+  # a Nucleo H747ZI connected via USB ST-Link)
+  #
+  # Runner label: [self-hosted, nucleo-h747zi]
+  # Required tools on runner: arm-none-eabi-gcc, cmake, openocd, python3, pyserial
+  #
+  # Hardware setup: connect PC6 → PA6 with a jumper wire on the Nucleo.
+  # ---------------------------------------------------------------
+  hw-tests:
+    name: Hardware-in-the-loop (DShot timing)
+    runs-on: [self-hosted, nucleo-h747zi]
+    needs: host-tests
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure hw_test firmware
+        run: |
+          cmake -S . -B build/hw_test \
+            -DBOARD_NAME=nucleo-h747zi \
+            -DHW_TEST=ON \
+            -DCMAKE_BUILD_TYPE=Debug
+
+      - name: Build hw_test_m7core
+        run: cmake --build build/hw_test --target hw_test_m7core --parallel
+
+      - name: Flash and run HIL tests
+        run: |
+          python3 Scripts/board.py flash \
+            --board nucleo-h747zi \
+            --run-tests \
+            --port /dev/ttyACM0 \
+            --baud 230400 \
+            --timeout 15

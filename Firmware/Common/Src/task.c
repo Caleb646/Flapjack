@@ -42,7 +42,7 @@ eSTATUS_t TaskAttitudeUpdate (uint32_t usCurrentTime, uint32_t usDeltaTime) {
     Flight_t* pFlight         = Fc_Get ();
     IMU_t* pIMU               = Imu_Get ();
     Mag_t* pMag               = Mag_Get ();
-    float dt                  = ((float)usCurrentTime - (float)usDeltaTime) / 1000000.0F;
+    float dt                  = (float)usDeltaTime / 1000000.0F;
 
     if (!pIMU && !pMag) {
         LOG_ERROR ("No sensors available for attitude update");

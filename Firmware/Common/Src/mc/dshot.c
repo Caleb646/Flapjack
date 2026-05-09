@@ -27,7 +27,9 @@ FJ_DEFINE_SHARED (DShotBB_t, g_DShotBB) = {
                   } }
 };
 
+#ifndef UNIT_TEST
 static uint16_t DShotPreparePacket (uint16_t value);
+#endif
 
 eSTATUS_t DShotBB_Init (void) {
 
@@ -131,7 +133,8 @@ eSTATUS_t DShotBB_Write (uint16_t motorVals[BRD_MOTOR_COUNT]) {
     return eSTATUS_SUCCESS;
 }
 
-static uint16_t DShotPreparePacket (uint16_t value) {
+
+STATIC uint16_t DShotPreparePacket (uint16_t value) {
 
     uint16_t packet         = 0U;
     uint8_t dshot_telemetry = false;

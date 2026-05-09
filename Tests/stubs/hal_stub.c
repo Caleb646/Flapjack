@@ -25,7 +25,7 @@ HAL_StatusTypeDef (*HAL_SPI_Init_Mock)(SPI_HandleTypeDef* hspi) = NULL;
 HAL_StatusTypeDef (*HAL_SPI_DeInit_Mock)(SPI_HandleTypeDef* hspi) = NULL;
 HAL_StatusTypeDef (*HAL_SPI_Transmit_Mock)(SPI_HandleTypeDef* hspi, uint8_t* pData, uint16_t Size, uint32_t Timeout) = NULL;
 HAL_StatusTypeDef (*HAL_SPI_Receive_Mock)(SPI_HandleTypeDef* hspi, uint8_t* pData, uint16_t Size, uint32_t Timeout) = NULL;
-HAL_StatusTypeDef (*HAL_SPI_TransmitReceive_Mock)(SPI_HandleTypeDef* hspi, uint8_t* pTxData, uint8_t* pRxData, uint16_t Size, uint32_t Timeout) = NULL;
+HAL_StatusTypeDef (*HAL_SPI_TransmitReceive_Mock)(SPI_HandleTypeDef* hspi, const uint8_t* pTxData, uint8_t* pRxData, uint16_t Size, uint32_t Timeout) = NULL;
 
 // UART function pointers
 HAL_StatusTypeDef (*HAL_UART_Init_Mock)(UART_HandleTypeDef* huart) = NULL;
@@ -87,10 +87,20 @@ extern GPIO_TypeDef g_GPIOI = { 0 };
 extern GPIO_TypeDef g_GPIOJ = { 0 };
 extern GPIO_TypeDef g_GPIOK = { 0 };
 
+extern TIM_TypeDef g_TIM1  = { 0 };
+extern TIM_TypeDef g_TIM2  = { 0 };
+extern TIM_TypeDef g_TIM3  = { 0 };
+extern TIM_TypeDef g_TIM4  = { 0 };
 extern TIM_TypeDef g_TIM5  = { 0 };
+extern TIM_TypeDef g_TIM6  = { 0 };
+extern TIM_TypeDef g_TIM7  = { 0 };
 extern TIM_TypeDef g_TIM8  = { 0 };
 extern TIM_TypeDef g_TIM12 = { 0 };
 extern TIM_TypeDef g_TIM13 = { 0 };
+extern TIM_TypeDef g_TIM14 = { 0 };
+extern TIM_TypeDef g_TIM15 = { 0 };
+extern TIM_TypeDef g_TIM16 = { 0 };
+extern TIM_TypeDef g_TIM17 = { 0 };
 
 extern SPI_TypeDef g_SPI1 = { 0 };
 extern SPI_TypeDef g_SPI2 = { 0 };
@@ -142,8 +152,33 @@ void __disable_irq (void) {
         __disable_irq_Mock ();
         return;
     }
+}
 
-    // Default weak implementation - do nothing
+void __enable_irq (void) {
+}
+
+HAL_StatusTypeDef HAL_HSEM_FastTake (uint32_t SemID) {
+    (void)SemID;
+    return HAL_OK;
+}
+
+void HAL_HSEM_Release (uint32_t SemID, uint32_t ProcessID) {
+    (void)SemID;
+    (void)ProcessID;
+}
+
+void HAL_HSEM_ActivateNotification (uint32_t SemMask) {
+    (void)SemMask;
+}
+
+void HAL_HSEM_DeactivateNotification (uint32_t SemMask) {
+    (void)SemMask;
+}
+
+void HAL_Init (void) {
+}
+
+void HAL_IncTick (void) {
 }
 
 // DMA HAL functions
@@ -396,7 +431,7 @@ HAL_SPI_Receive (SPI_HandleTypeDef* hspi, uint8_t* pData, uint16_t Size, uint32_
 }
 
 HAL_StatusTypeDef
-HAL_SPI_TransmitReceive (SPI_HandleTypeDef* hspi, uint8_t* pTxData, uint8_t* pRxData, uint16_t Size, uint32_t Timeout) {
+HAL_SPI_TransmitReceive (SPI_HandleTypeDef* hspi, const uint8_t* pTxData, uint8_t* pRxData, uint16_t Size, uint32_t Timeout) {
 
     if (HAL_SPI_TransmitReceive_Mock != NULL) {
         return HAL_SPI_TransmitReceive_Mock (hspi, pTxData, pRxData, Size, Timeout);
