@@ -1,8 +1,8 @@
 #ifndef UNITY_CONFIG_H
 #define UNITY_CONFIG_H
 
-void UART_PutChar (char c);
+void Uart_PutChar (void* p, char c);
 
-#define UNITY_OUTPUT_CHAR(c) UART_PutChar (c)
+#define UNITY_OUTPUT_CHAR(c) Uart_PutChar (NULL, c)
 
 #endif // UNITY_CONFIG_H

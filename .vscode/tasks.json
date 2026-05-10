@@ -15,7 +15,8 @@
             "args": [
                 "Scripts/board.py", "build",
                 "--board", "${input:boardName}",
-                "--config", "${input:buildConfig}"
+                "--config", "${input:buildConfig}",
+                // "-t", this flags builds the HIL tests 
             ],
             "group": "build",
             "presentation": {

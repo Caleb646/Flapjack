@@ -31,6 +31,8 @@ FJ_DEFINE_SHARED (DShotBB_t, g_DShotBB) = {
 static uint16_t DShotPreparePacket (uint16_t value);
 #endif
 
+// eSTATUS_t DShotBB_Init_()
+
 eSTATUS_t DShotBB_Init (void) {
 
     DShotBB_t* pDShotBB = &g_DShotBB;

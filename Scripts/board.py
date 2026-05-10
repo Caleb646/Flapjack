@@ -328,14 +328,15 @@ def _flash(board: str, config: str, run_tests: bool, openocd: str) -> None:
     target = _TARGET_DUAL
     cmds   = [
         "init",
-        "reset halt",
+        "reset init",
+        "rbp all",
         f"flash write_image erase {m7}",
         f"flash write_image erase {m4}",
         "reset run",
-        "shutdown",
+        "exit",
     ]
 
-    cmd = [openocd, "-f", _IFACE_CFG, "-f", target]
+    cmd = ["sudo", openocd, "-f", _IFACE_CFG, "-f", target]
     for c in cmds:
         cmd += ["-c", c]
 
@@ -351,13 +352,15 @@ def _flash(board: str, config: str, run_tests: bool, openocd: str) -> None:
 def _run_tests(port: str, baud: int, timeout: float) -> None:
     try:
         import serial
+        import serial.tools.list_ports
     except ImportError:
         print("ERROR: pyserial not installed.  Run: pip install pyserial")
         sys.exit(2)
 
     print(f"Opening {port} at {baud} baud …")
+    # print([(port.device, port.description) for port in serial.tools.list_ports.comports()])
     try:
-        ser = serial.Serial(port, baud, timeout=1)
+        ser = serial.Serial(port, baud, timeout=20)
     except serial.SerialException as e:
         print(f"ERROR: {e}")
         sys.exit(2)
@@ -450,13 +453,13 @@ def main() -> None:
                          help="Target board")
     p_flash.add_argument("--config", "-c", default="Debug", choices=CONFIGS,
                          help="Build configuration")
-    p_flash.add_argument("--run-tests", action="store_true",
+    p_flash.add_argument("--run-tests", "-t", action="store_true",
                          help="Flash HW-test firmware and stream UART results")
     p_flash.add_argument("--port", default="/dev/ttyACM0",
                          help="Serial port for test output")
     p_flash.add_argument("--baud", type=int, default=230400,
                          help="Baud rate")
-    p_flash.add_argument("--timeout", type=float, default=15.0,
+    p_flash.add_argument("--timeout", type=float, default=30,
                          help="Seconds to wait for RESULTS line")
     p_flash.add_argument("--openocd", default=None,
                          help="Path to openocd binary (auto-detected if omitted)")

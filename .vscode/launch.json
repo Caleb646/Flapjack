@@ -17,17 +17,17 @@
         {
             "name": "Debug M7 Core",
             "cwd": "${workspaceFolder}",
-            "executable": "${workspaceFolder}/Build/${input:boardName}/Debug/m7core.elf",
+            "executable": "${workspaceFolder}/Build/${input:boardName}/Debug/cm7.elf",
             "loadFiles": [
-                "${workspaceFolder}/Build/${input:boardName}/Debug/m7core.elf",
-                "${workspaceFolder}/Build/${input:boardName}/Debug/m4core.elf",
+                "${workspaceFolder}/Build/${input:boardName}/Debug/cm7.elf",
+                "${workspaceFolder}/Build/${input:boardName}/Debug/cm4.elf",
             ],
             "request": "launch",
             "type": "cortex-debug",
             "servertype": "openocd",
             "armToolchainPath": "${workspaceFolder}/Tools/arm-gnu/bin",
             "serverpath": "${workspaceFolder}/Tools/openocd/bin/openocd",
-            "gdbPath": "gdb-multiarch",
+            "gdbPath": "${workspaceFolder}/Tools/arm-gnu/bin/arm-none-eabi-gdb",
             "svdFile": "${workspaceFolder}/Vendor/STM32H7/STM32H747_CM7.svd",
             "device": "STM32H747XIHX",
             "showDevDebugOutput": "raw",
@@ -36,7 +36,7 @@
             //"configFiles": ["${workspaceFolder}/Scripts/stm32h747_dual_core.cfg"],
             //"targetId": "stm32h7x.cpu0",
             // "runToEntryPoint": "main",
-            "preLaunchTask": "build firmware debug",
+            "preLaunchTask": "build firmware",
 
             "swoConfig": {
                 "enabled": true,
@@ -82,7 +82,7 @@
         {
             "name": "Debug M4 Core", 
             "cwd": "${workspaceFolder}",
-            "executable": "${workspaceFolder}/Build/${input:boardName}/Debug/m4core.elf",
+            "executable": "${workspaceFolder}/Build/${input:boardName}/Debug/cm4.elf",
             "request": "launch",
             "type": "cortex-debug",
             "servertype": "openocd",
