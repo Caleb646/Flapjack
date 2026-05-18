@@ -93,8 +93,10 @@ extern uint32_t SystemCoreClock;
 #define DMA1_Stream4_IRQn                (5U)
 #define DMA1_Stream5_IRQn                (6U)
 #define DMA1_Stream6_IRQn                (7U)
+#define DMA1_Stream7_IRQn                (8U)
 
 #define __HAL_RCC_DMA1_CLK_ENABLE()
+#define __HAL_RCC_DMA2_CLK_ENABLE()
 
 typedef struct {
     uint32_t Request;
@@ -145,9 +147,13 @@ extern DMA_Stream_TypeDef g_DMA1_Stream7;
 
 // clang-format off
 
-void HAL_DMA_IRQHandler(DMA_HandleTypeDef *hdma);
-HAL_StatusTypeDef HAL_DMA_Init(DMA_HandleTypeDef *hdma);
-HAL_StatusTypeDef HAL_DMA_DeInit(DMA_HandleTypeDef *hdma);
+void HAL_DMA_IRQHandler (DMA_HandleTypeDef* hdma);
+HAL_StatusTypeDef HAL_DMA_Init (DMA_HandleTypeDef* hdma);
+HAL_StatusTypeDef HAL_DMA_DeInit (DMA_HandleTypeDef* hdma);
+HAL_StatusTypeDef HAL_DMA_Start (DMA_HandleTypeDef* hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t DataLength);
+HAL_StatusTypeDef HAL_DMA_Start_IT (DMA_HandleTypeDef* hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t DataLength);
+HAL_StatusTypeDef HAL_DMA_Abort (DMA_HandleTypeDef* hdma);
+uint32_t          HAL_DMA_GetError (const DMA_HandleTypeDef* hdma);
 
 typedef struct
 {
@@ -313,6 +319,35 @@ extern TIM_TypeDef g_TIM17;
 #define __HAL_TIM_GET_FLAG(htim, flag)     (((htim)->Instance->SR & (flag)) == (flag))
 #define __HAL_TIM_CLEAR_FLAG(htim, flag)   ((htim)->Instance->SR = ~(flag))
 
+#define SET_BIT(REG, BIT)                  ((REG) |= (BIT))
+#define CLEAR_BIT(REG, BIT)                ((REG) &= ~(BIT))
+
+#define TIM_CR1_CEN                        0x00000001U
+#define TIM_DMA_UPDATE                     0x00000100U  /* TIM_DIER_UDE */
+
+#define __HAL_TIM_ENABLE(__HANDLE__)                     SET_BIT((__HANDLE__)->Instance->CR1, TIM_CR1_CEN)
+#define __HAL_TIM_DISABLE(__HANDLE__)                    CLEAR_BIT((__HANDLE__)->Instance->CR1, TIM_CR1_CEN)
+#define __HAL_TIM_ENABLE_DMA(__HANDLE__, __DMA__)        SET_BIT((__HANDLE__)->Instance->DIER, (__DMA__))
+#define __HAL_TIM_DISABLE_DMA(__HANDLE__, __DMA__)       CLEAR_BIT((__HANDLE__)->Instance->DIER, (__DMA__))
+#define __HAL_TIM_SET_COUNTER(__HANDLE__, __COUNTER__)   ((__HANDLE__)->Instance->CNT = (__COUNTER__))
+#define __HAL_LINKDMA(__HANDLE__, __PPP_DMA_FIELD__, __DMA_HANDLE__) \
+    do { \
+        (__HANDLE__)->__PPP_DMA_FIELD__ = &(__DMA_HANDLE__); \
+        (__DMA_HANDLE__).Parent         = (__HANDLE__); \
+    } while (0)
+
+typedef enum {
+    HAL_DMA_XFER_CPLT_CB_ID     = 0x00U,
+    HAL_DMA_XFER_HALFCPLT_CB_ID = 0x01U,
+    HAL_DMA_XFER_ERROR_CB_ID    = 0x02U,
+    HAL_DMA_XFER_ABORT_CB_ID    = 0x03U,
+    HAL_DMA_XFER_ALL_CB_ID      = 0x04U,
+} HAL_DMA_CallbackIDTypeDef;
+
+HAL_StatusTypeDef HAL_DMA_RegisterCallback (DMA_HandleTypeDef* hdma,
+                                             HAL_DMA_CallbackIDTypeDef CallbackID,
+                                             void (*pCallback) (DMA_HandleTypeDef* _hdma));
+
 void __enable_irq(void);
 
 #define __HAL_RCC_HSEM_CLK_ENABLE()
@@ -356,20 +391,29 @@ void HAL_IncTick(void);
 #define GPIO_AF7_USART2                    0x07U
 #define GPIO_AF7_USART3                    0x07U
 
-#define DMA_REQUEST_TIM8_CH1         47U  
-#define DMA_REQUEST_TIM8_CH2         48U  
-#define DMA_REQUEST_TIM8_CH3         49U  
-#define DMA_REQUEST_TIM8_CH4         50U  
-#define DMA_REQUEST_TIM8_UP          51U  
-#define DMA_REQUEST_TIM8_TRIG        52U  
-#define DMA_REQUEST_TIM8_COM         53U  
+#define DMA_REQUEST_TIM3_CH1         23U
+#define DMA_REQUEST_TIM3_CH2         24U
+#define DMA_REQUEST_TIM3_CH3         25U
+#define DMA_REQUEST_TIM3_CH4         26U
+#define DMA_REQUEST_TIM3_UP          27U
+#define DMA_REQUEST_TIM3_TRIG        28U
 
-#define DMA_REQUEST_TIM5_CH1         55U  
-#define DMA_REQUEST_TIM5_CH2         56U  
-#define DMA_REQUEST_TIM5_CH3         57U  
-#define DMA_REQUEST_TIM5_CH4         58U  
-#define DMA_REQUEST_TIM5_UP          59U  
-#define DMA_REQUEST_TIM5_TRIG        60U  
+#define DMA_REQUEST_TIM6_UP          21U
+
+#define DMA_REQUEST_TIM8_CH1         47U
+#define DMA_REQUEST_TIM8_CH2         48U
+#define DMA_REQUEST_TIM8_CH3         49U
+#define DMA_REQUEST_TIM8_CH4         50U
+#define DMA_REQUEST_TIM8_UP          51U
+#define DMA_REQUEST_TIM8_TRIG        52U
+#define DMA_REQUEST_TIM8_COM         53U
+
+#define DMA_REQUEST_TIM5_CH1         55U
+#define DMA_REQUEST_TIM5_CH2         56U
+#define DMA_REQUEST_TIM5_CH3         57U
+#define DMA_REQUEST_TIM5_CH4         58U
+#define DMA_REQUEST_TIM5_UP          59U
+#define DMA_REQUEST_TIM5_TRIG        60U
 
 #define TIM_CHANNEL_1                 0x00000000U
 #define TIM_CHANNEL_2                 0x00000004U
@@ -503,6 +547,7 @@ HAL_StatusTypeDef HAL_TIM_PWM_DeInit(TIM_HandleTypeDef *htim);
 HAL_StatusTypeDef HAL_TIM_PWM_ConfigChannel(TIM_HandleTypeDef *htim, TIM_OC_InitTypeDef *sConfig, uint32_t Channel);
 HAL_StatusTypeDef HAL_TIM_PWM_Start(TIM_HandleTypeDef *htim, uint32_t Channel);
 HAL_StatusTypeDef HAL_TIM_PWM_Stop(TIM_HandleTypeDef *htim, uint32_t Channel);
+HAL_StatusTypeDef HAL_TIM_Base_Init (TIM_HandleTypeDef* htim);
 HAL_StatusTypeDef HAL_TIM_PWM_Start_DMA(TIM_HandleTypeDef *htim, uint32_t Channel, uint32_t *pData, uint16_t Length);
 HAL_StatusTypeDef HAL_TIM_PWM_Stop_DMA(TIM_HandleTypeDef *htim, uint32_t Channel);
 

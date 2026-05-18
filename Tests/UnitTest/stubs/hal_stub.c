@@ -281,6 +281,20 @@ void HAL_GPIO_TogglePin (GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin) {
 }
 
 // Timer HAL functions
+HAL_StatusTypeDef HAL_TIM_Base_Init (TIM_HandleTypeDef* htim) {
+    (void)htim;
+    return HAL_OK;
+}
+
+HAL_StatusTypeDef HAL_DMA_RegisterCallback (DMA_HandleTypeDef* hdma,
+                                             HAL_DMA_CallbackIDTypeDef CallbackID,
+                                             void (*pCallback) (DMA_HandleTypeDef* _hdma)) {
+    (void)hdma;
+    (void)CallbackID;
+    (void)pCallback;
+    return HAL_OK;
+}
+
 HAL_StatusTypeDef HAL_TIM_PWM_Init (TIM_HandleTypeDef* htim) {
 
     if (HAL_TIM_PWM_Init_Mock != NULL) {

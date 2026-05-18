@@ -91,14 +91,15 @@ int main (void) {
 
     HwTest_UartInit ();
     init_printf (NULL, Uart_PutChar);
-    HAL_Delay (100);
+    HAL_Delay (500);
     LOG_INFO ("Starting HIL Tests");
-    HAL_Delay (100);
+    HAL_Delay (500);
 
     UNITY_BEGIN ();
     LOG_INFO ("Running DShot Init Test");
     RUN_TEST (test_hil_dshot_init);
-    // // RUN_TEST (test_hil_dshot_bit_period);
+    LOG_INFO ("Running DShot period test");
+    RUN_TEST (test_hil_dshot_bit_period);
     // // RUN_TEST (test_hil_dshot_bit0_pulse_width);
     // // RUN_TEST (test_hil_dshot_bit1_pulse_width);
     // // RUN_TEST (test_hil_dshot_frame_length);

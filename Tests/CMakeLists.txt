@@ -19,17 +19,14 @@ FetchContent_Declare(unity
 )
 FetchContent_MakeAvailable(unity)
 
-target_compile_definitions(unity PUBLIC UNITY_INCLUDE_CONFIG_H)
-target_include_directories(unity PUBLIC "${HIL_ROOT}")
-
 set(UNITY_SRC "${unity_SOURCE_DIR}/src/unity.c")
 set(UNITY_INC "${unity_SOURCE_DIR}/src")
 
-set(COMMON_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../Firmware/Common/Src")
-set(COMMON_INC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../Firmware/Common/Inc")
-set(TARGETS_INC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../Firmware/Targets")
+set(COMMON_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../Firmware/src")
+set(COMMON_INC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../Firmware/inc")
+set(TARGETS_INC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../Firmware/target")
 
-set(COMMON_DEFS UNIT_TEST)
+set(COMMON_DEFS UNIT_TEST BOARD_NUCLEO_H747ZI)
 
 add_library(drone_common_obj OBJECT
     ${COMMON_SRC_DIR}/core/core.c
