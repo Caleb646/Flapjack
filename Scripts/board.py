@@ -92,8 +92,9 @@ else:
 # ── OpenOCD flash constants ────────────────────────────────────────────────────
 
 _IFACE_CFG     = "interface/stlink.cfg"
-_TARGET_DUAL   = "target/stm32h7x_dual_bank.cfg"
-_TARGET_SINGLE = "target/stm32h7x.cfg"
+# _TARGET_DUAL   = "target/stm32h7x_dual_bank.cfg"
+_TARGET_DUAL   = "Scripts/stm32h747_dual_core.cfg"
+# _TARGET_SINGLE = "target/stm32h7x.cfg"
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -329,7 +330,8 @@ def _flash(board: str, config: str, run_tests: bool, openocd: str) -> None:
     cmds   = [
         "init",
         "reset init",
-        "rbp all",
+        "reset halt",
+        # "rbp all",
         f"flash write_image erase {m7}",
         f"flash write_image erase {m4}",
         "reset run",
