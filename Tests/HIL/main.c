@@ -42,8 +42,8 @@ static void HwTest_UartInit (void) {
     gpio.Alternate        = GPIO_AF7_USART1;
     HAL_GPIO_Init (GPIOA, &gpio);
 
-    s_huart.Instance          = USART1;
-    s_huart.Init.BaudRate     = 230400;
+    s_huart.Instance                    = USART1;
+    s_huart.Init.BaudRate               = 230400;
     s_huart.Init.WordLength             = UART_WORDLENGTH_8B;
     s_huart.Init.StopBits               = UART_STOPBITS_1;
     s_huart.Init.Parity                 = UART_PARITY_NONE;
@@ -104,6 +104,8 @@ int main (void) {
     // // RUN_TEST (test_hil_dshot_bit1_pulse_width);
     // // RUN_TEST (test_hil_dshot_frame_length);
     UNITY_END ();
+
+    HAL_Delay (50000);
 
 #endif
 

@@ -24,16 +24,16 @@
  * Tolerance: 5% → ±21 ticks.
  */
 
-#define DSHOT_PERIOD_TICKS   424U
-#define DSHOT_TICKS_1        318U
-#define DSHOT_TICKS_0        159U
-#define PERIOD_TOL           ((DSHOT_PERIOD_TICKS * 5U) / 100U)
-#define PULSE_TOL            ((DSHOT_TICKS_1 * 5U) / 100U)
+#define DSHOT_PERIOD_TICKS  424U
+#define DSHOT_TICKS_1       318U
+#define DSHOT_TICKS_0       159U
+#define PERIOD_TOL          ((DSHOT_PERIOD_TICKS * 5U) / 100U)
+#define PULSE_TOL           ((DSHOT_TICKS_1 * 5U) / 100U)
 
 /* value=0  → packet=0x0000 → all 16 bits are '0'
  * value=8  → packet=0x0101 → bits 7 and 15 (MSB-first) are '1' */
-#define THROTTLE_ALL_ZEROS   0U
-#define THROTTLE_LAST_BIT_1  8U
+#define THROTTLE_ALL_ZEROS  0U
+#define THROTTLE_LAST_BIT_1 8U
 
 static TIM_HandleTypeDef s_htim3 = { 0 };
 static DmaHandle_t* s_pDma       = NULL;
@@ -41,8 +41,10 @@ static uint32_t s_captures[32] = { 0 }; /* interleaved: rise[i]=s_captures[2i], 
 static volatile bool s_captureDone = false;
 static bool s_ready                = false;
 
-void setUp(void)    {}
-void tearDown(void) {}
+void setUp (void) {
+}
+void tearDown (void) {
+}
 
 /* Override weak HAL callback — fires from DMA TC ISR via TIM_DMACaptureCplt */
 void HAL_TIM_IC_CaptureCallback (TIM_HandleTypeDef* htim) {
@@ -70,10 +72,7 @@ static void SendAndCapture (uint16_t throttle, uint32_t captures[32]) {
     while (!g_DShotBB.txDone || !s_captureDone) {
     }
     HAL_TIM_IC_Stop_DMA (&s_htim3, TIM_CHANNEL_2);
-    for (uint32_t i = 0; i < 16U; i += 2) {
-        captures[i]     = s_captures[i];
-        captures[i + 1] = s_captures[i + 1U];
-    }
+    memcpy (captures, s_captures, sizeof (s_captures));
 }
 
 static void InitCaptureDma (DmaHandle_t** ppOut, uint32_t request) {
@@ -147,8 +146,61 @@ void test_hil_dshot_bit_period (void) {
         expectedDiffs[i] = 160U;
         actualDiffs[i]   = captures[i * 2U + 1U] - captures[i * 2U];
     }
-    LOG_INFO ("%u %u %u %u", actualDiffs[0], actualDiffs[1], actualDiffs[2], actualDiffs[3]);
-    LOG_INFO ("%u %u %u %u", captures[0], captures[1], captures[2], captures[3]);
+    // LOG_INFO (
+    // "%u %u %u %u - %u %u %u %u - %u %u %u %u - %u %u %u %u",
+    // actualDiffs[0],
+    // actualDiffs[1],
+    // actualDiffs[2],
+    // actualDiffs[3],
+    // actualDiffs[4],
+    // actualDiffs[5],
+    // actualDiffs[6],
+    // actualDiffs[7],
+    // actualDiffs[8],
+    // actualDiffs[9],
+    // actualDiffs[10],
+    // actualDiffs[11],
+    // actualDiffs[12],
+    // actualDiffs[13],
+    // actualDiffs[14],
+    // actualDiffs[15]
+    // );
+    // LOG_INFO (
+    // "%u %u %u %u - %u %u %u %u - %u %u %u %u - %u %u %u %u - %u %u %u %u - %u %u %u %u - %u %u %u "
+    // "%u - %u %u %u %u",
+    // captures[0],
+    // captures[1],
+    // captures[2],
+    // captures[3],
+    // captures[4],
+    // captures[5],
+    // captures[6],
+    // captures[7],
+    // captures[8],
+    // captures[9],
+    // captures[10],
+    // captures[11],
+    // captures[12],
+    // captures[13],
+    // captures[14],
+    // captures[15],
+    // captures[16],
+    // captures[17],
+    // captures[18],
+    // captures[19],
+    // captures[20],
+    // captures[21],
+    // captures[22],
+    // captures[23],
+    // captures[24],
+    // captures[25],
+    // captures[26],
+    // captures[27],
+    // captures[28],
+    // captures[29],
+    // captures[30],
+    // captures[31]
+    // );
     TEST_ASSERT_UINT_ARRAY_WITHIN (5, expectedDiffs, actualDiffs, 16);
 }
 
