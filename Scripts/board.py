@@ -41,6 +41,18 @@ TOOLS_ROOT    = PROJECT_ROOT / "Tools"
 BOARDS  = ["nucleo-h747zi", "flapjack-v1"]
 CONFIGS = ["Debug", "Release"]
 
+# ── Proto generation paths ─────────────────────────────────────────────────────
+
+PROTO_FILE       = PROJECT_ROOT / "Proto" / "flapjack.proto"
+PROTO_GEN_DIR    = PROJECT_ROOT / "Firmware" / "src" / "proto"
+GUI_DIR          = PROJECT_ROOT / "GUI"
+
+PROTOC_EXE       = TOOLS_ROOT / "protoc" / "bin" / "protoc"
+NANOPB_ROOT      = PROJECT_ROOT / "Vendor" / "nanopb"
+NANOPB_GEN       = NANOPB_ROOT / "generator" / "nanopb_generator.py"
+NANOPB_PROTO_PY  = NANOPB_ROOT / "generator" / "proto"
+VENV_PYTHON      = PROJECT_ROOT / ".venv" / "bin" / "python3"
+
 # ── Toolchain paths ────────────────────────────────────────────────────────────
 
 # Windows / MSYS2
@@ -249,6 +261,39 @@ def cmd_install(_: argparse.Namespace) -> None:
 #  build
 # ══════════════════════════════════════════════════════════════════════════════
 
+def _generate_proto(directory: Path) -> None:
+    """Generate nanopb C sources and Python protobuf binding from flapjack.proto.
+
+    Skips generation when all outputs are already newer than the .proto file.
+    Exits with an error if the required tools are missing.
+    """
+    print("Generating protobuf sources …")
+
+    for tool, path in [("nanopb_generator", NANOPB_GEN)]:
+        if not path.exists():
+            print(f"ERROR: {tool} not found at {path}")
+            sys.exit(1)
+
+    PROTO_GEN_DIR.mkdir(parents=True, exist_ok=True)
+    try:
+        subprocess.run(
+            [str(VENV_PYTHON), str(NANOPB_GEN), str(PROTO_FILE), "-D", str(PROTO_GEN_DIR), "-I", str(PROTO_FILE.parent)],
+            check=True, capture_output=True, text=True, timeout=2, env=os.environ.copy(),
+        )
+    except subprocess.CalledProcessError as e:
+        print(f"ERROR: nanopb_generator failed: {e.stderr}")
+        sys.exit(1)
+
+    try:
+        subprocess.run(
+            [PROTOC_EXE, str(PROTO_FILE), f"-I{PROTO_FILE.parent}", f"--python_out={GUI_DIR}"],
+            check=True, capture_output=True, shell=True, text=True, env=os.environ.copy(),
+        )
+    except subprocess.CalledProcessError as e:
+        print(f"ERROR: protoc --python_out failed: {e.stderr}")
+        sys.exit(1)
+
+
 def _verify_toolchain() -> None:
     if PLATFORM == "win32":
         missing = [str(MINGW64_BIN), str(MINGW64_BIN / "mingw32-make.exe"),
@@ -267,6 +312,9 @@ def _verify_toolchain() -> None:
 def cmd_build(args: argparse.Namespace) -> None:
     print(f"Flapjack Firmware Build  |  board: {args.board}  |  config: {args.config}\n")
     _verify_toolchain()
+
+    if args.proto:
+        _generate_proto(args.proto)
 
     env = os.environ.copy()
     env["PATH"] = str(_HOST_ARM_BIN) + os.pathsep + env["PATH"]
@@ -447,6 +495,8 @@ def main() -> None:
                          help="Build configuration")
     p_build.add_argument("--build-tests", "-t", action="store_true",
                          help="Build HW-test firmware")
+    p_build.add_argument("--proto", "-p", help=f"Regenerate protobuf sources (default: ${PROJECT_ROOT}/Proto)",
+                         default=Path(f"${PROJECT_ROOT}/Proto"), type=Path)
 
     # ── flash ──────────────────────────────────────────────────────────────────
     p_flash = sub.add_parser("flash", help="Flash firmware and optionally run HIL tests",

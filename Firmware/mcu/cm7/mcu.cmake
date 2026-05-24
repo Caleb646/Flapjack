@@ -13,6 +13,7 @@ add_executable(cm7
     ${CM7_SRCS}
     ${STM32_SRCS}
     ${FIRMWARE_SRCS}
+    ${NANOPB_SRCS}
 )
 
 set_source_files_properties(${FIRMWARE_SRCS} PROPERTIES COMPILE_FLAGS ${CFLAGS_STRING})
@@ -76,4 +77,9 @@ target_include_directories(cm7 SYSTEM PRIVATE
 target_include_directories(cm7 PRIVATE
     ${FIRMWARE_INCS}
     ${TARGET_INCS}
+)
+
+target_include_directories(cm7 SYSTEM PRIVATE
+    ${NANOPB_ROOT}
+    ${PROTO_GEN_DIR}
 )

@@ -39,6 +39,18 @@ set(FIRMWARE_INCS
     "${FIRMWARE_ROOT}/inc"
 )
 
+# ── nanopb vendor library ────────────────────────────────────────────────────
+set(NANOPB_ROOT "${FLAPJACK_ROOT}/Vendor/nanopb")
+set(NANOPB_SRCS
+    "${NANOPB_ROOT}/pb_common.c"
+    "${NANOPB_ROOT}/pb_encode.c"
+    "${NANOPB_ROOT}/pb_decode.c"
+)
+
+# ── proto generated sources (produced by Scripts/board.py before cmake runs) ─
+set(PROTO_GEN_DIR "${FIRMWARE_ROOT}/src/proto")
+list(APPEND FIRMWARE_INCS "${PROTO_GEN_DIR}")
+
 file(GLOB_RECURSE FIRMWARE_SRCS
     "${FIRMWARE_ROOT}/src/*.c"
     "${FIRMWARE_ROOT}/src/*.s"

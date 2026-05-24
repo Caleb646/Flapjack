@@ -1,8 +1,10 @@
-pyqt5 
-pyqtgraph 
+pyqt5
+pyqtgraph
 numpy
 PyOpenGL_accelerate
 PyOpenGL
 trimesh
 dacite
 pyserial
+protobuf
+grpcio-tools

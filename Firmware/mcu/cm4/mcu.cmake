@@ -44,10 +44,11 @@ set(CM4_LINKER_OPTIONS
 )
 
 list(APPEND TARGETS cm4)
-add_executable(cm4 
+add_executable(cm4
     ${STM32_SRCS}
     ${FIRMWARE_SRCS}
     ${CM4_SRCS}
+    ${NANOPB_SRCS}
 )
 
 set_source_files_properties(${FIRMWARE_SRCS} PROPERTIES COMPILE_FLAGS ${CFLAGS_STRING})
@@ -76,4 +77,9 @@ target_include_directories(cm4 SYSTEM PRIVATE
 target_include_directories(cm4 PRIVATE
     ${FIRMWARE_INCS}
     ${TARGET_INCS}
+)
+
+target_include_directories(cm4 SYSTEM PRIVATE
+    ${NANOPB_ROOT}
+    ${PROTO_GEN_DIR}
 )

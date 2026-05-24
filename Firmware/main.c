@@ -13,6 +13,8 @@
 #include "mc/filter.h"
 #include "mc/pid.h"
 
+#include "shell/shell.h"
+
 #include "drivers/dma.h"
 #include "drivers/io/gpio.h"
 
@@ -84,6 +86,12 @@ int main (void) {
     if (STATUS_FAIL (SerialDebug_Init ())) {
         CriticalErrorHandler ();
     }
+
+    if (STATUS_FAIL (Shell_Init ())) {
+        LOG_ERROR ("Failed to init shell");
+        CriticalErrorHandler ();
+    }
+
     s_IsSystemInited = true;
     while (!s_IsCM4Ready) {
         // allow cm4 to initialize logger

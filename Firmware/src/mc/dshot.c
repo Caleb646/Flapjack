@@ -20,9 +20,9 @@ FJ_DEFINE_SHARED (DShotBB_t, g_DShotBB) = {
                                         .pPort        = BRD_GET_GPIO_PORT (MOTOR_1),
                                         .pin          = BRD_GET_GPIO_PIN (MOTOR_1) },
 #if defined(MOTOR_2_ENABLED) && (MOTOR_2_ENABLED == 1U)
-                                      { .timerChannel = BRD_GET_TIMER_CHANNEL (MOTOR_2),
-                                        .pPort        = BRD_GET_GPIO_PORT (MOTOR_2),
-                                        .pin          = BRD_GET_GPIO_PIN (MOTOR_2) }
+                                 { .timerChannel = BRD_GET_TIMER_CHANNEL (MOTOR_2),
+                                   .pPort        = BRD_GET_GPIO_PORT (MOTOR_2),
+                                   .pin          = BRD_GET_GPIO_PIN (MOTOR_2) }
 #endif
                   } }
 };
@@ -77,16 +77,16 @@ eSTATUS_t DShotBB_Init (void) {
         LOG_ERROR ("No free DMA stream for DShot");
         return eSTATUS_FAILURE;
     }
-    p->pDmaHandle                          = pDma;
-    pDma->plat.Init.Request                = DMA_REQUEST_TIM6_UP;
-    pDma->plat.Init.Direction              = DMA_MEMORY_TO_PERIPH;
-    pDma->plat.Init.PeriphInc              = DMA_PINC_DISABLE;
-    pDma->plat.Init.MemInc                 = DMA_MINC_ENABLE;
-    pDma->plat.Init.PeriphDataAlignment    = DMA_PDATAALIGN_WORD;
-    pDma->plat.Init.MemDataAlignment       = DMA_MDATAALIGN_WORD;
-    pDma->plat.Init.Mode                   = DMA_NORMAL;
-    pDma->plat.Init.Priority               = DMA_PRIORITY_HIGH;
-    pDma->plat.Init.FIFOMode               = DMA_FIFOMODE_DISABLE;
+    p->pDmaHandle                       = pDma;
+    pDma->plat.Init.Request             = DMA_REQUEST_TIM6_UP;
+    pDma->plat.Init.Direction           = DMA_MEMORY_TO_PERIPH;
+    pDma->plat.Init.PeriphInc           = DMA_PINC_DISABLE;
+    pDma->plat.Init.MemInc              = DMA_MINC_ENABLE;
+    pDma->plat.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
+    pDma->plat.Init.MemDataAlignment    = DMA_MDATAALIGN_WORD;
+    pDma->plat.Init.Mode                = DMA_NORMAL;
+    pDma->plat.Init.Priority            = DMA_PRIORITY_HIGH;
+    pDma->plat.Init.FIFOMode            = DMA_FIFOMODE_DISABLE;
     if (Dma_Init (pDma) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize DShot DMA");
         return eSTATUS_FAILURE;
@@ -112,7 +112,7 @@ eSTATUS_t DShotBB_Write (uint16_t motorVals[BRD_MOTOR_COUNT]) {
     for (uint8_t m = 0; m < BRD_MOTOR_COUNT; ++m) {
         uint16_t packet = DShotPreparePacket (motorVals[m]);
         for (uint8_t bit = 0; bit < DSHOT_FRAME_SIZE; ++bit) {
-            uint8_t  hi   = (packet & 0x8000U) ? DSHOT_SAMPLES_FOR_1 : DSHOT_SAMPLES_FOR_0;
+            uint8_t hi    = (packet & 0x8000U) ? DSHOT_SAMPLES_FOR_1 : DSHOT_SAMPLES_FOR_0;
             uint32_t base = (uint32_t)bit * DSHOT_SAMPLES_PER_BIT;
             for (uint8_t s = 0; s < DSHOT_SAMPLES_PER_BIT; ++s) {
                 p->buffer[base + s] |= (s < hi) ? set_mask : clr_mask;
@@ -131,10 +131,7 @@ eSTATUS_t DShotBB_Write (uint16_t motorVals[BRD_MOTOR_COUNT]) {
     // p->hardware.motorPins[0].pPort->BSRR = p->buffer[0];
 
     DMA_HandleTypeDef* pDma = &p->pDmaHandle->plat;
-    HAL_DMA_Start_IT (pDma,
-                      (uint32_t)&p->buffer[0],
-                      (uint32_t)&p->hardware.motorPins[0].pPort->BSRR,
-                      DSHOT_BUFFER_SIZE);
+    HAL_DMA_Start_IT (pDma, (uint32_t)&p->buffer[0], (uint32_t)&p->hardware.motorPins[0].pPort->BSRR, DSHOT_BUFFER_SIZE);
     __HAL_TIM_CLEAR_FLAG (&p->tim6Handle, TIM_FLAG_UPDATE);
     __HAL_TIM_ENABLE_DMA (&p->tim6Handle, TIM_DMA_UPDATE);
     __HAL_TIM_SET_COUNTER (&p->tim6Handle, 0U);

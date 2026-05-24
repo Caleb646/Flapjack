@@ -6,6 +6,8 @@
 
 #include "core/core.h"
 
+#include "shell/shell.h"
+
 #define MAX_NUM_TASKS 10U
 
 FJ_DEFINE_SHARED(Task_t, m_SequentialTasks[][MAX_NUM_TASKS]) = {
@@ -32,8 +34,9 @@ FJ_DEFINE_SHARED(Task_t, m_AsyncTasks[][MAX_NUM_TASKS]) = {
         { .taskFunction = TaskInterCoreSync, .taskName = "InterCore_Sync", .isEnabled = true },
         // for now let main core handle logging flight data
         // because if not the data will need be synchronized
-        { .taskFunction = Task_LogFlightData,      .taskName = "Log_FlightData", .hzUpdate = 10,    .isEnabled = true },
-        { .taskFunction = Task_LogHeartBeat, .taskName = "Log_HeartBeat", .hzUpdate = 10, .isEnabled = true },
+        { .taskFunction = Task_LogFlightData, .taskName = "Log_FlightData", .hzUpdate = 10, .isEnabled = true },
+        { .taskFunction = Task_LogHeartBeat,  .taskName = "Log_HeartBeat",  .hzUpdate = 10, .isEnabled = true },
+        { .taskFunction = Shell_Update,        .taskName = "Shell_Update",   .hzUpdate = 20, .isEnabled = true },
     },
 
     [CM4_IDX] = {

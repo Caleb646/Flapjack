@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+enum Axis {
+    ROLL     = 0;
+    PITCH    = 1;
+    YAW      = 2;
+    THROTTLE = 3;
+}
+
+enum PidGainType {
+    KP             = 0;
+    KI             = 1;
+    KD             = 2;
+    INTEGRAL_LIMIT = 3;
+}
+
+message SetPidCmd {
+    Axis        axis  = 1;
+    PidGainType gain  = 2;
+    float       value = 3;
+}
+
+message ArmCmd {
+    bool arm = 1;
+}
+
+message Command {
+    oneof cmd {
+        SetPidCmd set_pid    = 1;
+        ArmCmd    arm_disarm = 2;
+    }
+}

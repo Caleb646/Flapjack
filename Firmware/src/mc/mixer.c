@@ -76,7 +76,7 @@ FJ_DEFINE_SHARED (Mixer_t, g_Mixer) = {
         [eMIXER_PROFILE_AIRPLANE] = {
             .motorCount    = 2U,
             .servoCount    = 8U,
-            .pMotorMix     = g_TiltMotorMix,
+            .pMotorMix     = g_AirplaneMotorMix,
             .pServoMix     = g_AirplaneServoMix,
             .servoMixCount = ARRAY_SIZE (g_AirplaneServoMix),
         },
