@@ -7,4 +7,3 @@ trimesh
 dacite
 pyserial
 protobuf
-grpcio-tools

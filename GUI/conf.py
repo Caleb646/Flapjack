@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Tuple, Union
 from PyQt5.QtSerialPort import QSerialPort
 from dacite import from_dict
+import flapjack_pb2
 
 @dataclass
 class Conf:
@@ -276,6 +277,44 @@ def write_pid_packet(
     # H = uint16_t (2 bytes each)
     packet = struct.pack('<BBHHH4x', COMMAND_TYPE_PID_UPDATE, axis_code, p_uint16, i_uint16, d_uint16)
     return write_cmd_packet(serial, conf, packet)
+
+
+_AXIS_MAP = {
+    "roll":     flapjack_pb2.ROLL,
+    "pitch":    flapjack_pb2.PITCH,
+    "yaw":      flapjack_pb2.YAW,
+    "throttle": flapjack_pb2.THROTTLE,
+}
+
+_GAIN_MAP = {
+    "kp":             flapjack_pb2.KP,
+    "ki":             flapjack_pb2.KI,
+    "kd":             flapjack_pb2.KD,
+    "integral_limit": flapjack_pb2.INTEGRAL_LIMIT,
+}
+
+def write_protobuf_command(serial: QSerialPort, cmd: flapjack_pb2.Command) -> WRITE_CMD_RETURN_TYPE:
+    if not serial.isOpen():
+        return False, "Serial port is not open"
+    payload = cmd.SerializeToString()
+    frame = bytes([len(payload)]) + payload
+    try:
+        serial.write(frame)
+        return serial.flush(), None
+    except Exception as e:
+        return False, str(e)
+
+def write_set_pid_cmd(serial: QSerialPort, axis: str, gain: str, value: float) -> WRITE_CMD_RETURN_TYPE:
+    cmd = flapjack_pb2.Command()
+    cmd.set_pid.axis = _AXIS_MAP[axis]
+    cmd.set_pid.gain = _GAIN_MAP[gain]
+    cmd.set_pid.value = value
+    return write_protobuf_command(serial, cmd)
+
+def write_arm_cmd(serial: QSerialPort, arm: bool) -> WRITE_CMD_RETURN_TYPE:
+    cmd = flapjack_pb2.Command()
+    cmd.arm_disarm.arm = arm
+    return write_protobuf_command(serial, cmd)
 
 
 if __name__ == "__main__":

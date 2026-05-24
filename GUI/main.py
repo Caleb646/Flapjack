@@ -281,11 +281,16 @@ class FlightViewer(QtWidgets.QWidget):
             return
     
     def send_pid_command(self, axis, p_value, i_value, d_value):
-        
-        success, error = conf.write_pid_packet(self.serial, CONF, axis, p_value, i_value, d_value)
-        if not success:
-            self.append_debug_console(f"Failed to send PID command: {error}", "[ERROR]")
-            return
+        for gain, value in [("kp", p_value), ("ki", i_value), ("kd", d_value)]:
+            ok, err = conf.write_set_pid_cmd(self.serial, axis, gain, value)
+            if not ok:
+                self.append_debug_console(f"Failed to send PID command: {err}", "[ERROR]")
+                return
+
+    def send_arm_command(self, arm: bool):
+        ok, err = conf.write_arm_cmd(self.serial, arm)
+        if not ok:
+            self.append_debug_console(f"Failed to send ARM command: {err}", "[ERROR]")
 
     @QtCore.pyqtSlot(bool)
     def on_toggled(self, checked):
@@ -399,9 +404,21 @@ class FlightControlTab(QtWidgets.QWidget):
         self.stop_btn = QtWidgets.QPushButton("Stop", clicked=self.send_stop_command)
         self.stop_btn.setStyleSheet("QPushButton { background-color: #f44336; color: white; font-weight: bold; padding: 10px; }")
         self.stop_btn.setEnabled(False)
-        
+
+        self.arm_btn = QtWidgets.QPushButton("Arm")
+        self.arm_btn.setStyleSheet("QPushButton { background-color: #FF9800; color: white; font-weight: bold; padding: 10px; }")
+        self.arm_btn.clicked.connect(self.send_arm_command)
+        self.arm_btn.setEnabled(False)
+
+        self.disarm_btn = QtWidgets.QPushButton("Disarm")
+        self.disarm_btn.setStyleSheet("QPushButton { background-color: #9C27B0; color: white; font-weight: bold; padding: 10px; }")
+        self.disarm_btn.clicked.connect(self.send_disarm_command)
+        self.disarm_btn.setEnabled(False)
+
         flight_control_layout.addWidget(self.start_btn)
         flight_control_layout.addWidget(self.stop_btn)
+        flight_control_layout.addWidget(self.arm_btn)
+        flight_control_layout.addWidget(self.disarm_btn)
         
         layout.addWidget(flight_control_group)
         
@@ -495,6 +512,8 @@ class FlightControlTab(QtWidgets.QWidget):
 
         self.start_btn.setEnabled(enabled)
         self.stop_btn.setEnabled(enabled)
+        self.arm_btn.setEnabled(enabled)
+        self.disarm_btn.setEnabled(enabled)
         self.forward_btn.setEnabled(enabled)
         self.backward_btn.setEnabled(enabled)
         self.left_btn.setEnabled(enabled)
@@ -550,6 +569,14 @@ class FlightControlTab(QtWidgets.QWidget):
         """Send stop command as 8-byte packet"""
         self.parent_viewer.send_stop_command()
         self.last_command_label.setText("Last Command: STOP")
+
+    def send_arm_command(self):
+        self.parent_viewer.send_arm_command(arm=True)
+        self.last_command_label.setText("Last Command: ARM")
+
+    def send_disarm_command(self):
+        self.parent_viewer.send_arm_command(arm=False)
+        self.last_command_label.setText("Last Command: DISARM")
 
 class ConfigurationTab(QtWidgets.QWidget):
     def __init__(self, parent_viewer):
