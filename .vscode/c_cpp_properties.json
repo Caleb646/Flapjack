@@ -4,10 +4,10 @@
             "name": "Windows DEBUG",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/Firmware/Targets",
-                "${workspaceFolder}/Firmware/Common/Inc",
-                "${workspaceFolder}/Firmware/CM4/Core/Inc",
-                "${workspaceFolder}/Firmware/CM7/Core/Inc",
+                "${workspaceFolder}/Firmware/target",
+                "${workspaceFolder}/Firmware/inc",
+                "${workspaceFolder}/Firmware/platform/stm32h747/cm4/inc",
+                "${workspaceFolder}/Firmware/platform/stm32h747/cm7/inc",
                 "${workspaceFolder}/Vendor/STM32H7/CMSIS/Include",
                 "${workspaceFolder}/Vendor/STM32H7/STM32H7xx_HAL_Driver/Inc"
             ],

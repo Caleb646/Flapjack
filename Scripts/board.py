@@ -51,7 +51,10 @@ PROTOC_EXE       = TOOLS_ROOT / "protoc" / "bin" / "protoc"
 NANOPB_ROOT      = PROJECT_ROOT / "Vendor" / "nanopb"
 NANOPB_GEN       = NANOPB_ROOT / "generator" / "nanopb_generator.py"
 NANOPB_PROTO_PY  = NANOPB_ROOT / "generator" / "proto"
-VENV_PYTHON      = PROJECT_ROOT / ".venv" / "bin" / "python3"
+
+VENV_PYTHON             = PROJECT_ROOT / ".venv" / "bin" / "python3"
+if PLATFORM == "win32":
+    VENV_PYTHON         = PROJECT_ROOT / ".venv" / "Scripts" / "python.exe"
 
 # ── Toolchain paths ────────────────────────────────────────────────────────────
 
@@ -93,20 +96,20 @@ OPENOCD_URL     = (
 OPENOCD_DIR = TOOLS_ROOT / "openocd"
 OPENOCD_BIN = OPENOCD_DIR / "bin"
 
-# Resolved per platform
+_HOST_ARM_BIN    = ARM_GNU_BIN
+_OPENOCD_PATH    = OPENOCD_BIN / "openocd"
+CMAKE_GENERATOR = "Unix Makefiles"
 if PLATFORM == "win32":
     _HOST_ARM_BIN    = MINGW64_BIN
+    _OPENOCD_PATH    = MINGW64_BIN / "openocd.exe"
     _CMAKE_GENERATOR = "MinGW Makefiles"
-else:
-    _HOST_ARM_BIN    = ARM_GNU_BIN
-    _CMAKE_GENERATOR = "Unix Makefiles"
+
+    
 
 # ── OpenOCD flash constants ────────────────────────────────────────────────────
 
 _IFACE_CFG     = "interface/stlink.cfg"
-# _TARGET_DUAL   = "target/stm32h7x_dual_bank.cfg"
 _TARGET_DUAL   = "Scripts/stm32h747_dual_core.cfg"
-# _TARGET_SINGLE = "target/stm32h7x.cfg"
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -358,19 +361,6 @@ def cmd_build(args: argparse.Namespace) -> None:
 #  flash
 # ══════════════════════════════════════════════════════════════════════════════
 
-def _find_openocd(override: str | None) -> str:
-    if override:
-        return override
-    local = OPENOCD_BIN / "openocd"
-    if local.exists():
-        return str(local)
-    found = shutil.which("openocd")
-    if found:
-        return found
-    print("ERROR: openocd not found in Tools/openocd/bin/ or PATH")
-    sys.exit(2)
-
-
 def _flash(board: str, config: str, run_tests: bool, openocd: str) -> None:
     m7     = BUILD_ROOT / board / config / "cm7.elf"
     m4     = BUILD_ROOT / board / config / "cm4.elf"
@@ -379,7 +369,6 @@ def _flash(board: str, config: str, run_tests: bool, openocd: str) -> None:
         "init",
         "reset init",
         "reset halt",
-        # "rbp all",
         f"flash write_image erase {m7}",
         f"flash write_image erase {m4}",
         "reset run",
@@ -387,6 +376,8 @@ def _flash(board: str, config: str, run_tests: bool, openocd: str) -> None:
     ]
 
     cmd = ["sudo", openocd, "-f", _IFACE_CFG, "-f", target]
+    if PLATFORM == "win32":
+        cmd = cmd[1:]  # Remove "sudo" on Windows
     for c in cmds:
         cmd += ["-c", c]
 
@@ -464,8 +455,8 @@ def _run_tests(port: str, baud: int, timeout: float) -> None:
 
 
 def cmd_flash(args: argparse.Namespace) -> None:
-    openocd = _find_openocd(args.openocd)
-    _flash(args.board, args.config, args.run_tests, openocd)
+
+    _flash(args.board, args.config, args.run_tests, _OPENOCD_PATH)
     if args.run_tests:
         _run_tests(args.port, args.baud, args.timeout)
 
@@ -495,8 +486,7 @@ def main() -> None:
                          help="Build configuration")
     p_build.add_argument("--build-tests", "-t", action="store_true",
                          help="Build HW-test firmware")
-    p_build.add_argument("--proto", "-p", help=f"Regenerate protobuf sources (default: ${PROJECT_ROOT}/Proto)",
-                         default=Path(f"${PROJECT_ROOT}/Proto"), type=Path)
+    p_build.add_argument("--proto", "-p", help=f"Directory to protobuf sources to regenerate", type=Path)
 
     # ── flash ──────────────────────────────────────────────────────────────────
     p_flash = sub.add_parser("flash", help="Flash firmware and optionally run HIL tests",

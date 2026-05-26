@@ -1,3 +1,6 @@
 [submodule "Vendor/nanopb"]
 	path = Vendor/nanopb
 	url = https://github.com/nanopb/nanopb.git
+[submodule "Vendor/FreeRTOS"]
+	path = Vendor/FreeRTOS
+	url = https://github.com/STMicroelectronics/stm32-mw-freertos.git

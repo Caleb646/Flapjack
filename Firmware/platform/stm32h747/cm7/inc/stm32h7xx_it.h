@@ -21,12 +21,16 @@
 #ifndef __STM32H7xx_IT_H
 #define __STM32H7xx_IT_H
 
+#include "hal.h"
+
 // to disable redefinition warnings for default target macros
 #pragma GCC system_header
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+extern TIM_HandleTypeDef htim16;
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -49,15 +53,14 @@ extern "C" {
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
-void NMI_Handler (void);
-void HardFault_Handler (void);
-void MemManage_Handler (void);
-void BusFault_Handler (void);
-void UsageFault_Handler (void);
-void DebugMon_Handler (void);
-void TIM3_IRQHandler (void);
-void CM7_SEV_IRQHandler (void);
-void CEC_IRQHandler (void);
+void NMI_Handler(void);
+void HardFault_Handler(void);
+void MemManage_Handler(void);
+void BusFault_Handler(void);
+void UsageFault_Handler(void);
+void DebugMon_Handler(void);
+void TIM16_IRQHandler(void);
+void CM4_SEV_IRQHandler (void);
 /* USER CODE BEGIN EFP */
 
 /* USER CODE END EFP */

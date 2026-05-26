@@ -30,7 +30,7 @@ project(FlapJack C ASM)
 
 set(TESTS_ROOT "${FLAPJACK_ROOT}/Tests")
 set(FIRMWARE_ROOT "${FLAPJACK_ROOT}/Firmware")
-set(MCU_ROOT "${FIRMWARE_ROOT}/mcu")
+set(PLATFORM_ROOT "${FIRMWARE_ROOT}/platform")
 set(TARGET_ROOT "${FIRMWARE_ROOT}/target")
 
 set(FIRMWARE_DEFINES "")

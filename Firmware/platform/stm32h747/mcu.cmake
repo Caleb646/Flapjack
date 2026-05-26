@@ -1,6 +1,6 @@
 
-set(CM7_ROOT "${MCU_ROOT}/cm7")
-set(CM4_ROOT "${MCU_ROOT}/cm4")
+set(CM7_ROOT "${PLATFORM_ROOT}/stm32h747/cm7")
+set(CM4_ROOT "${PLATFORM_ROOT}/stm32h747/cm4")
 
 set(CMSIS_ROOT_DIR "${FLAPJACK_ROOT}/Vendor/STM32H7/CMSIS")
 set(CMSIS_INC_DIR "${CMSIS_ROOT_DIR}/Include")
@@ -53,11 +53,15 @@ set(STM32_HAL_SRCS
 set(STM32_INCS
     ${CMSIS_INCS}
     ${STM32_HAL_INCS}
+
+    ${PLATFORM_ROOT} # TODO: temporary
 )
 
 set(STM32_SRCS
     ${CMSIS_SRCS}
     ${STM32_HAL_SRCS}
+
+    "${PLATFORM_ROOT}/stm32h747/platform.c" # TODO: temporary
 )
 
 set(STM32_DEFINES

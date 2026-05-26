@@ -117,7 +117,7 @@ class FlightViewer(QtWidgets.QWidget):
             if "STLink Virtual COM Port" in port.description:
                 stlink_comport = str(port.device)
                 break
-        print(f"Using serial port [{stlink_comport}] and device [{port.description}]")
+        print(f"Using serial port [{stlink_comport}]")
         self.serial = QSerialPort(
             stlink_comport,
             # baudRate=QtSerialPort.QSerialPort.Baud115200,

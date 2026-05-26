@@ -54,12 +54,13 @@
 
 /* USER CODE END 0 */
 
+
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
 
 /******************************************************************************/
-/*           Cortex Processor Interruption and Exception Handlers          */
+/*           Cortex Processor Interruption and Exception Handlers */
 /******************************************************************************/
 /**
  * @brief This function handles Non maskable interrupt.
@@ -138,11 +139,22 @@ void DebugMon_Handler (void) {
     /* USER CODE END DebugMonitor_IRQn 1 */
 }
 
+void TIM16_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM16_IRQn 0 */
+
+  /* USER CODE END TIM16_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim16);
+  /* USER CODE BEGIN TIM16_IRQn 1 */
+
+  /* USER CODE END TIM16_IRQn 1 */
+}
+
 /******************************************************************************/
-/* STM32H7xx Peripheral Interrupt Handlers                                    */
-/* Add here the Interrupt Handlers for the used peripherals.                  */
-/* For the available peripheral interrupt handler names,                      */
-/* please refer to the startup file (startup_stm32h7xx.s).                    */
+/* STM32H7xx Peripheral Interrupt Handlers */
+/* Add here the Interrupt Handlers for the used peripherals. */
+/* For the available peripheral interrupt handler names, */
+/* please refer to the startup file (startup_stm32h7xx.s). */
 /******************************************************************************/
 
 /* USER CODE BEGIN 1 */
