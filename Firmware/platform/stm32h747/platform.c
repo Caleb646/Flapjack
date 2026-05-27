@@ -180,9 +180,3 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         HAL_IncTick();
     }
 }
-
-void Error_Handler(void)
-{
-    __disable_irq();
-    while (1);
-}
