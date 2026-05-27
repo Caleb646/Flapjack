@@ -12,11 +12,14 @@ Examples
 --------
   python3 Scripts/board.py install
   python3 Scripts/board.py build --board nucleo-h747zi
-  python3 Scripts/board.py build --board nucleo-h747zi --config Release
+  python3 Scripts/board.py build --board nucleo-h747zi -f r
+  python3 Scripts/board.py build --board nucleo-h747zi -f dc
+  python3 Scripts/board.py build --board nucleo-h747zi -f rc
+  python3 Scripts/board.py build --board nucleo-h747zi -f dct
   python3 Scripts/board.py flash --board nucleo-h747zi
-  python3 Scripts/board.py flash --board nucleo-h747zi --config Release
-  python3 Scripts/board.py flash --board nucleo-h747zi --run-tests
-  python3 Scripts/board.py flash --board nucleo-h747zi --run-tests --port /dev/ttyUSB0 --baud 115200
+  python3 Scripts/board.py flash --board nucleo-h747zi -f r
+  python3 Scripts/board.py flash --board nucleo-h747zi -f t
+  python3 Scripts/board.py flash --board nucleo-h747zi -f dt --port /dev/ttyUSB0 --baud 115200
 """
 
 import argparse
@@ -313,16 +316,36 @@ def _verify_toolchain() -> None:
 
 
 def cmd_build(args: argparse.Namespace) -> None:
-    print(f"Flapjack Firmware Build  |  board: {args.board}  |  config: {args.config}\n")
+    # ── Parse flags string character-by-character ──────────────────────────────
+    config      = 'Debug'
+    clean       = False
+    build_tests = False
+    regen_proto = False
+
+    for ch in args.flags.lower():
+        if   ch == 'd': config      = 'Debug'
+        elif ch == 'r': config      = 'Release'
+        elif ch == 'c': clean       = True
+        elif ch == 't': build_tests = True
+        elif ch == 'p': regen_proto = True
+        else:
+            print(f"ERROR: Unknown flag '{ch}'. Valid: d=Debug, r=Release, c=clean, t=tests, p=proto")
+            sys.exit(1)
+
+    print(f"Flapjack Firmware Build  |  board: {args.board}  |  config: {config}\n")
     _verify_toolchain()
 
-    if args.proto:
-        _generate_proto(args.proto)
+    if regen_proto:
+        _generate_proto(PROTO_GEN_DIR)
 
     env = os.environ.copy()
     env["PATH"] = str(_HOST_ARM_BIN) + os.pathsep + env["PATH"]
 
-    output_dir = BUILD_ROOT / args.board / args.config
+    output_dir = BUILD_ROOT / args.board / config
+
+    if clean and output_dir.exists():
+        print(f"Cleaning {output_dir} …")
+        shutil.rmtree(output_dir)
 
     cmake_cfg_log   = output_dir / "cmake_configure.log"
     cmake_build_log = output_dir / "cmake_build.log"
@@ -333,9 +356,9 @@ def cmd_build(args: argparse.Namespace) -> None:
         "-S", str(PROJECT_ROOT),
         "-B", str(output_dir),
         "-G", _CMAKE_GENERATOR,
-        f"-DCMAKE_BUILD_TYPE={args.config}",
+        f"-DCMAKE_BUILD_TYPE={config}",
         f"-DBOARD_NAME={args.board}",
-        f"-DHIL_TEST={args.build_tests == True}"
+        f"-DHIL_TEST={build_tests}"
     ]
     print(f"Configuring …  ({' '.join(cmake_args)})")
     try:
@@ -355,6 +378,7 @@ def cmd_build(args: argparse.Namespace) -> None:
         sys.exit(1)
 
     print(f"Build complete.  Artifacts: {output_dir}")
+
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -455,9 +479,19 @@ def _run_tests(port: str, baud: int, timeout: float) -> None:
 
 
 def cmd_flash(args: argparse.Namespace) -> None:
+    config     = 'Debug'
+    run_tests  = False
 
-    _flash(args.board, args.config, args.run_tests, _OPENOCD_PATH)
-    if args.run_tests:
+    for ch in args.flags.lower():
+        if   ch == 'd': config    = 'Debug'
+        elif ch == 'r': config    = 'Release'
+        elif ch == 't': run_tests = True
+        else:
+            print(f"ERROR: Unknown flag '{ch}'. Valid: d=Debug, r=Release, t=run tests")
+            sys.exit(1)
+
+    _flash(args.board, config, run_tests, _OPENOCD_PATH)
+    if run_tests:
         _run_tests(args.port, args.baud, args.timeout)
 
 
@@ -482,21 +516,17 @@ def main() -> None:
                               formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     p_build.add_argument("--board", "-b", required=True, choices=BOARDS,
                          help="Target board")
-    p_build.add_argument("--config", "-c", default="Debug", choices=CONFIGS,
-                         help="Build configuration")
-    p_build.add_argument("--build-tests", "-t", action="store_true",
-                         help="Build HW-test firmware")
-    p_build.add_argument("--proto", "-p", help=f"Directory to protobuf sources to regenerate", type=Path)
+    p_build.add_argument("--flags", "-f", default="d", metavar="FLAGS",
+                         help="Build flags (combine freely): d=Debug, r=Release, "
+                              "c=clean, t=HIL tests, p=regen proto")
 
     # ── flash ──────────────────────────────────────────────────────────────────
     p_flash = sub.add_parser("flash", help="Flash firmware and optionally run HIL tests",
                               formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     p_flash.add_argument("--board", "-b", required=True, choices=BOARDS,
                          help="Target board")
-    p_flash.add_argument("--config", "-c", default="Debug", choices=CONFIGS,
-                         help="Build configuration")
-    p_flash.add_argument("--run-tests", "-t", action="store_true",
-                         help="Flash HW-test firmware and stream UART results")
+    p_flash.add_argument("--flags", "-f", default="d", metavar="FLAGS",
+                         help="Flash flags (combine freely): d=Debug, r=Release, t=run tests")
     p_flash.add_argument("--port", default="/dev/ttyACM0",
                          help="Serial port for test output")
     p_flash.add_argument("--baud", type=int, default=230400,
