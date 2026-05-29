@@ -4,3 +4,6 @@
 [submodule "Vendor/FreeRTOS"]
 	path = Vendor/FreeRTOS
 	url = https://github.com/STMicroelectronics/stm32-mw-freertos.git
+[submodule "Vendor/umsg"]
+	path = Vendor/umsg
+	url = https://github.com/Caleb646/umsg.git

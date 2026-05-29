@@ -70,12 +70,12 @@ extern unsigned long getRunTimeCounterValue(void);
 #define configCPU_CLOCK_HZ                       ( SystemCoreClock )
 #define configTICK_RATE_HZ                       ((TickType_t)1000)
 #define configMAX_PRIORITIES                     ( 56 )
-#define configUSE_SB_COMPLETED_CALLBACK          ( valueNotSetted )
-#define configUSE_MINI_LIST_ITEM                ( valueNotSetted )
+#define configUSE_SB_COMPLETED_CALLBACK          0
+#define configUSE_MINI_LIST_ITEM                 1
 #define configMINIMAL_STACK_SIZE                 ((uint16_t)128)
 #define configTOTAL_HEAP_SIZE                    ((size_t)15360)
 #define configMAX_TASK_NAME_LEN                  ( 16 )
-#define configGENERATE_RUN_TIME_STATS            1
+#define configGENERATE_RUN_TIME_STATS            0
 #define configHEAP_CLEAR_MEMORY_ON_FREE          0
 #define configUSE_TRACE_FACILITY                 1
 #define configUSE_16_BIT_TICKS                   0

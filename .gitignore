@@ -8,6 +8,7 @@ Scripts/build
 
 **/build/**
 .venv
+*.local.json
 
 **Build
 **Tools
