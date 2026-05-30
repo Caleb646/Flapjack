@@ -39,7 +39,7 @@ set(FREERTOS_ROOT  "${FLAPJACK_ROOT}/Vendor/FreeRTOS/Source")
 set(UMSG_ROOT      "${FLAPJACK_ROOT}/Vendor/umsg/umsg_lib/core")
 
 set(GENERATED_MSG_INCS "${FIRMWARE_ROOT}/msgs/proto" "${FIRMWARE_ROOT}/msgs/umsg")
-file(GLOB GENERATED_MSG_SRCS    "${FIRMWARE_ROOT}/msgs/*.c")
+file(GLOB_RECURSE GENERATED_MSG_SRCS "${FIRMWARE_ROOT}/msgs/*.c")
 
 set(VENDOR_SRCS
     # nanopb
@@ -69,7 +69,6 @@ set(VENDOR_INCS
 set(APP_DEFS "")
 set(APP_INCS
     "${FIRMWARE_ROOT}/inc"
-    "${PROTO_GEN_DIR}"
 )
 
 file(GLOB_RECURSE APP_SRCS
