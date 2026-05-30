@@ -3,7 +3,7 @@
 #include "flight.h"
 #include "hal.h"
 #include "target.h"
-#include "task.h"
+#include "fj_task.h"
 
 #include "core/core.h"
 

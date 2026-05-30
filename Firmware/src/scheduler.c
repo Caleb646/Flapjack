@@ -2,7 +2,7 @@
 #include <stdint.h>
 
 #include "scheduler.h"
-#include "task.h"
+#include "fj_task.h"
 
 #include "core/core.h"
 

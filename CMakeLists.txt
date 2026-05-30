@@ -33,25 +33,47 @@ set(FIRMWARE_ROOT "${FLAPJACK_ROOT}/Firmware")
 set(PLATFORM_ROOT "${FIRMWARE_ROOT}/platform")
 set(TARGET_ROOT "${FIRMWARE_ROOT}/target")
 
-set(FIRMWARE_DEFINES "")
+# ── Vendor group ─────────────────────────────────────────────────────────────
+set(NANOPB_ROOT    "${FLAPJACK_ROOT}/Vendor/nanopb")
+set(FREERTOS_ROOT  "${FLAPJACK_ROOT}/Vendor/FreeRTOS/Source")
+set(UMSG_ROOT      "${FLAPJACK_ROOT}/Vendor/umsg/umsg_lib")
+set(PROTO_GEN_DIR  "${FIRMWARE_ROOT}/src/proto")
 
-set(FIRMWARE_INCS
-    "${FIRMWARE_ROOT}/inc"
-)
+file(GLOB UMSG_MSG_SRCS "${UMSG_ROOT}/src/*.c")
 
-# ── nanopb vendor library ────────────────────────────────────────────────────
-set(NANOPB_ROOT "${FLAPJACK_ROOT}/Vendor/nanopb")
-set(NANOPB_SRCS
+set(VENDOR_SRCS
+    # nanopb
     "${NANOPB_ROOT}/pb_common.c"
     "${NANOPB_ROOT}/pb_encode.c"
     "${NANOPB_ROOT}/pb_decode.c"
+    # FreeRTOS kernel (portable layer is per-core)
+    "${FREERTOS_ROOT}/tasks.c"
+    "${FREERTOS_ROOT}/queue.c"
+    "${FREERTOS_ROOT}/list.c"
+    "${FREERTOS_ROOT}/event_groups.c"
+    "${FREERTOS_ROOT}/timers.c"
+    "${FREERTOS_ROOT}/stream_buffer.c"
+    # umsg core + FreeRTOS port + generated message types
+    "${UMSG_ROOT}/core/src/umsg.c"
+    "${UMSG_ROOT}/core/src/port_freertos.c"
+    ${UMSG_MSG_SRCS}
+)
+set(VENDOR_INCS
+    "${NANOPB_ROOT}"
+    "${PROTO_GEN_DIR}"
+    "${FREERTOS_ROOT}/include"
+    "${UMSG_ROOT}/inc"
+    "${UMSG_ROOT}/core/inc"
 )
 
-# ── proto generated sources (produced by Scripts/board.py before cmake runs) ─
-set(PROTO_GEN_DIR "${FIRMWARE_ROOT}/src/proto")
-list(APPEND FIRMWARE_INCS "${PROTO_GEN_DIR}")
+# ── App group ────────────────────────────────────────────────────────────────
+set(APP_DEFS "")
+set(APP_INCS
+    "${FIRMWARE_ROOT}/inc"
+    "${PROTO_GEN_DIR}"
+)
 
-file(GLOB_RECURSE FIRMWARE_SRCS
+file(GLOB_RECURSE APP_SRCS
     "${FIRMWARE_ROOT}/src/*.c"
     "${FIRMWARE_ROOT}/src/*.s"
 )
@@ -92,13 +114,13 @@ if(HIL_TEST STREQUAL "True")
         "${TESTS_ROOT}/HIL"
         "${TESTS_ROOT}/unity"
     )
-    list(APPEND FIRMWARE_INCS "${HIL_INCS}")
-    list(APPEND FIRMWARE_SRCS "${HIL_SRCS}")
-    list(APPEND FIRMWARE_DEFINES "UNITY_INCLUDE_CONFIG_H")
+    list(APPEND APP_INCS "${HIL_INCS}")
+    list(APPEND APP_SRCS "${HIL_SRCS}")
+    list(APPEND APP_DEFS "UNITY_INCLUDE_CONFIG_H")
 
 else()
 
-    list(APPEND FIRMWARE_SRCS "${FIRMWARE_ROOT}/main.c")
+    list(APPEND APP_SRCS "${FIRMWARE_ROOT}/main.c")
 
 endif()
 
@@ -107,9 +129,35 @@ include("${TARGET_ROOT}/target.cmake")
 message(STATUS "Building for board: ${BOARD_NAME}")
 message(STATUS "Board defines: ${BOARD_DEFINES}")
 
+# ── Apply shared groups to all registered targets ────────────────────────────
+foreach(target IN LISTS TARGETS)
+    target_sources(${target} PRIVATE
+        ${VENDOR_SRCS}
+        ${PLATFORM_SRCS}
+        ${APP_SRCS}
+    )
+    target_compile_definitions(${target} PRIVATE
+        ${PLATFORM_DEFS}
+        ${BOARD_DEFINES}
+        ${APP_DEFS}
+    )
+    target_include_directories(${target} SYSTEM PRIVATE
+        ${VENDOR_INCS}
+        ${PLATFORM_INCS}
+    )
+    target_include_directories(${target} PRIVATE
+        ${APP_INCS}
+        ${TARGET_INCS}
+    )
+    set_source_files_properties(${APP_SRCS}
+        TARGET_DIRECTORY ${target}
+        PROPERTIES COMPILE_FLAGS ${CFLAGS_STRING}
+    )
+endforeach()
+
 set(SIZE_COMMANDS "")
 foreach(target IN LISTS TARGETS)
-    list(APPEND SIZE_COMMANDS 
+    list(APPEND SIZE_COMMANDS
         COMMAND ${CMAKE_SIZE} -A $<TARGET_FILE:${target}>
     )
 endforeach()
