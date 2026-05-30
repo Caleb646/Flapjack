@@ -15,7 +15,7 @@ Examples
   python3 Scripts/board.py build --board nucleo-h747zi -f r
   python3 Scripts/board.py build --board nucleo-h747zi -f dc
   python3 Scripts/board.py build --board nucleo-h747zi -f rc
-  python3 Scripts/board.py build --board nucleo-h747zi -f dct
+  python3 Scripts/board.py build --board nucleo-h747zi -f gcr
   python3 Scripts/board.py flash --board nucleo-h747zi
   python3 Scripts/board.py flash --board nucleo-h747zi -f r
   python3 Scripts/board.py flash --board nucleo-h747zi -f t
@@ -40,19 +40,25 @@ PLATFORM = sys.platform
 PROJECT_ROOT  = Path(__file__).parent.parent
 BUILD_ROOT    = PROJECT_ROOT / "Build"
 TOOLS_ROOT    = PROJECT_ROOT / "Tools"
+GUI_ROOT      = PROJECT_ROOT / "GUI"
 
 BOARDS  = ["nucleo-h747zi", "flapjack-v1"]
 CONFIGS = ["Debug", "Release"]
 
-# ── Proto generation paths ─────────────────────────────────────────────────────
+# ── Generation ─────────────────────────────────────────────────────
 
-PROTO_FILE       = PROJECT_ROOT / "Proto" / "flapjack.proto"
-PROTO_GEN_DIR    = PROJECT_ROOT / "Firmware" / "src" / "proto"
-GUI_DIR          = PROJECT_ROOT / "GUI"
+UMSG_FILES_DIR          = PROJECT_ROOT / "Firmware" / "msgs" / "umsg" / "defs"
+UMSG_OUTPUT_DIR         = PROJECT_ROOT / "Firmware" / "msgs" / "umsg"
+
+PROTO_FILES_DIR         = PROJECT_ROOT / "Firmware" / "msgs" / "proto" / "defs"
+PROTO_OUTPUT_DIR        = PROJECT_ROOT / "Firmware" / "msgs" / "proto"
 
 PROTOC_EXE       = TOOLS_ROOT / "protoc" / "bin" / "protoc"
+if PLATFORM == "win32":
+    PROTOC_EXE   = PROTOC_EXE.with_suffix(".exe")
 NANOPB_ROOT      = PROJECT_ROOT / "Vendor" / "nanopb"
-NANOPB_GEN       = NANOPB_ROOT / "generator" / "nanopb_generator.py"
+NANOPB_GEN       = PROJECT_ROOT / "Vendor" / "nanopb" / "generator" / "nanopb_generator.py"
+UMSG_GEN         = PROJECT_ROOT / "Vendor" / "umsg" / "umsg_gen" / "umsg_gen" / "umsg_gen.py"
 NANOPB_PROTO_PY  = NANOPB_ROOT / "generator" / "proto"
 
 VENV_PYTHON             = PROJECT_ROOT / ".venv" / "bin" / "python3"
@@ -106,8 +112,6 @@ if PLATFORM == "win32":
     _HOST_ARM_BIN    = MINGW64_BIN
     _OPENOCD_PATH    = MINGW64_BIN / "openocd.exe"
     _CMAKE_GENERATOR = "MinGW Makefiles"
-
-    
 
 # ── OpenOCD flash constants ────────────────────────────────────────────────────
 
@@ -267,36 +271,53 @@ def cmd_install(_: argparse.Namespace) -> None:
 #  build
 # ══════════════════════════════════════════════════════════════════════════════
 
-def _generate_proto(directory: Path) -> None:
-    """Generate nanopb C sources and Python protobuf binding from flapjack.proto.
-
-    Skips generation when all outputs are already newer than the .proto file.
-    Exits with an error if the required tools are missing.
-    """
+def _generate_proto() -> None:
     print("Generating protobuf sources …")
 
-    for tool, path in [("nanopb_generator", NANOPB_GEN)]:
-        if not path.exists():
-            print(f"ERROR: {tool} not found at {path}")
-            sys.exit(1)
+    proto_files = sorted(PROTO_FILES_DIR.glob("*.proto"))
+    if not proto_files:
+        print(f"WARNING: No .proto files found in {PROTO_FILES_DIR}")
+        return
 
-    PROTO_GEN_DIR.mkdir(parents=True, exist_ok=True)
-    try:
-        subprocess.run(
-            [str(VENV_PYTHON), str(NANOPB_GEN), str(PROTO_FILE), "-D", str(PROTO_GEN_DIR), "-I", str(PROTO_FILE.parent)],
-            check=True, capture_output=True, text=True, timeout=2, env=os.environ.copy(),
-        )
-    except subprocess.CalledProcessError as e:
-        print(f"ERROR: nanopb_generator failed: {e.stderr}")
+    if not NANOPB_GEN.exists():
+        print(f"ERROR: nanopb_generator not found at {NANOPB_GEN}")
         sys.exit(1)
 
+    PROTO_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    for proto_file in proto_files:
+        try:
+            subprocess.run(
+                [str(VENV_PYTHON), str(NANOPB_GEN), str(proto_file),
+                "-D", str(PROTO_OUTPUT_DIR), "-I", str(PROTO_FILES_DIR)],
+                check=True, capture_output=True, text=True, env=os.environ.copy(),
+            )
+            subprocess.run(
+                [str(PROTOC_EXE), str(proto_file),
+                 f"-I{PROTO_FILES_DIR}", f"--python_out={GUI_ROOT}"],
+                check=True, capture_output=True, shell=True, text=True, env=os.environ.copy(),
+            )
+        except subprocess.CalledProcessError as e:
+            print(f"ERROR: protoc failed on {proto_file.name}: {e.stderr}")
+            raise e
+
+
+def _generate_umsg() -> None:
+    print("Generating umsg sources …")
+
+    if not UMSG_GEN.exists():
+        print(f"ERROR: umsg_gen not found at {UMSG_GEN}")
+        sys.exit(1)
+
+    UMSG_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     try:
         subprocess.run(
-            [PROTOC_EXE, str(PROTO_FILE), f"-I{PROTO_FILE.parent}", f"--python_out={GUI_DIR}"],
-            check=True, capture_output=True, shell=True, text=True, env=os.environ.copy(),
+            [str(VENV_PYTHON), str(UMSG_GEN),
+             "-d", str(UMSG_FILES_DIR), "-o", str(UMSG_OUTPUT_DIR)],
+            check=True, capture_output=True, text=True, env=os.environ.copy(),
         )
     except subprocess.CalledProcessError as e:
-        print(f"ERROR: protoc --python_out failed: {e.stderr}")
+        print(f"ERROR: umsg_gen failed: {e.stderr}")
         sys.exit(1)
 
 
@@ -320,23 +341,24 @@ def cmd_build(args: argparse.Namespace) -> None:
     config      = 'Debug'
     clean       = False
     build_tests = False
-    regen_proto = False
+    regen       = False
 
     for ch in args.flags.lower():
         if   ch == 'd': config      = 'Debug'
         elif ch == 'r': config      = 'Release'
         elif ch == 'c': clean       = True
         elif ch == 't': build_tests = True
-        elif ch == 'p': regen_proto = True
+        elif ch == 'g': regen       = True
         else:
-            print(f"ERROR: Unknown flag '{ch}'. Valid: d=Debug, r=Release, c=clean, t=tests, p=proto")
+            print(f"ERROR: Unknown flag '{ch}'. Valid: d=Debug, r=Release, c=clean, t=tests, g=generate")
             sys.exit(1)
 
     print(f"Flapjack Firmware Build  |  board: {args.board}  |  config: {config}\n")
     _verify_toolchain()
 
-    if regen_proto:
-        _generate_proto(PROTO_GEN_DIR)
+    if clean or regen:
+        _generate_proto()
+        _generate_umsg()
 
     env = os.environ.copy()
     env["PATH"] = str(_HOST_ARM_BIN) + os.pathsep + env["PATH"]
@@ -518,7 +540,7 @@ def main() -> None:
                          help="Target board")
     p_build.add_argument("--flags", "-f", default="d", metavar="FLAGS",
                          help="Build flags (combine freely): d=Debug, r=Release, "
-                              "c=clean, t=HIL tests, p=regen proto")
+                              "c=clean, t=HIL tests, g=regen proto+umsg")
 
     # ── flash ──────────────────────────────────────────────────────────────────
     p_flash = sub.add_parser("flash", help="Flash firmware and optionally run HIL tests",

@@ -116,6 +116,8 @@ FJ_DECLARE_SHARED (Mixer_t, g_Mixer);
 eSTATUS_t Mixer_Init (void);
 eSTATUS_t Mixer_Mix (uint32_t usCurrentTime);
 eSTATUS_t Mixer_Update (uint32_t usCurrentTime);
+void Mixer_MixMotors (Mixer_t* pMixer, float const pidData[AXIS_IDX_COUNT], float motorOutputs[BRD_MOTOR_COUNT]);
+void Mixer_MixServos (Mixer_t* pMixer, float const pidData[AXIS_IDX_COUNT], uint16_t servoOutputs[BRD_SERVO_COUNT]);
 
 
 #endif // MC_MIXER_H

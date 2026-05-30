@@ -36,10 +36,10 @@ set(TARGET_ROOT "${FIRMWARE_ROOT}/target")
 # ── Vendor group ─────────────────────────────────────────────────────────────
 set(NANOPB_ROOT    "${FLAPJACK_ROOT}/Vendor/nanopb")
 set(FREERTOS_ROOT  "${FLAPJACK_ROOT}/Vendor/FreeRTOS/Source")
-set(UMSG_ROOT      "${FLAPJACK_ROOT}/Vendor/umsg/umsg_lib")
-set(PROTO_GEN_DIR  "${FIRMWARE_ROOT}/src/proto")
+set(UMSG_ROOT      "${FLAPJACK_ROOT}/Vendor/umsg/umsg_lib/core")
 
-file(GLOB UMSG_MSG_SRCS "${UMSG_ROOT}/src/*.c")
+set(GENERATED_MSG_INCS "${FIRMWARE_ROOT}/msgs/proto" "${FIRMWARE_ROOT}/msgs/umsg")
+file(GLOB GENERATED_MSG_SRCS    "${FIRMWARE_ROOT}/msgs/*.c")
 
 set(VENDOR_SRCS
     # nanopb
@@ -54,16 +54,15 @@ set(VENDOR_SRCS
     "${FREERTOS_ROOT}/timers.c"
     "${FREERTOS_ROOT}/stream_buffer.c"
     # umsg core + FreeRTOS port + generated message types
-    "${UMSG_ROOT}/core/src/umsg.c"
-    "${UMSG_ROOT}/core/src/port_freertos.c"
-    ${UMSG_MSG_SRCS}
+    "${UMSG_ROOT}/src/umsg.c"
+    "${UMSG_ROOT}/src/port_freertos.c"
+    ${GENERATED_MSG_SRCS}
 )
 set(VENDOR_INCS
     "${NANOPB_ROOT}"
-    "${PROTO_GEN_DIR}"
     "${FREERTOS_ROOT}/include"
     "${UMSG_ROOT}/inc"
-    "${UMSG_ROOT}/core/inc"
+    "${GENERATED_MSG_INCS}"
 )
 
 # ── App group ────────────────────────────────────────────────────────────────

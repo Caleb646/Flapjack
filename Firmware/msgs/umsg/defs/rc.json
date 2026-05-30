@@ -1,0 +1,12 @@
+{
+  "msgs": [
+    {
+      "name": "input",
+      "fields": [
+        {"name": "channels",     "type": "uint32", "length": 16},
+        {"name": "rssi",         "type": "uint8"},
+        {"name": "link_quality", "type": "uint8"}
+      ]
+    }
+  ]
+}

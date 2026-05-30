@@ -1,0 +1,37 @@
+{
+  "msgs": [
+    {
+      "name": "imu",
+      "fields": [
+        {"name": "gyro",        "type": "float", "length": 3},
+        {"name": "accel",       "type": "float", "length": 3},
+        {"name": "temperature", "type": "float"}
+      ]
+    },
+    {
+      "name": "mag",
+      "fields": [
+        {"name": "field", "type": "float", "length": 3}
+      ]
+    },
+    {
+      "name": "baro",
+      "fields": [
+        {"name": "pressure",    "type": "float"},
+        {"name": "temperature", "type": "float"}
+      ]
+    },
+    {
+      "name": "gps",
+      "fields": [
+        {"name": "lat",      "type": "double"},
+        {"name": "lon",      "type": "double"},
+        {"name": "alt",      "type": "float"},
+        {"name": "speed",    "type": "float"},
+        {"name": "course",   "type": "float"},
+        {"name": "fix_type", "type": "uint8"},
+        {"name": "sats",     "type": "uint8"}
+      ]
+    }
+  ]
+}

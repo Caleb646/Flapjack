@@ -1,0 +1,13 @@
+{
+  "msgs": [
+    {
+      "name": "state",
+      "fields": [
+        {"name": "mode",           "type": "uint8"},
+        {"name": "target_pos",     "type": "float", "length": 3},
+        {"name": "target_heading", "type": "float"},
+        {"name": "armed",          "type": "uint8"}
+      ]
+    }
+  ]
+}

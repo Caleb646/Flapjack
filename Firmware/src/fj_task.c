@@ -7,8 +7,12 @@
 
 #include "core/core.h"
 
-#include "device/imu/imu.h"
+#include "sensors/imu.h"
+#include "sensors/mag.h"
+#include "sensors/gps.h"
+#include "sensors/baro.h"
 
+#include "device/imu/imu.h"
 #include "drivers/sensors/mag/mag.h"
 
 #include "drivers/rx/rx.h"
@@ -65,13 +69,12 @@ eSTATUS_t TaskAttitudeUpdate (uint32_t usCurrentTime, uint32_t usDeltaTime) {
 
 eSTATUS_t TaskImu_Update (uint32_t usCurrentTime, uint32_t usDeltaTime) {
 
-    vIMU_t* pIMUDev = Imu_Get ();
-    return IMU_Update (pIMUDev, false, &pIMUDev->accelData, &pIMUDev->gyroData);
+    return SensorImu_Update ();
 }
 
 eSTATUS_t TaskMag_Update (uint32_t usCurrentTime, uint32_t usDeltaTime) {
 
-    return Mag_Update (false);
+    return SensorMag_Update ();
 }
 
 eSTATUS_t TaskInterCoreSync (uint32_t usCurrentTime, uint32_t usDeltaTime) {

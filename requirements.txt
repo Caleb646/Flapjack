@@ -7,3 +7,7 @@ trimesh
 dacite
 pyserial
 protobuf
+jinja2
+umsg-gen
+nanopb
+grpcio-tools

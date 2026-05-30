@@ -1,5 +1,5 @@
-#ifndef SENSORS_IMU_H
-#define SENSORS_IMU_H
+#ifndef DRIVERS_SENSORS_IMU_H
+#define DRIVERS_SENSORS_IMU_H
 
 #include "core/core.h"
 #include "device/imu/bmixxx.h"
@@ -319,4 +319,4 @@ vIMU_t* Imu_Get (void);
 void IMU2CPUInterruptHandler (vIMU_t* pIMU);
 
 
-#endif // SENSORS_IMU_H
+#endif // DRIVERS_SENSORS_IMU_H

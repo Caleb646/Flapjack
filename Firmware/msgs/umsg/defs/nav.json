@@ -1,0 +1,16 @@
+{
+  "msgs": [
+    {
+      "name": "state",
+      "fields": [
+        {"name": "quat",    "type": "float", "length": 4},
+        {"name": "euler",   "type": "float", "length": 3},
+        {"name": "gyro",    "type": "float", "length": 3},
+        {"name": "pos_ned", "type": "float", "length": 3},
+        {"name": "vel_ned", "type": "float", "length": 3},
+        {"name": "alt",     "type": "float"},
+        {"name": "valid",   "type": "uint8"}
+      ]
+    }
+  ]
+}
