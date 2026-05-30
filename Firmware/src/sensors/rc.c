@@ -3,6 +3,10 @@
 #include "fc/rc.h"
 #include "umsg_rc.h"
 
+eSTATUS_t SensorRc_Init(void) {
+    return eSTATUS_SUCCESS;
+}
+
 eSTATUS_t SensorRc_Update(void) {
     uint32_t const* ch = Rx_GetChannels();
     if (!ch) {

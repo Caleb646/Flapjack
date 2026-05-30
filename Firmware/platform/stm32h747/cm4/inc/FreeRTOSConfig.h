@@ -60,6 +60,7 @@ extern uint32_t SystemD2Clock;
 
 #define configUSE_PREEMPTION                     1
 #define configSUPPORT_STATIC_ALLOCATION          1
+#define configKERNEL_PROVIDED_STATIC_MEMORY      1
 #define configSUPPORT_DYNAMIC_ALLOCATION         1
 #define configUSE_IDLE_HOOK                      0
 #define configUSE_TICK_HOOK                      0

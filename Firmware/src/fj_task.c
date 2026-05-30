@@ -1,108 +1,118 @@
-#include <stdio.h>
-
-#include "flight.h"
-#include "hal.h"
-#include "target.h"
 #include "fj_task.h"
 
+#include "FreeRTOS.h"
+#include "task.h"
+
 #include "core/core.h"
+#include "target.h"
 
 #include "sensors/imu.h"
 #include "sensors/mag.h"
-#include "sensors/gps.h"
-#include "sensors/baro.h"
+#include "sensors/rc.h"
 
-#include "device/imu/imu.h"
-#include "drivers/sensors/mag/mag.h"
+#include "nav/nav.h"
+#include "guidance/guidance.h"
+#include "control/control.h"
+#include "mission/mission.h"
 
 #include "drivers/rx/rx.h"
 
-#include "fc/rc.h"
+#define TASK_PRIORITY_SENSOR_IMU 2U
+#define TASK_PRIORITY_SENSOR_MAG 1U
+#define TASK_PRIORITY_SENSOR_RC  3U
+#define TASK_PRIORITY_NAV        5U
+#define TASK_PRIORITY_GUIDANCE   4U
+#define TASK_PRIORITY_CONTROL    5U
+#define TASK_PRIORITY_MISSION    3U
+#define TASK_PRIORITY_RX         3U
 
-#include "mc/filter.h"
-#include "mc/mixer.h"
-#include "mc/pid.h"
+#define STACK_SENSOR   128U
+#define STACK_NAV      512U
+#define STACK_GUIDANCE 256U
+#define STACK_CONTROL  512U
+#define STACK_MISSION  128U
+#define STACK_RX       128U
 
-#include "drivers/dma.h"
-#include "drivers/io/gpio.h"
-
-eSTATUS_t TaskMixerUpdate (uint32_t usCurrentTime, uint32_t usDeltaTime) {
-
-    if (STATUS_FAIL (Mixer_Mix (usCurrentTime))) {
-        LOG_ERROR ("Failed to mix PID output to actuator outputs");
-        return eSTATUS_FAILURE;
+static void SensorImu_Task(void* args) {
+    (void)args;
+    SensorImu_Init();
+    while (1) {
+        SensorImu_Update();
     }
-    return Mixer_Update (usCurrentTime);
 }
 
-eSTATUS_t TaskPIDUpdate (uint32_t usCurrentTime, uint32_t usDeltaTime) {
-
-    return Pid_Update (usCurrentTime, usDeltaTime);
+static void SensorMag_Task(void* args) {
+    (void)args;
+    SensorMag_Init();
+    while (1) {
+        SensorMag_Update();
+    }
 }
 
-eSTATUS_t TaskAttitudeUpdate (uint32_t usCurrentTime, uint32_t usDeltaTime) {
-
-    eSTATUS_t status          = eSTATUS_SUCCESS;
-    Flight_t* pFlight         = Fc_Get ();
-    IMU_t* pIMU               = Imu_Get ();
-    Mag_t* pMag               = Mag_Get ();
-    float dt                  = (float)usDeltaTime / 1000000.0F;
-
-    if (!pIMU && !pMag) {
-        LOG_ERROR ("No sensors available for attitude update");
-        return eSTATUS_FAILURE;
+static void SensorRc_Task(void* args) {
+    (void)args;
+    SensorRc_Init();
+    while (1) {
+        SensorRc_Update();
     }
+}
 
-    Vec3f outputAttitude = { 0.0F };
-    if (!pMag) {
-        status =
-        MadgwickFilter_Update (&pFlight->attitudeFilter, &pIMU->accelData, &pIMU->gyroData, NULL, dt, &outputAttitude);
+static void Nav_Task(void* args) {
+    (void)args;
+    Nav_Init();
+    while (1) {
+        Nav_Update();
+    }
+}
+
+static void Guidance_Task(void* args) {
+    (void)args;
+    Guidance_Init();
+    while (1) {
+        Guidance_Update();
+    }
+}
+
+static void Control_Task(void* args) {
+    (void)args;
+    Control_Init();
+    while (1) {
+        Control_Update();
+    }
+}
+
+static void Mission_Task(void* args) {
+    (void)args;
+    Mission_Init();
+    while (1) {
+        Mission_Update();
+    }
+}
+
+static void Rx_Task(void* args) {
+    (void)args;
+    Rx_Init();
+    uint32_t usLast = GetMicroseconds();
+    while (1) {
+        uint32_t usNow = GetMicroseconds();
+        Rx_Update(usNow, usNow - usLast);
+        usLast = usNow;
+    }
+}
+
+void FjTasks_Start(uint32_t coreIdx) {
+
+    if (coreIdx == CM7_IDX) {
+        xTaskCreate(SensorImu_Task, "imu",      STACK_SENSOR,   NULL, TASK_PRIORITY_SENSOR_IMU, NULL);
+        xTaskCreate(SensorMag_Task, "mag",      STACK_SENSOR,   NULL, TASK_PRIORITY_SENSOR_MAG, NULL);
+        xTaskCreate(SensorRc_Task,  "rc",       STACK_SENSOR,   NULL, TASK_PRIORITY_SENSOR_RC,  NULL);
+        xTaskCreate(Nav_Task,       "nav",      STACK_NAV,      NULL, TASK_PRIORITY_NAV,         NULL);
+        xTaskCreate(Guidance_Task,  "guidance", STACK_GUIDANCE, NULL, TASK_PRIORITY_GUIDANCE,    NULL);
+        xTaskCreate(Control_Task,   "control",  STACK_CONTROL,  NULL, TASK_PRIORITY_CONTROL,     NULL);
+        xTaskCreate(Mission_Task,   "mission",  STACK_MISSION,  NULL, TASK_PRIORITY_MISSION,     NULL);
     } else {
-        status =
-        MadgwickFilter_Update (&pFlight->attitudeFilter, &pIMU->accelData, &pIMU->gyroData, &pMag->normedData, dt, &outputAttitude);
+        xTaskCreate(Rx_Task, "rx", STACK_RX, NULL, TASK_PRIORITY_RX, NULL);
     }
-    pFlight->current[AXIS_IDX_ROLL]  = outputAttitude.roll;
-    pFlight->current[AXIS_IDX_PITCH] = outputAttitude.pitch;
-    pFlight->current[AXIS_IDX_YAW]   = outputAttitude.yaw;
-    return status;
-}
 
-eSTATUS_t TaskImu_Update (uint32_t usCurrentTime, uint32_t usDeltaTime) {
-
-    return SensorImu_Update ();
-}
-
-eSTATUS_t TaskMag_Update (uint32_t usCurrentTime, uint32_t usDeltaTime) {
-
-    return SensorMag_Update ();
-}
-
-eSTATUS_t TaskInterCoreSync (uint32_t usCurrentTime, uint32_t usDeltaTime) {
-
-    return SyncProcessTasks ();
-}
-
-eSTATUS_t Task_LogHeartBeat (uint32_t usCurrentTime, uint32_t usDeltaTime) {
-
-    LOG_INFO ("Heartbeat");
-    return eSTATUS_SUCCESS;
-}
-
-eSTATUS_t Task_LogFlightData (uint32_t usCurrentTime, uint32_t usDeltaTime) {
-
-    Imu_LogData ();
-    Fc_LogData ();
-    Pid_LogData ();
-
-    return eSTATUS_SUCCESS;
-}
-
-eSTATUS_t Task_RxUpdate (uint32_t usCurrentTime, uint32_t usDeltaTime) {
-
-    return Rx_Update (usCurrentTime, usDeltaTime);
-}
-
-eSTATUS_t Task_RcUpdate (uint32_t usCurrentTime, uint32_t usDeltaTime) {
-
-    return Rc_Update (usCurrentTime, usDeltaTime);
+    vTaskStartScheduler();
 }

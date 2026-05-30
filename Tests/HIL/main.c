@@ -6,6 +6,9 @@
 
 #include "core/core.h"
 
+#include "FreeRTOS.h"
+#include "task.h"
+
 #include "unity.h"
 
 #include <stdarg.h>
@@ -57,16 +60,8 @@ static void HwTest_UartInit (void) {
     HAL_UARTEx_DisableFifoMode (&s_huart);
 }
 
-int main (void) {
-
-    if(Platform_Init() != 0) {
-        CriticalErrorHandler ();
-    }
-
-#ifdef CORE_CM7
-
-    HwTest_UartInit ();
-    init_printf (NULL, Uart_PutChar);
+static void hil_test_task (void* args) {
+    (void)args;
 
     Delay (500);
     LOG_INFO ("Starting HIL Tests");
@@ -83,6 +78,25 @@ int main (void) {
     UNITY_END ();
 
     Delay (50000);
+
+    while (1) {
+        __WFI ();
+    }
+}
+
+int main (void) {
+
+    if(Platform_Init() != 0) {
+        CriticalErrorHandler ();
+    }
+
+#ifdef CORE_CM7
+
+    HwTest_UartInit ();
+    init_printf (NULL, Uart_PutChar);
+
+    xTaskCreate (hil_test_task, "hil_test", 1024, NULL, 1, NULL);
+    vTaskStartScheduler ();
 
 #endif
 

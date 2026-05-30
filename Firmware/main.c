@@ -3,7 +3,6 @@
 
 #include "flight.h"
 #include "hal.h"
-#include "scheduler.h"
 #include "target.h"
 #include "platform.h"
 
@@ -90,7 +89,7 @@ int main (void) {
     }
 
     LOG_INFO ("Starting scheduler");
-    Scheduler_Main (CM7_IDX, CFG_LOOP_UPDATE_RATE_HZ);
+    FjTasks_Start (CM7_IDX);
 #endif /* CORE_CM7 */
 
 /*
@@ -108,12 +107,8 @@ int main (void) {
     }
 
     s_IsCM4Ready = true;
-    if (STATUS_FAIL (Rx_Init ())) {
-        LOG_ERROR ("Failed to initialize RX");
-        CriticalErrorHandler ();
-    }
     LOG_INFO ("Starting scheduler");
-    Scheduler_Main (CM4_IDX, CFG_LOOP_UPDATE_RATE_HZ);
+    FjTasks_Start (CM4_IDX);
 
 #endif /* CORE_CM4 */
 

@@ -2,6 +2,10 @@
 #include "device/imu/imu.h"
 #include "umsg_sensors.h"
 
+eSTATUS_t SensorImu_Init(void) {
+    return eSTATUS_SUCCESS;
+}
+
 eSTATUS_t SensorImu_Update(void) {
     vIMU_t* pIMU = Imu_Get();
     if (!pIMU) {

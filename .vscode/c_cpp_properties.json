@@ -6,6 +6,8 @@
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/Firmware/target",
                 "${workspaceFolder}/Firmware/inc",
+                "${workspaceFolder}/Firmware/msgs/proto",
+                "${workspaceFolder}/Firmware/msgs/umsg",
                 "${workspaceFolder}/Firmware/platform/stm32h747/cm4/inc",
                 "${workspaceFolder}/Firmware/platform/stm32h747/cm7/inc",
                 "${workspaceFolder}/Vendor/STM32H7/CMSIS/Include",

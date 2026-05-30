@@ -2,6 +2,10 @@
 #include "drivers/sensors/mag/mag.h"
 #include "umsg_sensors.h"
 
+eSTATUS_t SensorMag_Init(void) {
+    return eSTATUS_SUCCESS;
+}
+
 eSTATUS_t SensorMag_Update(void) {
     Mag_t* pMag = Mag_Get();
     if (!pMag) {
