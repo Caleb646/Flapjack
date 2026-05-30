@@ -53,15 +53,13 @@ set(STM32_HAL_SRCS
 set(PLATFORM_INCS
     ${CMSIS_INCS}
     ${STM32_HAL_INCS}
-
-    ${PLATFORM_ROOT} # TODO: temporary
+    ${PLATFORM_ROOT}
 )
 
 set(PLATFORM_SRCS
     ${CMSIS_SRCS}
     ${STM32_HAL_SRCS}
-
-    "${PLATFORM_ROOT}/stm32h747/platform.c" # TODO: temporary
+    "${PLATFORM_ROOT}/stm32h747/platform.c"
 )
 
 set(PLATFORM_DEFS

@@ -32,10 +32,6 @@
             "device": "STM32H747XIHX",
             "showDevDebugOutput": "raw",
             "configFiles": ["interface/stlink.cfg", "target/stm32h7x_dual_bank.cfg"],
-            //"configFiles": ["interface/stlink.cfg", "target/stm32h7x.cfg"],
-            //"configFiles": ["${workspaceFolder}/Scripts/stm32h747_dual_core.cfg"],
-            //"targetId": "stm32h7x.cpu0",
-            // "runToEntryPoint": "main",
             "preLaunchTask": "build firmware",
 
             "swoConfig": {
@@ -61,16 +57,7 @@
                     //     "name": "Debug M4 Core",     // Name of another configuration
                     // }
                 ]
-            },
-            // "serverArgs": [
-            //     "-l", "1",
-            //     "-m", "0", // option is used to indicate which Core the debugger will be connected
-            //     "-k", // connect under reset
-            //     "-t","-s" // indicate that the ST-LINK probe is shared
-            // ],
-            // "openOCDLaunchCommands": [
-            //     "monitor reset halt",
-            // ]
+            }
         },
 
 

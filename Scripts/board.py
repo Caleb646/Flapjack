@@ -107,7 +107,7 @@ OPENOCD_BIN = OPENOCD_DIR / "bin"
 
 _HOST_ARM_BIN    = ARM_GNU_BIN
 _OPENOCD_PATH    = OPENOCD_BIN / "openocd"
-CMAKE_GENERATOR = "Unix Makefiles"
+_CMAKE_GENERATOR = "Unix Makefiles"
 if PLATFORM == "win32":
     _HOST_ARM_BIN    = MINGW64_BIN
     _OPENOCD_PATH    = MINGW64_BIN / "openocd.exe"
