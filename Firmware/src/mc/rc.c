@@ -1,13 +1,16 @@
-#include "sensors/rc.h"
+#include "core/core.h"
+
+#include "mc/rc.h"
+
 #include "drivers/rx/rx.h"
-#include "fc/rc.h"
+
 #include "umsg_rc.h"
 
-eSTATUS_t SensorRc_Init(void) {
+eSTATUS_t Rc_Init(void) {
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t SensorRc_Update(void) {
+eSTATUS_t Rc_Update(void) {
     uint32_t const* ch = Rx_GetChannels();
     if (!ch) {
         return eSTATUS_FAILURE;

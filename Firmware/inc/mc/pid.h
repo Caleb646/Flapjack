@@ -1,7 +1,6 @@
 #ifndef MC_PID_H
 #define MC_PID_H
 
-#include "flight.h"
 #include "target.h"
 
 #include "core/core.h"
@@ -42,10 +41,6 @@ static inline eSTATUS_t Pid_Init (void) {
 }
 
 float Pid_UpdateAxis_ (PidAxis_t* pAxis, float current, float target, float dt);
-eSTATUS_t Pid_Update_ (Pid_t* pPid, Flight_t* pFlightData, uint32_t usCurrentTime, uint32_t usDeltaTime);
-static inline eSTATUS_t Pid_Update (uint32_t usCurrentTime, uint32_t usDeltaTime) {
-    return Pid_Update_ (Pid_Get (), Fc_Get (), usCurrentTime, usDeltaTime);
-}
 
 
 #endif // MC_PID_H

@@ -1,9 +1,9 @@
-#include "sensors/mag.h"
+#include "device/mag.h"
 #include "drivers/sensors/mag/mag.h"
 #include "umsg_sensors.h"
 
 eSTATUS_t SensorMag_Init(void) {
-    return eSTATUS_SUCCESS;
+    return Mag_Init ();
 }
 
 eSTATUS_t SensorMag_Update(void) {

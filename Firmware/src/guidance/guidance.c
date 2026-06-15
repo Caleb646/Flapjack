@@ -1,6 +1,6 @@
 #include "guidance/guidance.h"
 #include "mission/mission.h"
-#include "fc/rc.h"
+#include "mc/rc.h"
 #include "umsg_nav.h"
 #include "umsg_mission.h"
 #include "umsg_rc.h"

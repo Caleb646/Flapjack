@@ -1,4 +1,4 @@
-// Generated with umsg_gen on 2026-05-30
+// Generated with umsg_gen on 2026-06-14
 #pragma once
 
 #ifdef __cplusplus

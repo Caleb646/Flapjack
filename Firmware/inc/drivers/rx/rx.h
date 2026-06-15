@@ -1,12 +1,11 @@
 #ifndef DRIVERS_RX_RX_H
 #define DRIVERS_RX_RX_H
 
-#include "fc/rc.h"
+#include "mc/rc.h"
 
 #include "core/core.h"
 
 #include "drivers/serial/uart.h"
-
 
 typedef struct {
     uint32_t channels[RC_MAX_CHANNELS];

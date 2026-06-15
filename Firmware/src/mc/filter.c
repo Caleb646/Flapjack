@@ -7,8 +7,6 @@
 
 #include "mc/filter.h"
 
-#include "device/imu/imu.h"
-
 #include "drivers/sensors/mag/mag.h"
 
 #include <math.h>

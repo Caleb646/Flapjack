@@ -1,10 +1,7 @@
-#include "device/imu/imu.h"
 #include "core/core.h"
-#include "core/log/logger.h"
-#include "device/imu/bmixxx.h"
-#include "mem/mem.h"
-#include "target.h"
 
+#include "drivers/imu/imudrv.h"
+#include "drivers/imu/bmixxx.h"
 
 #include "drivers/bus/spi.h"
 
@@ -15,7 +12,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
-
 
 #define IMU_CHIP_ID            ((uint8_t)0x0043U)
 #define RW_BUFFER_SZ           16U
@@ -46,15 +42,182 @@
 #define SYS_STATUS_GYRO_DATA_READY(SYS_STATUS_REG)  ((SYS_STATUS_REG).drdyGyro != 0U)
 #define SYS_STATUS_TEMP_DATA_READY(SYS_STATUS_REG)  ((SYS_STATUS_REG).drdyTemp != 0U)
 
-FJ_DEFINE_SHARED (IMU_t, g_IMU);
+typedef uint8_t IMU_ACC_BW;
+enum { eIMU_ACC_BW_HALF = BMI3_ACC_BW_ODR_HALF, eIMU_ACC_BW_QUARTER = BMI3_ACC_BW_ODR_QUARTER };
+
+typedef uint8_t IMU_ACC_AVG;
+enum {
+    eIMU_ACC_AVG_1  = BMI3_ACC_AVG1,
+    eIMU_ACC_AVG_2  = BMI3_ACC_AVG2,
+    eIMU_ACC_AVG_4  = BMI3_ACC_AVG4,
+    eIMU_ACC_AVG_8  = BMI3_ACC_AVG8,
+    eIMU_ACC_AVG_16 = BMI3_ACC_AVG16,
+    eIMU_ACC_AVG_32 = BMI3_ACC_AVG32,
+    eIMU_ACC_AVG_64 = BMI3_ACC_AVG64
+};
+
+typedef uint8_t IMU_ACC_MODE;
+enum {
+    eIMU_ACC_MODE_DISABLE   = BMI3_ACC_MODE_DISABLE,
+    eIMU_ACC_MODE_LOW_PWR   = BMI3_ACC_MODE_LOW_PWR,
+    eIMU_ACC_MODE_NORMAL    = BMI3_ACC_MODE_NORMAL,
+    eIMU_ACC_MODE_HIGH_PERF = BMI3_ACC_MODE_HIGH_PERF
+};
+
+typedef uint8_t IMU_GYRO_BW;
+enum { eIMU_GYRO_BW_HALF = BMI3_GYR_BW_ODR_HALF, eIMU_GYRO_BW_QUARTER = BMI3_GYR_BW_ODR_HALF };
+
+typedef uint8_t IMU_GYRO_AVG;
+enum {
+    eIMU_GYRO_AVG_1  = BMI3_GYR_AVG1,
+    eIMU_GYRO_AVG_2  = BMI3_GYR_AVG2,
+    eIMU_GYRO_AVG_4  = BMI3_GYR_AVG4,
+    eIMU_GYRO_AVG_8  = BMI3_GYR_AVG8,
+    eIMU_GYRO_AVG_16 = BMI3_GYR_AVG16,
+    eIMU_GYRO_AVG_32 = BMI3_GYR_AVG32,
+    eIMU_GYRO_AVG_64 = BMI3_GYR_AVG64
+};
+
+typedef uint8_t IMU_GYRO_MODE;
+enum {
+    eIMU_GYRO_MODE_DISABLE   = BMI3_GYR_MODE_DISABLE,
+    eIMU_GYRO_MODE_SUSPEND   = BMI3_GYR_MODE_SUSPEND,
+    eIMU_GYRO_MODE_LOW_PWR   = BMI3_GYR_MODE_LOW_PWR,
+    eIMU_GYRO_MODE_NORM      = BMI3_GYR_MODE_NORMAL,
+    eIMU_GYRO_MODE_HIGH_PERF = BMI3_GYR_MODE_HIGH_PERF
+};
+
+typedef eSTATUS_t eIMU_STATUS;
+enum {
+    eIMU_COM_FAILURE        = -1,
+    eIMU_RW_BUFFER_OVERFLOW = -2,
+    eIMU_NULL_PTR           = -3,
+    eIMU_HARDWARE_ERR       = -4,
+};
+
+typedef struct {
+    uint16_t err;
+    /* Indicates fatal error */
+    uint8_t fatalErr;
+    /* Overload of the feature engine detected. */
+    uint8_t featEngOvrld;
+    /* Watchdog timer of the feature engine triggered. */
+    uint8_t featEngWd;
+    /* Indicates accel configuration error */
+    uint8_t accConfErr;
+    /* Indicates gyro configuration error */
+    uint8_t gyrConfErr;
+    /* Indicates SDR parity error */
+    uint8_t i3cErr0;
+    /* Indicates I3C error */
+    uint8_t i3cErr1;
+} IMUErr;
+
+typedef struct {
+    union {
+        uint16_t raw;
+        struct {
+            uint16_t por_detected : 1;
+            uint16_t reserved_1 : 4;
+            uint16_t drdyTemp : 1;
+            uint16_t drdyGyro : 1;
+            uint16_t drdyAccel : 1;
+        };
+    };
+} IMU_SysStatusReg_t;
+
+typedef struct {
+    union {
+        uint16_t raw;
+        struct {
+            uint16_t unused : 10;
+            uint16_t errStatus : 1;
+            uint16_t drdyTemp : 1;
+            uint16_t drdyGyro : 1;
+            uint16_t drdyAccel : 1;
+            uint16_t fifoWatermark : 1;
+            uint16_t fifoFull : 1;
+        } int_1;
+    };
+} IMU_INTStatusReg_t;
+
+typedef struct {
+    union {
+        uint16_t raw;
+        struct {
+            uint16_t error_status : 4;
+            uint16_t sc_st_complete : 1;
+            uint16_t gyro_sc_complete : 1;
+            uint16_t st_result : 1;
+            uint16_t sample_rate_err : 1;
+            uint16_t reserved_1 : 2;
+            uint16_t axis_map_complete : 1;
+            uint16_t state : 2;
+            uint16_t reserved_2 : 3;
+        } feat_1;
+    };
+} IMU_FeatureReg_t;
+
+typedef struct {
+    eImuAccRange_t range;
+    eImuOdr_t odr;
+    IMU_ACC_BW bw;
+    IMU_ACC_AVG avg;
+    IMU_ACC_MODE mode;
+} IMUAccConf;
+
+typedef struct {
+    eImuGyroRange_t range;
+    eImuOdr_t odr;
+    IMU_GYRO_BW bw;
+    IMU_GYRO_AVG avg;
+    IMU_GYRO_MODE mode;
+} IMUGyroConf;
+
+typedef struct {
+    IMUAccConf aconf;
+    IMUGyroConf gconf;
+    ImuAxesRemap_t axesRemapConf;
+} IMUInitConf_t;
+
+typedef struct {
+    eDEVICE_ID_t deviceId;
+    SpiDev_t spiDev;
+
+    IMUAccConf aconf;
+    IMUGyroConf gconf;
+    eSTATUS_t status;
+    uint32_t msLastAccUpdateTime;
+    uint32_t msLastGyroUpdateTime;
+    uint8_t nBusDummyBytes;
+    bool usingEXTIInterrupt;
+    bool isInitialized;
+    bool volatile gyroDataUpdated;
+    bool volatile accelDataUpdated;
+
+    Vec3i rawAccel;
+    Vec3f accelData;
+    Vec3f accelFilteredData;
+
+    Vec3i rawGyro;
+    Vec3f gyroData;
+    Vec3f gyroFilteredData;
+} Bmi323_t;
+
+typedef Bmi323_t IMU_t;
+typedef Bmi323_t vIMU_t;
+
+eSTATUS_t IMUGetConf (vIMU_t* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf);
+eSTATUS_t IMUGetAltConf (vIMU_t* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf);
+eSTATUS_t IMUSetConf (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf);
+eSTATUS_t IMUSetAltConf (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf);
+eSTATUS_t IMUCompareConfs (IMUAccConf aconf, IMUGyroConf gconf, IMUAccConf aconf2, IMUGyroConf gconf2);
 
 static eSTATUS_t IMUGetDeviceErr (vIMU_t* pIMU, IMUErr* pOutErr);
 static void IMU_LogFeatStatus (vIMU_t* pIMU);
 static void IMU_LogDeviceErr (vIMU_t* pIMU, IMUErr const* pErr);
 static void IMU_LogDeviceConf (vIMU_t* pIMU);
 static void IMU_LogError (vIMU_t* pIMU);
-
-#ifndef UNIT_TEST
 
 static eSTATUS_t IMUSendCmd (vIMU_t* pIMU, uint16_t cmd);
 static eSTATUS_t IMUGetFeatureStatus (vIMU_t* pIMU, uint16_t featureRegAddr, IMU_FeatureReg_t* pOutStatus);
@@ -64,7 +227,7 @@ static eSTATUS_t IMUReadReg (vIMU_t* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t 
 static eSTATUS_t IMUWriteReg (vIMU_t* pIMU, uint8_t reg, uint8_t* pBuf, uint32_t len);
 static eSTATUS_t IMUUpdateRawGyro (vIMU_t* pIMU);
 static eSTATUS_t IMUUpdateRawAccel (vIMU_t* pIMU);
-static eSTATUS_t IMUSetAxesRemap (vIMU_t* pIMU, IMUAxesRemapConf remap);
+static eSTATUS_t IMUSetAxesRemap (vIMU_t* pIMU, ImuAxesRemap_t remap);
 static eSTATUS_t IMUSoftReset (vIMU_t* pIMU);
 static eSTATUS_t IMUGetConf_ (vIMU_t* pIMU, IMUAccConf* pAConf, IMUGyroConf* pGConf, uint8_t altConfFlag);
 static eSTATUS_t IMUSetConf_ (vIMU_t* pIMU, IMUAccConf const* pAConf, IMUGyroConf const* pGConf, uint8_t altConfFlag);
@@ -73,9 +236,7 @@ static eSTATUS_t IMUSetupInterrupts (vIMU_t* pIMU);
 // static eSTATUS_t IMUEnableInterrupts (vIMU_t* pIMU);
 static eSTATUS_t IMUDisableInterrupts (vIMU_t* pIMU);
 static eSTATUS_t
-IMUConvertRaw (IMU_ACC_RANGE aRange, Vec3i ra, IMU_GYRO_RANGE gRange, Vec3i rg, Vec3f* pAccelOut, Vec3f* pGyroOut);
-
-#endif
+IMUConvertRaw (eImuAccRange_t aRange, Vec3i ra, eImuGyroRange_t gRange, Vec3i rg, Vec3f* pAccelOut, Vec3f* pGyroOut);
 
 static void IMU_LogFeatStatus (vIMU_t* pIMU) {
 
@@ -314,7 +475,7 @@ STATIC eSTATUS_t IMUUpdateRawAccel (vIMU_t* pIMU) {
     return eSTATUS_SUCCESS;
 }
 
-STATIC eSTATUS_t IMUSetAxesRemap (vIMU_t* pIMU, IMUAxesRemapConf remap) {
+STATIC eSTATUS_t IMUSetAxesRemap (vIMU_t* pIMU, ImuAxesRemap_t remap) {
 
     uint8_t addr[2] = { BMI3_BASE_ADDR_AXIS_REMAP, 0 };
     uint8_t data    = 0;
@@ -590,7 +751,7 @@ STATIC eSTATUS_t IMUCalibrate (vIMU_t* pIMU, uint8_t calibSelection, uint8_t app
     /* Set the ACC config to be what the self calibration expects */
     IMUAccConf calibAConf = { 0 };
     calibAConf.mode       = eIMU_ACC_MODE_HIGH_PERF;
-    calibAConf.odr        = eIMU_ACC_ODR_100;
+    calibAConf.odr        = eIMU_ODR_100;
     calibAConf.range      = aconf.range;
     calibAConf.avg        = aconf.avg;
     calibAConf.bw         = aconf.bw;
@@ -730,7 +891,7 @@ STATIC eSTATUS_t IMUDisableInterrupts (vIMU_t* pIMU) {
     return status;
 }
 
-STATIC eSTATUS_t IMUConvertRaw (IMU_ACC_RANGE aRange, Vec3i ra, IMU_GYRO_RANGE gRange, Vec3i rg, Vec3f* pAccelOut, Vec3f* pGyroOut) {
+STATIC eSTATUS_t IMUConvertRaw (eImuAccRange_t aRange, Vec3i ra, eImuGyroRange_t gRange, Vec3i rg, Vec3f* pAccelOut, Vec3f* pGyroOut) {
 
     if (pAccelOut == NULL || pGyroOut == NULL) {
         return (eSTATUS_t)eIMU_NULL_PTR;
@@ -775,7 +936,7 @@ eSTATUS_t IMU_Init_ (IMUInitConf_t conf, vIMU_t* pOutIMU) {
 
     IMUAccConf accConf             = conf.aconf;
     IMUGyroConf gyroConf           = conf.gconf;
-    IMUAxesRemapConf axesRemapConf = conf.axesRemapConf;
+    ImuAxesRemap_t axesRemapConf = conf.axesRemapConf;
 
     eDEVICE_ID_t deviceId = eIMU_DEVICE_ID;
 
@@ -793,18 +954,6 @@ eSTATUS_t IMU_Init_ (IMUInitConf_t conf, vIMU_t* pOutIMU) {
     pIMU->spiDev.cfg.nssPin   = IMU_SPI_NSS_GPIO_PIN;
     status                    = SpiDev_Init (&pIMU->spiDev);
     GOTO_IF (STATUS_FAIL (status), error, "Failed to setup spi device for imu");
-
-    // if (pBusOverride != NULL) {
-    //     pIMU->bus = *pBusOverride;
-    // } else {
-    //     BUS_INIT (&status, device, *pBus, &pIMU->bus);
-    //     GOTO_IF (STATUS_FAIL (status), error, "Failed to init bus for imu");
-    // }
-
-    // if (pIMU->bus.ReadBlocking == NULL || pIMU->bus.WriteBlocking == NULL || pIMU->bus.WriteReadBlocking == NULL) {
-    //     LOG_ERROR ("Bus for imu does not have read or write or write read function");
-    //     goto error;
-    // }
 
     /*
      * Soft reset vIMU_t and switch to SPI
@@ -1104,18 +1253,41 @@ eSTATUS_t IMUCompareConfs (IMUAccConf aconf, IMUGyroConf gconf, IMUAccConf aconf
     return eSTATUS_SUCCESS;
 }
 
-void Imu_LogData_ (vIMU_t* pIMU) {
-
-    // clang-format off
-    LOG_8_FLOATS (LOG_DATA_TYPE_IMU_DATA, ax, pIMU->accelData.x, ay, pIMU->accelData.y, az, pIMU->accelData.z, aw, 0.0F,
-                   gx, pIMU->gyroData.x, gy, pIMU->gyroData.y, gz, pIMU->gyroData.z, gw, 0.0F);
-    // clang-format on
+STATIC bool Bmi323_IsDataReady (void* ctx) {
+    // TODO
+    return true;
 }
 
-vIMU_t* Imu_Get (void) {
+STATIC eSTATUS_t Bmi323_Read (void* ctx, bool forcePolling, Vec3f* pAccel, Vec3f* pGyro) {
+    return IMU_Update ((Bmi323_t*)ctx, forcePolling, pAccel, pGyro);
+}
 
-    if (!IMU_VALID (&g_IMU)) {
-        return NULL;
+eSTATUS_t ImuDrv_Init (ImuDriverConf_t const* pConf, ImuDriver_t* pOutDriver) {
+
+    if (!pConf || !pOutDriver) {
+        return eSTATUS_NULL_ARG;
     }
-    return &g_IMU;
+
+    memset(pOutDriver, 0, sizeof(ImuDriver_t));
+    pOutDriver->ctx = Allocate(sizeof(Bmi323_t));
+    if (!pOutDriver->ctx) {
+        return eSTATUS_FAILURE;
+    }
+    pOutDriver->IsDataReady = Bmi323_IsDataReady;
+    pOutDriver->Read = Bmi323_Read;
+
+    IMUInitConf_t conf = { 0 };
+    conf.aconf.range   = pConf->accRange;
+    conf.aconf.odr     = pConf->odr;
+    conf.aconf.bw      = eIMU_ACC_BW_HALF;
+    conf.aconf.avg     = eIMU_ACC_AVG_16;
+    conf.aconf.mode    = eIMU_ACC_MODE_HIGH_PERF;
+    conf.gconf.range   = pConf->gyroRange;
+    conf.gconf.odr     = pConf->odr;
+    conf.gconf.bw      = eIMU_GYRO_BW_HALF;
+    conf.gconf.avg     = eIMU_GYRO_AVG_16;
+    conf.gconf.mode    = eIMU_GYRO_MODE_HIGH_PERF;
+    conf.axesRemapConf = pConf->orientation;
+
+    return IMU_Init_ (conf, (Bmi323_t*)pOutDriver->ctx);
 }

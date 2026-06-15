@@ -11,5 +11,7 @@
 
 eSTATUS_t Core_Init (void);
 
+void* Allocate(uint32_t size);
+
 
 #endif // CORE_CORE_H

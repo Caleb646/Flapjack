@@ -1,6 +1,6 @@
 #include "mission/mission.h"
 #include "mc/motors.h"
-#include "fc/rc.h"
+#include "mc/rc.h"
 #include "umsg_rc.h"
 #include "umsg_mission.h"
 
@@ -11,8 +11,8 @@
 
 typedef struct {
     umsg_sub_handle_t rc_sub;
-    bool isArmed;
     eMissionMode_t mode;
+    bool isArmed;
 } Mission_t;
 
 static Mission_t s_Mission;

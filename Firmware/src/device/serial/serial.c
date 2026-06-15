@@ -5,7 +5,7 @@
 
 #include "drivers/serial/uart.h"
 
-#include "device/serial/serial.h"
+#include "device/serial.h"
 
 #include <stdbool.h>
 #include <stdint.h>

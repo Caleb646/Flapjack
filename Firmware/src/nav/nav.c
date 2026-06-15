@@ -14,10 +14,54 @@ typedef struct {
 
 static Nav_t s_Nav;
 
+// eSTATUS_t Nav_Warmup (Flight_t* pFlight, uint32_t msWarmUpTime, ImuDriver_t* pImuDriver, Mag_t* pMag) {
+
+//     if (!pFlight) {
+//         return eSTATUS_FAILURE;
+//     }
+
+//     if (!pImuDriver && !pMag) {
+//         return eSTATUS_FAILURE;
+//     }
+
+//     Vec3f attitude            = { 0.0F };
+//     uint32_t warmUpIterations = 250;
+//     float msStartTime         = (float)GetMilliseconds ();
+//     for (uint32_t i = 0; i < warmUpIterations; ++i) {
+
+//         Vec3f accel      = { 0.0F };
+//         Vec3f gyro       = { 0.0F };
+//         Vec3f mag        = { 0.0F };
+//         eSTATUS_t status = pImuDriver->read (pImuDriver->ctx, true, &accel, &gyro);
+//         RETURN_IF (status != eSTATUS_SUCCESS, status, "Failed to poll IMU");
+
+//         if (pMag) {
+//             status = Mag_Update_ (pMag, true, &mag);
+//             RETURN_IF (status != eSTATUS_SUCCESS, status, "Failed to poll Mag");
+//         }
+
+//         float dt    = ((float)GetMilliseconds () - msStartTime) / 1000.0F;
+//         msStartTime = (float)GetMilliseconds ();
+//         if (!pMag) {
+//             MadgwickFilter_Update (&pFlight->attitudeFilter, &accel, &gyro, NULL, dt, &attitude);
+//         } else {
+//             MadgwickFilter_Update (&pFlight->attitudeFilter, &accel, &gyro, &mag, dt, &attitude);
+//         }
+//     }
+
+//     pFlight->current[AXIS_IDX_ROLL]  = attitude.roll;
+//     pFlight->current[AXIS_IDX_PITCH] = attitude.pitch;
+//     pFlight->current[AXIS_IDX_YAW]   = attitude.yaw;
+//     return eSTATUS_SUCCESS;
+// }
+
 eSTATUS_t Nav_Init(void) {
     s_Nav.imu_sub          = umsg_sensors_imu_subscribe(1, 4);
     s_Nav.mag_sub          = umsg_sensors_mag_subscribe(1, 4);
     s_Nav.usLastUpdateTime = GetMicroseconds();
+
+    s_Nav.filter.cfg.gyroMeasureDriftDegs = CFG_GYRO_MEASURE_DRIFT_DEGS;
+    s_Nav.filter.cfg.gyroMeasureErrorDegs = CFG_GYRO_MEASURE_ERROR_DEGS;
     return MadgwickFilter_Init(&s_Nav.filter);
 }
 

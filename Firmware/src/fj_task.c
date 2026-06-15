@@ -6,16 +6,21 @@
 #include "core/core.h"
 #include "target.h"
 
-#include "sensors/imu.h"
-#include "sensors/mag.h"
-#include "sensors/rc.h"
+#include "device/imu.h"
+#include "device/mag.h"
+
 
 #include "nav/nav.h"
 #include "guidance/guidance.h"
+
 #include "control/control.h"
+#include "mc/rc.h"
+
 #include "mission/mission.h"
 
 #include "drivers/rx/rx.h"
+
+#include <stdbool.h>
 
 #define TASK_PRIORITY_SENSOR_IMU 2U
 #define TASK_PRIORITY_SENSOR_MAG 1U
@@ -34,26 +39,39 @@
 #define STACK_RX       128U
 
 static void SensorImu_Task(void* args) {
+
     (void)args;
-    SensorImu_Init();
-    while (1) {
-        SensorImu_Update();
+    static Imu_t imu;
+    eSTATUS_t status = Imu_Init(&imu);
+
+    if (STATUS_FAIL (status)) {
+        LOG_ERROR ("Failed to init IMU");
+    }
+
+    while (true) {
+        if (STATUS_OK (status)) {
+            Imu_Update(&imu);
+        }
     }
 }
 
 static void SensorMag_Task(void* args) {
+
     (void)args;
     SensorMag_Init();
+    
     while (1) {
         SensorMag_Update();
     }
 }
 
-static void SensorRc_Task(void* args) {
+static void Rc_Task(void* args) {
+
     (void)args;
-    SensorRc_Init();
+    Rc_Init();
+
     while (1) {
-        SensorRc_Update();
+        Rc_Update();
     }
 }
 
@@ -103,9 +121,9 @@ static void Rx_Task(void* args) {
 void FjTasks_Start(uint32_t coreIdx) {
 
     if (coreIdx == CM7_IDX) {
-        xTaskCreate(SensorImu_Task, "imu",      STACK_SENSOR,   NULL, TASK_PRIORITY_SENSOR_IMU, NULL);
-        xTaskCreate(SensorMag_Task, "mag",      STACK_SENSOR,   NULL, TASK_PRIORITY_SENSOR_MAG, NULL);
-        xTaskCreate(SensorRc_Task,  "rc",       STACK_SENSOR,   NULL, TASK_PRIORITY_SENSOR_RC,  NULL);
+        xTaskCreate(SensorImu_Task, "imu",      STACK_SENSOR,   NULL, TASK_PRIORITY_SENSOR_IMU,  NULL);
+        xTaskCreate(SensorMag_Task, "mag",      STACK_SENSOR,   NULL, TASK_PRIORITY_SENSOR_MAG,  NULL);
+        xTaskCreate(Rc_Task,        "rc",       STACK_SENSOR,   NULL, TASK_PRIORITY_SENSOR_RC,   NULL);
         xTaskCreate(Nav_Task,       "nav",      STACK_NAV,      NULL, TASK_PRIORITY_NAV,         NULL);
         xTaskCreate(Guidance_Task,  "guidance", STACK_GUIDANCE, NULL, TASK_PRIORITY_GUIDANCE,    NULL);
         xTaskCreate(Control_Task,   "control",  STACK_CONTROL,  NULL, TASK_PRIORITY_CONTROL,     NULL);

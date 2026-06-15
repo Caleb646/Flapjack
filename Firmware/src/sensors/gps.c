@@ -1,4 +1,4 @@
-#include "sensors/gps.h"
+#include "device/gps.h"
 #include "drivers/sensors/gps/gps.h"
 #include "umsg_sensors.h"
 

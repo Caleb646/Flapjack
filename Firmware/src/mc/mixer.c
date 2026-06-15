@@ -1,13 +1,11 @@
 #include <stdint.h>
 
-#include "flight.h"
 #include "target.h"
 
 #include "core/core.h"
 
 #include "mc/mixer.h"
 #include "mc/motors.h"
-#include "mc/pid.h"
 #include "mc/servos.h"
 
 // clang-format off
@@ -145,34 +143,4 @@ eSTATUS_t Mixer_Init_ (eMIXER_PROFILE_ID_t profileId, Mixer_t* pOutMixer) {
 eSTATUS_t Mixer_Init (void) {
     // TODO: set profileId based on cfg file
     return Mixer_Init_ (eMIXER_PROFILE_TILT_ROTOR, &g_Mixer);
-}
-
-eSTATUS_t Mixer_Mix (uint32_t usCurrentTime) {
-
-    Mixer_MixMotors (&g_Mixer, Pid_Get ()->data, g_Mixer.motorOutputs);
-    // NOTE: depending on the current mixer profile, some servos may not be used.
-    // Make sure to set unused servo outputs to 0.
-    memset (g_Mixer.servoOutputs, 0, sizeof (g_Mixer.servoOutputs));
-    Mixer_MixServos (&g_Mixer, Pid_Get ()->data, g_Mixer.servoOutputs);
-    return eSTATUS_SUCCESS;
-}
-
-eSTATUS_t Mixer_Update (uint32_t usCurrentTime) {
-
-    if (!Fc_IsArmed ()) {
-        return eSTATUS_FAILURE;
-    }
-
-    eSTATUS_t status = Servos_Write (g_Mixer.servoOutputs);
-    if (STATUS_FAIL (status)) {
-        LOG_ERROR ("Failed to write servo outputs");
-        return status;
-    }
-
-    status = Motors_Write (g_Mixer.motorOutputs);
-    if (STATUS_FAIL (status)) {
-        LOG_ERROR ("Failed to write motor outputs");
-        return status;
-    }
-    return eSTATUS_SUCCESS;
 }

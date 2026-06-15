@@ -6,8 +6,8 @@
 
 #include "drivers/serial/uart.h"
 
-#include "flight.h"
 #include "mc/motors.h"
+
 #include "mc/pid.h"
 
 #include "flapjack.pb.h"
@@ -94,20 +94,22 @@ static void Shell_HandleSetPid (SetPidCmd const* pCmd) {
 
 static void Shell_HandleArm (ArmCmd const* pCmd) {
 
-    Flight_t* pFlight = Fc_Get ();
+    // Flight_t* pFlight = Fc_Get ();
 
-    if (pCmd->arm && !pFlight->isArmed) {
-        if (STATUS_OK (Motors_Arm ())) {
-            pFlight->isArmed = true;
-            LOG_INFO ("Shell: armed");
-        } else {
-            LOG_ERROR ("Shell: arm failed");
-        }
-    } else if (!pCmd->arm && pFlight->isArmed) {
-        Motors_Disarm ();
-        pFlight->isArmed = false;
-        LOG_INFO ("Shell: disarmed");
-    }
+    // if (pCmd->arm && !pFlight->isArmed) {
+    //     if (STATUS_OK (Motors_Arm ())) {
+    //         pFlight->isArmed = true;
+    //         LOG_INFO ("Shell: armed");
+    //     } else {
+    //         LOG_ERROR ("Shell: arm failed");
+    //     }
+    // } else if (!pCmd->arm && pFlight->isArmed) {
+    //     Motors_Disarm ();
+    //     pFlight->isArmed = false;
+    //     LOG_INFO ("Shell: disarmed");
+    // }
+
+    // TODO
 }
 
 // ---------------------------------------------------------------------------

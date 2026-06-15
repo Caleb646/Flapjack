@@ -1,8 +1,10 @@
 #include "control/control.h"
+
+#include "mc/pid.h"
 #include "mc/mixer.h"
 #include "mc/motors.h"
-#include "mc/pid.h"
 #include "mc/servos.h"
+
 #include "umsg_guidance.h"
 #include "umsg_mission.h"
 #include "umsg_nav.h"
@@ -11,8 +13,6 @@
 
 #include <string.h>
 
-// Max rate used to normalise PID output to [-1, 1] for the mixer.
-// Matches the maximum rate guidance can command (π rad/s → 180 deg/s).
 #define CONTROL_MAX_RATE_DEG_S 180.0f
 
 typedef struct {
@@ -25,7 +25,9 @@ static Control_t s_Control;
 eSTATUS_t Control_Init(void) {
     s_Control.guidance_sub      = umsg_guidance_setpoints_subscribe(1, 4);
     s_Control.usLastUpdateTime  = GetMicroseconds();
-    return eSTATUS_SUCCESS;
+
+    Mixer_Init();
+    return Pid_Init ();
 }
 
 eSTATUS_t Control_Update(void) {

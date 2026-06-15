@@ -1,4 +1,3 @@
-#include "flight.h"
 #include "target.h"
 
 #include "core/core.h"
@@ -40,17 +39,6 @@ float Pid_UpdateAxis_ (PidAxis_t* pAxis, float current, float target, float dt) 
     pAxis->prevError    = error;
 
     return clipf32 ((pAxis->p * error) + (pAxis->i * integral) - (pAxis->d * derivative), CFG_PID_MIN_VALUE, CFG_PID_MAX_VALUE);
-}
-
-eSTATUS_t Pid_Update_ (Pid_t* pPid, Flight_t* pFlightData, uint32_t usCurrentTime, uint32_t usDeltaTime) {
-
-    float dt = (float)usDeltaTime / 1000000.0F;
-    for (uint32_t i = 0; i < AXIS_IDX_COUNT; ++i) {
-        float output = Pid_UpdateAxis_ (&pPid->axes[i], pFlightData->current[i], pFlightData->target[i], dt);
-        pPid->data[i] = clipf32 (output, -pFlightData->max[i], pFlightData->max[i]) / pFlightData->max[i];
-    }
-    pPid->usLastUpdateTime = usCurrentTime;
-    return eSTATUS_SUCCESS;
 }
 
 void Pid_LogData_ (Pid_t* pPid) {
