@@ -7,18 +7,8 @@
 
 #include "core/core.h"
 
-#include "mc/filter.h"
-
 #include "shell/shell.h"
 
-#include "drivers/dma.h"
-#include "drivers/io/gpio.h"
-
-#include "drivers/rx/rx.h"
-
-#include "drivers/sensors/mag/mag.h"
-
-#include "device/imu.h"
 #include "device/serial.h"
 
 FJ_DEFINE_SHARED (bool volatile, s_IsCM4Stuck)     = false;

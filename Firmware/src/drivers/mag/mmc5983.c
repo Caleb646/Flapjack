@@ -3,10 +3,11 @@
 
 #include "core/core.h"
 
-#include "drivers/sensors/mag/mag.h"
-#include "drivers/sensors/mag/mmc5983.h"
+#include "drivers/bus/spi.h"
 
-#include <math.h>
+#include "drivers/mag/magdrv.h"
+#include "drivers/mag/mmc5983.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -15,39 +16,33 @@
 #define CONTROL_REG2IDX(REG) ((REG) - MMC5983_INT_CTRL_0_REG)
 #define MAG_UNSIGNED_MAX     ((1U << 18U) - 1U)
 #define MAG_SIGNED_POS_MAX   (1U << 17U)
-#define MAG_VALID(pMAG)       ((pMAG) && (pMAG)->isInitialized && (pMAG)->isEnabled)
 
-FJ_DEFINE_SHARED (Mag_t, g_Mag)                                    = {
-#if BRD_IS_ENABLED(MAG)
-        .spiDev = {
-            .cfg  = {
-                .busId       = MAG_SPI_BUS_ID,
-                .pNssPort    = MAG_SPI_NSS_GPIO_PORT,
-                .nssPin      = MAG_SPI_NSS_GPIO_PIN,
-            },
-        },
-        .isEnabled = true,
-#endif
- };
-FJ_DEFINE_SHARED (uint8_t, s_ControlRegisters[NUM_CONTROL_REGISTERS]) = { 0 };
+typedef struct Mmc5983_s {
+    SpiDev_t spiDev;
+    Vec3u rawData;
+    uint32_t usLastUpdateTime;
+    bool dataUpdated;
+    bool normalize;
+    uint8_t controlRegs[NUM_CONTROL_REGISTERS];
+} Mmc5983_t;
 
-STATIC eSTATUS_t MagRead (Mag_t* pMag, uint8_t reg, uint8_t* pData, uint16_t size) {
+STATIC eSTATUS_t MagRead (Mmc5983_t* pMag, uint8_t reg, uint8_t* pData, uint16_t size) {
 
     eSTATUS_t status = SpiDev_ReadRegister (&pMag->spiDev, reg, pData, size);
     DelayMicroseconds (2);
     return status;
 }
 
-STATIC eSTATUS_t MagWrite (Mag_t* pMag, uint8_t reg, uint8_t const* pData, uint16_t size) {
+STATIC eSTATUS_t MagWrite (Mmc5983_t* pMag, uint8_t reg, uint8_t const* pData, uint16_t size) {
 
     eSTATUS_t status = SpiDev_WriteRegister (&pMag->spiDev, reg, pData, size);
     DelayMicroseconds (2);
     return status;
 }
 
-STATIC bool MagControlRegWrite (Mag_t* pMag, uint8_t reg, uint8_t bitMask, bool doWrite) {
+STATIC bool MagControlRegWrite (Mmc5983_t* pMag, uint8_t reg, uint8_t bitMask, bool doWrite) {
 
-    uint8_t* pValue = &s_ControlRegisters[CONTROL_REG2IDX (reg)];
+    uint8_t* pValue = &pMag->controlRegs[CONTROL_REG2IDX (reg)];
     *pValue |= bitMask;
     if (doWrite) {
         if (MagWrite (pMag, reg, pValue, 1U) != eSTATUS_SUCCESS) {
@@ -59,7 +54,7 @@ STATIC bool MagControlRegWrite (Mag_t* pMag, uint8_t reg, uint8_t bitMask, bool 
     return true;
 }
 
-STATIC uint8_t MagReadStatusReg (Mag_t* pMag) {
+STATIC uint8_t MagReadStatusReg (Mmc5983_t* pMag) {
 
     uint8_t status = 0;
     if (MagRead (pMag, MMC5983_STATUS_REG, &status, 1U) != eSTATUS_SUCCESS) {
@@ -69,15 +64,14 @@ STATIC uint8_t MagReadStatusReg (Mag_t* pMag) {
     return status;
 }
 
-STATIC bool MagXYZIsReady (Mag_t* pMag) {
+STATIC bool MagXYZIsReady (Mmc5983_t* pMag) {
 
     return (MagReadStatusReg (pMag) & MMC5983_MEAS_M_DONE) > 0 ? true : false;
 }
 
-STATIC eSTATUS_t MagSoftReset (Mag_t* pMag) {
+STATIC UNUSED_FN_DECL eSTATUS_t MagSoftReset (Mmc5983_t* pMag) {
 
-    // eMAG_STATUS_t status = eSTATUS_SUCCESS;
-    memset (s_ControlRegisters, 0, sizeof (s_ControlRegisters));
+    memset (pMag->controlRegs, 0, sizeof (pMag->controlRegs));
 
     bool success = MagControlRegWrite (pMag, MMC5983_INT_CTRL_1_REG, MMC5983_SW_RST, true);
     // 10 ms reset time + 5 ms margin
@@ -90,7 +84,7 @@ STATIC eSTATUS_t MagSoftReset (Mag_t* pMag) {
 /*
  * Could be called inside an interrupt
  */
-STATIC bool MagUpdateRawData (Mag_t* pMag) {
+STATIC bool MagUpdateRawData (Mmc5983_t* pMag) {
 
     uint8_t pXYZ[7]  = { 0 };
     eSTATUS_t status = MagRead (pMag, MMC5983_X_OUT_0_REG, pXYZ, 7U);
@@ -111,7 +105,7 @@ STATIC bool MagUpdateRawData (Mag_t* pMag) {
     return true;
 }
 
-STATIC Vec3f MagRaw2NormedGauss (Mag_t const* pMag, Vec3u raw, bool doNormalization) {
+STATIC Vec3f MagRaw2NormedGauss (Mmc5983_t const* pMag, Vec3u raw, bool doNormalization) {
 
     FJ_UNUSED (pMag);
     Vec3f output = { 0 };
@@ -129,7 +123,7 @@ STATIC Vec3f MagRaw2NormedGauss (Mag_t const* pMag, Vec3u raw, bool doNormalizat
 /*
  * Called by interrupt handler
  */
-STATIC UNUSED_FN_DECL bool MagUpdateFromINT (Mag_t* pMag) {
+STATIC UNUSED_FN_DECL bool MagUpdateFromINT (Mmc5983_t* pMag) {
 
     if (MagXYZIsReady (pMag) == false) {
         return false;
@@ -140,9 +134,8 @@ STATIC UNUSED_FN_DECL bool MagUpdateFromINT (Mag_t* pMag) {
     return true;
 }
 
-STATIC bool MagUpdateFromPolling (Mag_t* pMag) {
+STATIC bool MagUpdateFromPolling (Mmc5983_t* pMag) {
 
-    // eMAG_STATUS_t status = eSTATUS_SUCCESS;
     bool success = true;
     // Initiate measurement
     success = MagControlRegWrite (pMag, MMC5983_INT_CTRL_0_REG, MMC5983_TM_M, true);
@@ -164,15 +157,18 @@ error:
     return false;
 }
 
-eSTATUS_t Mag_Init_ (Mag_t* pOutMag) {
+STATIC eSTATUS_t Mmc5983_HwInit (Mmc5983_t* pMag) {
 
-    eSTATUS_t status = eSTATUS_SUCCESS;
-    if (SpiDev_Init (&pOutMag->spiDev) != eSTATUS_SUCCESS) {
+#if defined(MAG_SPI_BUS_ID)
+
+    pMag->spiDev.cfg.busId    = MAG_SPI_BUS_ID;
+    pMag->spiDev.cfg.pNssPort = MAG_SPI_NSS_GPIO_PORT;
+    pMag->spiDev.cfg.nssPin   = MAG_SPI_NSS_GPIO_PIN;
+    if (SpiDev_Init (&pMag->spiDev) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize SPI device for MAG");
         return eSTATUS_FAILURE;
     }
 
-    Mag_t* pMag = pOutMag;
     GOTO_IF (MagSoftReset (pMag) != eSTATUS_SUCCESS, error, "Failed to soft reset MAG");
 
     uint8_t chipId = 0;
@@ -182,7 +178,6 @@ eSTATUS_t Mag_Init_ (Mag_t* pOutMag) {
     bool success  = true;
     uint8_t flags = 0;
     flags |= MMC5983_AUTO_SR_EN; // Enable automatic set/reset
-    // flags |= MMC5983_INT_MEAS_DONE_EN; // Enable measurement done interrupt
     success = MagControlRegWrite (pMag, MMC5983_INT_CTRL_0_REG, flags, true);
     GOTO_IF (success == false, error, "Failed to configure MAG INT_CTRL_0 register");
 
@@ -197,23 +192,63 @@ eSTATUS_t Mag_Init_ (Mag_t* pOutMag) {
     success = MagControlRegWrite (pMag, MMC5983_INT_CTRL_2_REG, flags, true);
     GOTO_IF (success == false, error, "Failed to configure MAG INT_CTRL_2 register");
 
-    pMag->isInitialized = true;
     LOG_INFO ("Successfully initialized MAG");
     return eSTATUS_SUCCESS;
 
 error:
-    memset (pMag, 0, sizeof (Mag_t));
-    memset (s_ControlRegisters, 0, sizeof (s_ControlRegisters));
+    memset (pMag, 0, sizeof (Mmc5983_t));
     return eSTATUS_FAILURE;
+
+#else  // board has no magnetometer wiring
+
+    FJ_UNUSED (pMag);
+    return eSTATUS_FAILURE;
+
+#endif // MAG_SPI_BUS_ID
 }
 
-eSTATUS_t Mag_Update_ (Mag_t* pMag, bool forcePolling, Vec3f* pOutput) {
+STATIC eSTATUS_t Mmc5983_Read (void* ctx, bool forcePolling, Vec3f* pField) {
 
-    bool success = MagUpdateFromPolling (pMag);
-    if (!success) {
+    FJ_UNUSED (forcePolling);
+    Mmc5983_t* pMag = (Mmc5983_t*)ctx;
+    if (!pMag || !pField) {
+        return eSTATUS_FAILURE;
+    }
+
+    if (MagUpdateFromPolling (pMag) == false) {
         LOG_ERROR ("Failed to update MAG data from polling");
         return eSTATUS_FAILURE;
     }
-    *pOutput = MagRaw2NormedGauss (pMag, pMag->rawData, true);
+    *pField = MagRaw2NormedGauss (pMag, pMag->rawData, pMag->normalize);
     return eSTATUS_SUCCESS;
+}
+
+STATIC bool Mmc5983_IsDataReady (void* ctx) {
+
+    Mmc5983_t* pMag = (Mmc5983_t*)ctx;
+    if (!pMag) {
+        return false;
+    }
+    return MagXYZIsReady (pMag);
+}
+
+eSTATUS_t MagDrv_Init (MagDriverConf_t const* pConf, MagDriver_t* pOutDriver) {
+
+    if (!pConf || !pOutDriver) {
+        return eSTATUS_NULL_ARG;
+    }
+
+    memset (pOutDriver, 0, sizeof (MagDriver_t));
+    pOutDriver->ctx = Allocate (sizeof (Mmc5983_t));
+    if (!pOutDriver->ctx) {
+        return eSTATUS_FAILURE;
+    }
+    pOutDriver->Read        = Mmc5983_Read;
+    pOutDriver->IsDataReady = Mmc5983_IsDataReady;
+
+    Mmc5983_t* pMag = (Mmc5983_t*)pOutDriver->ctx;
+    memset (pMag, 0, sizeof (Mmc5983_t));
+    pMag->normalize = pConf->normalize;
+
+    return Mmc5983_HwInit (pMag);
 }

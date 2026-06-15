@@ -929,6 +929,8 @@ STATIC eSTATUS_t IMUConvertRaw (eImuAccRange_t aRange, Vec3i ra, eImuGyroRange_t
 
 eSTATUS_t IMU_Init_ (IMUInitConf_t conf, vIMU_t* pOutIMU) {
 
+#if defined(IMU_SPI_BUS_ID)
+
     if (!pOutIMU) {
         LOG_ERROR ("Output vIMU_t pointer is NULL");
         return eSTATUS_FAILURE;
@@ -1044,6 +1046,14 @@ eSTATUS_t IMU_Init_ (IMUInitConf_t conf, vIMU_t* pOutIMU) {
 error:
     memset (pIMU, 0, sizeof (vIMU_t));
     return eSTATUS_FAILURE;
+
+#else  // board has no IMU wiring
+
+    FJ_UNUSED (conf);
+    FJ_UNUSED (pOutIMU);
+    return eSTATUS_FAILURE;
+
+#endif // IMU_SPI_BUS_ID
 }
 
 /*

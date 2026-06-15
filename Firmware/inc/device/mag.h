@@ -3,7 +3,18 @@
 
 #include "core/core.h"
 
-eSTATUS_t SensorMag_Init(void);
-eSTATUS_t SensorMag_Update(void);
+#include "drivers/mag/magdrv.h"
+
+typedef struct {
+    MagDriver_t drv;
+    Vec3f field;
+    Vec3f fieldFiltered;
+    uint32_t usLastUpdate;
+} Mag_t;
+
+eSTATUS_t Mag_Init (Mag_t* pOutSensor);
+eSTATUS_t Mag_Update (Mag_t* pOutSensor);
+
+void Mag_StartTask (uint16_t stackDepth, uint32_t priority);
 
 #endif // SENSORS_MAG_H

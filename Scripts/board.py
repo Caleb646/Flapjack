@@ -353,7 +353,7 @@ def cmd_build(args: argparse.Namespace) -> None:
             print(f"ERROR: Unknown flag '{ch}'. Valid: d=Debug, r=Release, c=clean, t=tests, g=generate")
             sys.exit(1)
 
-    print(f"Flapjack Firmware Build  |  board: {args.board}  |  config: {config}\n")
+    print(f"Flapjack Firmware Build  |  board: {args.board}  |  config: {config}  |  drivers: {args.drivers}\n")
     _verify_toolchain()
 
     if clean or regen:
@@ -380,6 +380,7 @@ def cmd_build(args: argparse.Namespace) -> None:
         "-G", _CMAKE_GENERATOR,
         f"-DCMAKE_BUILD_TYPE={config}",
         f"-DBOARD_NAME={args.board}",
+        f"-DDRIVER_PROFILE={args.drivers}",
         f"-DHIL_TEST={build_tests}"
     ]
     print(f"Configuring …  ({' '.join(cmake_args)})")
@@ -541,6 +542,9 @@ def main() -> None:
     p_build.add_argument("--flags", "-f", default="d", metavar="FLAGS",
                          help="Build flags (combine freely): d=Debug, r=Release, "
                               "c=clean, t=HIL tests, g=regen proto+umsg")
+    p_build.add_argument("--drivers", "-D", default="default", metavar="PROFILE",
+                         help="Driver profile in Firmware/target/drivers/ "
+                              "(e.g. default=real hardware, sim=no hardware)")
 
     # ── flash ──────────────────────────────────────────────────────────────────
     p_flash = sub.add_parser("flash", help="Flash firmware and optionally run HIL tests",

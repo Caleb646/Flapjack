@@ -127,6 +127,15 @@ include("${TARGET_ROOT}/target.cmake")
 message(STATUS "Building for board: ${BOARD_NAME}")
 message(STATUS "Board defines: ${BOARD_DEFINES}")
 
+# ── Driver selection (independent of BOARD_NAME) ─────────────────────────────
+include("${TARGET_ROOT}/driver_select.cmake")   # defines select_driver / apply_drivers
+if(NOT DEFINED DRIVER_PROFILE)
+    set(DRIVER_PROFILE default)
+endif()
+include("${TARGET_ROOT}/drivers/${DRIVER_PROFILE}.cmake")   # records choices
+apply_drivers()                                             # prune APP_SRCS
+message(STATUS "Driver profile: ${DRIVER_PROFILE}")
+
 # ── Apply shared groups to all registered targets ────────────────────────────
 foreach(target IN LISTS TARGETS)
     target_sources(${target} PRIVATE

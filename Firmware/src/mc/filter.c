@@ -7,8 +7,6 @@
 
 #include "mc/filter.h"
 
-#include "drivers/sensors/mag/mag.h"
-
 #include <math.h>
 #include <stdbool.h>
 #include <string.h>

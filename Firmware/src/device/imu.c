@@ -4,6 +4,9 @@
 
 #include "umsg_sensors.h"
 
+#include "FreeRTOS.h"
+#include "task.h"
+
 #include <string.h>
 
 eSTATUS_t Imu_Init (Imu_t* pOutSensor) {
@@ -59,4 +62,23 @@ eSTATUS_t Imu_Update (Imu_t* pSensor) {
     };
     umsg_sensors_imu_publish (&msg);
     return eSTATUS_SUCCESS;
+}
+
+static Imu_t s_imu;
+
+static void Imu_Task (void* args) {
+
+    (void)args;
+    while (true) {
+        Imu_Update (&s_imu);
+    }
+}
+
+void Imu_StartTask (uint16_t stackDepth, uint32_t priority) {
+
+    if (STATUS_FAIL (Imu_Init (&s_imu))) {
+        LOG_ERROR ("IMU unavailable; task not started");
+        return;
+    }
+    xTaskCreate (Imu_Task, "imu", stackDepth, NULL, (UBaseType_t)priority, NULL);
 }
