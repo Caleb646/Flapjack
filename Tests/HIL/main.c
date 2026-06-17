@@ -1,8 +1,8 @@
 #include "test_dshot.h"
 
 #include "hal.h"
-#include "target.h"
 #include "platform.h"
+#include "target.h"
 
 #include "core/core.h"
 
@@ -60,11 +60,19 @@ static void HwTest_UartInit (void) {
     HAL_UARTEx_DisableFifoMode (&s_huart);
 }
 
-static void hil_test_task (void* args) {
-    (void)args;
+static void health_test_task (void* args) {
 
-    Delay (500);
-    LOG_INFO ("Starting HIL Tests");
+    (void)args;
+    while (1) {
+        LOG_INFO ("HIL Health Test Task Running");
+        vTaskDelay (100);
+    }
+}
+
+static void hil_test_task (void* args) {
+
+    (void)args;
+    LOG_INFO ("Starting HIL Tests Task");
     Delay (500);
 
     UNITY_BEGIN ();
@@ -77,7 +85,7 @@ static void hil_test_task (void* args) {
     // // RUN_TEST (test_hil_dshot_frame_length);
     UNITY_END ();
 
-    Delay (50000);
+    vTaskDelay (50000);
 
     while (1) {
         __WFI ();
@@ -86,7 +94,7 @@ static void hil_test_task (void* args) {
 
 int main (void) {
 
-    if(Platform_Init() != 0) {
+    if (Platform_Init () != 0) {
         CriticalErrorHandler ();
     }
 
@@ -95,11 +103,25 @@ int main (void) {
     HwTest_UartInit ();
     init_printf (NULL, Uart_PutChar);
 
-    xTaskCreate (hil_test_task, "hil_test", 1024, NULL, 1, NULL);
+    Delay (1000);
+    LOG_INFO ("Starting HIL Tests");
+
+    BaseType_t taskStatus = xTaskCreate (hil_test_task, "hil_test", 512, NULL, 5, NULL);
+    if (taskStatus != pdPASS) {
+        LOG_ERROR ("Failed to hil test task");
+    }
+
+    taskStatus = xTaskCreate (health_test_task, "health_test", 256, NULL, 4, NULL);
+    if (taskStatus != pdPASS) {
+        LOG_ERROR ("Failed to health test task");
+    }
+
+    LOG_INFO ("Starting FreeRTOS Scheduler");
     vTaskStartScheduler ();
 
 #endif
 
+    Delay (50000);
     while (1) {
         __WFI ();
     }

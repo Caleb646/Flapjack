@@ -3,8 +3,8 @@
 #include <string.h>
 
 #include "hal.h"
-#include "target.h"
 #include "platform.h"
+#include "target.h"
 
 #include "core/core.h"
 
@@ -51,7 +51,7 @@ FJ_DEFINE_SHARED (bool volatile, s_IsCM4Ready)     = false;
 
 int main (void) {
 
-    if(Platform_Init() != 0) {
+    if (Platform_Init () != 0) {
         CriticalErrorHandler ();
     }
 
@@ -95,8 +95,8 @@ int main (void) {
 #endif /* CORE_CM7 */
 
 /*
-* ******************* CM4 Start *******************
-*/
+ * ******************* CM4 Start *******************
+ */
 #if defined(CORE_CM4)
 
     while (!s_IsSystemInited) {
@@ -114,6 +114,5 @@ int main (void) {
     vTaskStartScheduler ();
 
 #endif /* CORE_CM4 */
-
     while (1);
 }
