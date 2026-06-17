@@ -1,4 +1,4 @@
-// Generated with umsg_gen on 2026-06-14
+// Generated with umsg_gen on 2026-06-16
 #pragma once
 
 #ifdef __cplusplus
@@ -8,9 +8,19 @@ extern "C" {
 #include <umsg_types.h>
 
 // msg structure typedefs
+
+typedef enum
+{
+    EMISSION_MODE_MANUAL,
+    EMISSION_MODE_ALTITUDE_HOLD,
+    EMISSION_MODE_POSITION_HOLD,
+    EMISSION_MODE_WAYPOINT,
+    EMISSION_MODE_RTL
+} umsg_mission_mode_t;
+
 typedef struct
 {
-    uint8_t mode;
+    umsg_mission_mode_t mode;
     float target_pos[3];
     float target_heading;
     uint8_t armed;

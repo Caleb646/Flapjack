@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -7,13 +8,46 @@
 
 #include "core/core.h"
 
-#include "shell/shell.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
-#include "device/serial.h"
+#include "tasks/shell/shell.h"
+
+#include "devices/serial.h"
+
+#include "tasks/imu/imu_task.h"
+#include "tasks/mag/mag_task.h"
+#include "tasks/rc/rc.h"
+#include "tasks/nav/nav.h"
+#include "tasks/guidance/guidance.h"
+#include "tasks/control/control.h"
+#include "tasks/mission/mission.h"
+#include "tasks/rx/rx_task.h"
 
 FJ_DEFINE_SHARED (bool volatile, s_IsCM4Stuck)     = false;
 FJ_DEFINE_SHARED (bool volatile, s_IsSystemInited) = false;
 FJ_DEFINE_SHARED (bool volatile, s_IsCM4Ready)     = false;
+
+/* ── FreeRTOS task resourcing ───────────────────────────────────────────────
+ * main.c is the composition root: every task's XX_Task() lives in its own task
+ * file; main() registers them per core below.
+ */
+
+#define TASK_PRIORITY_SENSOR_IMU 2U
+#define TASK_PRIORITY_SENSOR_MAG 1U
+#define TASK_PRIORITY_SENSOR_RC  3U
+#define TASK_PRIORITY_NAV        5U
+#define TASK_PRIORITY_GUIDANCE   4U
+#define TASK_PRIORITY_CONTROL    5U
+#define TASK_PRIORITY_MISSION    3U
+#define TASK_PRIORITY_RX         3U
+
+#define STACK_SENSOR   128U
+#define STACK_NAV      512U
+#define STACK_GUIDANCE 256U
+#define STACK_CONTROL  512U
+#define STACK_MISSION  128U
+#define STACK_RX       128U
 
 int main (void) {
 
@@ -34,7 +68,7 @@ int main (void) {
     if (STATUS_FAIL (Core_Init ())) {
         CriticalErrorHandler ();
     }
-    
+
     if (STATUS_FAIL (SerialDebug_Init ())) {
         CriticalErrorHandler ();
     }
@@ -50,7 +84,14 @@ int main (void) {
     }
 
     LOG_INFO ("Starting scheduler");
-    FjTasks_Start (CM7_IDX);
+    xTaskCreate (Imu_Task,      "imu",      STACK_SENSOR,   NULL, TASK_PRIORITY_SENSOR_IMU, NULL);
+    xTaskCreate (Mag_Task,      "mag",      STACK_SENSOR,   NULL, TASK_PRIORITY_SENSOR_MAG, NULL);
+    xTaskCreate (Rc_Task,       "rc",       STACK_SENSOR,   NULL, TASK_PRIORITY_SENSOR_RC,  NULL);
+    xTaskCreate (Nav_Task,      "nav",      STACK_NAV,      NULL, TASK_PRIORITY_NAV,        NULL);
+    xTaskCreate (Guidance_Task, "guidance", STACK_GUIDANCE, NULL, TASK_PRIORITY_GUIDANCE,   NULL);
+    xTaskCreate (Control_Task,  "control",  STACK_CONTROL,  NULL, TASK_PRIORITY_CONTROL,    NULL);
+    xTaskCreate (Mission_Task,  "mission",  STACK_MISSION,  NULL, TASK_PRIORITY_MISSION,    NULL);
+    vTaskStartScheduler ();
 #endif /* CORE_CM7 */
 
 /*
@@ -69,7 +110,8 @@ int main (void) {
 
     s_IsCM4Ready = true;
     LOG_INFO ("Starting scheduler");
-    FjTasks_Start (CM4_IDX);
+    xTaskCreate (Rx_Task, "rx", STACK_RX, NULL, TASK_PRIORITY_RX, NULL);
+    vTaskStartScheduler ();
 
 #endif /* CORE_CM4 */
 

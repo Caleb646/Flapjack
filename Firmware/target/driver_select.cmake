@@ -5,7 +5,7 @@
 # only the selected backend compiles for each interface.
 #
 # Convention: selectable backends for interface <iface> are the top-level .c files
-# in Firmware/src/drivers/<iface>/. Shared helpers live in subdirectories and
+# in Firmware/drivers/<iface>/. Shared helpers live in subdirectories and
 # always compile.
 
 set(DRIVER_IFACES "")
@@ -19,7 +19,7 @@ endmacro()
 # Prune APP_SRCS so only the selected backend compiles per interface.
 macro(apply_drivers)
     foreach(iface IN LISTS DRIVER_IFACES)
-        set(_dir "${FIRMWARE_ROOT}/src/drivers/${iface}")
+        set(_dir "${FIRMWARE_ROOT}/drivers/${iface}")
         file(GLOB _all "${_dir}/*.c")          # top-level only; helpers in subdirs stay
         list(REMOVE_ITEM APP_SRCS ${_all})
         set(_chosen "${_dir}/${DRIVER_${iface}}.c")

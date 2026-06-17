@@ -1,0 +1,23 @@
+{
+  "enums": [
+    {
+      "name": "gain",
+      "enumerators": [
+        "TUNE_PID_GAIN_KP",
+        "TUNE_PID_GAIN_KI",
+        "TUNE_PID_GAIN_KD",
+        "TUNE_PID_GAIN_INTEGRAL_LIMIT"
+      ]
+    }
+  ],
+  "msgs": [
+    {
+      "name": "pid",
+      "fields": [
+        {"name": "axis",  "type": "uint8"},
+        {"name": "gain",  "type": "gain"},
+        {"name": "value", "type": "float"}
+      ]
+    }
+  ]
+}

@@ -1,4 +1,15 @@
 {
+  "enums": [
+    {
+      "name": "valid",
+      "enumerators": [
+        "NAV_VALID_ATTITUDE = (1 << 0)",
+        "NAV_VALID_POSITION = (1 << 1)",
+        "NAV_VALID_VELOCITY = (1 << 2)",
+        "NAV_VALID_BARO_ALT = (1 << 3)"
+      ]
+    }
+  ],
   "msgs": [
     {
       "name": "state",

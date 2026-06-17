@@ -1,4 +1,4 @@
-// Generated with umsg_gen on 2026-06-14
+// Generated with umsg_gen on 2026-06-16
 #pragma once
 
 #ifdef __cplusplus
@@ -8,6 +8,15 @@ extern "C" {
 #include <umsg_types.h>
 
 // msg structure typedefs
+
+typedef enum
+{
+    NAV_VALID_ATTITUDE = (1 << 0),
+    NAV_VALID_POSITION = (1 << 1),
+    NAV_VALID_VELOCITY = (1 << 2),
+    NAV_VALID_BARO_ALT = (1 << 3)
+} umsg_nav_valid_t;
+
 typedef struct
 {
     float quat[4];

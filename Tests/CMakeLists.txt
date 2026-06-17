@@ -22,8 +22,8 @@ FetchContent_MakeAvailable(unity)
 set(UNITY_SRC "${unity_SOURCE_DIR}/src/unity.c")
 set(UNITY_INC "${unity_SOURCE_DIR}/src")
 
-set(COMMON_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../Firmware/src")
-set(COMMON_INC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../Firmware/inc")
+set(COMMON_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../Firmware")
+set(COMMON_INC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../Firmware")
 set(TARGETS_INC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../Firmware/target")
 
 set(COMMON_DEFS UNIT_TEST BOARD_NUCLEO_H747ZI)
@@ -34,10 +34,10 @@ add_library(drone_common_obj OBJECT
     ${COMMON_SRC_DIR}/core/sync.c
     ${COMMON_SRC_DIR}/core/log/logger.c
     ${COMMON_SRC_DIR}/core/log/format.c
-    ${COMMON_SRC_DIR}/mem/vector.c
-    ${COMMON_SRC_DIR}/mem/queue.c
-    ${COMMON_SRC_DIR}/mem/umap.c
-    ${COMMON_SRC_DIR}/mem/ring_buff.c
+    ${COMMON_SRC_DIR}/common/vector.c
+    ${COMMON_SRC_DIR}/common/queue.c
+    ${COMMON_SRC_DIR}/common/umap.c
+    ${COMMON_SRC_DIR}/common/ring_buff.c
     ${UNITTEST_ROOT}/stubs/hal_stub.c
 )
 
@@ -54,14 +54,14 @@ add_library(drone_bus_obj OBJECT
 
 add_library(drone_device_obj OBJECT
     ${COMMON_SRC_DIR}/drivers/imu/bmi323.c
-    ${COMMON_SRC_DIR}/drivers/imu/imu_sim.c
-    ${COMMON_SRC_DIR}/device/serial/serial.c
+    ${COMMON_SRC_DIR}/drivers/imu/sim.c
+    ${COMMON_SRC_DIR}/devices/serial.c
 )
 
 add_library(drone_mc_obj OBJECT
-    ${COMMON_SRC_DIR}/mc/dshot.c
-    ${COMMON_SRC_DIR}/mc/filter.c
-    ${COMMON_SRC_DIR}/mc/pid.c
+    ${COMMON_SRC_DIR}/drivers/dshot/dshot.c
+    ${COMMON_SRC_DIR}/common/filter.c
+    ${COMMON_SRC_DIR}/common/pid.c
 )
 
 foreach(lib
@@ -73,6 +73,7 @@ foreach(lib
 )
     target_include_directories(${lib} PRIVATE
         ${COMMON_INC_DIR}
+        ${COMMON_INC_DIR}/platform
         ${TARGETS_INC_DIR}
         ${UNITTEST_ROOT}/stubs
     )
@@ -87,6 +88,7 @@ function(add_test_exe test_name)
     target_include_directories(${test_name} PRIVATE
         ${UNITY_INC}
         ${COMMON_INC_DIR}
+        ${COMMON_INC_DIR}/platform
         ${TARGETS_INC_DIR}
         ${UNITTEST_ROOT}/stubs
     )

@@ -1,7 +1,7 @@
 #include "conf/board.h"
 #include "conf/ids.h"
 #include "core/core.h"
-#include "device/imu/imu.h"
+#include "devices/imu.h"
 #include "hal.h"
 #include "unity/unity.h"
 #include <math.h>

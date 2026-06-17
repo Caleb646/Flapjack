@@ -1,0 +1,10 @@
+{
+  "msgs": [
+    {
+      "name": "request",
+      "fields": [
+        {"name": "arm", "type": "uint8"}
+      ]
+    }
+  ]
+}

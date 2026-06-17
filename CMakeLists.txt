@@ -68,12 +68,15 @@ set(VENDOR_INCS
 # ── App group ────────────────────────────────────────────────────────────────
 set(APP_DEFS "")
 set(APP_INCS
-    "${FIRMWARE_ROOT}/inc"
+    "${FIRMWARE_ROOT}"
 )
 
 file(GLOB_RECURSE APP_SRCS
-    "${FIRMWARE_ROOT}/src/*.c"
-    "${FIRMWARE_ROOT}/src/*.s"
+    "${FIRMWARE_ROOT}/common/*.c"
+    "${FIRMWARE_ROOT}/core/*.c"
+    "${FIRMWARE_ROOT}/drivers/*.c"
+    "${FIRMWARE_ROOT}/devices/*.c"
+    "${FIRMWARE_ROOT}/tasks/*.c"
 )
 
 set(TARGETS "")
