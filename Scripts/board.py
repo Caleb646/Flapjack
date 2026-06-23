@@ -543,7 +543,7 @@ def main() -> None:
                          help="Build flags (combine freely): d=Debug, r=Release, "
                               "c=clean, t=HIL tests, g=regen proto+umsg")
     p_build.add_argument("--drivers", "-D", default="default", metavar="PROFILE",
-                         help="Driver profile in Firmware/target/drivers/ "
+                         help="Driver profile in Firmware/drivers/profiles/ "
                               "(e.g. default=real hardware, sim=no hardware)")
 
     # ── flash ──────────────────────────────────────────────────────────────────

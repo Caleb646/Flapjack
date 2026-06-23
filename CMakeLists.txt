@@ -74,7 +74,6 @@ set(APP_INCS
 file(GLOB_RECURSE APP_SRCS
     "${FIRMWARE_ROOT}/common/*.c"
     "${FIRMWARE_ROOT}/core/*.c"
-    "${FIRMWARE_ROOT}/drivers/*.c"
     "${FIRMWARE_ROOT}/devices/*.c"
     "${FIRMWARE_ROOT}/tasks/*.c"
 )
@@ -131,13 +130,7 @@ message(STATUS "Building for board: ${BOARD_NAME}")
 message(STATUS "Board defines: ${BOARD_DEFINES}")
 
 # ── Driver selection (independent of BOARD_NAME) ─────────────────────────────
-include("${TARGET_ROOT}/driver_select.cmake")   # defines select_driver / apply_drivers
-if(NOT DEFINED DRIVER_PROFILE)
-    set(DRIVER_PROFILE default)
-endif()
-include("${TARGET_ROOT}/drivers/${DRIVER_PROFILE}.cmake")   # records choices
-apply_drivers()                                             # prune APP_SRCS
-message(STATUS "Driver profile: ${DRIVER_PROFILE}")
+include("${FIRMWARE_ROOT}/drivers/drivers.cmake")   # globs + prunes driver srcs into APP_SRCS
 
 # ── Apply shared groups to all registered targets ────────────────────────────
 foreach(target IN LISTS TARGETS)
