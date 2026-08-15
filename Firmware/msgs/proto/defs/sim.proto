@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+/*
+ * HIL simulator link contract (shared by FC nanopb + PC python).
+ *
+ * Direction is noted per message. All vectors are in the FC body frame
+ * (FRD: x-forward, y-right, z-down). The accelerometer carries specific
+ * force (a - g), so level & still => accel = (0, 0, 9.81).
+ * 
+ * Frame msg_id bytes: SensorData=1, RcInput=2, ServoCmd=3, MotorCmd=4,
+ * Telemetry=5 (see drivers/sim_link/sim_link.h).
+ */
+
+// PC -> FC: synthesized sensor sample.
+message SensorData {
+    repeated float accel = 1;  // m/s^2, specific force, body FRD
+    repeated float gyro  = 2;  // deg/s, body FRD
+    repeated float mag   = 3;  // normalized field, body frame
+}
+
+// PC -> FC: injected RC channels (microseconds, 1000-2000).
+message RcInput {
+    repeated uint32 channels = 1;
+}
+
+// FC -> PC: servo (tilt) command, one angle per servo.
+message ServoCmd {
+    repeated float angle = 1;  // radians, per servo
+}
+
+// FC -> PC: motor command, one throttle per motor.
+message MotorCmd {
+    repeated float throttle = 1;  // 0.0 - 1.0, per motor
+}
+
+// FC -> PC: telemetry for open-loop validation.
+message Telemetry {
+    repeated float euler = 1;       // deg [roll, pitch, yaw] from nav
+    bool   armed         = 2;
+    uint32 imu_count     = 3;       // increments per consumed IMU sample (pacing check)
+}

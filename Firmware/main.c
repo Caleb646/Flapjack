@@ -11,8 +11,6 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-#include "tasks/shell/shell.h"
-
 #include "devices/serial.h"
 
 #include "tasks/imu/imu_task.h"
@@ -23,6 +21,10 @@
 #include "tasks/control/control.h"
 #include "tasks/mission/mission.h"
 #include "tasks/rx/rx_task.h"
+#include "tasks/shell/shell.h"
+
+#include "drivers/sim_link/sim_link.h"
+#include "tasks/sim/sim_telemetry.h"
 
 FJ_DEFINE_SHARED (bool volatile, s_IsCM4Stuck)     = false;
 FJ_DEFINE_SHARED (bool volatile, s_IsSystemInited) = false;
@@ -42,12 +44,18 @@ FJ_DEFINE_SHARED (bool volatile, s_IsCM4Ready)     = false;
 #define TASK_PRIORITY_MISSION    3U
 #define TASK_PRIORITY_RX         3U
 
+#define TASK_PRIORITY_SIMLINK 6U
+#define TASK_PRIORITY_SIMTLM  1U
+
 #define STACK_SENSOR   128U
 #define STACK_NAV      512U
 #define STACK_GUIDANCE 256U
 #define STACK_CONTROL  512U
 #define STACK_MISSION  128U
 #define STACK_RX       128U
+
+#define STACK_SIMLINK         512U
+#define STACK_SIMTLM          256U
 
 int main (void) {
 
@@ -69,19 +77,29 @@ int main (void) {
         CriticalErrorHandler ();
     }
 
+#ifdef SIM_HIL
+    /* HIL: the debug UART becomes the binary sim link; logging is suppressed and
+     * the shell is unavailable. */
+    if (STATUS_FAIL (SimLink_Init ())) {
+        CriticalErrorHandler ();
+    }
+#else
     if (STATUS_FAIL (SerialDebug_Init ())) {
         CriticalErrorHandler ();
     }
+#endif
 
     s_IsSystemInited = true;
     while (!s_IsCM4Ready) {
         // allow cm4 to initialize logger
     };
 
+#ifndef SIM_HIL
     if (STATUS_FAIL (Shell_Init ())) {
         LOG_ERROR ("Failed to init shell");
         CriticalErrorHandler ();
     }
+#endif
 
     LOG_INFO ("Starting scheduler");
     xTaskCreate (Imu_Task,      "imu",      STACK_SENSOR,   NULL, TASK_PRIORITY_SENSOR_IMU, NULL);
@@ -91,6 +109,10 @@ int main (void) {
     xTaskCreate (Guidance_Task, "guidance", STACK_GUIDANCE, NULL, TASK_PRIORITY_GUIDANCE,   NULL);
     xTaskCreate (Control_Task,  "control",  STACK_CONTROL,  NULL, TASK_PRIORITY_CONTROL,    NULL);
     xTaskCreate (Mission_Task,  "mission",  STACK_MISSION,  NULL, TASK_PRIORITY_MISSION,    NULL);
+#ifdef SIM_HIL
+    xTaskCreate (SimLink_RxTask,    "simrx",  STACK_SIMLINK, NULL, TASK_PRIORITY_SIMLINK, NULL);
+    xTaskCreate (SimTelemetry_Task, "simtlm", STACK_SIMTLM,  NULL, TASK_PRIORITY_SIMTLM,  NULL);
+#endif
     vTaskStartScheduler ();
 #endif /* CORE_CM7 */
 

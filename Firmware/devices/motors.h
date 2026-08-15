@@ -1,11 +1,16 @@
 #ifndef MC_MOTORS_H
 #define MC_MOTORS_H
 
+#include <stdbool.h>
+
 #include "core/core.h"
 
 #include "target.h"
 
+#include "drivers/motor/motordrv.h"
+
 typedef struct {
+    MotorDriver_t drv;
     bool armed;
 } Motors_t;
 
