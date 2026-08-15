@@ -115,6 +115,8 @@ int main (void) {
     xTaskCreate (SimLink_RxTask,    "simrx",  STACK_SIMLINK, NULL, TASK_PRIORITY_SIMLINK, NULL);
     xTaskCreate (SimTelemetry_Task, "simtlm", STACK_SIMTLM,  NULL, TASK_PRIORITY_SIMTLM,  NULL);
 #endif
+
+    LOG_INFO ("Heap Free Size: %u", (uint16_t)xPortGetFreeHeapSize ());
     vTaskStartScheduler ();
 #endif /* CORE_CM7 */
 
