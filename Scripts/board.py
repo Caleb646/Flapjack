@@ -8,6 +8,7 @@ Commands
   build             Configure and build firmware
   flash             Flash firmware; optionally run HIL tests
   gen               Regenerate protobuf + umsg sources (no toolchain/build)
+  renode            Boot the firmware under the Renode CM7 emulator (SIL)
   sim               Run the JSBSim HIL bridge (host side of the sim link)
   gui               Launch the flight GUI (telemetry + command console)
 
@@ -27,6 +28,12 @@ Examples
   python3 Scripts/board.py gen
   python3 Scripts/board.py sim --port COM7 --dry-run
   python3 Scripts/board.py gui
+
+  # SIL: emulate the CM7 instead of using a board. Two terminals -
+  # `renode` replaces `flash`, and `sim` is unchanged apart from --port.
+  python3 Scripts/board.py build -b flapjack-v1 -D sim --single-core
+  python3 Scripts/board.py renode -b flapjack-v1
+  python3 Scripts/board.py sim --port socket://localhost:4000 --rate 400
 """
 
 import argparse
@@ -360,7 +367,8 @@ def cmd_build(args: argparse.Namespace) -> None:
             print(f"ERROR: Unknown flag '{ch}'. Valid: d=Debug, r=Release, c=clean, t=tests, g=generate")
             sys.exit(1)
 
-    print(f"Flapjack Firmware Build  |  board: {args.board}  |  config: {config}  |  drivers: {args.drivers}\n")
+    cores = "single-core (cm7)" if args.single_core else "dual-core"
+    print(f"Flapjack Firmware Build  |  board: {args.board}  |  config: {config}  |  drivers: {args.drivers}  |  {cores}\n")
     _verify_toolchain()
 
     if clean or regen:
@@ -388,7 +396,8 @@ def cmd_build(args: argparse.Namespace) -> None:
         f"-DCMAKE_BUILD_TYPE={config}",
         f"-DBOARD_NAME={args.board}",
         f"-DDRIVER_PROFILE={args.drivers}",
-        f"-DHIL_TEST={build_tests}"
+        f"-DHIL_TEST={build_tests}",
+        f"-DSINGLE_CORE={'ON' if args.single_core else 'OFF'}",
     ]
     print(f"Configuring …  ({' '.join(cmake_args)})")
     try:
@@ -538,6 +547,72 @@ def cmd_gen(_: argparse.Namespace) -> None:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+#  renode
+# ══════════════════════════════════════════════════════════════════════════════
+
+RENODE_DIR    = TOOLS_ROOT / "renode"
+RENODE_SCRIPT = SCRIPTS_ROOT / "renode" / "flapjack_sil.resc"
+
+
+def _renode_binary() -> str:
+    exe = RENODE_DIR / ("renode.exe" if PLATFORM == "win32" else "renode")
+    if exe.exists():
+        return str(exe)
+    found = shutil.which("renode")
+    if found:
+        return found
+    print(f"ERROR: Renode not found at {exe}, and 'renode' is not on PATH.")
+    print("       Get the portable package from https://builds.renode.io and unpack it to Tools/renode/")
+    sys.exit(1)
+
+
+def cmd_renode(args: argparse.Namespace) -> None:
+    config = "Release" if "r" in args.flags else "Debug"
+    output_dir = BUILD_ROOT / args.board / config
+    elf = Path(args.elf) if args.elf else output_dir / "cm7.elf"
+
+    if not elf.exists():
+        print(f"ERROR: {elf} not found.")
+        print(f"       Build it first: python Scripts/board.py build -b {args.board} -D sim --single-core")
+        sys.exit(1)
+
+    # Renode models the CM7 only. A dual-core image spins forever in main()
+    # waiting on s_IsCM4Ready, which looks like a silent hang - catch it here.
+    cache = output_dir / "CMakeCache.txt"
+    if args.elf is None and cache.exists() and "SINGLE_CORE:BOOL=ON" not in cache.read_text():
+        print(f"ERROR: {elf} was built dual-core (SINGLE_CORE=OFF).")
+        print("       Renode emulates the CM7 only; a dual-core image hangs in main() waiting for CM4.")
+        print(f"       Rebuild: python Scripts/board.py build -b {args.board} -D sim --single-core")
+        sys.exit(1)
+
+    # $bin is declared with '?=' in the .resc, so setting it first wins.
+    monitor_cmds = "; ".join([
+        f"$bin=@{elf.resolve().as_posix()}",
+        f"i @{RENODE_SCRIPT.resolve().as_posix()}",
+        f'emulation CreateServerSocketTerminal {args.port} "simlink" false',
+        "connector Connect sysbus.usart1 simlink",
+        "start",
+    ])
+
+    # -P (monitor on a socket) rather than --console: with stdin not a TTY the
+    # console monitor reads EOF and Renode quits immediately.
+    cmd = [_renode_binary(), "-P", str(args.monitor_port), "--plain"]
+    if not args.gui:
+        cmd.append("--disable-xwt")
+    cmd += ["-e", monitor_cmds]
+
+    print(f"Renode  |  board: {args.board}  |  config: {config}  |  {elf.name}")
+    print(f"  sim link : socket://localhost:{args.port}")
+    print(f"  monitor  : localhost:{args.monitor_port}")
+    print(f"  bridge   : python Scripts/board.py sim --port socket://localhost:{args.port} --rate 400")
+    print("  Ctrl-C to stop.\n")
+    try:
+        subprocess.run(cmd, cwd=PROJECT_ROOT, check=False)
+    except KeyboardInterrupt:
+        pass
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 #  CLI wiring
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -575,6 +650,8 @@ def main() -> None:
     p_build.add_argument("--drivers", "-D", default="default", metavar="PROFILE",
                          help="Driver profile in Firmware/drivers/profiles/ "
                               "(e.g. default=real hardware, sim=no hardware)")
+    p_build.add_argument("--single-core", action="store_true",
+                         help="Build a single-core CM7 image (no cm4.elf); for Renode SIL")
 
     # ── flash ──────────────────────────────────────────────────────────────────
     p_flash = sub.add_parser("flash", help="Flash firmware and optionally run HIL tests",
@@ -595,6 +672,22 @@ def main() -> None:
     # ── gen ──────────────────────────────────────────────────────────────────────
     sub.add_parser("gen", help="Regenerate protobuf + umsg sources (no toolchain/build)")
 
+    # ── renode ─────────────────────────────────────────────────────────────────
+    p_renode = sub.add_parser("renode", help="Boot the firmware under the Renode CM7 emulator",
+                              formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    p_renode.add_argument("--board", "-b", default="flapjack-v1", choices=BOARDS,
+                          help="Target board")
+    p_renode.add_argument("--flags", "-f", default="d", metavar="FLAGS",
+                          help="d=Debug, r=Release (selects the Build/ subdirectory)")
+    p_renode.add_argument("--port", type=int, default=4000,
+                          help="TCP port exposing USART1 as the sim link")
+    p_renode.add_argument("--monitor-port", type=int, default=3456,
+                          help="TCP port for the Renode monitor")
+    p_renode.add_argument("--elf", default=None,
+                          help="Override the ELF path (skips the SINGLE_CORE check)")
+    p_renode.add_argument("--gui", action="store_true",
+                          help="Show the Renode window instead of running headless")
+
     # ── sim / gui ────────────────────────────────────────────────────────────────
     # Registered for `--help` listing only; both are intercepted at the top of
     # main() so their args pass straight through to the bridge / GUI.
@@ -604,7 +697,7 @@ def main() -> None:
 
     args = root.parse_args()
     {"install": cmd_install, "build": cmd_build, "flash": cmd_flash,
-     "gen": cmd_gen}[args.command](args)
+     "gen": cmd_gen, "renode": cmd_renode}[args.command](args)
 
 
 if __name__ == "__main__":

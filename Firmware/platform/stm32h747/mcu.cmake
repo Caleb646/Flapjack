@@ -69,4 +69,6 @@ set(PLATFORM_DEFS
 )
 
 include("${CM7_ROOT}/mcu.cmake")
-include("${CM4_ROOT}/mcu.cmake")
+if(NOT SINGLE_CORE)
+    include("${CM4_ROOT}/mcu.cmake")
+endif()

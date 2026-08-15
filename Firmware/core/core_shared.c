@@ -127,16 +127,11 @@ uint32_t GetMicroseconds (void) {
     /* Systick->LOAD Initial Value -->  SYSTICK_CLOCK_HZ (64MHz) / 1000U ) - 1UL = 64,000 */
 #ifndef UNIT_TEST
     uint32_t msTime = GetMilliseconds ();
-#if MICRO_DELAY_USE_SYSTICK == 1
     if (SysTick->LOAD == SysTick->VAL) {
         return msTime * 1000U;
     }
     uint32_t usTime = (SysTick->LOAD - SysTick->VAL) / (SysTick->LOAD / 1000U);
     return msTime * 1000U + usTime;
-#else
-    uint32_t usTime = DWT->CYCCNT / (SystemCoreClock / 1000000U);
-    return msTime * 1000U + usTime;
-#endif
 #endif // UNIT_TEST
     return 0;
 }

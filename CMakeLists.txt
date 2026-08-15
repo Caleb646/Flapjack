@@ -66,7 +66,12 @@ set(VENDOR_INCS
 )
 
 # ── App group ────────────────────────────────────────────────────────────────
+option(SINGLE_CORE "Build a single-core CM7 image; no CM4 target is created" OFF)
+
 set(APP_DEFS "")
+if(SINGLE_CORE)
+    list(APPEND APP_DEFS "SINGLE_CORE")
+endif()
 set(APP_INCS
     "${FIRMWARE_ROOT}"
 )

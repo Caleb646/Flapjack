@@ -47,12 +47,15 @@ eSTATUS_t SimLink_Init (void);
 void SimLink_RxTask (void* args);
 
 // --- Sensor RX (PC -> FC) ---------------------------------------------------
+// Each SensorData signals both waiters below. They take separate semaphores on
+// purpose: a binary semaphore wakes exactly one task, so a shared one would let
+// the IMU and mag consumers steal samples from each other.
+//
 // Block up to timeoutTicks for the next SensorData; copies the latest sample.
 // Returns true if a fresh sample was signalled, false on timeout.
-bool SimLink_WaitSensor (float accel[3], float gyro[3], float mag[3], uint32_t timeoutTicks);
-// Non-blocking copy of the latest magnetic field. Returns true once any
-// SensorData has been received.
-bool SimLink_GetMag (float mag[3]);
+bool SimLink_WaitImu (float accel[3], float gyro[3], float mag[3], uint32_t timeoutTicks);
+// As above, for the magnetic field only.
+bool SimLink_WaitMag (float mag[3], uint32_t timeoutTicks);
 // Count of SensorData samples consumed by the IMU driver (pacing telemetry).
 uint32_t SimLink_GetSensorCount (void);
 

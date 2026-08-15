@@ -48,6 +48,9 @@ int Platform_Init(void) {
     DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
     DWT->CYCCNT = 0;
 
+#if !defined(SINGLE_CORE)
+    /* Wake CM4 and wait for the D2 domain to come up. Skipped in single-core
+     * builds: there is no CM4 to release, and RCC_FLAG_D2CKRDY never asserts. */
     __HAL_RCC_HSEM_CLK_ENABLE();
     HAL_HSEM_FastTake(HSEM_ID_0);
     HAL_HSEM_Release(HSEM_ID_0, 0);
@@ -56,6 +59,7 @@ int Platform_Init(void) {
     if ( timeout < 0 ) {
         return -1;
     }
+#endif /* !SINGLE_CORE */
 #endif /* CORE_CM7 */
 
 #if defined(CORE_CM4)

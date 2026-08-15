@@ -104,6 +104,7 @@ void Mixer_MixServos (Mixer_t* pMixer, float const pidData[AXIS_IDX_COUNT], uint
     inputs[eSERVO_MIX_INPUT_PID_ROLL] =
     (uint16_t)mapf32 (pidData[AXIS_IDX_ROLL], -1.0F, 1.0F, SERVO_LEFT_US_DC, SERVO_RIGHT_US_DC);
 
+    float mixedInputs[BRD_SERVO_COUNT] = { 0.0F };
     for (uint32_t mixIdx = 0; mixIdx < pProfile->servoMixCount; ++mixIdx) {
         float mixedInput = 0.0F;
         switch (pServoMix[mixIdx].inputIndex) {
@@ -113,8 +114,17 @@ void Mixer_MixServos (Mixer_t* pMixer, float const pidData[AXIS_IDX_COUNT], uint
         case eSERVO_MIX_INPUT_PID_THROTTLE: mixedInput = pidData[AXIS_IDX_THROTTLE]; break;
         default: break;
         }
-        // TODO: Scale mixedInput to appropriate servo output range
-        servoOutputs[SERVO_ID_TO_IDX (pServoMix[mixIdx].targetServo)] += (uint16_t)(mixedInput * 1000.0F);
+        mixedInputs[SERVO_ID_TO_IDX (pServoMix[mixIdx].targetServo)] += mixedInput;
+    }
+
+    /* Accumulate the signed mix contributions in float, then convert to a pulse
+     * width centred on SERVO_CENTER_US_DC and clamp to the servo's legal travel.
+     * Summing straight into the uint16_t output wraps on any negative
+     * contribution and never clamps, so the driver saw out-of-range widths. */
+    for (uint32_t i = 0; i < BRD_SERVO_COUNT; ++i) {
+        float us = (float)SERVO_CENTER_US_DC +
+                   (mixedInputs[i] * (float)(SERVO_RIGHT_US_DC - SERVO_CENTER_US_DC));
+        servoOutputs[i] = (uint16_t)clipf32 (us, (float)SERVO_LEFT_US_DC, (float)SERVO_RIGHT_US_DC);
     }
 }
 

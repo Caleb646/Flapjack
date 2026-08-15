@@ -12,7 +12,7 @@ Always run it from the **repo root**:
 python Scripts/board.py <command> [options]
 ```
 
-Subcommands: `install`, `build`, `flash`, `sim`, `gui`. `Scripts/` is on `sys.path`,
+Subcommands: `install`, `build`, `flash`, `gen`, `renode`, `sim`, `gui`. `Scripts/` is on `sys.path`,
 so its subpackages import as top-level (`proto`, `link`, `sim`, `gui`) — **do not run
 the tool modules directly** (e.g. `python Scripts/sim/bridge.py`); go through `board.py`.
 
@@ -35,8 +35,25 @@ the tool modules directly** (e.g. `python Scripts/sim/bridge.py`); go through `b
 | Bring up the sim link (no FDM) | `python Scripts/board.py sim --port <PORT> --dry-run` |
 | Run the full JSBSim sim | `python Scripts/board.py sim --port <PORT>` |
 | Launch the flight GUI | `python Scripts/board.py gui` |
+| Build for the Renode SIL | `python Scripts/board.py build -b flapjack-v1 -D sim --single-core` |
+| Boot the firmware in Renode | `python Scripts/board.py renode -b flapjack-v1` |
+| Drive the SIL from the bridge | `python Scripts/board.py sim --port socket://localhost:4000 --rate 400` |
 
 Boards: `flapjack-v1`, `nucleo-h747zi`.
+
+### SIL (software-in-the-loop) via Renode
+
+`renode` stands in for `flash`: it boots `cm7.elf` on an emulated Cortex-M7 and exposes USART1
+as a TCP server, so `sim` connects to `socket://localhost:4000` instead of a COM port. Nothing
+else about the bridge changes. Run the two in separate terminals - `renode` blocks until Ctrl-C,
+and you often want to restart `sim` against a still-running emulator.
+
+Requires a **`--single-core`** build (`renode` refuses a dual-core image, which would otherwise
+hang silently in `main()` waiting for the CM4). Renode itself lives in `Tools/renode/`; the
+platform overlay and machine script are in `Scripts/renode/`. Flags: `--port` (sim link, 4000),
+`--monitor-port` (3456), `--elf` to override, `--gui` for the Renode window.
+
+Full background, including every emulator/firmware issue found and fixed: `EmulatorResearch.md`.
 
 ### `build` / `flash` flags (`-f`, combine freely)
 
@@ -73,5 +90,10 @@ Everything after `sim` is forwarded verbatim to the JSBSim bridge. Key flags: `-
   just re-run `board.py gen`.
 - **A `-D sim` build takes over the debug UART** for binary sim frames — logging and the
   shell are disabled in HIL (use SWO for logs).
+- **SIL needs `--single-core`.** `SINGLE_CORE` also makes CM7 the primary logger; without it
+  nothing drains the log ring buffer and the board is silent.
+- **The attitude filter takes tens of seconds to converge from cold.** `sim --arm-delay`
+  defaults to 1.0 s, which arms into a garbage attitude estimate and tumbles the aircraft.
+  Raise it for closed-loop (non-`--dry-run`) work.
 - **Bring the link up with `--dry-run` first** (emits a fixed 20° roll, no JSBSim needed) to
   isolate link/baud/framing problems from the flight model.

@@ -52,7 +52,9 @@ PROP_VDOT = "accelerations/vdot-ft_sec2"
 PROP_WDOT = "accelerations/wdot-ft_sec2"
 # Inputs we drive: throttle [0..1] and thrust-vector (tilt) gimbal pitch [rad].
 PROP_THROTTLE = ["fcs/throttle-cmd-norm[0]", "fcs/throttle-cmd-norm[1]"]
-PROP_TILT = ["propulsion/engine[0]/pitch-angle-rad", "propulsion/engine[1]/pitch-angle-rad"]
+# Tilt is passed through unmodified: the FDM defines 0 rad as rotors-up, which
+# matches the FC's neutral servo angle (drivers/servo/sim.c, centre 1500 us).
+PROP_TILT = ["fcs/tilt-cmd-rad[0]", "fcs/tilt-cmd-rad[1]"]
 
 G = 9.81
 FT2M = 0.3048
@@ -134,12 +136,12 @@ def main(argv=None):
         # Start near the ground, engines running.
         fdm["ic/h-sl-ft"] = 1.0
         fdm.run_ic()
-        for i in range(2):
-            fdm[f"propulsion/engine[{i}]/set-running"] = 1
 
     t0 = time.perf_counter()
     next_tick = t0
     armed_sent = False
+    hover_sent = False
+    fc_armed = False
     last_print = t0
 
     print(f"[bridge] {'DRY-RUN' if args.dry_run else 'JSBSim'} on {args.port}@{args.baud}, {args.rate:.0f} Hz")
@@ -162,6 +164,7 @@ def main(argv=None):
                             fdm[PROP_THROTTLE[i]] = max(0.0, min(1.0, thr))
                 elif msg_id == MSG_TELEMETRY:
                     tm = sim_pb2.Telemetry(); tm.ParseFromString(payload)
+                    fc_armed = tm.armed
                     if now - last_print > 0.5:
                         last_print = now
                         print(f"[FC] euler(deg)={tm.euler[0]:+6.1f} {tm.euler[1]:+6.1f} "
@@ -180,14 +183,24 @@ def main(argv=None):
         accel, gyro, mag = synthesize_sensors(phi, theta, psi, p, q, r, udot, vdot, wdot)
         ser.write(make_sensor_frame(accel, gyro, mag))
 
-        # --- arm + hover RC (sent once after a short settle, then refreshed) ---
-        if now - t0 > args.arm_delay:
+        # --- RC: mimic a real pilot's arming gesture ---
+        # The FC refuses to arm unless throttle is at or below ARM_THROTTLE_MAX
+        # (1100us) while AUX1 is high - a safety interlock so nothing spins up
+        # the instant it arms. Raising throttle and the arm switch together (as
+        # this used to) is rejected forever. Hold throttle down with the switch
+        # up, wait for the FC to report armed, and only then go to hover.
+        if now - t0 < args.arm_delay:
+            ser.write(make_rc_frame(0.0, armed=False))          # settle, disarmed
+        elif not fc_armed:
             if not armed_sent:
-                print("[bridge] sending ARM + hover throttle")
+                print("[bridge] arm switch high, throttle low - waiting for FC to arm")
                 armed_sent = True
-            ser.write(make_rc_frame(args.hover_throttle, armed=True))
+            ser.write(make_rc_frame(0.0, armed=True))           # throttle LOW + AUX1 high
         else:
-            ser.write(make_rc_frame(0.0, armed=False))  # throttle low, disarmed
+            if not hover_sent:
+                print("[bridge] FC armed - going to hover throttle")
+                hover_sent = True
+            ser.write(make_rc_frame(args.hover_throttle, armed=True))
 
         # --- pace to real time ---
         next_tick += dt

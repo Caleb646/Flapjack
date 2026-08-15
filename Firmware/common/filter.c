@@ -324,19 +324,28 @@ void MadgwickFilter_QuatToEuler (MadgwickFilter_t const* pFilter, Vec3f* pOutEul
 
     // Compute quaternion angles.
     // Then convert angles in radians to degrees.
-    // Source: page 6 of Madgwick report
     /*
+     * Page 6 of the Madgwick report gives these for (S)(E)q - the Earth frame
+     * expressed relative to the sensor frame. Flight code wants the opposite:
+     * the body attitude relative to Earth, (E)(S)q, which is the conjugate.
+     * Using the report's formulas verbatim negates all three angles.
+     *
+     * Substituting the conjugate (q1, -q2, -q3, -q4) flips the sign of the
+     * second term in each expression, which is what appears below. The roll
+     * form reduces to the standard aerospace ZYX extraction,
+     * atan2(2(q1*q2 + q3*q4), 1 - 2(q2^2 + q3^2)).
+     *
      * NOTE: atan2f returns values between -pi and +pi. It wraps at 0 --> +pi to -pi --> 0 .
      * Pitch and roll should never wrap but yaw can wrap.
      *
      * NOTE: atan and asin are NON reentrant
      */
-    pOutEuler->yaw = RAD2DEG (atan2f (2.0F * q2 * q3 - 2.0F * q1 * q4, 2.0F * q1 * q1 + 2.0F * q2 * q2 - 1));
+    pOutEuler->yaw = RAD2DEG (atan2f (2.0F * q2 * q3 + 2.0F * q1 * q4, 2.0F * q1 * q1 + 2.0F * q2 * q2 - 1));
 
-    pOutEuler->pitch = RAD2DEG (-asinf (2.0F * q2 * q4 + 2.0F * q1 * q3));
+    pOutEuler->pitch = RAD2DEG (-asinf (2.0F * q2 * q4 - 2.0F * q1 * q3));
 
     pOutEuler->roll =
-    RAD2DEG (atan2f (2.0F * q3 * q4 - 2.0F * q1 * q2, 2.0F * q1 * q1 + 2.0F * q4 * q4 - 1.0F));
+    RAD2DEG (atan2f (2.0F * q3 * q4 + 2.0F * q1 * q2, 2.0F * q1 * q1 + 2.0F * q4 * q4 - 1.0F));
 }
 
 eSTATUS_t MadgwickFilter_Init (MadgwickFilter_t* pFilter) {

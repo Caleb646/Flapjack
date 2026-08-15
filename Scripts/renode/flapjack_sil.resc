@@ -1,0 +1,28 @@
+:name: Flapjack CM7 SIL
+:description: Single-core STM32H7 CM7 running Flapjack firmware under emulation.
+
+# Machine setup only - no `start`, no UART backend. Callers decide how to run it
+# and where usart1 goes, e.g.:
+#
+#   # boot smoke test, log to a file
+#   renode --console --disable-xwt -P -1 -e "i @Scripts/renode/flapjack_sil.resc; \
+#       sysbus.usart1 CreateFileBackend @boot.log; emulation RunFor \"3\"; quit"
+#
+#   # sim link on TCP 4000 for Scripts/sim/bridge.py
+#   renode --console -e "i @Scripts/renode/flapjack_sil.resc; \
+#       emulation CreateServerSocketTerminal 4000 \"simlink\" false; \
+#       connector Connect sysbus.usart1 simlink; start"
+
+$bin ?= @Build/flapjack-v1/Debug/cm7.elf
+
+using sysbus
+mach create "flapjack"
+
+machine LoadPlatformDescription $ORIGIN/flapjack_h7_cm7.repl
+
+macro reset
+"""
+    cpu VectorTableOffset 0x08000000
+    sysbus LoadELF $bin
+"""
+runMacro $reset

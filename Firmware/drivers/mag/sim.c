@@ -1,8 +1,8 @@
 /*
- * Simulation magnetometer backend: returns the latest normalized field that the
- * JSBSim bridge synthesized from vehicle attitude and delivered over the sim
- * link. Non-blocking (Nav peeks mag); before the first sample arrives it falls
- * back to a north-pointing field.
+ * Simulation magnetometer backend: blocks until the JSBSim bridge delivers the
+ * next SensorData, then returns the normalized field it synthesized from
+ * vehicle attitude. Blocking here paces Mag_Task at the PC's sensor stream rate,
+ * the same way the sim IMU backend paces Imu_Task.
  */
 
 #include "drivers/mag/magdrv.h"
@@ -10,6 +10,8 @@
 #include "core/core.h"
 
 #include "drivers/sim_link/sim_link.h"
+
+#include "FreeRTOS.h"
 
 #include <string.h>
 #include <stdbool.h>
@@ -23,12 +25,8 @@ STATIC eSTATUS_t Sim_Read (void* ctx, bool forcePolling, Vec3f* pField) {
     }
 
     float mag[3];
-    if (!SimLink_GetMag (mag)) {
-        /* No sample yet: north-pointing field (normalised). */
-        pField->x = 1.0F;
-        pField->y = 0.0F;
-        pField->z = 0.0F;
-        return eSTATUS_SUCCESS;
+    if (!SimLink_WaitMag (mag, portMAX_DELAY)) {
+        return eSTATUS_FAILURE;
     }
 
     pField->x = mag[0];

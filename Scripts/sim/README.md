@@ -1,8 +1,9 @@
 # Flapjack JSBSim HIL Simulator
 
-Hardware-in-the-loop sim for the tilt-rotor. The **firmware runs on the real
-STM32H745**; this PC tool runs **JSBSim** and exchanges data with the board over
-the (now binary) debug UART:
+Hardware-in-the-loop sim for the tilt-rotor. The firmware runs on the real
+STM32H745 **or on an emulated CM7 under Renode** (see [SIL mode](#sil-mode-no-board-required)
+below); this PC tool runs **JSBSim** and exchanges data with it over the (now
+binary) debug UART:
 
 ```
  PC: JSBSim + bridge.py  ──SensorData/RcInput──►  FC (sim driver profile)
@@ -95,9 +96,48 @@ and streams synthesized sensors back. Useful flags:
 
 - **`bridge.py` protocol + sensor-synthesis math are unit-tested** (CRC, framing,
   resync, bad-CRC rejection, level/tilt synthesis, RC). The CRC matches the FC.
-- **The FDM (`jsbsim/...`) is a STARTER**, not a tuned/validated model. Mass,
-  inertia, motor power, prop tables, and the thruster orient/gimbal sign all need
-  tuning with JSBSim installed. Bring up the link with `--dry-run` first.
-- This task delivers the **sim infrastructure only**. Achieving an actual stable
-  hover additionally needs the tilt-rotor **mixer + hover control law**, which is
-  separate follow-up work in the firmware (`tasks/control/mixer.c`).
+- **The FDM is sized to the real airframe** (0.85 kg, 7 in props, 1000 KV assumed
+  on 6S): hover at 50 % throttle, 2:1 thrust-to-weight, tilt verified against
+  measured force directions. Thrust comes from `<external_reactions>` rather than
+  JSBSim's propeller model, which diverged — see `EmulatorResearch.md` §13.
+  Inertias are still estimates, and `ROTOR_TMAX` (1.874 lbf per rotor) is the one
+  number to replace with thrust-stand data.
+- **Forward flight is approximated** by a thrust-vs-airspeed table rather than
+  blade-element physics. Fine for hover and low-speed control work; revisit before
+  trusting cruise or transition results.
+- Achieving a stable hover still needs the tilt-rotor **mixer + hover control
+  law**. The SIL has already caught two faults there: motor output saturates at
+  1.000 with the throttle stick at minimum, and servo output is unclamped
+  (~41,553 µs against a 500–2500 µs range).
+
+---
+
+## SIL mode (no board required)
+
+Renode emulates the CM7 and exposes USART1 as a TCP server, so the bridge talks
+to `socket://localhost:4000` instead of a COM port. Nothing else changes — the
+same framing, the same protobuf messages, the same `bridge.py`.
+
+```bash
+python Scripts/board.py build -b flapjack-v1 -D sim --single-core
+python Scripts/board.py renode -b flapjack-v1                          # terminal 1
+python Scripts/board.py sim --port socket://localhost:4000 --rate 400  # terminal 2
+```
+
+`renode` takes the place of `flash`; it blocks until Ctrl-C. Keep it in its own
+terminal so you can restart the bridge without rebooting the emulator.
+
+Measured behaviour (see `EmulatorResearch.md` §12):
+
+- Renode tracks wall clock **1.00x** under load, so the bridge's real-time pacing
+  is correct as-is.
+- **400 Hz sustains with 0.0 % dropped `SensorData`**; the ceiling is ~740/s,
+  beyond which throughput collapses.
+- `Telemetry.imu_count` vs frames sent is the health metric — it should track 1:1.
+
+Two things to know before running closed-loop (without `--dry-run`):
+
+- The attitude filter takes **tens of seconds** to converge from cold. The
+  `--arm-delay` default of 1.0 s arms into a garbage estimate and tumbles the
+  aircraft; hold level and raise it.
+- The FDM NaNs on hard ground impact, so start airborne for now.

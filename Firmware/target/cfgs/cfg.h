@@ -4,8 +4,12 @@
 // to disable redefinition warnings for default target macros
 #pragma GCC system_header
 
+#if defined(SINGLE_CORE)
+/* No CM4 exists to drain CM7's ring buffer, so CM7 must own the UART itself. */
+#define CFG_PRIMARY_LOGGER                   CM7_CPUID
+#else
 #define CFG_PRIMARY_LOGGER                   CM4_CPUID
-// #define CFG_PRIMARY_LOGGER                   CM7_CPUID
+#endif
 #define CFG_LOGGER_SHOULD_BLOCK_ON_OVERWRITE 1U
 #define LOG_DATA_TYPE_ATTITUDE               "attitude"
 #define LOG_DATA_TYPE_PID_ATTITUDE           "pid_attitude"

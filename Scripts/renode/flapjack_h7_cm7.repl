@@ -1,0 +1,44 @@
+// Flapjack single-core CM7 overlay on Renode's shipped STM32H7 platform.
+//
+// Extends platforms/cpus/stm32h747.repl (resolved against Renode's install dir)
+// rather than redefining it: the upstream memory map already matches
+// Firmware/platform/stm32h747/cm7/cm7_flash.ld exactly.
+//
+// See EmulatorResearch.md §4 for why each entry below is here.
+
+using "platforms/cpus/stm32h747.repl"
+
+// --- Clock tree -------------------------------------------------------------
+// The firmware runs SYSCLK from HSI at 64 MHz (platform.c: SYSCLKSource =
+// RCC_SYSCLKSOURCE_HSI; the PLL is configured but never selected). Renode's
+// STM32H7_RCC does not model the D1/D2/D3 prescaler registers, so the HAL reads
+// them back as 0 (div1) and computes 64 MHz for HCLK/PCLK1/PCLK2. The upstream
+// .repl assumes a PLL-driven 400/250/200 MHz tree, which would run the FreeRTOS
+// tick 6.25x fast and the HAL timebase 3.9x fast. Pin them to what the HAL
+// believes.
+
+nvic:
+    systickFrequency: 64000000
+
+timer16:                        // HAL timebase (stm32h7xx_hal_timebase_tim.c)
+    frequency: 64000000
+
+usart1:                         // debug log / sim link
+    frequency: 64000000
+
+// --- DWT --------------------------------------------------------------------
+// core_shared.c GetMicroseconds() reads DWT->CYCCNT. The model exists upstream
+// but is not wired into the H7 platform; without it CYCCNT reads 0 and
+// microsecond timing collapses to 1 ms granularity.
+
+dwt: Miscellaneous.DWT @ sysbus 0xE0001000
+    frequency: 64000000
+
+// --- SPI --------------------------------------------------------------------
+// Spi_InitSystem() runs unconditionally from main() and touches SPI1/3/5, which
+// stm32h7.repl leaves as bare Tags. The STM32H7_SPI model already exists, so
+// give them real instances rather than letting HAL_SPI_Init poke at tags.
+
+spi1: SPI.STM32H7_SPI @ sysbus 0x40013000
+spi3: SPI.STM32H7_SPI @ sysbus 0x40003C00
+spi5: SPI.STM32H7_SPI @ sysbus 0x40015000

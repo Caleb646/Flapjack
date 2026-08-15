@@ -27,7 +27,7 @@ STATIC eSTATUS_t Sim_Read (void* ctx, bool forcePolling, Vec3f* pAccel, Vec3f* p
     float accel[3];
     float gyro[3];
     float mag[3];
-    if (!SimLink_WaitSensor (accel, gyro, mag, portMAX_DELAY)) {
+    if (!SimLink_WaitImu (accel, gyro, mag, portMAX_DELAY)) {
         return eSTATUS_FAILURE;
     }
 

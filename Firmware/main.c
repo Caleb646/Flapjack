@@ -89,10 +89,12 @@ int main (void) {
     }
 #endif
 
+#if !defined(SINGLE_CORE)
     s_IsSystemInited = true;
     while (!s_IsCM4Ready) {
         // allow cm4 to initialize logger
     };
+#endif /* !SINGLE_CORE */
 
 #ifndef SIM_HIL
     if (STATUS_FAIL (Shell_Init ())) {

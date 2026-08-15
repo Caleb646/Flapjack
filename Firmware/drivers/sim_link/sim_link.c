@@ -32,7 +32,9 @@ typedef struct {
 
 static UartPort_t s_port;
 static StreamBufferHandle_t s_rxStream;
-static SemaphoreHandle_t s_sensorSem;   // given on each fresh SensorData
+static SemaphoreHandle_t s_sensorSem;   // given on each fresh SensorData (IMU consumer)
+static SemaphoreHandle_t s_magSem;      // ditto for the mag consumer - separate because a
+                                        // binary semaphore only ever wakes one waiter
 static SemaphoreHandle_t s_txMutex;     // serialises outgoing frames
 
 static SensorSlot_t s_sensor;           // latest sample (critical-section guarded)
@@ -61,8 +63,9 @@ eSTATUS_t SimLink_Init (void) {
 
     s_rxStream  = xStreamBufferCreate (SIM_RX_STREAM, 1U);
     s_sensorSem = xSemaphoreCreateBinary ();
+    s_magSem    = xSemaphoreCreateBinary ();
     s_txMutex   = xSemaphoreCreateMutex ();
-    if (!s_rxStream || !s_sensorSem || !s_txMutex) {
+    if (!s_rxStream || !s_sensorSem || !s_magSem || !s_txMutex) {
         return eSTATUS_FAILURE;
     }
 
@@ -88,6 +91,7 @@ static void SimLink_OnSensor (uint8_t const* pPayload, uint8_t len) {
     s_haveSensor = true;
     taskEXIT_CRITICAL ();
     (void)xSemaphoreGive (s_sensorSem);
+    (void)xSemaphoreGive (s_magSem);
 }
 
 static void SimLink_OnRc (uint8_t const* pPayload, uint8_t len) {
@@ -175,7 +179,7 @@ void SimLink_RxTask (void* args) {
 
 /* --- sensor consumer API --------------------------------------------------- */
 
-bool SimLink_WaitSensor (float accel[3], float gyro[3], float mag[3], uint32_t timeoutTicks) {
+bool SimLink_WaitImu (float accel[3], float gyro[3], float mag[3], uint32_t timeoutTicks) {
     if (xSemaphoreTake (s_sensorSem, timeoutTicks) != pdTRUE) {
         return false;
     }
@@ -188,8 +192,8 @@ bool SimLink_WaitSensor (float accel[3], float gyro[3], float mag[3], uint32_t t
     return true;
 }
 
-bool SimLink_GetMag (float mag[3]) {
-    if (!s_haveSensor) {
+bool SimLink_WaitMag (float mag[3], uint32_t timeoutTicks) {
+    if (xSemaphoreTake (s_magSem, timeoutTicks) != pdTRUE) {
         return false;
     }
     taskENTER_CRITICAL ();

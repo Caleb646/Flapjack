@@ -1,9 +1,15 @@
 <?xml version="1.0"?>
 <!--
-  STARTER electric motor for the tilt-rotor. Tune <power> to the airframe mass
-  so two motors comfortably exceed weight at the hover throttle. Not validated
-  in this repo - adjust once JSBSim is installed.
+  Electric motor for the Flapjack tilt-rotor, one per rotor.
+
+  200 W is shaft power, chosen to match the propeller: absorbed power is
+  P = Cp * rho * n^3 * D^5, so with Cp(J=0) = 0.045 and the 7 in prop,
+  200 W drives ~16,400 rpm - the maxrpm the propeller is limited to. Hover
+  (~10,800 rpm) draws only ~57 W of that.
+
+  Was 700 W with a 10 in prop, which produced roughly 12x the airframe weight
+  in thrust at half throttle.
 -->
 <electric_engine name="drone_motor">
-  <power unit="WATTS"> 700 </power>
+  <power unit="WATTS"> 200 </power>
 </electric_engine>

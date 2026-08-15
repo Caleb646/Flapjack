@@ -13,5 +13,10 @@ def list_ports():
 
 
 def open_port(port: str, baud: int, timeout: float = 0) -> serial.Serial:
-    """Open a pyserial port. Raises ``serial.SerialException`` on failure."""
-    return serial.Serial(port, baud, timeout=timeout)
+    """Open a pyserial port. Raises ``serial.SerialException`` on failure.
+
+    Accepts a device name (``COM7``, ``/dev/ttyUSB0``) or any pyserial URL. The
+    URL form is what reaches an emulated target: Renode exposes the CM7's USART1
+    as a TCP server, so the SIL link is ``socket://localhost:4000``.
+    """
+    return serial.serial_for_url(port, baudrate=baud, timeout=timeout)

@@ -1,35 +1,54 @@
 <?xml version="1.0"?>
 <!--
-  STARTER fixed-pitch propeller. The C_THRUST / C_POWER coefficient tables vs
-  advance ratio (J) are rough placeholders - tune to get sensible hover thrust.
-  Not validated in this repo.
+  Fixed-pitch 7 in propeller for the Flapjack tilt-rotor.
+
+  Sized against the real airframe: 0.85 kg all-up, two rotors, 1000 KV motors.
+  Thrust follows T = Ct * rho * n^2 * D^4, so with Ct(J=0) = 0.105,
+  D = 0.5833 ft and rho = 0.002377 slug/ft3, one rotor carrying half the
+  1.874 lbf weight (0.937 lbf) needs n = 180 rev/s, i.e. ~10,800 rpm hover.
+  maxrpm 16,500 then gives ~2.18 lbf per rotor, a thrust-to-weight of ~2.3:1,
+  which is consistent with 1000 KV on 6S turning a 7 in prop.
+
+  The tables run to J = 2.0 on purpose. The previous version stopped at 1.2;
+  when the (mis-scaled) model accelerated past that the solver extrapolated off
+  the end of the table and produced NaN within 0.2 s.
 -->
 <propeller name="drone_prop" version="1.0">
   <ixx>        0.0001 </ixx>
-  <diameter unit="IN"> 10.0 </diameter>
+  <diameter unit="IN"> 7.0 </diameter>
   <numblades>  2 </numblades>
   <gearratio>  1.0 </gearratio>
   <minpitch>   10 </minpitch>
   <maxpitch>   10 </maxpitch>
   <minrpm>     0 </minrpm>
-  <maxrpm>     35000 </maxrpm>
+  <maxrpm>     16500 </maxrpm>
   <constspeed> 0 </constspeed>
 
   <table name="C_THRUST" type="internal">
     <tableData>
       0.0   0.105
+      0.2   0.095
       0.4   0.080
+      0.6   0.057
       0.8   0.030
+      1.0   0.010
       1.2  -0.010
+      1.6  -0.045
+      2.0  -0.080
     </tableData>
   </table>
 
   <table name="C_POWER" type="internal">
     <tableData>
-      0.0   0.045
-      0.4   0.044
-      0.8   0.036
-      1.2   0.020
+      0.0   0.0450
+      0.2   0.0455
+      0.4   0.0440
+      0.6   0.0410
+      0.8   0.0360
+      1.0   0.0290
+      1.2   0.0200
+      1.6   0.0080
+      2.0   0.0010
     </tableData>
   </table>
 </propeller>

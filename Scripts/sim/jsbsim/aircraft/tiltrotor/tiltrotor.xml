@@ -1,24 +1,42 @@
 <?xml version="1.0"?>
 <!--
-  STARTER tilt-rotor FDM for the Flapjack HIL sim.
+  Twin tilt-rotor FDM for the Flapjack SIL.
 
-  Two motors, one on each side, each with a tilting (thrust-vectoring) rotor.
-  The tilt servo angle is applied by bridge.py via the engine gimbal property
-  (propulsion/engine[N]/pitch-angle-rad); motor throttle via fcs/throttle-cmd-norm[N].
+  Airframe: 0.85 kg all-up, two rotors at y = +/-0.25 m, 7 in props on 1000 KV
+  motors. Sized for a thrust-to-weight of 2:1, so hover sits at 50% throttle.
 
-  This is a STARTING POINT, not a validated model:
-    * mass / inertia / motor power / prop tables are rough,
-    * the thruster <orient> pitch that makes the rotors point "up" at the FC's
-      neutral tilt needs calibrating against the servo us->angle map in
-      drivers/servo/sim.c (centre 1500 us = 0 rad).
-  Validate the link with `python bridge.py --port ... --dry-run` (no FDM) FIRST,
-  then iterate on this model with JSBSim installed.
+  PROPULSION MODEL
+  ================
+  Thrust is applied through <external_reactions> rather than JSBSim's blade
+  element propeller. The propeller model diverged: its advance ratio ran away
+  (J reaching 1e8 within 0.05 s) regardless of thrust direction, and rpm was not
+  clamped by maxrpm. For a SIL what is needed is thrust as a function of throttle
+  along the tilt axis, which this expresses directly - no advance ratio, no rpm
+  ODE, and table lookups clamp at their endpoints so nothing can run off the end.
+
+  The trade is that genuine forward-flight propeller behaviour is approximated by
+  a thrust-vs-airspeed table instead of emerging from blade element theory. For
+  hover and low-speed control work that is immaterial; revisit before trusting
+  cruise or transition results.
+
+  CALIBRATION
+  ================
+  ROTOR_TMAX_LBS below is the single number to replace with thrust-stand data:
+  it is the static thrust ONE rotor makes at full throttle. 1.874 lbf = 850 g,
+  which for this airframe is exactly 2:1 thrust-to-weight.
+
+  TILT CONVENTION
+  ================
+  fcs/tilt-cmd-rad[N] = 0 means rotors UP (thrust along body -Z, hover).
+  +pi/2 means rotors FORWARD (thrust along body +X). This matches the FC's
+  neutral servo angle of 0 rad (see drivers/servo/sim.c, centre 1500 us),
+  so bridge.py passes the FC's servo angle through unmodified.
 -->
 <fdm_config name="tiltrotor" version="2.0" release="ALPHA">
 
   <fileheader>
     <author> Flapjack HIL </author>
-    <description> Simplified twin tilt-rotor for SIL/HIL control development </description>
+    <description> Twin tilt-rotor, external-reaction propulsion, for SIL control development </description>
   </fileheader>
 
   <metrics>
@@ -29,10 +47,15 @@
   </metrics>
 
   <mass_balance>
-    <ixx unit="KG*M2"> 0.02 </ixx>
-    <iyy unit="KG*M2"> 0.02 </iyy>
-    <izz unit="KG*M2"> 0.04 </izz>
-    <emptywt unit="KG"> 2.0 </emptywt>
+    <!-- Inertias are ESTIMATES, not measured: two ~70 g rotor assemblies at
+         y = +/-0.25 m dominate roll and yaw (2 * 0.07 * 0.25^2 = 0.0088), with a
+         ~0.71 kg central body adding the rest. Pitch is smaller because the
+         rotors sit on the lateral axis and barely contribute to Iyy.
+         Replace with a bifilar-pendulum measurement when you have one. -->
+    <ixx unit="KG*M2"> 0.012 </ixx>
+    <iyy unit="KG*M2"> 0.008 </iyy>
+    <izz unit="KG*M2"> 0.014 </izz>
+    <emptywt unit="KG"> 0.85 </emptywt>
     <location name="CG" unit="M"> <x>0.0</x> <y>0.0</y> <z>0.0</z> </location>
   </mass_balance>
 
@@ -41,58 +64,151 @@
       <location unit="M"> <x>0.0</x> <y>-0.25</y> <z>-0.10</z> </location>
       <static_friction>  0.8 </static_friction>
       <dynamic_friction> 0.5 </dynamic_friction>
-      <spring_coeff  unit="N/M">    2000 </spring_coeff>
-      <damping_coeff unit="N/M/SEC"> 300 </damping_coeff>
+      <spring_coeff  unit="N/M">     300 </spring_coeff>
+      <damping_coeff unit="N/M/SEC">  60 </damping_coeff>
     </contact>
     <contact type="BOGEY" name="RIGHT">
       <location unit="M"> <x>0.0</x> <y>0.25</y> <z>-0.10</z> </location>
       <static_friction>  0.8 </static_friction>
       <dynamic_friction> 0.5 </dynamic_friction>
-      <spring_coeff  unit="N/M">    2000 </spring_coeff>
-      <damping_coeff unit="N/M/SEC"> 300 </damping_coeff>
+      <spring_coeff  unit="N/M">     300 </spring_coeff>
+      <damping_coeff unit="N/M/SEC">  60 </damping_coeff>
     </contact>
     <contact type="BOGEY" name="TAIL">
       <location unit="M"> <x>-0.25</x> <y>0.0</y> <z>-0.10</z> </location>
       <static_friction>  0.8 </static_friction>
       <dynamic_friction> 0.5 </dynamic_friction>
-      <spring_coeff  unit="N/M">    2000 </spring_coeff>
-      <damping_coeff unit="N/M/SEC"> 300 </damping_coeff>
+      <spring_coeff  unit="N/M">     300 </spring_coeff>
+      <damping_coeff unit="N/M/SEC">  60 </damping_coeff>
     </contact>
   </ground_reactions>
 
-  <propulsion>
-    <!-- engine[0] = LEFT -->
-    <engine file="drone_motor">
-      <location name="ENGINE" unit="M"> <x>0.0</x> <y>-0.25</y> <z>0.0</z> </location>
-      <thruster file="drone_prop">
-        <location name="THRUSTER" unit="M"> <x>0.0</x> <y>-0.25</y> <z>0.0</z> </location>
-        <!-- pitch +90 deg points the (default +X) thrust upward for hover; tune sign -->
-        <orient unit="DEG"> <roll>0.0</roll> <pitch>90.0</pitch> <yaw>0.0</yaw> </orient>
-      </thruster>
-    </engine>
+  <!-- Declared BEFORE flight_control so the magnitude properties exist when the
+       FCS channels below bind their outputs to them.
 
-    <!-- engine[1] = RIGHT -->
-    <engine file="drone_motor">
-      <location name="ENGINE" unit="M"> <x>0.0</x> <y>0.25</y> <z>0.0</z> </location>
-      <thruster file="drone_prop">
-        <location name="THRUSTER" unit="M"> <x>0.0</x> <y>0.25</y> <z>0.0</z> </location>
-        <orient unit="DEG"> <roll>0.0</roll> <pitch>90.0</pitch> <yaw>0.0</yaw> </orient>
-      </thruster>
-    </engine>
-  </propulsion>
+       Each rotor's thrust is decomposed onto two fixed body-axis forces, up and
+       forward, because an external force's <direction> is static. The FCS scales
+       them by cos(tilt) and sin(tilt), which rotates the resultant. Applying both
+       at the rotor's location gives the roll/yaw moments for free. -->
+  <external_reactions>
+    <force name="rotor0_up" frame="BODY" unit="LBS">
+      <location unit="M"> <x>0.0</x> <y>-0.25</y> <z>0.0</z> </location>
+      <direction> <x>0.0</x> <y>0.0</y> <z>-1.0</z> </direction>
+    </force>
+    <force name="rotor0_fwd" frame="BODY" unit="LBS">
+      <location unit="M"> <x>0.0</x> <y>-0.25</y> <z>0.0</z> </location>
+      <direction> <x>1.0</x> <y>0.0</y> <z>0.0</z> </direction>
+    </force>
+    <force name="rotor1_up" frame="BODY" unit="LBS">
+      <location unit="M"> <x>0.0</x> <y>0.25</y> <z>0.0</z> </location>
+      <direction> <x>0.0</x> <y>0.0</y> <z>-1.0</z> </direction>
+    </force>
+    <force name="rotor1_fwd" frame="BODY" unit="LBS">
+      <location unit="M"> <x>0.0</x> <y>0.25</y> <z>0.0</z> </location>
+      <direction> <x>1.0</x> <y>0.0</y> <z>0.0</z> </direction>
+    </force>
+  </external_reactions>
 
   <flight_control name="tiltrotor FCS">
-    <!-- Throttle is driven directly by the bridge via fcs/throttle-cmd-norm[N];
-         tilt is driven via propulsion/engine[N]/pitch-angle-rad. No mixing here:
-         the Flapjack control loop owns mixing. -->
-    <channel name="throttle">
-      <fcs_function name="fcs/throttle-pass[0]">
-        <function> <p> fcs/throttle-cmd-norm[0] </p> </function>
-        <output> propulsion/engine[0]/throttle-cmd-norm </output>
+    <!-- Both pairs are written by bridge.py from the FC's MotorCmd / ServoCmd.
+         They must be declared here: JSBSim normally creates throttle-cmd-norm
+         per engine, and this model has no <propulsion> section at all. -->
+    <property value="0.0"> fcs/throttle-cmd-norm[0] </property>
+    <property value="0.0"> fcs/throttle-cmd-norm[1] </property>
+    <!-- Tilt: 0 = rotors up (hover), +pi/2 = rotors forward. -->
+    <property value="0.0"> fcs/tilt-cmd-rad[0] </property>
+    <property value="0.0"> fcs/tilt-cmd-rad[1] </property>
+
+    <channel name="propulsion">
+      <!-- Static thrust per rotor, then de-rated with airspeed.
+           Thrust is LINEAR in throttle so hover lands exactly at 0.5, matching
+           the hover-throttle default in bridge.py. Real ESC/motor/prop curves sit
+           between linear and quadratic; substitute a measured table here.
+           The airspeed table uses total airspeed rather than the component along
+           the thrust axis - a simplification that is conservative (any motion
+           de-rates thrust) and immaterial near hover. JSBSim clamps table
+           lookups at their endpoints, so thrust simply floors at zero. -->
+      <fcs_function name="fcs/rotor0-thrust">
+        <function>
+          <product>
+            <value> 1.874 </value>
+            <property> fcs/throttle-cmd-norm[0] </property>
+            <table>
+              <independentVar lookup="row"> velocities/vt-fps </independentVar>
+              <tableData>
+                 0.0   1.00
+                16.4   0.90
+                32.8   0.75
+                49.2   0.55
+                65.6   0.30
+                82.0   0.00
+              </tableData>
+            </table>
+          </product>
+        </function>
+        <output> fcs/rotor0-thrust-lbs </output>
       </fcs_function>
-      <fcs_function name="fcs/throttle-pass[1]">
-        <function> <p> fcs/throttle-cmd-norm[1] </p> </function>
-        <output> propulsion/engine[1]/throttle-cmd-norm </output>
+
+      <fcs_function name="fcs/rotor1-thrust">
+        <function>
+          <product>
+            <value> 1.874 </value>
+            <property> fcs/throttle-cmd-norm[1] </property>
+            <table>
+              <independentVar lookup="row"> velocities/vt-fps </independentVar>
+              <tableData>
+                 0.0   1.00
+                16.4   0.90
+                32.8   0.75
+                49.2   0.55
+                65.6   0.30
+                82.0   0.00
+              </tableData>
+            </table>
+          </product>
+        </function>
+        <output> fcs/rotor1-thrust-lbs </output>
+      </fcs_function>
+
+      <!-- Rotate each rotor's thrust by its tilt angle. -->
+      <fcs_function name="fcs/rotor0-up-cmd">
+        <function>
+          <product>
+            <property> fcs/rotor0-thrust-lbs </property>
+            <cos> <property> fcs/tilt-cmd-rad[0] </property> </cos>
+          </product>
+        </function>
+        <output> external_reactions/rotor0_up/magnitude </output>
+      </fcs_function>
+
+      <fcs_function name="fcs/rotor0-fwd-cmd">
+        <function>
+          <product>
+            <property> fcs/rotor0-thrust-lbs </property>
+            <sin> <property> fcs/tilt-cmd-rad[0] </property> </sin>
+          </product>
+        </function>
+        <output> external_reactions/rotor0_fwd/magnitude </output>
+      </fcs_function>
+
+      <fcs_function name="fcs/rotor1-up-cmd">
+        <function>
+          <product>
+            <property> fcs/rotor1-thrust-lbs </property>
+            <cos> <property> fcs/tilt-cmd-rad[1] </property> </cos>
+          </product>
+        </function>
+        <output> external_reactions/rotor1_up/magnitude </output>
+      </fcs_function>
+
+      <fcs_function name="fcs/rotor1-fwd-cmd">
+        <function>
+          <product>
+            <property> fcs/rotor1-thrust-lbs </property>
+            <sin> <property> fcs/tilt-cmd-rad[1] </property> </sin>
+          </product>
+        </function>
+        <output> external_reactions/rotor1_fwd/magnitude </output>
       </fcs_function>
     </channel>
   </flight_control>
