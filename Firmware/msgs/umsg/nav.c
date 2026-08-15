@@ -27,8 +27,3 @@ uint8_t umsg_nav_state_receive(umsg_sub_handle_t queue, umsg_nav_state_t* data, 
 {
     return umsg_receive(queue, data, timeout);
 }
-uint8_t umsg_nav_state_peek(umsg_nav_state_t* data)
-{
-    return umsg_peek(&msg_nav_state, data, sizeof(umsg_nav_state_t));
-}
-

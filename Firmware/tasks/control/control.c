@@ -18,9 +18,13 @@
 #define CONTROL_MAX_RATE_DEG_S 180.0f
 
 typedef struct {
-    umsg_sub_handle_t guidance_sub;
-    umsg_sub_handle_t tune_sub;
-    uint32_t          usLastUpdateTime;
+    umsg_sub_handle_t    guidance_sub;
+    umsg_sub_handle_t    nav_sub;
+    umsg_sub_handle_t    mission_sub;
+    umsg_sub_handle_t    tune_sub;
+    uint32_t             usLastUpdateTime;
+    umsg_nav_state_t     nav;
+    umsg_mission_state_t mission;
 } Control_t;
 
 static Control_t s_Control;
@@ -42,6 +46,8 @@ static bool     s_prevArmed = false;
 eSTATUS_t Control_Init(void) {
     
     s_Control.guidance_sub      = umsg_guidance_setpoints_subscribe(1, 1);
+    s_Control.nav_sub           = umsg_nav_state_subscribe(1, 1);
+    s_Control.mission_sub       = umsg_mission_state_subscribe(1, 1);
     s_Control.tune_sub          = umsg_tune_pid_subscribe(1, 1);
     s_Control.usLastUpdateTime  = GetMicroseconds();
 
@@ -80,13 +86,12 @@ eSTATUS_t Control_Update(void) {
         return eSTATUS_FAILURE;
     }
 
-    umsg_nav_state_t nav;
-    umsg_nav_state_peek(&nav);
+    // Latest-value caches: these queues are length 1 (overwrite), and receive()
+    // consumes, so keep the last value for iterations with no new message.
+    umsg_nav_state_receive(s_Control.nav_sub, &s_Control.nav, 0);
+    umsg_mission_state_receive(s_Control.mission_sub, &s_Control.mission, 0);
 
-    umsg_mission_state_t mission;
-    umsg_mission_state_peek(&mission);
-
-    bool armed = mission.armed != 0;
+    bool armed = s_Control.mission.armed != 0;
     if (armed && !s_prevArmed) {
         Motors_Arm(&s_motors);
     } else if (!armed && s_prevArmed) {
@@ -121,7 +126,7 @@ eSTATUS_t Control_Update(void) {
 
     Pid_t* pPid = &s_pid;
     for (uint32_t i = 0; i < 3U; ++i) {
-        float output = Pid_UpdateAxis(&pPid->axes[i], nav.gyro[i], targets[i], dt);
+        float output = Pid_UpdateAxis(&pPid->axes[i], s_Control.nav.gyro[i], targets[i], dt);
         pid_data[i] = clipf32(output, -CONTROL_MAX_RATE_DEG_S, CONTROL_MAX_RATE_DEG_S)
                       / CONTROL_MAX_RATE_DEG_S;
     }

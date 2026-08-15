@@ -27,8 +27,3 @@ uint8_t umsg_tune_pid_receive(umsg_sub_handle_t queue, umsg_tune_pid_t* data, ui
 {
     return umsg_receive(queue, data, timeout);
 }
-uint8_t umsg_tune_pid_peek(umsg_tune_pid_t* data)
-{
-    return umsg_peek(&msg_tune_pid, data, sizeof(umsg_tune_pid_t));
-}
-

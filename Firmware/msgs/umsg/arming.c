@@ -27,8 +27,3 @@ uint8_t umsg_arming_request_receive(umsg_sub_handle_t queue, umsg_arming_request
 {
     return umsg_receive(queue, data, timeout);
 }
-uint8_t umsg_arming_request_peek(umsg_arming_request_t* data)
-{
-    return umsg_peek(&msg_arming_request, data, sizeof(umsg_arming_request_t));
-}
-

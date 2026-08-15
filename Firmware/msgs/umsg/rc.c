@@ -27,8 +27,3 @@ uint8_t umsg_rc_input_receive(umsg_sub_handle_t queue, umsg_rc_input_t* data, ui
 {
     return umsg_receive(queue, data, timeout);
 }
-uint8_t umsg_rc_input_peek(umsg_rc_input_t* data)
-{
-    return umsg_peek(&msg_rc_input, data, sizeof(umsg_rc_input_t));
-}
-

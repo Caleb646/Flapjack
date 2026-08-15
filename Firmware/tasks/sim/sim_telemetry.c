@@ -10,27 +10,23 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-#include <stdbool.h>
-
 void SimTelemetry_Task (void* args) {
 
     (void)args;
+
+    umsg_sub_handle_t nav_sub     = umsg_nav_state_subscribe (1, 1);
+    umsg_sub_handle_t mission_sub = umsg_mission_state_subscribe (1, 1);
+
+    // Latest-value caches: receive() consumes, so hold the last value for
+    // iterations where nothing new arrived.
+    umsg_nav_state_t     nav     = { 0 };
+    umsg_mission_state_t mission = { 0 };
+
     for (;;) {
-        float euler[3] = { 0.0F, 0.0F, 0.0F };
-        umsg_nav_state_t nav;
-        if (umsg_nav_state_peek (&nav)) {
-            euler[0] = nav.euler[0];
-            euler[1] = nav.euler[1];
-            euler[2] = nav.euler[2];
-        }
+        umsg_nav_state_receive (nav_sub, &nav, 0);
+        umsg_mission_state_receive (mission_sub, &mission, 0);
 
-        bool armed = false;
-        umsg_mission_state_t mission;
-        if (umsg_mission_state_peek (&mission)) {
-            armed = mission.armed != 0U;
-        }
-
-        SimLink_SendTelemetry (euler, armed, SimLink_GetSensorCount ());
+        SimLink_SendTelemetry (nav.euler, mission.armed != 0U, SimLink_GetSensorCount ());
         vTaskDelay (pdMS_TO_TICKS (20));   // 50 Hz
     }
 }

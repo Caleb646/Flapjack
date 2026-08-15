@@ -27,8 +27,3 @@ uint8_t umsg_mission_state_receive(umsg_sub_handle_t queue, umsg_mission_state_t
 {
     return umsg_receive(queue, data, timeout);
 }
-uint8_t umsg_mission_state_peek(umsg_mission_state_t* data)
-{
-    return umsg_peek(&msg_mission_state, data, sizeof(umsg_mission_state_t));
-}
-

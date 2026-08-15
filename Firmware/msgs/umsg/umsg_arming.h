@@ -19,7 +19,6 @@ umsg_sub_handle_t umsg_arming_request_subscribe_ch(uint32_t prescaler, uint8_t l
 void umsg_arming_request_publish(umsg_arming_request_t* data);
 void umsg_arming_request_publish_ch(umsg_arming_request_t* data, uint8_t channel);
 uint8_t umsg_arming_request_receive(umsg_sub_handle_t queue, umsg_arming_request_t* data, uint32_t timeout);
-uint8_t umsg_arming_request_peek(umsg_arming_request_t* data);
 
 
 #ifdef __cplusplus

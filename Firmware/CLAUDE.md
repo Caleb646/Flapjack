@@ -18,19 +18,26 @@ Each layer has one job, publishes one message type, and only subscribes to layer
 
 ## Layer Reference
 
-| Layer | Header | Source | Init fn | Update fn | Blocks on | Publishes |
-|---|---|---|---|---|---|---|
-| **Sensor: IMU** | `inc/sensors/imu.h` | `src/sensors/imu.c` | — | `SensorImu_Update()` | hardware (ISR/poll) | `umsg_sensors_imu_t` |
-| **Sensor: Mag** | `inc/sensors/mag.h` | `src/sensors/mag.c` | — | `SensorMag_Update()` | hardware | `umsg_sensors_mag_t` |
-| **Sensor: GPS** | `inc/sensors/gps.h` | `src/sensors/gps.c` | — | `SensorGps_Update()` | hardware | `umsg_sensors_gps_t` |
-| **Sensor: Baro** | `inc/sensors/baro.h` | `src/sensors/baro.c` | — | `SensorBaro_Update()` | hardware | `umsg_sensors_baro_t` (stub) |
-| **Sensor: RC** | `inc/sensors/rc.h` | `src/sensors/rc.c` | — | `SensorRc_Update()` | CM4 shared mem | `umsg_rc_input_t` |
-| **Navigation** | `inc/nav/nav.h` | `src/nav/nav.c` | `Nav_Init()` | `Nav_Update()` | `umsg_sensors_imu_t` | `umsg_nav_state_t` |
-| **Mission** | `inc/mission/mission.h` | `src/mission/mission.c` | `Mission_Init()` | `Mission_Update()` | `umsg_rc_input_t` | `umsg_mission_state_t` |
-| **Guidance** | `inc/guidance/guidance.h` | `src/guidance/guidance.c` | `Guidance_Init()` | `Guidance_Update()` | `umsg_nav_state_t` | `umsg_guidance_setpoints_t` |
-| **Control** | `inc/control/control.h` | `src/control/control.c` | `Control_Init()` | `Control_Update()` | `umsg_guidance_setpoints_t` | motors/servos (direct) |
+Every cross-layer dependency is a **subscription**. A layer's primary input is a blocking
+`receive()`; every additional input is a non-blocking `receive(..., 0)` whose result is cached
+locally. There is no way to read a message without subscribing to it.
+
+| Layer | Header | Source | Init fn | Update fn | Blocks on | Also subscribes (non-blocking, cached) | Publishes |
+|---|---|---|---|---|---|---|---|
+| **Sensor: IMU** | `inc/sensors/imu.h` | `src/sensors/imu.c` | — | `SensorImu_Update()` | hardware (ISR/poll) | — | `umsg_sensors_imu_t` |
+| **Sensor: Mag** | `inc/sensors/mag.h` | `src/sensors/mag.c` | — | `SensorMag_Update()` | hardware | — | `umsg_sensors_mag_t` |
+| **Sensor: GPS** | `inc/sensors/gps.h` | `src/sensors/gps.c` | — | `SensorGps_Update()` | hardware | — | `umsg_sensors_gps_t` |
+| **Sensor: Baro** | `inc/sensors/baro.h` | `src/sensors/baro.c` | — | `SensorBaro_Update()` | hardware | — | `umsg_sensors_baro_t` (stub) |
+| **Sensor: RC** | `inc/sensors/rc.h` | `src/sensors/rc.c` | — | `SensorRc_Update()` | CM4 shared mem | — | `umsg_rc_input_t` |
+| **Navigation** | `inc/nav/nav.h` | `src/nav/nav.c` | `Nav_Init()` | `Nav_Update()` | `umsg_sensors_imu_t` | `umsg_sensors_mag_t` | `umsg_nav_state_t` |
+| **Mission** | `inc/mission/mission.h` | `src/mission/mission.c` | `Mission_Init()` | `Mission_Update()` | `umsg_rc_input_t` (20 ms timeout) | `umsg_arming_request_t`, `umsg_nav_state_t` | `umsg_mission_state_t` |
+| **Guidance** | `inc/guidance/guidance.h` | `src/guidance/guidance.c` | `Guidance_Init()` | `Guidance_Update()` | `umsg_nav_state_t` | `umsg_mission_state_t`, `umsg_rc_input_t` | `umsg_guidance_setpoints_t` |
+| **Control** | `inc/control/control.h` | `src/control/control.c` | `Control_Init()` | `Control_Update()` | `umsg_guidance_setpoints_t` | `umsg_nav_state_t`, `umsg_mission_state_t`, `umsg_tune_pid_t` | motors/servos (direct) |
 
 Sensor wrappers have no `_Init` — they are called directly when new hardware data is available.
+
+The SIL-only `SimTelemetry_Task` (`tasks/sim/sim_telemetry.c`) subscribes to `umsg_nav_state_t`
+and `umsg_mission_state_t` the same way; it blocks on nothing and runs off `vTaskDelay()` at 50 Hz.
 
 ---
 
@@ -54,6 +61,30 @@ void sensor_imu_task(void* args) {
     }
 }
 ```
+
+### Secondary inputs: subscribe with a local cache
+
+A layer that needs a message it does not block on subscribes with **length 1** — the FreeRTOS port
+uses `xQueueOverwrite` for length-1 queues, so the queue always holds the latest value — and then
+does a `receive(..., 0)` each iteration. `receive()` **consumes**, so the value must be cached in
+the layer's static state; otherwise the layer sees the message only on the iteration it arrived and
+garbage (or a stale default) on every other one. This matters because secondary inputs are usually
+slower than the loop: RC publishes at 50 Hz while Guidance runs at nav rate (400 Hz+).
+
+```c
+// in Xxx_Init()
+s_Xxx.rc_sub = umsg_rc_input_subscribe(1, 1);
+
+// in Xxx_Update(), each iteration
+umsg_rc_input_receive(s_Xxx.rc_sub, &s_Xxx.rc, 0);   // keeps last value if nothing new
+```
+
+Where the consumer must distinguish "never received" from "received earlier", pair the cache with a
+`have*` flag (see `Mission_t.haveRc` / `Mission_t.haveNav`) rather than testing the return value of
+a single `receive()` — arming must not depend on a message landing in that exact iteration.
+
+There is no `peek()`. `umsg_publish()` does not retain the caller's pointer: it copies into each
+subscriber queue and returns, so published buffers do not need static lifetime.
 
 The natural task rates emerge from the blocking receive:
 - **IMU task** → drives Nav at IMU ODR (400–800 Hz)
@@ -140,5 +171,5 @@ These are left for the FreeRTOS implementation agent:
 
 - `GetMicroseconds()` is available everywhere via `core/core_shared.h` for dt calculation
 - `portMAX_DELAY` requires `#include "FreeRTOS.h"` (include path provided by CMake via `FREERTOS_ROOT/include`)
-- Armed state for motor output is checked from `umsg_mission_state_peek()` in `control.c`, not from the old `Fc_IsArmed()` / `g_Flight.isArmed`
+- Armed state for motor output comes from `control.c`'s cached `umsg_mission_state_t` subscription, not from the old `Fc_IsArmed()` / `g_Flight.isArmed`
 - The old `fj_task.c` / `scheduler.c` loop is being replaced entirely — do not add new work there

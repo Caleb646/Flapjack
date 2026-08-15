@@ -27,8 +27,3 @@ uint8_t umsg_guidance_setpoints_receive(umsg_sub_handle_t queue, umsg_guidance_s
 {
     return umsg_receive(queue, data, timeout);
 }
-uint8_t umsg_guidance_setpoints_peek(umsg_guidance_setpoints_t* data)
-{
-    return umsg_peek(&msg_guidance_setpoints, data, sizeof(umsg_guidance_setpoints_t));
-}
-

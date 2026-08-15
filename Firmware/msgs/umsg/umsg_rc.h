@@ -21,7 +21,6 @@ umsg_sub_handle_t umsg_rc_input_subscribe_ch(uint32_t prescaler, uint8_t length,
 void umsg_rc_input_publish(umsg_rc_input_t* data);
 void umsg_rc_input_publish_ch(umsg_rc_input_t* data, uint8_t channel);
 uint8_t umsg_rc_input_receive(umsg_sub_handle_t queue, umsg_rc_input_t* data, uint32_t timeout);
-uint8_t umsg_rc_input_peek(umsg_rc_input_t* data);
 
 
 #ifdef __cplusplus

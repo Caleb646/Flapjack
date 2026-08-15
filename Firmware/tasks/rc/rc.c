@@ -19,10 +19,7 @@ eSTATUS_t Rc_Update(void) {
         return eSTATUS_FAILURE;
     }
 
-    /* umsg_publish() stores a pointer to this buffer rather than copying it, so
-     * it must outlive Rc_Update() - otherwise umsg_rc_input_peek() (guidance)
-     * reads this frame after vTaskDelay() has reused the stack. */
-    static umsg_rc_input_t msg = { .rssi = 0, .link_quality = 0 };
+    umsg_rc_input_t msg = { .rssi = 0, .link_quality = 0 };
     for (uint8_t i = 0; i < RC_MAX_CHANNELS; i++) {
         msg.channels[i] = ch[i];
     }

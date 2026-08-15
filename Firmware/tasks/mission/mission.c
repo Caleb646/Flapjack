@@ -23,11 +23,14 @@ typedef enum {
 typedef struct {
     umsg_sub_handle_t   rc_sub;
     umsg_sub_handle_t   arm_req_sub;
+    umsg_sub_handle_t   nav_sub;
     umsg_mission_mode_t mode;
     bool                isArmed;
     bool                haveRc;
+    bool                haveNav;
     bool                rcArmedRegion;
     umsg_rc_input_t     lastRc;
+    umsg_nav_state_t    lastNav;
 } Mission_t;
 
 static Mission_t s_Mission;
@@ -35,17 +38,18 @@ static Mission_t s_Mission;
 eSTATUS_t Mission_Init(void) {
     s_Mission.rc_sub        = umsg_rc_input_subscribe(1, 4);
     s_Mission.arm_req_sub   = umsg_arming_request_subscribe(1, 4);
+    s_Mission.nav_sub       = umsg_nav_state_subscribe(1, 1);
     s_Mission.mode          = EMISSION_MODE_MANUAL;
     s_Mission.isArmed       = false;
     s_Mission.haveRc        = false;
+    s_Mission.haveNav       = false;
     s_Mission.rcArmedRegion = false;
     return eSTATUS_SUCCESS;
 }
 
 // Arming preconditions: attitude estimate valid, and (when RC is present) throttle at minimum.
 static bool Mission_IsArmable(void) {
-    umsg_nav_state_t nav;
-    bool navValid = umsg_nav_state_peek(&nav) && (nav.valid & NAV_VALID_ATTITUDE);
+    bool navValid = s_Mission.haveNav && (s_Mission.lastNav.valid & NAV_VALID_ATTITUDE);
 
     bool throttleOk = true;
     if (s_Mission.haveRc) {
@@ -61,6 +65,14 @@ eSTATUS_t Mission_Update(void) {
     if (umsg_rc_input_receive(s_Mission.rc_sub, &rc, pdMS_TO_TICKS(MISSION_RC_TIMEOUT_MS))) {
         s_Mission.lastRc = rc;
         s_Mission.haveRc = true;
+    }
+
+    // Latest nav state; cached so armability does not depend on a nav message
+    // landing in this exact iteration.
+    umsg_nav_state_t nav;
+    if (umsg_nav_state_receive(s_Mission.nav_sub, &nav, 0)) {
+        s_Mission.lastNav = nav;
+        s_Mission.haveNav = true;
     }
 
     // RC arm-switch intent (edge-detected with hysteresis).

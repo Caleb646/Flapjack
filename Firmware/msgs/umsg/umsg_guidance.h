@@ -21,7 +21,6 @@ umsg_sub_handle_t umsg_guidance_setpoints_subscribe_ch(uint32_t prescaler, uint8
 void umsg_guidance_setpoints_publish(umsg_guidance_setpoints_t* data);
 void umsg_guidance_setpoints_publish_ch(umsg_guidance_setpoints_t* data, uint8_t channel);
 uint8_t umsg_guidance_setpoints_receive(umsg_sub_handle_t queue, umsg_guidance_setpoints_t* data, uint32_t timeout);
-uint8_t umsg_guidance_setpoints_peek(umsg_guidance_setpoints_t* data);
 
 
 #ifdef __cplusplus

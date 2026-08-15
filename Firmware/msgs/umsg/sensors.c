@@ -30,11 +30,6 @@ uint8_t umsg_sensors_imu_receive(umsg_sub_handle_t queue, umsg_sensors_imu_t* da
 {
     return umsg_receive(queue, data, timeout);
 }
-uint8_t umsg_sensors_imu_peek(umsg_sensors_imu_t* data)
-{
-    return umsg_peek(&msg_sensors_imu, data, sizeof(umsg_sensors_imu_t));
-}
-
 // sensors_mag
 umsg_sub_handle_t umsg_sensors_mag_subscribe(uint32_t prescaler, uint8_t length)
 {
@@ -56,11 +51,6 @@ uint8_t umsg_sensors_mag_receive(umsg_sub_handle_t queue, umsg_sensors_mag_t* da
 {
     return umsg_receive(queue, data, timeout);
 }
-uint8_t umsg_sensors_mag_peek(umsg_sensors_mag_t* data)
-{
-    return umsg_peek(&msg_sensors_mag, data, sizeof(umsg_sensors_mag_t));
-}
-
 // sensors_baro
 umsg_sub_handle_t umsg_sensors_baro_subscribe(uint32_t prescaler, uint8_t length)
 {
@@ -82,11 +72,6 @@ uint8_t umsg_sensors_baro_receive(umsg_sub_handle_t queue, umsg_sensors_baro_t* 
 {
     return umsg_receive(queue, data, timeout);
 }
-uint8_t umsg_sensors_baro_peek(umsg_sensors_baro_t* data)
-{
-    return umsg_peek(&msg_sensors_baro, data, sizeof(umsg_sensors_baro_t));
-}
-
 // sensors_gps
 umsg_sub_handle_t umsg_sensors_gps_subscribe(uint32_t prescaler, uint8_t length)
 {
@@ -108,8 +93,3 @@ uint8_t umsg_sensors_gps_receive(umsg_sub_handle_t queue, umsg_sensors_gps_t* da
 {
     return umsg_receive(queue, data, timeout);
 }
-uint8_t umsg_sensors_gps_peek(umsg_sensors_gps_t* data)
-{
-    return umsg_peek(&msg_sensors_gps, data, sizeof(umsg_sensors_gps_t));
-}
-

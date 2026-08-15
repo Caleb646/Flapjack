@@ -30,7 +30,6 @@ umsg_sub_handle_t umsg_tune_pid_subscribe_ch(uint32_t prescaler, uint8_t length,
 void umsg_tune_pid_publish(umsg_tune_pid_t* data);
 void umsg_tune_pid_publish_ch(umsg_tune_pid_t* data, uint8_t channel);
 uint8_t umsg_tune_pid_receive(umsg_sub_handle_t queue, umsg_tune_pid_t* data, uint32_t timeout);
-uint8_t umsg_tune_pid_peek(umsg_tune_pid_t* data);
 
 
 #ifdef __cplusplus
