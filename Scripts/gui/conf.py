@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Tuple, Union
 from PyQt5.QtSerialPort import QSerialPort
 from dacite import from_dict
-import flapjack_pb2
+from proto import flapjack_pb2
 
 @dataclass
 class Conf:

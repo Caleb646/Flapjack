@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<!--
+  STARTER electric motor for the tilt-rotor. Tune <power> to the airframe mass
+  so two motors comfortably exceed weight at the hover throttle. Not validated
+  in this repo - adjust once JSBSim is installed.
+-->
+<electric_engine name="drone_motor">
+  <power unit="WATTS"> 700 </power>
+</electric_engine>

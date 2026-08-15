@@ -11,8 +11,10 @@ from datetime import datetime
 import trimesh
 import os
 import struct
-import conf
+from gui import conf
 import serial.tools.list_ports
+
+_GUI_DIR = os.path.dirname(os.path.abspath(__file__))
 
 CONF = conf.conf_init()
 
@@ -128,7 +130,7 @@ class FlightViewer(QtWidgets.QWidget):
             raise RuntimeError("Could not set baud rate for serial port")
         self.buffer = b""
 
-        os.makedirs("./GUI/Logs", exist_ok=True)  
+        os.makedirs(os.path.join(_GUI_DIR, "Logs"), exist_ok=True)
         self.debug_log = None
         self.flight_data_log = None
         self.current_session_folder = None
@@ -161,7 +163,7 @@ class FlightViewer(QtWidgets.QWidget):
         self.view.addItem(self.label_y)
         self.view.addItem(self.label_z)
 
-        self.airplane, self.airplane_scale = load_mesh("./GUI/data/mesh/plane.stl")
+        self.airplane, self.airplane_scale = load_mesh(os.path.join(_GUI_DIR, "data", "mesh", "plane.stl"))
         self.airplane_scale = 1.0 / self.airplane_scale # normalize scale
         self.view.addItem(self.airplane)
         
@@ -339,7 +341,7 @@ class FlightViewer(QtWidgets.QWidget):
         """Create a timestamped folder for the current session and open log files"""
         # Create timestamp in format --> Month_Day_Hour_Minutes_Seconds
         timestamp = datetime.now().strftime("%m_%d_%H_%M_%S")
-        self.current_session_folder = f"./GUI/Logs/Session_{timestamp}"
+        self.current_session_folder = os.path.join(_GUI_DIR, "Logs", f"Session_{timestamp}")
 
         os.makedirs(self.current_session_folder, exist_ok=True)
         debug_path = os.path.join(self.current_session_folder, "debug.log")
@@ -1480,7 +1482,7 @@ class AttitudePlotter(QtWidgets.QWidget):
         
     def load_from_file(self):
         try:
-            logs_dir = "./GUI/Logs"
+            logs_dir = os.path.join(_GUI_DIR, "Logs")
             file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
                 self, 
                 "Select Flight Data Log File", 

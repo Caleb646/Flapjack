@@ -32,10 +32,11 @@
 #define SIM_MSG_MOTOR     4U
 #define SIM_MSG_TELEMETRY 5U
 
-// UART baud for the sim link. Raised well above the 230400 debug default so the
-// sensor stream + framing fits comfortably at a few hundred Hz.
+// UART baud for the sim link. Raised above the 230400 debug default so the
+// sensor stream + framing fits comfortably at a few hundred Hz (460800 carries
+// the ~34 kB/s PC->FC stream at --rate 400 with headroom).
 #ifndef SIM_LINK_BAUD
-#define SIM_LINK_BAUD 921600U
+#define SIM_LINK_BAUD 460800U
 #endif
 
 // One-time init: claims the debug UART and creates the RX/TX primitives.

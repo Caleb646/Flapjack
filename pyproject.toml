@@ -1,0 +1,46 @@
+[project]
+name = "flapjack-tools"
+version = "0.1.0"
+description = "Flapjack host-side tooling: build/flash CLI, JSBSim HIL bridge, and flight GUI (run via `python Scripts/board.py <cmd>`)."
+requires-python = ">=3.10"
+
+# Base deps shared by the tools: pyserial (bridge + board test reader + GUI port
+# enumeration) and protobuf runtime (the Scripts/proto stubs).
+dependencies = [
+    "pyserial>=3.5",
+    "protobuf>=4.0",
+]
+
+[project.optional-dependencies]
+# `board.py sim` — JSBSim flight model.
+sim = [
+    "jsbsim>=1.2",
+]
+# `board.py gui` — PyQt flight viewer / command console.
+gui = [
+    "pyqt5",
+    "pyqtgraph",
+    "numpy",
+    "PyOpenGL",
+    "PyOpenGL_accelerate",
+    "trimesh",
+    "dacite",
+]
+# `board.py build -f g` — proto + umsg code generation.
+gen = [
+    "grpcio-tools",
+    "jinja2",
+    "umsg-gen",
+    "nanopb",
+]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+# The tools are invoked in place via `python Scripts/board.py <cmd>` (Scripts/ is
+# sys.path[0]), so nothing needs to be importable as an installed package. This
+# pyproject exists to pin one dependency set (with extras) in place of the old
+# requirements.txt files; `pip install -e ".[sim,gui,gen]"` installs everything.
+packages = []

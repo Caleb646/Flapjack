@@ -1,0 +1,113 @@
+<?xml version="1.0"?>
+<!--
+  STARTER tilt-rotor FDM for the Flapjack HIL sim.
+
+  Two motors, one on each side, each with a tilting (thrust-vectoring) rotor.
+  The tilt servo angle is applied by bridge.py via the engine gimbal property
+  (propulsion/engine[N]/pitch-angle-rad); motor throttle via fcs/throttle-cmd-norm[N].
+
+  This is a STARTING POINT, not a validated model:
+    * mass / inertia / motor power / prop tables are rough,
+    * the thruster <orient> pitch that makes the rotors point "up" at the FC's
+      neutral tilt needs calibrating against the servo us->angle map in
+      drivers/servo/sim.c (centre 1500 us = 0 rad).
+  Validate the link with `python bridge.py --port ... --dry-run` (no FDM) FIRST,
+  then iterate on this model with JSBSim installed.
+-->
+<fdm_config name="tiltrotor" version="2.0" release="ALPHA">
+
+  <fileheader>
+    <author> Flapjack HIL </author>
+    <description> Simplified twin tilt-rotor for SIL/HIL control development </description>
+  </fileheader>
+
+  <metrics>
+    <wingarea  unit="M2"> 0.20 </wingarea>
+    <wingspan  unit="M">  0.50 </wingspan>
+    <chord     unit="M">  0.40 </chord>
+    <location name="AERORP" unit="M"> <x>0.0</x> <y>0.0</y> <z>0.0</z> </location>
+  </metrics>
+
+  <mass_balance>
+    <ixx unit="KG*M2"> 0.02 </ixx>
+    <iyy unit="KG*M2"> 0.02 </iyy>
+    <izz unit="KG*M2"> 0.04 </izz>
+    <emptywt unit="KG"> 2.0 </emptywt>
+    <location name="CG" unit="M"> <x>0.0</x> <y>0.0</y> <z>0.0</z> </location>
+  </mass_balance>
+
+  <ground_reactions>
+    <contact type="BOGEY" name="LEFT">
+      <location unit="M"> <x>0.0</x> <y>-0.25</y> <z>-0.10</z> </location>
+      <static_friction>  0.8 </static_friction>
+      <dynamic_friction> 0.5 </dynamic_friction>
+      <spring_coeff  unit="N/M">    2000 </spring_coeff>
+      <damping_coeff unit="N/M/SEC"> 300 </damping_coeff>
+    </contact>
+    <contact type="BOGEY" name="RIGHT">
+      <location unit="M"> <x>0.0</x> <y>0.25</y> <z>-0.10</z> </location>
+      <static_friction>  0.8 </static_friction>
+      <dynamic_friction> 0.5 </dynamic_friction>
+      <spring_coeff  unit="N/M">    2000 </spring_coeff>
+      <damping_coeff unit="N/M/SEC"> 300 </damping_coeff>
+    </contact>
+    <contact type="BOGEY" name="TAIL">
+      <location unit="M"> <x>-0.25</x> <y>0.0</y> <z>-0.10</z> </location>
+      <static_friction>  0.8 </static_friction>
+      <dynamic_friction> 0.5 </dynamic_friction>
+      <spring_coeff  unit="N/M">    2000 </spring_coeff>
+      <damping_coeff unit="N/M/SEC"> 300 </damping_coeff>
+    </contact>
+  </ground_reactions>
+
+  <propulsion>
+    <!-- engine[0] = LEFT -->
+    <engine file="drone_motor">
+      <location name="ENGINE" unit="M"> <x>0.0</x> <y>-0.25</y> <z>0.0</z> </location>
+      <thruster file="drone_prop">
+        <location name="THRUSTER" unit="M"> <x>0.0</x> <y>-0.25</y> <z>0.0</z> </location>
+        <!-- pitch +90 deg points the (default +X) thrust upward for hover; tune sign -->
+        <orient unit="DEG"> <roll>0.0</roll> <pitch>90.0</pitch> <yaw>0.0</yaw> </orient>
+      </thruster>
+    </engine>
+
+    <!-- engine[1] = RIGHT -->
+    <engine file="drone_motor">
+      <location name="ENGINE" unit="M"> <x>0.0</x> <y>0.25</y> <z>0.0</z> </location>
+      <thruster file="drone_prop">
+        <location name="THRUSTER" unit="M"> <x>0.0</x> <y>0.25</y> <z>0.0</z> </location>
+        <orient unit="DEG"> <roll>0.0</roll> <pitch>90.0</pitch> <yaw>0.0</yaw> </orient>
+      </thruster>
+    </engine>
+  </propulsion>
+
+  <flight_control name="tiltrotor FCS">
+    <!-- Throttle is driven directly by the bridge via fcs/throttle-cmd-norm[N];
+         tilt is driven via propulsion/engine[N]/pitch-angle-rad. No mixing here:
+         the Flapjack control loop owns mixing. -->
+    <channel name="throttle">
+      <fcs_function name="fcs/throttle-pass[0]">
+        <function> <p> fcs/throttle-cmd-norm[0] </p> </function>
+        <output> propulsion/engine[0]/throttle-cmd-norm </output>
+      </fcs_function>
+      <fcs_function name="fcs/throttle-pass[1]">
+        <function> <p> fcs/throttle-cmd-norm[1] </p> </function>
+        <output> propulsion/engine[1]/throttle-cmd-norm </output>
+      </fcs_function>
+    </channel>
+  </flight_control>
+
+  <aerodynamics>
+    <!-- Minimal bluff-body drag so the model is well-posed; no lift surfaces. -->
+    <axis name="DRAG">
+      <function name="aero/force/drag">
+        <description> simple parasitic drag </description>
+        <product>
+          <property> aero/qbar-psf </property>
+          <value> 0.30 </value>   <!-- ~ area * Cd, TODO tune -->
+        </product>
+      </function>
+    </axis>
+  </aerodynamics>
+
+</fdm_config>

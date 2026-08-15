@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """
-Flapjack board management CLI.
+Flapjack tooling CLI (single entry point for the project's Python tools).
 
 Commands
 --------
   install           Install SDK tools (ARM GCC, LLVM, OpenOCD)
   build             Configure and build firmware
   flash             Flash firmware; optionally run HIL tests
+  gen               Regenerate protobuf + umsg sources (no toolchain/build)
+  sim               Run the JSBSim HIL bridge (host side of the sim link)
+  gui               Launch the flight GUI (telemetry + command console)
 
 Examples
 --------
@@ -16,10 +19,14 @@ Examples
   python3 Scripts/board.py build --board nucleo-h747zi -f dc
   python3 Scripts/board.py build --board nucleo-h747zi -f rc
   python3 Scripts/board.py build --board nucleo-h747zi -f gcr
+  python3 Scripts/board.py build --board flapjack-v1 -D sim
   python3 Scripts/board.py flash --board nucleo-h747zi
   python3 Scripts/board.py flash --board nucleo-h747zi -f r
   python3 Scripts/board.py flash --board nucleo-h747zi -f t
   python3 Scripts/board.py flash --board nucleo-h747zi -f dt --port /dev/ttyUSB0 --baud 115200
+  python3 Scripts/board.py gen
+  python3 Scripts/board.py sim --port COM7 --dry-run
+  python3 Scripts/board.py gui
 """
 
 import argparse
@@ -38,9 +45,9 @@ from pathlib import Path
 PLATFORM = sys.platform
 
 PROJECT_ROOT  = Path(__file__).parent.parent
+SCRIPTS_ROOT  = Path(__file__).parent
 BUILD_ROOT    = PROJECT_ROOT / "Build"
 TOOLS_ROOT    = PROJECT_ROOT / "Tools"
-GUI_ROOT      = PROJECT_ROOT / "GUI"
 
 BOARDS  = ["nucleo-h747zi", "flapjack-v1"]
 CONFIGS = ["Debug", "Release"]
@@ -52,10 +59,8 @@ UMSG_OUTPUT_DIR         = PROJECT_ROOT / "Firmware" / "msgs" / "umsg"
 
 PROTO_FILES_DIR         = PROJECT_ROOT / "Firmware" / "msgs" / "proto" / "defs"
 PROTO_OUTPUT_DIR        = PROJECT_ROOT / "Firmware" / "msgs" / "proto"
+PROTO_PY_OUTPUT_DIR     = SCRIPTS_ROOT / "proto"
 
-PROTOC_EXE       = TOOLS_ROOT / "protoc" / "bin" / "protoc"
-if PLATFORM == "win32":
-    PROTOC_EXE   = PROTOC_EXE.with_suffix(".exe")
 NANOPB_ROOT      = PROJECT_ROOT / "Vendor" / "nanopb"
 NANOPB_GEN       = PROJECT_ROOT / "Vendor" / "nanopb" / "generator" / "nanopb_generator.py"
 UMSG_GEN         = PROJECT_ROOT / "Vendor" / "umsg" / "umsg_gen" / "umsg_gen" / "umsg_gen.py"
@@ -292,10 +297,12 @@ def _generate_proto() -> None:
                 "-D", str(PROTO_OUTPUT_DIR), "-I", str(PROTO_FILES_DIR)],
                 check=True, capture_output=True, text=True, env=os.environ.copy(),
             )
+            # Python stubs via the venv's grpc_tools so gencode matches the
+            # installed protobuf runtime (avoids the gencode/runtime VersionError).
             subprocess.run(
-                [str(PROTOC_EXE), str(proto_file),
-                 f"-I{PROTO_FILES_DIR}", f"--python_out={GUI_ROOT}"],
-                check=True, capture_output=True, shell=True, text=True, env=os.environ.copy(),
+                [str(VENV_PYTHON), "-m", "grpc_tools.protoc", str(proto_file),
+                 f"-I{PROTO_FILES_DIR}", f"--python_out={PROTO_PY_OUTPUT_DIR}"],
+                check=True, capture_output=True, text=True, env=os.environ.copy(),
             )
         except subprocess.CalledProcessError as e:
             print(f"ERROR: protoc failed on {proto_file.name}: {e.stderr}")
@@ -519,13 +526,36 @@ def cmd_flash(args: argparse.Namespace) -> None:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+#  gen  (regenerate protobuf + umsg sources, no build)
+# ══════════════════════════════════════════════════════════════════════════════
+
+def cmd_gen(_: argparse.Namespace) -> None:
+    # Same generation `build -f g` does, but without the ARM toolchain or a build.
+    # Needs the venv + [gen] extra (grpc_tools, nanopb, umsg-gen).
+    _generate_proto()
+    _generate_umsg()
+    print("Generation complete.")
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 #  CLI wiring
 # ══════════════════════════════════════════════════════════════════════════════
 
 def main() -> None:
+    # `sim` and `gui` forward their remaining args verbatim to those tools (lazy
+    # import keeps their heavy deps off the build/flash path). argparse REMAINDER
+    # mishandles a leading option like `sim --port`, so intercept them here before
+    # full parsing; they are still registered below so `--help` lists them.
+    if len(sys.argv) >= 2 and sys.argv[1] == "sim":
+        from sim import bridge
+        return bridge.main(sys.argv[2:])
+    if len(sys.argv) >= 2 and sys.argv[1] == "gui":
+        from gui import app
+        return app.main()
+
     root = argparse.ArgumentParser(
         prog="board.py",
-        description="Flapjack board management (install / build / flash)",
+        description="Flapjack tooling (install / build / flash / sim / gui)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     sub = root.add_subparsers(dest="command", metavar="<command>")
@@ -562,8 +592,19 @@ def main() -> None:
     p_flash.add_argument("--openocd", default=None,
                          help="Path to openocd binary (auto-detected if omitted)")
 
+    # ── gen ──────────────────────────────────────────────────────────────────────
+    sub.add_parser("gen", help="Regenerate protobuf + umsg sources (no toolchain/build)")
+
+    # ── sim / gui ────────────────────────────────────────────────────────────────
+    # Registered for `--help` listing only; both are intercepted at the top of
+    # main() so their args pass straight through to the bridge / GUI.
+    sub.add_parser("sim", help="Run the JSBSim HIL bridge (args forwarded to it)",
+                   add_help=False)
+    sub.add_parser("gui", help="Launch the flight GUI (telemetry + command console)")
+
     args = root.parse_args()
-    {"install": cmd_install, "build": cmd_build, "flash": cmd_flash}[args.command](args)
+    {"install": cmd_install, "build": cmd_build, "flash": cmd_flash,
+     "gen": cmd_gen}[args.command](args)
 
 
 if __name__ == "__main__":
