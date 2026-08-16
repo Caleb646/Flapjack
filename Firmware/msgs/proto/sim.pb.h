@@ -17,12 +17,6 @@ typedef struct _SensorData {
     float mag[3]; /* normalized field, body frame */
 } SensorData;
 
-/* PC -> FC: injected RC channels (microseconds, 1000-2000). */
-typedef struct _RcInput {
-    pb_size_t channels_count;
-    uint32_t channels[16];
-} RcInput;
-
 /* FC -> PC: servo (tilt) command, one angle per servo. */
 typedef struct _ServoCmd {
     pb_size_t angle_count;
@@ -40,6 +34,7 @@ typedef struct _Telemetry {
     float euler[3]; /* deg [roll, pitch, yaw] from nav */
     bool armed;
     uint32_t imu_count; /* increments per consumed IMU sample (pacing check) */
+    bool rc_link_up; /* CRSF frames still arriving (Rx_IsLinkUp) */
 } Telemetry;
 
 
@@ -49,26 +44,24 @@ extern "C" {
 
 /* Initializer values for message structs */
 #define SensorData_init_default                  {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}}
-#define RcInput_init_default                     {0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
 #define ServoCmd_init_default                    {0, {0, 0, 0, 0, 0, 0, 0, 0}}
 #define MotorCmd_init_default                    {0, {0, 0, 0, 0, 0, 0, 0, 0}}
-#define Telemetry_init_default                   {{0, 0, 0}, 0, 0}
+#define Telemetry_init_default                   {{0, 0, 0}, 0, 0, 0}
 #define SensorData_init_zero                     {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}}
-#define RcInput_init_zero                        {0, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
 #define ServoCmd_init_zero                       {0, {0, 0, 0, 0, 0, 0, 0, 0}}
 #define MotorCmd_init_zero                       {0, {0, 0, 0, 0, 0, 0, 0, 0}}
-#define Telemetry_init_zero                      {{0, 0, 0}, 0, 0}
+#define Telemetry_init_zero                      {{0, 0, 0}, 0, 0, 0}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define SensorData_accel_tag                     1
 #define SensorData_gyro_tag                      2
 #define SensorData_mag_tag                       3
-#define RcInput_channels_tag                     1
 #define ServoCmd_angle_tag                       1
 #define MotorCmd_throttle_tag                    1
 #define Telemetry_euler_tag                      1
 #define Telemetry_armed_tag                      2
 #define Telemetry_imu_count_tag                  3
+#define Telemetry_rc_link_up_tag                 4
 
 /* Struct field encoding specification for nanopb */
 #define SensorData_FIELDLIST(X, a) \
@@ -77,11 +70,6 @@ X(a, STATIC,   FIXARRAY, FLOAT,    gyro,              2) \
 X(a, STATIC,   FIXARRAY, FLOAT,    mag,               3)
 #define SensorData_CALLBACK NULL
 #define SensorData_DEFAULT NULL
-
-#define RcInput_FIELDLIST(X, a) \
-X(a, STATIC,   REPEATED, UINT32,   channels,          1)
-#define RcInput_CALLBACK NULL
-#define RcInput_DEFAULT NULL
 
 #define ServoCmd_FIELDLIST(X, a) \
 X(a, STATIC,   REPEATED, FLOAT,    angle,             1)
@@ -96,30 +84,28 @@ X(a, STATIC,   REPEATED, FLOAT,    throttle,          1)
 #define Telemetry_FIELDLIST(X, a) \
 X(a, STATIC,   FIXARRAY, FLOAT,    euler,             1) \
 X(a, STATIC,   SINGULAR, BOOL,     armed,             2) \
-X(a, STATIC,   SINGULAR, UINT32,   imu_count,         3)
+X(a, STATIC,   SINGULAR, UINT32,   imu_count,         3) \
+X(a, STATIC,   SINGULAR, BOOL,     rc_link_up,        4)
 #define Telemetry_CALLBACK NULL
 #define Telemetry_DEFAULT NULL
 
 extern const pb_msgdesc_t SensorData_msg;
-extern const pb_msgdesc_t RcInput_msg;
 extern const pb_msgdesc_t ServoCmd_msg;
 extern const pb_msgdesc_t MotorCmd_msg;
 extern const pb_msgdesc_t Telemetry_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
 #define SensorData_fields &SensorData_msg
-#define RcInput_fields &RcInput_msg
 #define ServoCmd_fields &ServoCmd_msg
 #define MotorCmd_fields &MotorCmd_msg
 #define Telemetry_fields &Telemetry_msg
 
 /* Maximum encoded size of messages (where known) */
 #define MotorCmd_size                            40
-#define RcInput_size                             96
-#define SIM_PB_H_MAX_SIZE                        RcInput_size
+#define SIM_PB_H_MAX_SIZE                        SensorData_size
 #define SensorData_size                          45
 #define ServoCmd_size                            40
-#define Telemetry_size                           23
+#define Telemetry_size                           25
 
 #ifdef __cplusplus
 } /* extern "C" */

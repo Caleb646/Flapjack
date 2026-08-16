@@ -8,8 +8,14 @@
  * queueing. All sim driver backends (imu/mag/servo/motor/rx) talk to the PC
  * only through this module:
  *
- *   PC -> FC : SensorData, RcInput   (handlers registered with SerialLink)
+ *   PC -> FC : SensorData             (handler registered with SerialLink)
  *   FC -> PC : ServoCmd, MotorCmd, Telemetry (sent by TX helpers)
+ *
+ * RC is deliberately NOT here. It used to arrive as an RcInput frame that was
+ * decoded straight into g_Rx.channels, which skipped the receiver driver
+ * entirely - the UART ISR, CRSF deframing, the CRC and the channel mapping were
+ * all untested by the SIL. The bridge now sends real CRSF frames to the RX UART
+ * instead, so the SIL exercises the same path the aircraft flies.
  *
  * The module always compiles; SIM_HIL only gates its activation in main.c -
  * registering the inbound handlers - so hardware builds keep it type-checked
@@ -25,7 +31,9 @@
 // share one namespace with every other SerialLink client - see
 // SERIAL_MSG_SHELL_CMD in drivers/serial/serial_link.h.
 #define SIM_MSG_SENSOR    1U
-#define SIM_MSG_RC        2U
+/* 2 is retired (was RcInput; RC now arrives as CRSF on the RX UART). Do not
+ * reuse it - an older bridge on the other end of the wire would still be
+ * sending it, and it would decode as whatever took its place. */
 #define SIM_MSG_SERVO     3U
 #define SIM_MSG_MOTOR     4U
 #define SIM_MSG_TELEMETRY 5U
@@ -50,6 +58,6 @@ uint32_t SimLink_GetSensorCount (void);
 // --- Actuator / telemetry TX (FC -> PC) -------------------------------------
 eSTATUS_t SimLink_SendServos (float const* anglesRad, uint32_t count);
 eSTATUS_t SimLink_SendThrottles (float const* throttles, uint32_t count);
-eSTATUS_t SimLink_SendTelemetry (float const eulerDeg[3], bool armed, uint32_t imuCount);
+eSTATUS_t SimLink_SendTelemetry (float const eulerDeg[3], bool armed, uint32_t imuCount, bool rcLinkUp);
 
 #endif // DRIVERS_SIM_LINK_SIM_LINK_H

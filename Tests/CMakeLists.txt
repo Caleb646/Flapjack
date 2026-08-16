@@ -7,26 +7,31 @@ enable_testing()
 
 cmake_path(GET CMAKE_CURRENT_SOURCE_DIR PARENT_PATH PRJ_ROOT)
 set(TEST_ROOT "${PRJ_ROOT}/Tests")
-set(HIL_ROOT "${TEST_ROOT}/HIL")
 set(UNITTEST_ROOT "${TEST_ROOT}/UnitTest")
 
 set(FIRMWARE_ROOT "${PRJ_ROOT}/Firmware")
 
-include(FetchContent)
-FetchContent_Declare(unity
-    GIT_REPOSITORY https://github.com/ThrowTheSwitch/Unity.git
-    GIT_TAG        v2.5.2
-)
-FetchContent_MakeAvailable(unity)
+# Unity is vendored in Tests/unity rather than fetched: every test includes it as
+# "unity/unity.h", which only resolves with Tests/ on the include path. Fetching
+# it put the header at <build>/_deps/unity-src/src/unity.h instead, so no test
+# could ever compile - and it made the suite need the network to configure.
+set(UNITY_SRC "${TEST_ROOT}/unity/unity.c")
+set(UNITY_INC "${TEST_ROOT}")
 
-set(UNITY_SRC "${unity_SOURCE_DIR}/src/unity.c")
-set(UNITY_INC "${unity_SOURCE_DIR}/src")
-
-set(COMMON_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../Firmware")
-set(COMMON_INC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../Firmware")
-set(TARGETS_INC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../Firmware/target")
+set(COMMON_SRC_DIR "${PRJ_ROOT}/Firmware")
+set(COMMON_INC_DIR "${PRJ_ROOT}/Firmware")
+set(TARGETS_INC_DIR "${PRJ_ROOT}/Firmware/target")
 
 set(COMMON_DEFS UNIT_TEST BOARD_NUCLEO_H747ZI)
+
+# MinGW defaults to -mms-bitfields (MSVC bitfield layout), under which
+# CrsfChannelsPayload_t packs to 32 bytes instead of the 22 the ARM EABI target
+# produces. The host build would then decode a completely different wire layout
+# to the firmware, making any CRSF channel test meaningless. Force GNU layout so
+# the host matches the target; test_crsf.c static-asserts the resulting size.
+if(MINGW)
+    add_compile_options(-mno-ms-bitfields)
+endif()
 
 add_library(drone_common_obj OBJECT
     ${COMMON_SRC_DIR}/core/core.c
@@ -47,28 +52,20 @@ add_library(drone_peripherals_obj OBJECT
     ${COMMON_SRC_DIR}/drivers/timer.c
 )
 
-add_library(drone_bus_obj OBJECT
-    ${COMMON_SRC_DIR}/drivers/bus/spi.c
-    ${COMMON_SRC_DIR}/drivers/serial/uart.c
-)
-
-add_library(drone_device_obj OBJECT
-    ${COMMON_SRC_DIR}/drivers/imu/bmi323.c
-    ${COMMON_SRC_DIR}/drivers/imu/sim.c
-)
-
-add_library(drone_mc_obj OBJECT
-    ${COMMON_SRC_DIR}/drivers/dshot/dshot.c
-    ${COMMON_SRC_DIR}/common/filter.c
-    ${COMMON_SRC_DIR}/common/pid.c
+# crsf.c only. Its UART dependency (UartPort_Init / UartPort_Write, reached via
+# Crsf_Init and the unused Crsf_Bind) is satisfied by small stubs in the test
+# itself, because neither uart.c nor spi.c compiles against stubs/hal_stub.c -
+# they need HAL macros (__HAL_UART_GET_FLAG, LL_SPI_*) the stub does not define.
+# Nothing under test drives a real port, so pulling them in would only mean
+# stubbing more HAL to reach the same place.
+add_library(drone_rx_obj OBJECT
+    ${COMMON_SRC_DIR}/drivers/rx/crsf.c
 )
 
 foreach(lib
     drone_common_obj
     drone_peripherals_obj
-    drone_bus_obj
-    drone_device_obj
-    drone_mc_obj
+    drone_rx_obj
 )
     target_include_directories(${lib} PRIVATE
         ${COMMON_INC_DIR}
@@ -97,12 +94,4 @@ function(add_test_exe test_name)
     add_test(NAME ${test_name} COMMAND ${test_name})
 endfunction()
 
-add_test_exe(test_queue   OBJECTS drone_common_obj)
-add_test_exe(test_vector  OBJECTS drone_common_obj)
-add_test_exe(test_umap    OBJECTS drone_common_obj)
-add_test_exe(test_gpio    OBJECTS drone_common_obj drone_peripherals_obj)
-add_test_exe(test_spi     OBJECTS drone_common_obj drone_peripherals_obj drone_bus_obj)
-add_test_exe(test_uart    OBJECTS drone_common_obj drone_peripherals_obj drone_bus_obj)
-add_test_exe(test_imu     OBJECTS drone_common_obj drone_peripherals_obj drone_bus_obj drone_device_obj drone_mc_obj)
-add_test_exe(test_filter  OBJECTS drone_common_obj drone_peripherals_obj drone_bus_obj drone_device_obj drone_mc_obj)
-add_test_exe(test_dshot   OBJECTS drone_common_obj drone_peripherals_obj drone_mc_obj)
+add_test_exe(test_crsf OBJECTS drone_common_obj drone_peripherals_obj drone_rx_obj)

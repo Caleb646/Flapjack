@@ -33,5 +33,29 @@ eSTATUS_t Rx_Init (void) {
 
 eSTATUS_t Rx_Update (uint32_t usCurrentTime, uint32_t usDeltaTime) {
 
-    return Crsf_ProcessFrame (g_Rx.channels);
+    Rx_t* pRx = &g_Rx;
+
+    /* A failure here is the ordinary case, not an error: this polls at 50 Hz
+     * and most calls find no completed frame waiting. Only success is a
+     * heartbeat. */
+    eSTATUS_t const status = Crsf_ProcessFrame (pRx->channels);
+    if (!STATUS_FAIL (status)) {
+        pRx->usLastFrameTime = usCurrentTime;
+        pRx->haveFrame       = true;
+    }
+
+    /* Unsigned difference, so this stays correct across GetMicroseconds()'
+     * ~71 minute wrap. */
+    bool const linkUp =
+    pRx->haveFrame && ((usCurrentTime - pRx->usLastFrameTime) < RX_LINK_TIMEOUT_US);
+
+    if (linkUp != pRx->linkUp) {
+        pRx->linkUp = linkUp;
+        if (linkUp) {
+            LOG_INFO ("Rx: RC link up");
+        } else {
+            LOG_WARN ("Rx: RC link lost - holding last stick positions");
+        }
+    }
+    return status;
 }

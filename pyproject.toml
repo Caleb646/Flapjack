@@ -12,9 +12,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# `board.py sim` — JSBSim flight model.
+# `board.py sim` — JSBSim flight model, plus PyYAML for the flight plans in
+# Scripts/sim/plans/ (the scripted RC sequences the bridge replays).
 sim = [
     "jsbsim>=1.2",
+    "pyyaml>=6.0",
 ]
 # `board.py gui` — PyQt flight viewer / command console.
 gui = [

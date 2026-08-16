@@ -57,10 +57,17 @@ Each rung removes a layer. Do not skip to the full SIL.
 **1. Replay one module on the host, with inputs you control.** Proved `filter.c` was correct by
 driving it at a *constant* `dt` with the exact dry-run inputs: it converged to 20.00° and held
 for 300 s. That single result redirected the whole investigation from the estimator to the
-timebase. The home for this is `Tests/UnitTest/` + `Tests/CMakeLists.txt`, which already compiles
-`filter.c` and `pid.c` for the host. **Note:** `Tests/UnitTest/test_filter.c` is currently stale —
-it calls `FilterMadgwickInit` / `FilterMadgwickUpdate`, which no longer exist (the API is
-`MadgwickFilter_Init` / `MadgwickFilter_Update`), so it will not compile until updated.
+timebase. The home for this is `Tests/UnitTest/` + `Tests/CMakeLists.txt`.
+
+**Note on the state of that harness:** it was rebuilt around `test_crsf.c` and now compiles only
+`crsf.c` against the host. The previous tests (`test_filter.c` and the rest) were removed — they
+had rotted past the point of being runnable: every one of them included `"unity/unity.h"` against
+an include path where it could not resolve, and `spi.c` / `uart.c` no longer compile against
+`stubs/hal_stub.c` at all (missing `LL_SPI_*` and `__HAL_UART_*`). So replaying `filter.c` or
+`pid.c` on the host is still the right first rung, but you will have to add the target back to
+`Tests/CMakeLists.txt` (pattern: a new `add_library(... OBJECT ...)` plus `add_test_exe`) rather
+than uncommenting something. Unity is vendored at `Tests/unity/`; the build is
+`cmake -S Tests -B Build/UnitTest -G "MinGW Makefiles"` then `ctest --test-dir Build/UnitTest`.
 
 **2. Step JSBSim standalone, with no FC attached.** The only clean way to separate a flight-model
 fault from a firmware fault:
@@ -111,6 +118,15 @@ Useful plant numbers for this airframe: full differential thrust is ~9900 °/s²
 - **Arming takes ~6 s** from cold: the estimate needs ~3 s to converge and the firmware's own
   interlock (`tasks/mission/mission.c`) then wants 3 s of stillness. Telemetry showing
   `armed=False` early is normal, not a hang.
+- **`armed=False` *forever* usually means you forgot `--rc-port`.** RC now arrives only as real
+  CRSF on USART3; there is no sim-link fallback. With no RC the FC holds its boot defaults, sees
+  no arm switch, and sits disarmed indefinitely while everything else looks healthy — telemetry
+  flows, the estimate converges, `imu#` climbs. Telemetry carries `rc_link_up`, printed by the
+  bridge as `rc=up` / `rc=DOWN`; check that before suspecting the arming interlock.
+- **A lost RC link is reported, not acted on.** After `RX_LINK_TIMEOUT_US` (1 s) the FC logs
+  `Rx: RC link lost` and `rc_link_up` goes false, but the channels keep their last values and the
+  vehicle keeps flying them. That is deliberate (there is no failsafe behaviour yet), so a run
+  that "keeps flying after the link dies" is not a bug.
 
 ## Traps
 

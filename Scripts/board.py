@@ -33,7 +33,12 @@ Examples
   # `renode` replaces `flash`, and `sim` is unchanged apart from --port.
   python3 Scripts/board.py build -b flapjack-v1 -D sim --single-core
   python3 Scripts/board.py renode -b flapjack-v1
-  python3 Scripts/board.py sim --port socket://localhost:4000 --rate 400
+  python3 Scripts/board.py sim --port socket://localhost:4000 --rc-port socket://localhost:4001 --rate 400
+
+  # USART1 -> 4000 is the sim link; USART3 -> 4001 carries real CRSF to the RX
+  # UART and is the FC's only RC input - without --rc-port it never arms.
+  # Fly a scripted plan (exit 0 = checks passed, 1 = failed):
+  python3 Scripts/board.py sim --port socket://localhost:4000 --rc-port socket://localhost:4001       --plan Scripts/sim/plans/hover.yaml
 """
 
 import argparse
@@ -634,11 +639,15 @@ def cmd_renode(args: argparse.Namespace) -> None:
         sys.exit(1)
 
     # $bin is declared with '?=' in the .resc, so setting it first wins.
+    # usart1 carries the sim link (sensors/actuators/telemetry/logs); usart3 is
+    # the RX UART, so the bridge can feed real CRSF frames to Rx_Task there.
     monitor_cmds = "; ".join([
         f"$bin=@{elf.resolve().as_posix()}",
         f"i @{RENODE_SCRIPT.resolve().as_posix()}",
         f'emulation CreateServerSocketTerminal {args.port} "simlink" false',
         "connector Connect sysbus.usart1 simlink",
+        f'emulation CreateServerSocketTerminal {args.rc_port} "rclink" false',
+        "connector Connect sysbus.usart3 rclink",
         "start",
     ])
 
@@ -651,8 +660,10 @@ def cmd_renode(args: argparse.Namespace) -> None:
 
     print(f"Renode  |  board: {args.board}  |  config: {config}  |  {elf.name}")
     print(f"  sim link : socket://localhost:{args.port}")
+    print(f"  rc link  : socket://localhost:{args.rc_port}")
     print(f"  monitor  : localhost:{args.monitor_port}")
-    print(f"  bridge   : python Scripts/board.py sim --port socket://localhost:{args.port} --rate 400")
+    print(f"  bridge   : python Scripts/board.py sim --port socket://localhost:{args.port} "
+          f"--rc-port socket://localhost:{args.rc_port} --rate 400")
     print("  Ctrl-C to stop.\n")
     try:
         subprocess.run(cmd, cwd=PROJECT_ROOT, check=False)
@@ -735,6 +746,8 @@ def main() -> None:
                           help="d=Debug, r=Release (selects the Build/ subdirectory)")
     p_renode.add_argument("--port", type=int, default=4000,
                           help="TCP port exposing USART1 as the sim link")
+    p_renode.add_argument("--rc-port", type=int, default=4001,
+                          help="TCP port exposing USART3 as the CRSF RC link")
     p_renode.add_argument("--monitor-port", type=int, default=3456,
                           help="TCP port for the Renode monitor")
     p_renode.add_argument("--elf", default=None,
@@ -755,4 +768,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

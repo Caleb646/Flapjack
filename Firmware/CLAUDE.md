@@ -30,6 +30,7 @@ the device and driver layers it uses sit in `devices/` and `drivers/`.
 | **Sensor: IMU** | `tasks/imu/imu_task.c` (device `devices/imu.c`) | `Imu_Init()` | `Imu_Update()` | hardware (sim link / ISR) | - | `umsg_sensors_imu_t` |
 | **Sensor: Mag** | `tasks/mag/mag_task.c` (device `devices/mag.c`) | `Mag_Init()` | `Mag_Update()` | hardware | - | `umsg_sensors_mag_t` |
 | **Sensor: RC** | `tasks/rc/rc.c` (driver `drivers/rx/rx.c`) | `Rc_Init()` | `Rc_Update()` | nothing - 50 Hz `vTaskDelay` | - | `umsg_rc_input_t` |
+| **Receiver** | `tasks/rx/rx_task.c` (driver `drivers/rx/crsf.c`) | `Rx_Init()` | `Rx_Update()` | nothing - 50 Hz `vTaskDelay` | - | writes `g_Rx` (not a umsg topic) |
 | **Navigation** | `tasks/nav/nav.c` | `Nav_Init()` | `Nav_Update()` | `umsg_sensors_imu_t` | `umsg_sensors_mag_t` | `umsg_nav_state_t` |
 | **Mission** | `tasks/mission/mission.c` | `Mission_Init()` | `Mission_Update()` | `umsg_rc_input_t` (20 ms timeout) | `umsg_arming_request_t`, `umsg_nav_state_t` | `umsg_mission_state_t` |
 | **Guidance** | `tasks/guidance/guidance.c` | `Guidance_Init()` | `Guidance_Update()` | `umsg_nav_state_t` | `umsg_mission_state_t`, `umsg_rc_input_t` | `umsg_guidance_setpoints_t` |
@@ -38,6 +39,19 @@ the device and driver layers it uses sit in `devices/` and `drivers/`.
 GPS and Baro have device wrappers (`devices/gps.c`, `devices/baro.c`) but no task yet.
 Tasks are created and registered in `Firmware/main.c`.
 
+### The RC path is not pub/sub at its lower end
+
+RC is the one input that does not arrive as a message. A CRSF receiver drives the RX UART
+(`RX_UART`, 416666 baud 8N1); the byte-wise ISR in `drivers/rx/crsf.c` reassembles frames,
+`Rx_Task` validates and decodes them into `g_Rx.channels` at 50 Hz, and only then does `Rc_Task`
+publish `umsg_rc_input_t`. `g_Rx` is shared memory (`FJ_DECLARE_SHARED`) because in a dual-core
+build `Rx_Task` runs on CM4 and `Rc_Task` on CM7.
+
+This matters for the SIL: RC is fed in as **real CRSF frames on the RX UART**, not injected into
+`g_Rx`, so the emulated run exercises the whole chain. The channel scaling follows the CRSF spec
+exactly — `TICKS_TO_US(x) = (x - 992) * 5 / 8 + 1500`, so ticks 192/992/1792 are 1000/1500/2000 µs.
+Getting that mapping wrong puts a standing rate demand on all three axes with the sticks centred,
+which is what `CRSF_CHANNEL_MIN/MAX` being wrong used to do.
 
 The SIL-only `SimTelemetry_Task` (`tasks/sim/sim_telemetry.c`) subscribes to `umsg_nav_state_t`
 and `umsg_mission_state_t` the same way; it blocks on nothing and runs off `vTaskDelay()` at 50 Hz.
@@ -109,7 +123,7 @@ Generated message structs are in `Firmware/msgs/umsg/`. The JSON definitions are
 | `umsg_sensors.h` | `umsg_sensors_mag_t` | `field[3]` (normalised) |
 | `umsg_sensors.h` | `umsg_sensors_baro_t` | `pressure`, `temperature` |
 | `umsg_sensors.h` | `umsg_sensors_gps_t` | `lat`, `lon` (double, degrees), `alt`, `speed`, `course`, `fix_type`, `sats` |
-| `umsg_rc.h` | `umsg_rc_input_t` | `channels[16]` (µs, 1000–2000), `rssi`, `link_quality` |
+| `umsg_rc.h` | `umsg_rc_input_t` | `channels[16]` (µs, 1000–2000), `rssi` (always 0 — needs CRSF 0x14), `link_quality` (100 or 0 from `Rx_IsLinkUp()`) |
 | `umsg_nav.h` | `umsg_nav_state_t` | `quat[4]`, `euler[3]` (deg), `gyro[3]` (deg/s), `pos_ned[3]`, `vel_ned[3]`, `alt`, `valid` |
 | `umsg_mission.h` | `umsg_mission_state_t` | `mode` (`eMissionMode_t`), `target_pos[3]`, `target_heading`, `armed` |
 | `umsg_guidance.h` | `umsg_guidance_setpoints_t` | `w[3]` (rad/s), `vel_b[3]` (body vel, `[2]`=throttle 0–1), `quat[4]` |
@@ -167,10 +181,10 @@ eMISSION_MODE_RTL           = 4   // stub
 
 ## What Is Not Yet Implemented
 
-These are left for the FreeRTOS implementation agent:
-
-- **FreeRTOS task creation** — no tasks exist yet; all layers are written but nothing calls them
-- **RC umsg publisher** — `SensorRc_Update()` reads from `g_Rx` (updated by CM4) and publishes `umsg_rc_input_t`, but it has no task/caller yet; without it, Mission and Guidance block forever
+- **RC failsafe behaviour** — the receiver driver *detects* a lost link (`Rx_IsLinkUp()`, 1 s per the
+  CRSF spec) and reports it through `link_quality` and a log line, but nothing acts on it: the
+  channels keep their last values and the vehicle keeps flying them. Choosing an action is open, and
+  a controlled descent is blocked on the missing altitude estimate below
 - **Position / velocity estimation** — `nav.pos_ned`, `nav.vel_ned`, `nav.alt` are zeroed; `NAV_VALID_POSITION/VELOCITY/BARO_ALT` are never set
 - **Autonomous guidance modes** — only `eMISSION_MODE_MANUAL` is implemented in `guidance.c`
 - **PID gain tuning** — gains come from `CFG_PID_*` macros in the target config; the rate loop is wired but untested

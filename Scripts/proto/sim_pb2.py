@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\tsim.proto\"6\n\nSensorData\x12\r\n\x05\x61\x63\x63\x65l\x18\x01 \x03(\x02\x12\x0c\n\x04gyro\x18\x02 \x03(\x02\x12\x0b\n\x03mag\x18\x03 \x03(\x02\"\x1b\n\x07RcInput\x12\x10\n\x08\x63hannels\x18\x01 \x03(\r\"\x19\n\x08ServoCmd\x12\r\n\x05\x61ngle\x18\x01 \x03(\x02\"\x1c\n\x08MotorCmd\x12\x10\n\x08throttle\x18\x01 \x03(\x02\"<\n\tTelemetry\x12\r\n\x05\x65uler\x18\x01 \x03(\x02\x12\r\n\x05\x61rmed\x18\x02 \x01(\x08\x12\x11\n\timu_count\x18\x03 \x01(\rb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\tsim.proto\"6\n\nSensorData\x12\r\n\x05\x61\x63\x63\x65l\x18\x01 \x03(\x02\x12\x0c\n\x04gyro\x18\x02 \x03(\x02\x12\x0b\n\x03mag\x18\x03 \x03(\x02\"\x19\n\x08ServoCmd\x12\r\n\x05\x61ngle\x18\x01 \x03(\x02\"\x1c\n\x08MotorCmd\x12\x10\n\x08throttle\x18\x01 \x03(\x02\"P\n\tTelemetry\x12\r\n\x05\x65uler\x18\x01 \x03(\x02\x12\r\n\x05\x61rmed\x18\x02 \x01(\x08\x12\x11\n\timu_count\x18\x03 \x01(\r\x12\x12\n\nrc_link_up\x18\x04 \x01(\x08\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,12 +33,10 @@ if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_SENSORDATA']._serialized_start=13
   _globals['_SENSORDATA']._serialized_end=67
-  _globals['_RCINPUT']._serialized_start=69
-  _globals['_RCINPUT']._serialized_end=96
-  _globals['_SERVOCMD']._serialized_start=98
-  _globals['_SERVOCMD']._serialized_end=123
-  _globals['_MOTORCMD']._serialized_start=125
-  _globals['_MOTORCMD']._serialized_end=153
-  _globals['_TELEMETRY']._serialized_start=155
-  _globals['_TELEMETRY']._serialized_end=215
+  _globals['_SERVOCMD']._serialized_start=69
+  _globals['_SERVOCMD']._serialized_end=94
+  _globals['_MOTORCMD']._serialized_start=96
+  _globals['_MOTORCMD']._serialized_end=124
+  _globals['_TELEMETRY']._serialized_start=126
+  _globals['_TELEMETRY']._serialized_end=206
 # @@protoc_insertion_point(module_scope)

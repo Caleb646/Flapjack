@@ -1,6 +1,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "target.h"
+
 #include "core/core.h"
 
 #include "drivers/serial/uart.h"
@@ -69,7 +71,7 @@ eSTATUS_t Crsf_ProcessFrame (uint32_t outChannels[RC_MAX_CHANNELS]) {
     s_IsFrameComplete         = false;
 
     uint8_t const frameLen = pFrame->header.length;
-    if (frameLen < 2 || frameLen > CRSF_MAX_PAYLOAD_SIZE) {
+    if (frameLen < CRSF_MIN_FRAME_LENGTH || frameLen > CRSF_MAX_FRAME_LENGTH) {
         return eSTATUS_FAILURE;
     }
 
@@ -80,7 +82,12 @@ eSTATUS_t Crsf_ProcessFrame (uint32_t outChannels[RC_MAX_CHANNELS]) {
 
     switch (pFrame->header.type) {
     case CRSF_FRAME_TYPE_RC_CHANNELS:
-        if (frameLen != sizeof (CrsfChannelsPayload_t)) {
+        /* frameLen counts type + payload + crc, so a 22-byte channel payload
+         * arrives as 24. Spec: "Frame size may be bigger than expected frame of
+         * given type. This should not be a reason to count the frame invalid ...
+         * just ignore extra fields." - hence '<' rather than '!=', so a receiver
+         * on a newer protocol version that appends fields still decodes. */
+        if (frameLen < sizeof (CrsfChannelsPayload_t) + 2U) {
             return eSTATUS_FAILURE;
         }
         CrsfChannelsPayload_t const* pPayload = (CrsfChannelsPayload_t const*)&pFrame->bytes[3];
@@ -108,9 +115,21 @@ eSTATUS_t Crsf_ProcessFrame (uint32_t outChannels[RC_MAX_CHANNELS]) {
 
 void Crsf_DataReceivedHandler_ (uint8_t const* pData, uint32_t len) {
 
-    static uint8_t frameByteIdx          = 0;
-    static uint32_t usFrameStartTime     = 0;
-    static uint32_t const usFrameTimeout = (1000000 / 416666) * (CRSF_MAX_FRAME_SIZE * 8) * 2;
+    static uint8_t frameByteIdx      = 0;
+    static uint32_t usFrameStartTime = 0;
+    /*
+     * How long a maximum-length frame takes on the wire, doubled for margin.
+     * 8N1 is 10 bit-times per byte, and the baud comes from the board header so
+     * it cannot drift from the value UartPort_Init actually programmes.
+     *
+     * Multiply before dividing: this was written as (1000000 / 416666) * ...,
+     * where the leading integer division truncates to 2 and yielded 2048 us
+     * instead of 3072. It is the only resync mechanism the spec leaves available
+     * - a sync byte cannot be used for it, since the spec permits 0xC8, 0x00 or
+     * any device address in that position.
+     */
+    static uint32_t const usFrameTimeout =
+    (CRSF_MAX_FRAME_SIZE * 10U * 2U * 1000000U) / BRD_GET_BAUD_RATE (RX);
 
     if (!pData || !len) {
         return;

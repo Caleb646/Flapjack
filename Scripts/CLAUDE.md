@@ -31,10 +31,17 @@ python3 Scripts/board.py gen
 python3 Scripts/board.py sim --port /dev/ttyUSB0 --dry-run
 
 # SIL: emulate the CM7 in Renode instead of using a board (two terminals).
-# `renode` takes the place of `flash`; `sim` differs only in --port.
+# `renode` takes the place of `flash`. USART1 -> port 4000 (sim link),
+# USART3 -> port 4001 (CRSF RC; without it the FC never arms).
 python3 Scripts/board.py build -b flapjack-v1 -D sim --single-core
 python3 Scripts/board.py renode -b flapjack-v1
-python3 Scripts/board.py sim --port socket://localhost:4000 --rate 400
+python3 Scripts/board.py sim --port socket://localhost:4000 --rc-port socket://localhost:4001 --rate 400
+
+# Fly a scripted flight plan (exits 0 on pass, 1 on failed checks)
+python3 Scripts/board.py sim --port socket://localhost:4000 --rc-port socket://localhost:4001 --plan Scripts/sim/plans/hover.yaml
+
+# Host unit tests
+cmake -S Tests -B Build/UnitTest -G "MinGW Makefiles" && ctest --test-dir Build/UnitTest
 
 # Flight GUI (telemetry + command console)
 python3 Scripts/board.py gui
@@ -51,10 +58,13 @@ Build artifacts land in `Build/<board>/<config>/` as `cm7.elf` and `cm4.elf`. CM
 `Scripts/` is the home for all of the project's Python tooling. `board.py` is the single CLI entry point (`python Scripts/board.py <cmd>`); it runs with `Scripts/` on `sys.path`, so the subpackages import as top-level (`proto`, `link`, `sim`, `gui`). Dependencies are pinned in the repo-root `pyproject.toml` (base + `[sim]`/`[gui]`/`[gen]` extras).
 
 - **`board.py`** — single CLI entry point. Subcommands: `install`, `build`, `flash` (firmware); `gen` (regenerate proto + umsg, no toolchain/build); `renode` (boot the firmware under the Renode CM7 emulator); `sim` (JSBSim HIL bridge — remaining args are forwarded to it); `gui` (PyQt flight GUI). `sim`/`gui` imports are lazy so `build`/`flash` never require their heavy deps. `build` calls `install` automatically if the toolchain is missing.
-- **`renode/`** — Renode platform overlay (`flapjack_h7_cm7.repl`) and machine script (`flapjack_sil.resc`) for the single-core CM7 SIL. Driven by `board.py renode`; see `EmulatorResearch.md` for why each overlay entry exists.
+- **`renode/`** — Renode platform overlay (`flapjack_h7_cm7.repl`) and machine script (`flapjack_sil.resc`) for the single-core CM7 SIL. Driven by `board.py renode`, which exposes USART1 as the sim link on port 4000 and USART3 as the CRSF RC link on 4001; see `EmulatorResearch.md` for why each overlay entry exists.
 - **`proto/`** — the single home for generated protobuf Python stubs (`flapjack_pb2.py`, `sim_pb2.py`), emitted here by `build -f g`; all tools import `from proto import …`.
 - **`link/`** — shared host-side link plumbing: `framing.py` (crc8/frame/deframe, mirrors `sim_link.c`) and `serial_io.py` (pyserial helpers).
-- **`sim/`** — the JSBSim HIL bridge (`bridge.py`) plus its `jsbsim/` models. See `sim/README.md`.
+- **`sim/`** — the JSBSim HIL bridge (`bridge.py`), the CRSF encoder (`crsf.py`), the flight-plan
+  loader (`plan.py`) with its plans in `sim/plans/*.yaml`, plus the `jsbsim/` models. See
+  `sim/README.md`. RC reaches the FC as real CRSF on a second wire (the RX UART), not as a sim-link
+  message — `bridge.py --rc-port` is the only RC path, and without it the FC never arms.
 - **`gui/`** — the PyQt flight GUI (`app.py`, `conf.py`, `data/`).
 - **`utils.py`** — two helpers used by other scripts: `is_installed(binary)` (shutil.which) and `run_command(cmd, ...)` (subprocess, exits on failure).
 - **`stm32h747_dual_core.cfg`** — OpenOCD config for the dual-core STM32H747. Used directly by `flash`. Enables `DUAL_BANK` and `DUAL_CORE`, resets via `connect_assert_srst`, flashes both CM7 and CM4 banks.

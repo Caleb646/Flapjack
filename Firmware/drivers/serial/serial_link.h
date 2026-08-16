@@ -42,7 +42,12 @@
 #define SERIAL_MSG_SHELL_CMD     6U
 #define SERIAL_LINK_MAX_MSG_ID   8U
 
-#define SERIAL_LINK_MAX_PAYLOAD  96U /* RcInput_size, the largest message */
+/* Comfortably above every message on the wire: SensorData_size (45) is the
+ * largest sim message and the shell's Command_size is 11. It was sized to the
+ * old RcInput_size (96), which retired with the sim-link RC path; the headroom
+ * is kept rather than trimmed, since three buffers depend on it and nothing
+ * gains from shaving them. */
+#define SERIAL_LINK_MAX_PAYLOAD  96U
 #define SERIAL_LINK_MAX_FRAME    (5U + SERIAL_LINK_MAX_PAYLOAD)
 
 typedef void (*SerialLink_Handler_t) (uint8_t const* pPayload, uint8_t len);

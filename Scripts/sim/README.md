@@ -6,15 +6,24 @@ below); this PC tool runs **JSBSim** and exchanges data with it over the (now
 binary) debug UART:
 
 ```
- PC: JSBSim + bridge.py  ──SensorData/RcInput──►  FC (sim driver profile)
+ PC: JSBSim + bridge.py  ──SensorData───────────►  FC (sim driver profile)
                          ◄──ServoCmd/MotorCmd────  Control loop
                          ◄──Telemetry────────────  (validation)
+
+                         ──CRSF 0x16────────────►  FC RX UART (USART3)
 ```
 
-- **PC → FC:** synthesized IMU (accel m/s², gyro deg/s) + mag (normalized), and
-  an injected RC frame (armed + hover throttle).
+**Two wires, deliberately.** Sensors, actuators, telemetry and logs share the
+debug UART. RC goes down a *separate* wire as real CRSF, exactly as a receiver
+would drive it, so a SIL run exercises the UART ISR, CRSF deframing, the CRC,
+the 11-bit channel unpack and the tick→µs mapping. There used to be an `RcInput`
+sim-link message that wrote `g_Rx.channels` directly; it bypassed all of that and
+has been removed. **Frame id 2 is retired — do not reuse it.**
+
+- **PC → FC:** synthesized IMU (accel m/s², gyro deg/s) + mag (normalized) on the
+  sim link; RC channels as CRSF `0x16` frames on the RX UART.
 - **FC → PC:** per-servo tilt **angle** (rad) and per-motor **throttle** (0–1),
-  plus a `Telemetry` frame (nav euler, armed, IMU sample count) for validation.
+  plus a `Telemetry` frame (nav euler, armed, IMU sample count, RC link state).
 
 Timing is **free-running real-time**: sensors stream at a fixed rate and JSBSim
 is stepped to wall-clock; the FC consumes the latest sample and replies async.
@@ -52,7 +61,9 @@ frames **and** ASCII debug logs, interleaved; the shell shares it too, as frame 
 7-bit ASCII and the frame magic is `0xAA`, which is what makes the two
 unambiguous — see `Firmware/drivers/serial/serial_link.h`.
 
-Wire the board's UART_1 TX/RX to a USB-serial adapter on the PC.
+Wire the board's UART_1 TX/RX to a USB-serial adapter on the PC. On real hardware
+the receiver drives UART_3 (`RX_UART`, 416666 baud 8N1) as usual — the bridge's
+`--rc-port` stands in for it only under Renode.
 
 ## 3. Bring up the link FIRST (no FDM needed)
 
@@ -85,7 +96,40 @@ and streams synthesized sensors back. Useful flags:
 | `--baud` | 460800 | must match the board's `SERIAL_LINK_BAUD_RATE` |
 | `--rate` | 400 | sensor stream rate (Hz) |
 | `--model` | tiltrotor | JSBSim aircraft name under `--root/aircraft/` |
-| `--hover-throttle` | 0.5 | injected throttle once armed |
+| `--hover-throttle` | 0.5 | throttle held once armed, when no `--plan` is given |
+| `--rc-port` | (none) | port carrying CRSF to the FC's RX UART. **The only RC path** — without it the FC never arms |
+| `--rc-baud` | 416666 | CRSF spec default; ignored for a `socket://` URL |
+| `--rc-rate` | 50 | CRSF frame rate (Hz); a real link runs 50–150 |
+| `--plan` | (none) | YAML flight plan to fly once armed |
+| `--rc-stop` | (none) | stop sending CRSF after N seconds, imitating a receiver failsafe |
+| `--hold-until-armed` | on | freeze the FDM at its IC until the FC arms |
+
+### Flight plans
+
+`--plan Scripts/sim/plans/hover.yaml` replays a scripted stick sequence instead
+of the fixed arm-and-hover gesture. A plan is a list of timed segments that `set`
+or `ramp` named channels in microseconds:
+
+```yaml
+name: yaw_step
+plan:
+  - {t: 0.0,  dur: 3.0}
+  - {t: 3.0,  dur: 2.0, ramp: {throttle: 1500}}
+  - {t: 8.0,  dur: 2.0, set:  {yaw: 1700}}
+  - {t: 10.0, dur: 3.0, set:  {yaw: 1500}}
+```
+
+Two properties make runs comparable. **Arming is a barrier, not a timestamp** —
+the plan clock starts when the FC reports armed, because the attitude-settle gate
+takes a variable amount of time (measured anywhere from 3 s to ~24 s). And **`t`
+is simulation time**: the FDM advances exactly one `dt` per tick, so `tick * dt`
+is exact, where wall-clock pacing would move the sticks around under host load.
+
+When the plan ends the bridge prints a check summary and exits **0 (pass) or
+1 (fail)**. The checks are physics invariants — no NaN, motors inside [0,1] and
+not pinned at 1.000, servos inside ±π/2, FC actually armed — deliberately *not* a
+golden trajectory, because manual mode is a rate loop and the attitude a run
+settles at is not repeatable (`KnownIssues.md` §1.13).
 
 ## Wire protocol
 
@@ -96,8 +140,10 @@ and streams synthesized sensors back. Useful flags:
 
 ## Status / caveats
 
-- **`bridge.py` protocol + sensor-synthesis math are unit-tested** (CRC, framing,
-  resync, bad-CRC rejection, level/tilt synthesis, RC). The CRC matches the FC.
+- **The CRSF path is unit-tested on the host.** `Tests/UnitTest/test_crsf.c` checks
+  the firmware's deframer, CRC, channel unpack and tick→µs mapping against the spec,
+  and asserts a golden frame produced by `Scripts/sim/crsf.py` byte for byte, so the
+  encoder here and the decoder there cannot drift apart.
 - **The FDM is sized to the real airframe** (0.85 kg, 7 in props, 1000 KV assumed
   on 6S): hover at 50 % throttle, 2:1 thrust-to-weight, tilt verified against
   measured force directions. Thrust comes from `<external_reactions>` rather than
@@ -116,18 +162,25 @@ and streams synthesized sensors back. Useful flags:
 
 ## SIL mode (no board required)
 
-Renode emulates the CM7 and exposes USART1 as a TCP server, so the bridge talks
-to `socket://localhost:4000` instead of a COM port. Nothing else changes — the
-same framing, the same protobuf messages, the same `bridge.py`.
+Renode emulates the CM7 and exposes **both** UARTs as TCP servers, so the bridge
+talks to sockets instead of COM ports — USART1 (sim link) on 4000 and USART3
+(the RX UART, carrying CRSF) on 4001. Nothing else changes: same framing, same
+protobuf messages, same `bridge.py`.
 
 ```bash
 python Scripts/board.py build -b flapjack-v1 -D sim --single-core
 python Scripts/board.py renode -b flapjack-v1                          # terminal 1
-python Scripts/board.py sim --port socket://localhost:4000 --rate 400  # terminal 2
+python Scripts/board.py sim --port socket://localhost:4000 --rc-port socket://localhost:4001 --rate 400   # terminal 2
 ```
 
-`renode` takes the place of `flash`; it blocks until Ctrl-C. Keep it in its own
-terminal so you can restart the bridge without rebooting the emulator.
+`renode` takes the place of `flash`; it blocks until Ctrl-C. **Restart it between
+runs** rather than re-attaching the bridge: a gap in the sensor stream hands
+`Nav_Update` one enormous `dt`, which throws the attitude estimate and costs
+several seconds of recovery.
+
+USART3 needed no Renode work beyond a frequency pin in the overlay — it is a real
+`UART.STM32F7_USART` in the shipped platform, wired through `exti@28 -> nvic@39`,
+and `Crsf_Init` was already claiming it on every SIL boot.
 
 Measured behaviour (see `EmulatorResearch.md` §12):
 

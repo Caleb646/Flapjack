@@ -6,6 +6,5 @@ SensorData.mag      max_count:3  fixed_count:true
 Telemetry.euler     max_count:3  fixed_count:true
 
 # Variable-length: capacity sized to the largest board, actual count on the wire.
-RcInput.channels    max_count:16
 ServoCmd.angle      max_count:8
 MotorCmd.throttle   max_count:8

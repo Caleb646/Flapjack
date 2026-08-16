@@ -5,7 +5,6 @@
 #include "core/core.h"
 
 #include "drivers/serial/serial_link.h"
-#include "drivers/rx/rx.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -51,23 +50,6 @@ static void SimLink_OnSensor (uint8_t const* pPayload, uint8_t len) {
     (void)xSemaphoreGive (s_magSem);
 }
 
-static void SimLink_OnRc (uint8_t const* pPayload, uint8_t len) {
-    RcInput msg = RcInput_init_zero;
-    pb_istream_t is = pb_istream_from_buffer (pPayload, len);
-    if (!pb_decode (&is, RcInput_fields, &msg)) {
-        return;
-    }
-    uint32_t n = msg.channels_count;
-    if (n > RC_MAX_CHANNELS) {
-        n = RC_MAX_CHANNELS;
-    }
-    taskENTER_CRITICAL ();
-    for (uint32_t i = 0; i < n; ++i) {
-        g_Rx.channels[i] = msg.channels[i];
-    }
-    taskEXIT_CRITICAL ();
-}
-
 eSTATUS_t SimLink_Init (void) {
 
     s_sensorSem = xSemaphoreCreateBinary ();
@@ -77,8 +59,7 @@ eSTATUS_t SimLink_Init (void) {
     }
 
     /* FC->PC ids (3-5) are never expected inbound, so they get no handler. */
-    if (STATUS_FAIL (SerialLink_RegisterHandler (SIM_MSG_SENSOR, SimLink_OnSensor)) ||
-        STATUS_FAIL (SerialLink_RegisterHandler (SIM_MSG_RC, SimLink_OnRc))) {
+    if (STATUS_FAIL (SerialLink_RegisterHandler (SIM_MSG_SENSOR, SimLink_OnSensor))) {
         return eSTATUS_FAILURE;
     }
     return eSTATUS_SUCCESS;
@@ -145,10 +126,11 @@ eSTATUS_t SimLink_SendThrottles (float const* throttles, uint32_t count) {
     return SimLink_SendFrame (SIM_MSG_MOTOR, MotorCmd_fields, &msg);
 }
 
-eSTATUS_t SimLink_SendTelemetry (float const eulerDeg[3], bool armed, uint32_t imuCount) {
+eSTATUS_t SimLink_SendTelemetry (float const eulerDeg[3], bool armed, uint32_t imuCount, bool rcLinkUp) {
     Telemetry msg = Telemetry_init_zero;
     memcpy (msg.euler, eulerDeg, sizeof (msg.euler));
-    msg.armed     = armed;
-    msg.imu_count = imuCount;
+    msg.armed       = armed;
+    msg.imu_count   = imuCount;
+    msg.rc_link_up  = rcLinkUp;
     return SimLink_SendFrame (SIM_MSG_TELEMETRY, Telemetry_fields, &msg);
 }

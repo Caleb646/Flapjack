@@ -1,0 +1,11 @@
+# Roll and pitch doublets, one axis at a time, so a cross-coupling shows up as
+# motion on the axis that was not commanded.
+name: roll_pitch
+plan:
+  - {t: 0.0,  dur: 3.0}
+  - {t: 3.0,  dur: 2.0,  ramp: {throttle: 1500}}
+  - {t: 5.0,  dur: 3.0}
+  - {t: 8.0,  dur: 1.5,  set: {roll: 1650}}
+  - {t: 9.5,  dur: 3.0,  set: {roll: 1500}}
+  - {t: 12.5, dur: 1.5,  set: {pitch: 1650}}
+  - {t: 14.0, dur: 6.0,  set: {pitch: 1500}}

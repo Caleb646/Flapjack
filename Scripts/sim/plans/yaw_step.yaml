@@ -1,0 +1,12 @@
+# Yaw doublet from a hover. Checks the yaw axis responds, returns, and does not
+# drag roll or pitch with it - differential tilt should yaw with no pitch
+# cross-coupling (see tiltrotor.xml).
+name: yaw_step
+plan:
+  - {t: 0.0,  dur: 3.0}
+  - {t: 3.0,  dur: 2.0,  ramp: {throttle: 1500}}
+  - {t: 5.0,  dur: 3.0}                       # stabilise in hover
+  - {t: 8.0,  dur: 2.0,  set: {yaw: 1700}}    # yaw right
+  - {t: 10.0, dur: 3.0,  set: {yaw: 1500}}    # centre and settle
+  - {t: 13.0, dur: 2.0,  set: {yaw: 1300}}    # yaw left
+  - {t: 15.0, dur: 5.0,  set: {yaw: 1500}}

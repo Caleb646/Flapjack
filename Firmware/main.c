@@ -95,7 +95,13 @@ FJ_DEFINE_SHARED (bool volatile, s_IsCM4Ready)     = false;
 #define STACK_GUIDANCE 384U
 #define STACK_CONTROL  512U   /* 49% - fine */
 #define STACK_MISSION  384U
-#define STACK_RX       128U   /* CM4-only; not exercised by the single-core SIL, so unmeasured */
+/*
+ * Rx_Task logs RC link up/down transitions (drivers/rx/rx.c), so it falls under
+ * the "anything that can log" rule above and 128 words is no longer defensible -
+ * a log call is the deepest frame this task ever takes. Sized to match the other
+ * sensor tasks; measure it with uxTaskGetStackHighWaterMark on a SIL run.
+ */
+#define STACK_RX       256U
 
 /*
  * Measured over a SIL run with uxTaskGetStackHighWaterMark(), same method as

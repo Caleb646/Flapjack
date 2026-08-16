@@ -32,27 +32,37 @@ the tool modules directly** (e.g. `python Scripts/sim/bridge.py`); go through `b
 | Regenerate proto + umsg only (no build) | `python Scripts/board.py gen` |
 | Flash to the board (ST-Link) | `python Scripts/board.py flash -b flapjack-v1` |
 | Build then run HIL unit tests | `build -b flapjack-v1 -f t` then `flash -b flapjack-v1 -f t --port <PORT> --baud 230400` |
+| Run the host unit tests | `cmake -S Tests -B Build/UnitTest -G "MinGW Makefiles"` then `cmake --build Build/UnitTest && ctest --test-dir Build/UnitTest` |
 | Bring up the sim link (no FDM) | `python Scripts/board.py sim --port <PORT> --dry-run` |
 | Run the full JSBSim sim | `python Scripts/board.py sim --port <PORT>` |
 | Launch the flight GUI | `python Scripts/board.py gui` |
 | Build for the Renode SIL | `python Scripts/board.py build -b flapjack-v1 -D sim --single-core` |
 | Build with logs compiled out | `python Scripts/board.py build -b flapjack-v1 --log-level warn` |
 | Boot the firmware in Renode | `python Scripts/board.py renode -b flapjack-v1` |
-| Drive the SIL from the bridge | `python Scripts/board.py sim --port socket://localhost:4000 --rate 400` |
+| Drive the SIL from the bridge | `python Scripts/board.py sim --port socket://localhost:4000 --rc-port socket://localhost:4001 --rate 400` |
+| Fly a scripted flight plan | `... sim --port socket://localhost:4000 --rc-port socket://localhost:4001 --plan Scripts/sim/plans/hover.yaml` |
 
 Boards: `flapjack-v1`, `nucleo-h747zi`.
 
 ### SIL (software-in-the-loop) via Renode
 
-`renode` stands in for `flash`: it boots `cm7.elf` on an emulated Cortex-M7 and exposes USART1
-as a TCP server, so `sim` connects to `socket://localhost:4000` instead of a COM port. Nothing
-else about the bridge changes. Run the two in separate terminals - `renode` blocks until Ctrl-C,
-and you often want to restart `sim` against a still-running emulator.
+`renode` stands in for `flash`: it boots `cm7.elf` on an emulated Cortex-M7 and exposes **two**
+UARTs as TCP servers, so `sim` connects to sockets instead of COM ports:
+
+* **USART1 -> port 4000** — the sim link: sensors, actuators, telemetry, logs and the shell.
+* **USART3 -> port 4001** — the **RX UART**, carrying real CRSF frames. This is the FC's only RC
+  input; without `--rc-port` on the bridge the FC gets no sticks and **will never arm**.
+
+Run the two in separate terminals - `renode` blocks until Ctrl-C, and you often want to restart
+`sim` against a still-running emulator. **Restart Renode between runs** rather than re-attaching:
+a gap in the sensor stream gives `Nav_Update` one enormous `dt`, which throws the attitude estimate
+and costs several seconds of beta-limited recovery.
 
 Requires a **`--single-core`** build (`renode` refuses a dual-core image, which would otherwise
 hang silently in `main()` waiting for the CM4). Renode itself lives in `Tools/renode/`; the
 platform overlay and machine script are in `Scripts/renode/`. Flags: `--port` (sim link, 4000),
-`--monitor-port` (3456), `--elf` to override, `--gui` for the Renode window.
+`--rc-port` (CRSF, 4001), `--monitor-port` (3456), `--elf` to override, `--gui` for the Renode
+window.
 
 Full background, including every emulator/firmware issue found and fixed: `EmulatorResearch.md`;
 current state and open items: `KnownIssues.md`.
@@ -73,8 +83,33 @@ beside a single-core image.
 
 Everything after `sim` is forwarded verbatim to the JSBSim bridge. Key flags: `--port`
 (required), `--baud` (default **460800**, must equal the board's `SERIAL_LINK_BAUD_RATE`), `--rate`
-(Hz, default 400), `--model` (default `tiltrotor`), `--dry-run`. Full help:
+(Hz, default 400), `--model` (default `tiltrotor`), `--dry-run`.
+
+RC and flight plans:
+
+| Flag | Meaning |
+|---|---|
+| `--rc-port` | port carrying CRSF to the FC's RX UART. **The only RC path** — omit it and the FC never arms |
+| `--rc-baud` | 416666 (the CRSF spec default); ignored for a `socket://` URL |
+| `--rc-rate` | CRSF frame rate, default 50 Hz (a real link runs 50-150; the FC polls at 50) |
+| `--plan` | YAML flight plan to fly once armed; the bridge exits with a check summary when it ends |
+| `--rc-stop N` | stop sending CRSF after N s, imitating a receiver failsafe |
+| `--hold-until-armed` | freeze the FDM at its IC until the FC arms (default on; `--no-hold-until-armed` disables) |
+
+With `--plan`, the exit code is the verdict: **0 = checks passed, 1 = failed** (NaN, motor pinned
+at 1.000, motor outside [0,1], servo outside ±π/2, or never armed). Full help:
 `python Scripts/board.py sim --help`; background: `Scripts/sim/README.md`.
+
+### Flight plans
+
+`Scripts/sim/plans/*.yaml` are scripted stick sequences — `hover`, `yaw_step`, `roll_pitch`.
+A plan is a list of timed segments that `set` or `ramp` named channels (`roll`, `pitch`, `yaw`,
+`throttle`, `aux1`…) in microseconds; anything unmentioned holds.
+
+Two things make runs comparable, and both are easy to get wrong if you write your own driver:
+**arming is a barrier, not a timestamp** (the plan clock starts when the FC reports armed, because
+the attitude-settle gate takes a variable amount of time), and **`t` is simulation time**, not wall
+clock — the FDM advances exactly one `dt` per tick, so `tick * dt` is exact and drift-free.
 
 ## When to use which
 
@@ -112,5 +147,14 @@ Everything after `sim` is forwarded verbatim to the JSBSim bridge. Key flags: `-
   minimum, and it treats a raised arm switch as a standing request until its gate opens. `sim`
   just plays pilot: throttle down, switch up after `--arm-delay` (2.0 s), wait for
   `Telemetry.armed`. From cold the estimate converges in about 3 s, so expect to arm ~6 s in.
+- **RC reaches the FC as real CRSF, on its own wire.** There is no shortcut into `g_Rx.channels`
+  any more — the old `RcInput` sim-link message and its handler are gone, and frame id **2 is
+  retired** (do not reuse it). The bridge sends spec-conformant 0x16 frames on `--rc-port`, so a
+  SIL run exercises the UART ISR, CRSF deframing, CRC, the 11-bit unpack and the channel mapping
+  exactly as flight does. `Scripts/sim/crsf.py` is the encoder; `Tests/UnitTest/test_crsf.c`
+  holds a golden frame that both sides are asserted against.
+- **Host unit tests need `-mno-ms-bitfields` on MinGW.** `Tests/CMakeLists.txt` sets it. Without
+  it, MSVC bitfield layout packs `CrsfChannelsPayload_t` to 32 bytes instead of the 22 ARM EABI
+  produces, and the host silently tests a wire format the firmware never emits.
 - **Bring the link up with `--dry-run` first** (emits a fixed 20° roll, no JSBSim needed) to
   isolate link/baud/framing problems from the flight model.

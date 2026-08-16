@@ -19,7 +19,9 @@ eSTATUS_t Rc_Update(void) {
         return eSTATUS_FAILURE;
     }
 
-    umsg_rc_input_t msg = { .rssi = 0, .link_quality = 0 };
+    // rssi stays 0 until the 0x14 Link Statistics frame is decoded; link_quality
+    // is all-or-nothing for now, from the receiver's frame timeout.
+    umsg_rc_input_t msg = { .rssi = 0, .link_quality = Rx_IsLinkUp () ? 100U : 0U };
     for (uint8_t i = 0; i < RC_MAX_CHANNELS; i++) {
         msg.channels[i] = ch[i];
     }

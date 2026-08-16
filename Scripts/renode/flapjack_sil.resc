@@ -2,16 +2,26 @@
 :description: Single-core STM32H7 CM7 running Flapjack firmware under emulation.
 
 # Machine setup only - no `start`, no UART backend. Callers decide how to run it
-# and where usart1 goes, e.g.:
+# and where the two UARTs go:
+#
+#   usart1  sim link   - sensors, actuators, telemetry, logs, shell
+#   usart3  RX UART    - real CRSF frames from the bridge. This is the FC's only
+#                        RC input; with nothing attached it never arms.
+#
+# e.g.:
 #
 #   # boot smoke test, log to a file
 #   renode --console --disable-xwt -P -1 -e "i @Scripts/renode/flapjack_sil.resc; \
 #       sysbus.usart1 CreateFileBackend @boot.log; emulation RunFor \"3\"; quit"
 #
-#   # sim link on TCP 4000 for Scripts/sim/bridge.py
+#   # sim link on TCP 4000 + CRSF RC on 4001, for Scripts/sim/bridge.py
 #   renode --console -e "i @Scripts/renode/flapjack_sil.resc; \
 #       emulation CreateServerSocketTerminal 4000 \"simlink\" false; \
-#       connector Connect sysbus.usart1 simlink; start"
+#       connector Connect sysbus.usart1 simlink; \
+#       emulation CreateServerSocketTerminal 4001 \"rclink\" false; \
+#       connector Connect sysbus.usart3 rclink; start"
+#
+# `board.py renode` wires both for you (--port / --rc-port).
 
 $bin ?= @Build/flapjack-v1/Debug/cm7.elf
 

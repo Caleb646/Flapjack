@@ -9,9 +9,6 @@
 PB_BIND(SensorData, SensorData, AUTO)
 
 
-PB_BIND(RcInput, RcInput, AUTO)
-
-
 PB_BIND(ServoCmd, ServoCmd, AUTO)
 
 

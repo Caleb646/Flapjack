@@ -1,0 +1,7 @@
+# Baseline: arm, climb to hover, hold. The reference every other plan deviates
+# from - if this does not fly, nothing else will.
+name: hover
+plan:
+  - {t: 0.0, dur: 3.0}                        # settle at idle after arming
+  - {t: 3.0, dur: 2.0, ramp: {throttle: 1500}}  # ease up to hover
+  - {t: 5.0, dur: 15.0}                       # hold

@@ -4,6 +4,8 @@
 
 #include "drivers/sim_link/sim_link.h"
 
+#include "drivers/rx/rx.h"
+
 #include "umsg_nav.h"
 #include "umsg_mission.h"
 
@@ -31,7 +33,7 @@ void SimTelemetry_Task (void* args) {
         umsg_nav_state_receive (nav_sub, &nav, 0);
         umsg_mission_state_receive (mission_sub, &mission, 0);
 
-        SimLink_SendTelemetry (nav.euler, mission.armed != 0U, SimLink_GetSensorCount ());
+        SimLink_SendTelemetry (nav.euler, mission.armed != 0U, SimLink_GetSensorCount (), Rx_IsLinkUp ());
         vTaskDelay (pdMS_TO_TICKS (20));   // 50 Hz
     }
 }
