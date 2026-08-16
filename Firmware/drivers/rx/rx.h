@@ -33,9 +33,10 @@ typedef struct {
     uint32_t usLastFrameTime;
     bool haveFrame;
     /*
-     * volatile: in a dual-core build Rx_Task writes this on CM4 while Rc_Task
-     * polls it on CM7 through shared memory, the same arrangement as
-     * s_IsCM4Ready in main.c.
+     * volatile: written by Rc_Task inside Rx_Update and read by other tasks
+     * through Rx_IsLinkUp() - SimTelemetry_Task does exactly that. Same core, so
+     * a context switch already orders the accesses; this is belt and braces on a
+     * flag whose whole purpose is to be polled from elsewhere.
      */
     bool volatile linkUp;
 } Rx_t;
@@ -45,6 +46,9 @@ FJ_DECLARE_SHARED (Rx_t, g_Rx);
 eSTATUS_t Rx_Init (void);
 eSTATUS_t Rx_Update (uint32_t usCurrentTime, uint32_t usDeltaTime);
 
+// Latest decoded channel positions in microseconds, RC_CHANNEL_MIN..MAX. Held
+// from the last good frame, so pair it with Rx_IsLinkUp() to know whether they
+// are still live.
 static inline uint32_t const* Rx_GetChannels (void) {
     return g_Rx.channels;
 }

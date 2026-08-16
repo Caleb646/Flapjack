@@ -21,7 +21,6 @@
 #include "tasks/guidance/guidance.h"
 #include "tasks/control/control.h"
 #include "tasks/mission/mission.h"
-#include "tasks/rx/rx_task.h"
 #include "tasks/shell/shell.h"
 #include "tasks/serial_link/serial_link.h"
 #include "tasks/sim/sim_telemetry.h"
@@ -60,7 +59,6 @@ FJ_DEFINE_SHARED (bool volatile, s_IsCM4Ready)     = false;
 #define TASK_PRIORITY_GUIDANCE   4U
 #define TASK_PRIORITY_CONTROL    5U
 #define TASK_PRIORITY_MISSION    3U
-#define TASK_PRIORITY_RX         3U
 
 #define TASK_PRIORITY_SERIAL_RX 6U
 #define TASK_PRIORITY_SIMTLM    1U
@@ -90,19 +88,13 @@ FJ_DEFINE_SHARED (bool volatile, s_IsCM4Ready)     = false;
  * log call is the largest and rarest frame each task takes. configCHECK_FOR_
  * STACK_OVERFLOW is on (see the hook above), so a regression halts loudly.
  */
-#define STACK_SENSOR   256U   /* imu was at 77% of 128 - one LOG_ERROR from overflow */
+#define STACK_SENSOR   256U   /* imu was at 77% of 128 - one LOG_ERROR from overflow.
+                               * rc also carries the CRSF decode and its link
+                               * up/down logging: measured 129 words peak, 50%. */
 #define STACK_NAV      512U   /* 42% - fine */
 #define STACK_GUIDANCE 384U
 #define STACK_CONTROL  512U   /* 49% - fine */
 #define STACK_MISSION  384U
-/*
- * Rx_Task logs RC link up/down transitions (drivers/rx/rx.c), so it falls under
- * the "anything that can log" rule above and 128 words is no longer defensible -
- * a log call is the deepest frame this task ever takes. Sized to match the other
- * sensor tasks; measure it with uxTaskGetStackHighWaterMark on a SIL run.
- */
-#define STACK_RX       256U
-
 /*
  * Measured over a SIL run with uxTaskGetStackHighWaterMark(), same method as
  * the table above: slrx peaked at 285 words, sltx at 51.
@@ -189,9 +181,6 @@ int main (void) {
     CREATE_TASK (Mission_Task,      "mission",  STACK_MISSION,   TASK_PRIORITY_MISSION);
     CREATE_TASK (SerialLink_RxTask, "slrx",     STACK_SERIAL_RX, TASK_PRIORITY_SERIAL_RX);
     CREATE_TASK (SerialLink_TxTask, "sltx",     STACK_SERIAL_TX, TASK_PRIORITY_SERIAL_TX);
-#ifdef SINGLE_CORE
-    CREATE_TASK (Rx_Task,           "rx",       STACK_RX,        TASK_PRIORITY_RX);
-#endif /* SINGLE_CORE */
 #ifdef SIM_HIL
     CREATE_TASK (SimTelemetry_Task, "simtlm",   STACK_SIMTLM,    TASK_PRIORITY_SIMTLM);
 #endif
@@ -216,7 +205,16 @@ int main (void) {
 
     s_IsCM4Ready = true;
     LOG_INFO ("Starting scheduler");
-    CREATE_TASK (Rx_Task,           "rx",       STACK_RX,        TASK_PRIORITY_RX);
+    /*
+     * No application tasks. The receiver used to live here and reach CM7 through
+     * shared memory; it is now part of Rc_Task on CM7, which removed the last
+     * cross-core data flow. The scheduler still starts so the core has an idle
+     * task and the logger's sync path keeps working.
+     *
+     * CM4 is idle capacity. Note that whatever lands here next cannot publish a
+     * umsg topic to a CM7 subscriber - umsg is plain FreeRTOS queues with
+     * per-core metadata, so it does not cross cores. Use core/sync.c for that.
+     */
     vTaskStartScheduler ();
 
 #endif /* CORE_CM4 */

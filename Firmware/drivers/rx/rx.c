@@ -57,5 +57,6 @@ eSTATUS_t Rx_Update (uint32_t usCurrentTime, uint32_t usDeltaTime) {
             LOG_WARN ("Rx: RC link lost - holding last stick positions");
         }
     }
+
     return status;
 }

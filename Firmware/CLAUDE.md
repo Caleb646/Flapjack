@@ -29,8 +29,7 @@ the device and driver layers it uses sit in `devices/` and `drivers/`.
 |---|---|---|---|---|---|---|
 | **Sensor: IMU** | `tasks/imu/imu_task.c` (device `devices/imu.c`) | `Imu_Init()` | `Imu_Update()` | hardware (sim link / ISR) | - | `umsg_sensors_imu_t` |
 | **Sensor: Mag** | `tasks/mag/mag_task.c` (device `devices/mag.c`) | `Mag_Init()` | `Mag_Update()` | hardware | - | `umsg_sensors_mag_t` |
-| **Sensor: RC** | `tasks/rc/rc.c` (driver `drivers/rx/rx.c`) | `Rc_Init()` | `Rc_Update()` | nothing - 50 Hz `vTaskDelay` | - | `umsg_rc_input_t` |
-| **Receiver** | `tasks/rx/rx_task.c` (driver `drivers/rx/crsf.c`) | `Rx_Init()` | `Rx_Update()` | nothing - 50 Hz `vTaskDelay` | - | writes `g_Rx` (not a umsg topic) |
+| **Sensor: RC** | `tasks/rc/rc.c` (driver `drivers/rx/rx.c` + `crsf.c`) | `Rc_Init()` | `Rc_Update()` | nothing - 50 Hz `vTaskDelay` | - | `umsg_rc_input_t` |
 | **Navigation** | `tasks/nav/nav.c` | `Nav_Init()` | `Nav_Update()` | `umsg_sensors_imu_t` | `umsg_sensors_mag_t` | `umsg_nav_state_t` |
 | **Mission** | `tasks/mission/mission.c` | `Mission_Init()` | `Mission_Update()` | `umsg_rc_input_t` (20 ms timeout) | `umsg_arming_request_t`, `umsg_nav_state_t` | `umsg_mission_state_t` |
 | **Guidance** | `tasks/guidance/guidance.c` | `Guidance_Init()` | `Guidance_Update()` | `umsg_nav_state_t` | `umsg_mission_state_t`, `umsg_rc_input_t` | `umsg_guidance_setpoints_t` |
@@ -39,19 +38,34 @@ the device and driver layers it uses sit in `devices/` and `drivers/`.
 GPS and Baro have device wrappers (`devices/gps.c`, `devices/baro.c`) but no task yet.
 Tasks are created and registered in `Firmware/main.c`.
 
-### The RC path is not pub/sub at its lower end
+### The RC path
 
-RC is the one input that does not arrive as a message. A CRSF receiver drives the RX UART
-(`RX_UART`, 416666 baud 8N1); the byte-wise ISR in `drivers/rx/crsf.c` reassembles frames,
-`Rx_Task` validates and decodes them into `g_Rx.channels` at 50 Hz, and only then does `Rc_Task`
-publish `umsg_rc_input_t`. `g_Rx` is shared memory (`FJ_DECLARE_SHARED`) because in a dual-core
-build `Rx_Task` runs on CM4 and `Rc_Task` on CM7.
+A CRSF receiver drives the RX UART (`RX_UART`, 416666 baud 8N1). The byte-wise ISR in
+`drivers/rx/crsf.c` reassembles frames; `Rc_Task` polls `Rx_Update()` at 50 Hz to validate and
+decode them, then publishes `umsg_rc_input_t`. Same shape as `Imu_Task` / `Mag_Task`: one task, its
+device underneath, one topic out. `g_Rx` is internal to the driver — reach it through
+`Rx_GetChannels()` / `Rx_IsLinkUp()`, not directly.
 
-This matters for the SIL: RC is fed in as **real CRSF frames on the RX UART**, not injected into
-`g_Rx`, so the emulated run exercises the whole chain. The channel scaling follows the CRSF spec
-exactly — `TICKS_TO_US(x) = (x - 992) * 5 / 8 + 1500`, so ticks 192/992/1792 are 1000/1500/2000 µs.
-Getting that mapping wrong puts a standing rate demand on all three axes with the sticks centred,
-which is what `CRSF_CHANNEL_MIN/MAX` being wrong used to do.
+**`Rc_Update` publishes on its own clock, not on frame arrival.** Most polls find no completed
+frame, and that is the ordinary case rather than an error. Publishing regardless is what lets a lost
+link be *reported* (`link_quality` drops to 0) instead of the chain simply going quiet — a dead link
+produces no frames at all, so absence of data cannot itself carry the signal. Link liveness comes
+from frame *timing* in the driver (`Rx_IsLinkUp()`, `RX_LINK_TIMEOUT_US`).
+
+This used to be two tasks with a `umsg_rx_channels_t` topic between them. That split was a
+core-allocation artifact — the decode half ran on CM4 and reached CM7 through shared memory — and
+once both moved to CM7 it only added a second 20 ms polling hop, doubling stick-to-guidance latency
+for no benefit. The topic had exactly one subscriber.
+
+**Everything runs on CM7; CM4 has no application tasks.** Worth knowing before putting one there:
+umsg is plain FreeRTOS queues with per-core `static` topic metadata, so a message published on CM4
+is invisible to a CM7 subscriber. Crossing cores needs `core/sync.c`, not umsg.
+
+This matters for the SIL: RC is fed in as **real CRSF frames on the RX UART**, not injected
+anywhere downstream, so the emulated run exercises the whole chain. The channel scaling follows the
+CRSF spec exactly — `TICKS_TO_US(x) = (x - 992) * 5 / 8 + 1500`, so ticks 192/992/1792 are
+1000/1500/2000 µs. Getting that mapping wrong puts a standing rate demand on all three axes with
+the sticks centred, which is what `CRSF_CHANNEL_MIN/MAX` being wrong used to do.
 
 The SIL-only `SimTelemetry_Task` (`tasks/sim/sim_telemetry.c`) subscribes to `umsg_nav_state_t`
 and `umsg_mission_state_t` the same way; it blocks on nothing and runs off `vTaskDelay()` at 50 Hz.
@@ -123,7 +137,7 @@ Generated message structs are in `Firmware/msgs/umsg/`. The JSON definitions are
 | `umsg_sensors.h` | `umsg_sensors_mag_t` | `field[3]` (normalised) |
 | `umsg_sensors.h` | `umsg_sensors_baro_t` | `pressure`, `temperature` |
 | `umsg_sensors.h` | `umsg_sensors_gps_t` | `lat`, `lon` (double, degrees), `alt`, `speed`, `course`, `fix_type`, `sats` |
-| `umsg_rc.h` | `umsg_rc_input_t` | `channels[16]` (µs, 1000–2000), `rssi` (always 0 — needs CRSF 0x14), `link_quality` (100 or 0 from `Rx_IsLinkUp()`) |
+| `umsg_rc.h` | `umsg_rc_input_t` | `channels[16]` (µs, 1000–2000), `rssi` (always 0 — needs CRSF 0x14), `link_quality` (100 or 0, from `link_up`) |
 | `umsg_nav.h` | `umsg_nav_state_t` | `quat[4]`, `euler[3]` (deg), `gyro[3]` (deg/s), `pos_ned[3]`, `vel_ned[3]`, `alt`, `valid` |
 | `umsg_mission.h` | `umsg_mission_state_t` | `mode` (`eMissionMode_t`), `target_pos[3]`, `target_heading`, `armed` |
 | `umsg_guidance.h` | `umsg_guidance_setpoints_t` | `w[3]` (rad/s), `vel_b[3]` (body vel, `[2]`=throttle 0–1), `quat[4]` |
