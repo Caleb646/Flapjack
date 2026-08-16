@@ -125,7 +125,7 @@ class FlightViewer(QtWidgets.QWidget):
             # baudRate=QtSerialPort.QSerialPort.Baud115200,
             readyRead=self.receive
         )
-        if not self.serial.setBaudRate(230400, QSerialPort.AllDirections):
+        if not self.serial.setBaudRate(460800, QSerialPort.AllDirections):  # SERIAL_LINK_BAUD_RATE
         # if not self.serial.setBaudRate(9600, QSerialPort.AllDirections):
             raise RuntimeError("Could not set baud rate for serial port")
         self.buffer = b""

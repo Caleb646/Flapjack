@@ -22,8 +22,12 @@ eSTATUS_t CoreShared_Init (void) {
     return eSTATUS_SUCCESS;
 }
 
+__attribute__ ((weak)) void CriticalErrorFlushHook (void) {
+}
+
 void CriticalErrorHandler (void) {
 
+    CriticalErrorFlushHook ();
     __disable_irq ();
     __BKPT (1);
     while (1) {

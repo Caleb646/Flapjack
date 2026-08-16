@@ -6,6 +6,11 @@ from typing import Tuple, Union
 from PyQt5.QtSerialPort import QSerialPort
 from dacite import from_dict
 from proto import flapjack_pb2
+from link.framing import frame as make_frame
+
+# Frame id for shell commands; mirrors SERIAL_MSG_SHELL_CMD in
+# Firmware/drivers/serial/serial_link.h.
+SERIAL_MSG_SHELL_CMD = 6
 
 @dataclass
 class Conf:
@@ -297,9 +302,10 @@ def write_protobuf_command(serial: QSerialPort, cmd: flapjack_pb2.Command) -> WR
     if not serial.isOpen():
         return False, "Serial port is not open"
     payload = cmd.SerializeToString()
-    frame = bytes([len(payload)]) + payload
+    # The debug UART is shared with the sim link, so commands ride the common
+    # framing rather than a bare length prefix (see serial_link.h).
     try:
-        serial.write(frame)
+        serial.write(make_frame(SERIAL_MSG_SHELL_CMD, payload))
         return serial.flush(), None
     except Exception as e:
         return False, str(e)

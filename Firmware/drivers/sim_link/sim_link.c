@@ -4,13 +4,12 @@
 
 #include "core/core.h"
 
-#include "drivers/serial/uart.h"
+#include "drivers/serial/serial_link.h"
 #include "drivers/rx/rx.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
 #include "semphr.h"
-#include "stream_buffer.h"
 
 #include "sim.pb.h"
 #include "pb_encode.h"
@@ -18,11 +17,7 @@
 
 #include <string.h>
 
-#define SIM_MAGIC0      0xAAU
-#define SIM_MAGIC1      0x55U
-#define SIM_MAX_PAYLOAD 96U   /* RcInput_size, the largest message */
-#define SIM_MAX_FRAME   (4U + SIM_MAX_PAYLOAD + 1U)
-#define SIM_RX_STREAM   512U
+#define SIM_MAX_PAYLOAD SERIAL_LINK_MAX_PAYLOAD
 
 typedef struct {
     float accel[3];
@@ -30,53 +25,15 @@ typedef struct {
     float mag[3];
 } SensorSlot_t;
 
-static UartPort_t s_port;
-static StreamBufferHandle_t s_rxStream;
 static SemaphoreHandle_t s_sensorSem;   // given on each fresh SensorData (IMU consumer)
 static SemaphoreHandle_t s_magSem;      // ditto for the mag consumer - separate because a
                                         // binary semaphore only ever wakes one waiter
-static SemaphoreHandle_t s_txMutex;     // serialises outgoing frames
 
 static SensorSlot_t s_sensor;           // latest sample (critical-section guarded)
 static volatile bool s_haveSensor;
 static volatile uint32_t s_sensorCount;
 
-/* CRC8 (poly 0x07, init 0x00) over (msg_id, len, payload). Mirrors the PC. */
-static uint8_t SimCrc8 (uint8_t const* pData, uint32_t len) {
-    uint8_t crc = 0U;
-    for (uint32_t i = 0; i < len; ++i) {
-        crc ^= pData[i];
-        for (uint8_t b = 0; b < 8U; ++b) {
-            crc = (crc & 0x80U) ? (uint8_t)((crc << 1) ^ 0x07U) : (uint8_t)(crc << 1);
-        }
-    }
-    return crc;
-}
-
-static void SimLink_RxIsr (uint8_t const* pData, uint32_t len) {
-    BaseType_t woken = pdFALSE;
-    (void)xStreamBufferSendFromISR (s_rxStream, pData, len, &woken);
-    portYIELD_FROM_ISR (woken);
-}
-
-eSTATUS_t SimLink_Init (void) {
-
-    s_rxStream  = xStreamBufferCreate (SIM_RX_STREAM, 1U);
-    s_sensorSem = xSemaphoreCreateBinary ();
-    s_magSem    = xSemaphoreCreateBinary ();
-    s_txMutex   = xSemaphoreCreateMutex ();
-    if (!s_rxStream || !s_sensorSem || !s_magSem || !s_txMutex) {
-        return eSTATUS_FAILURE;
-    }
-
-    s_port.cfg.id          = BRD_GET_UART_ID (SERIAL_DEBUG);
-    s_port.cfg.baudRate    = SIM_LINK_BAUD;
-    s_port.cfg.rxCallback  = SimLink_RxIsr;
-    s_port.cfg.irqPriority = 6U;
-    return UartPort_Init (&s_port);
-}
-
-/* --- frame dispatch -------------------------------------------------------- */
+/* --- frame handlers (called from the SerialLink RX task) ------------------- */
 
 static void SimLink_OnSensor (uint8_t const* pPayload, uint8_t len) {
     SensorData msg = SensorData_init_zero;
@@ -111,70 +68,20 @@ static void SimLink_OnRc (uint8_t const* pPayload, uint8_t len) {
     taskEXIT_CRITICAL ();
 }
 
-static void SimLink_Dispatch (uint8_t id, uint8_t const* pPayload, uint8_t len) {
-    switch (id) {
-    case SIM_MSG_SENSOR: SimLink_OnSensor (pPayload, len); break;
-    case SIM_MSG_RC: SimLink_OnRc (pPayload, len); break;
-    default: break;   /* FC->PC ids are not expected inbound */
+eSTATUS_t SimLink_Init (void) {
+
+    s_sensorSem = xSemaphoreCreateBinary ();
+    s_magSem    = xSemaphoreCreateBinary ();
+    if (!s_sensorSem || !s_magSem) {
+        return eSTATUS_FAILURE;
     }
-}
 
-/* --- RX parser task -------------------------------------------------------- */
-
-typedef enum { ST_MAGIC0, ST_MAGIC1, ST_ID, ST_LEN, ST_PAYLOAD, ST_CRC } RxState_t;
-
-void SimLink_RxTask (void* args) {
-    (void)args;
-    RxState_t state = ST_MAGIC0;
-    uint8_t id = 0, len = 0, idx = 0;
-    uint8_t payload[SIM_MAX_PAYLOAD];
-
-    for (;;) {
-        uint8_t byte;
-        if (xStreamBufferReceive (s_rxStream, &byte, 1U, portMAX_DELAY) != 1U) {
-            continue;
-        }
-        switch (state) {
-        case ST_MAGIC0:
-            state = (byte == SIM_MAGIC0) ? ST_MAGIC1 : ST_MAGIC0;
-            break;
-        case ST_MAGIC1:
-            state = (byte == SIM_MAGIC1) ? ST_ID : ((byte == SIM_MAGIC0) ? ST_MAGIC1 : ST_MAGIC0);
-            break;
-        case ST_ID:
-            id    = byte;
-            state = ST_LEN;
-            break;
-        case ST_LEN:
-            len = byte;
-            idx = 0;
-            if (len > SIM_MAX_PAYLOAD) {
-                state = ST_MAGIC0;   /* bogus length, resync */
-            } else {
-                state = (len == 0) ? ST_CRC : ST_PAYLOAD;
-            }
-            break;
-        case ST_PAYLOAD:
-            payload[idx++] = byte;
-            if (idx >= len) {
-                state = ST_CRC;
-            }
-            break;
-        case ST_CRC: {
-            /* CRC is over the concatenation (id, len, payload). */
-            uint8_t buf[2 + SIM_MAX_PAYLOAD];
-            buf[0] = id;
-            buf[1] = len;
-            memcpy (&buf[2], payload, len);
-            if (SimCrc8 (buf, (uint32_t)len + 2U) == byte) {
-                SimLink_Dispatch (id, payload, len);
-            }
-            state = ST_MAGIC0;
-            break;
-        }
-        default: state = ST_MAGIC0; break;
-        }
+    /* FC->PC ids (3-5) are never expected inbound, so they get no handler. */
+    if (STATUS_FAIL (SerialLink_RegisterHandler (SIM_MSG_SENSOR, SimLink_OnSensor)) ||
+        STATUS_FAIL (SerialLink_RegisterHandler (SIM_MSG_RC, SimLink_OnRc))) {
+        return eSTATUS_FAILURE;
     }
+    return eSTATUS_SUCCESS;
 }
 
 /* --- sensor consumer API --------------------------------------------------- */
@@ -214,22 +121,8 @@ static eSTATUS_t SimLink_SendFrame (uint8_t id, pb_msgdesc_t const* fields, void
     if (!pb_encode (&os, fields, msg)) {
         return eSTATUS_FAILURE;
     }
-    uint8_t len = (uint8_t)os.bytes_written;
-
-    uint8_t frame[SIM_MAX_FRAME];
-    frame[0] = SIM_MAGIC0;
-    frame[1] = SIM_MAGIC1;
-    frame[2] = id;
-    frame[3] = len;
-    memcpy (&frame[4], payload, len);
-    frame[4 + len] = SimCrc8 (&frame[2], (uint32_t)len + 2U);   /* over id,len,payload */
-
-    eSTATUS_t status = eSTATUS_FAILURE;
-    if (xSemaphoreTake (s_txMutex, portMAX_DELAY) == pdTRUE) {
-        status = UartPort_Write (&s_port, frame, (uint32_t)len + 5U);
-        (void)xSemaphoreGive (s_txMutex);
-    }
-    return status;
+    /* SerialLink owns the framing, the queueing and the UART. */
+    return SerialLink_SendFrame (id, payload, (uint8_t)os.bytes_written);
 }
 
 eSTATUS_t SimLink_SendServos (float const* anglesRad, uint32_t count) {

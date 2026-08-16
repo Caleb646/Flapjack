@@ -11,7 +11,8 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-#include "devices/serial.h"
+#include "drivers/serial/serial_link.h"
+#include "drivers/serial/uart.h"
 
 #include "tasks/imu/imu_task.h"
 #include "tasks/mag/mag_task.h"
@@ -22,8 +23,7 @@
 #include "tasks/mission/mission.h"
 #include "tasks/rx/rx_task.h"
 #include "tasks/shell/shell.h"
-
-#include "drivers/sim_link/sim_link.h"
+#include "tasks/serial_link/serial_link.h"
 #include "tasks/sim/sim_telemetry.h"
 
 /*
@@ -62,8 +62,15 @@ FJ_DEFINE_SHARED (bool volatile, s_IsCM4Ready)     = false;
 #define TASK_PRIORITY_MISSION    3U
 #define TASK_PRIORITY_RX         3U
 
-#define TASK_PRIORITY_SIMLINK 6U
-#define TASK_PRIORITY_SIMTLM  1U
+#define TASK_PRIORITY_SERIAL_RX 6U
+#define TASK_PRIORITY_SIMTLM    1U
+/*
+ * The serial TX task sits at the lowest application priority deliberately. A
+ * sustained log flood keeps it permanently runnable, and anywhere above 1 that
+ * would starve mag and simtlm - the fault recorded as KnownIssues 2.6. At 1 it
+ * time-slices with them instead, and the link degrades by dropping text.
+ */
+#define TASK_PRIORITY_SERIAL_TX 1U
 
 /*
  * Stack depths are in WORDS (x4 for bytes) and are sized from measurement, not
@@ -90,8 +97,36 @@ FJ_DEFINE_SHARED (bool volatile, s_IsCM4Ready)     = false;
 #define STACK_MISSION  384U
 #define STACK_RX       128U   /* CM4-only; not exercised by the single-core SIL, so unmeasured */
 
-#define STACK_SIMLINK         512U
+/*
+ * Measured over a SIL run with uxTaskGetStackHighWaterMark(), same method as
+ * the table above: slrx peaked at 285 words, sltx at 51.
+ *
+ * sltx keeps 256 rather than being trimmed to its 51-word peak because that
+ * measurement only covers the single-core path, where SyncProcessTasks() finds
+ * an empty queue and returns immediately. In a dual-core build it runs the
+ * logger's sink handler, and that path is deeper and unmeasured.
+ */
+#define STACK_SERIAL_RX       512U   /* 285 used - the shell decode and its logs land here now */
+#define STACK_SERIAL_TX       256U   /* 51 used single-core; must never log (see serial_link.c) */
 #define STACK_SIMTLM          256U
+
+/*
+ * Every task below is required for flight, so a failed creation must not be
+ * allowed to pass quietly - the vehicle would boot into a scheduler missing,
+ * say, the control loop. xTaskCreate only fails by returning
+ * errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY, i.e. the heap ran out.
+ *
+ * LOG_ERROR is safe here: the scheduler is not running yet, so SerialLink
+ * bypasses its buffering and writes straight to the UART. At CFG_LOG_LEVEL
+ * none the message compiles out, but the halt still happens.
+ */
+#define CREATE_TASK(fn, name, stack, prio)                                       \
+    do {                                                                         \
+        if (xTaskCreate ((fn), (name), (stack), NULL, (prio), NULL) != pdPASS) { \
+            LOG_ERROR ("Failed to create task: %s", (name));                     \
+            CriticalErrorHandler ();                                             \
+        }                                                                        \
+    } while (0)
 
 int main (void) {
 
@@ -113,17 +148,11 @@ int main (void) {
         CriticalErrorHandler ();
     }
 
-#ifdef SIM_HIL
-    /* HIL: the debug UART becomes the binary sim link; logging is suppressed and
-     * the shell is unavailable. */
-    if (STATUS_FAIL (SimLink_Init ())) {
+    /* Sole owner of the debug UART. Log text and binary frames share it, so
+     * logging and the shell stay available in a sim build. */
+    if (STATUS_FAIL (SerialLink_Init ())) {
         CriticalErrorHandler ();
     }
-#else
-    if (STATUS_FAIL (SerialDebug_Init ())) {
-        CriticalErrorHandler ();
-    }
-#endif
 
 #if !defined(SINGLE_CORE)
     s_IsSystemInited = true;
@@ -132,24 +161,33 @@ int main (void) {
     };
 #endif /* !SINGLE_CORE */
 
-#ifndef SIM_HIL
-    if (STATUS_FAIL (Shell_Init ())) {
-        LOG_ERROR ("Failed to init shell");
+#ifdef SIM_HIL
+    if (STATUS_FAIL (SimTelemetry_Init ())) {
+        LOG_ERROR ("Failed to init sim telemetry");
         CriticalErrorHandler ();
     }
 #endif
 
+    if (STATUS_FAIL (Shell_Init ())) {
+        LOG_ERROR ("Failed to init shell");
+        CriticalErrorHandler ();
+    }
+
     LOG_INFO ("Starting scheduler");
-    xTaskCreate (Imu_Task,      "imu",      STACK_SENSOR,   NULL, TASK_PRIORITY_SENSOR_IMU, NULL);
-    xTaskCreate (Mag_Task,      "mag",      STACK_SENSOR,   NULL, TASK_PRIORITY_SENSOR_MAG, NULL);
-    xTaskCreate (Rc_Task,       "rc",       STACK_SENSOR,   NULL, TASK_PRIORITY_SENSOR_RC,  NULL);
-    xTaskCreate (Nav_Task,      "nav",      STACK_NAV,      NULL, TASK_PRIORITY_NAV,        NULL);
-    xTaskCreate (Guidance_Task, "guidance", STACK_GUIDANCE, NULL, TASK_PRIORITY_GUIDANCE,   NULL);
-    xTaskCreate (Control_Task,  "control",  STACK_CONTROL,  NULL, TASK_PRIORITY_CONTROL,    NULL);
-    xTaskCreate (Mission_Task,  "mission",  STACK_MISSION,  NULL, TASK_PRIORITY_MISSION,    NULL);
+    CREATE_TASK (Imu_Task,          "imu",      STACK_SENSOR,    TASK_PRIORITY_SENSOR_IMU);
+    CREATE_TASK (Mag_Task,          "mag",      STACK_SENSOR,    TASK_PRIORITY_SENSOR_MAG);
+    CREATE_TASK (Rc_Task,           "rc",       STACK_SENSOR,    TASK_PRIORITY_SENSOR_RC);
+    CREATE_TASK (Nav_Task,          "nav",      STACK_NAV,       TASK_PRIORITY_NAV);
+    CREATE_TASK (Guidance_Task,     "guidance", STACK_GUIDANCE,  TASK_PRIORITY_GUIDANCE);
+    CREATE_TASK (Control_Task,      "control",  STACK_CONTROL,   TASK_PRIORITY_CONTROL);
+    CREATE_TASK (Mission_Task,      "mission",  STACK_MISSION,   TASK_PRIORITY_MISSION);
+    CREATE_TASK (SerialLink_RxTask, "slrx",     STACK_SERIAL_RX, TASK_PRIORITY_SERIAL_RX);
+    CREATE_TASK (SerialLink_TxTask, "sltx",     STACK_SERIAL_TX, TASK_PRIORITY_SERIAL_TX);
+#ifdef SINGLE_CORE
+    CREATE_TASK (Rx_Task,           "rx",       STACK_RX,        TASK_PRIORITY_RX);
+#endif /* SINGLE_CORE */
 #ifdef SIM_HIL
-    xTaskCreate (SimLink_RxTask,    "simrx",  STACK_SIMLINK, NULL, TASK_PRIORITY_SIMLINK, NULL);
-    xTaskCreate (SimTelemetry_Task, "simtlm", STACK_SIMTLM,  NULL, TASK_PRIORITY_SIMTLM,  NULL);
+    CREATE_TASK (SimTelemetry_Task, "simtlm",   STACK_SIMTLM,    TASK_PRIORITY_SIMTLM);
 #endif
 
     LOG_INFO ("Heap Free Size: %u", (uint16_t)xPortGetFreeHeapSize ());
@@ -172,7 +210,7 @@ int main (void) {
 
     s_IsCM4Ready = true;
     LOG_INFO ("Starting scheduler");
-    xTaskCreate (Rx_Task, "rx", STACK_RX, NULL, TASK_PRIORITY_RX, NULL);
+    CREATE_TASK (Rx_Task,           "rx",       STACK_RX,        TASK_PRIORITY_RX);
     vTaskStartScheduler ();
 
 #endif /* CORE_CM4 */

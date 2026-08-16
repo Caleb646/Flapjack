@@ -1,4 +1,4 @@
-// Generated with umsg_gen on 2026-08-15
+// Generated with umsg_gen - do not edit by hand
 #include <umsg.h>
 #include <umsg_mission.h>
 

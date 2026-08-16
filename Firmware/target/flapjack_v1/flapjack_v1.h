@@ -112,11 +112,11 @@
 #define UART_3_RX_GPIO_PIN     GPIO_PIN_11
 #define UART_3_AF              GPIO_AF7_USART3
 
-#define SERIAL_DEBUG_ENABLED   1U
-// #define SERIAL_DEBUG_UART           UART_3 // UART_1
-#define SERIAL_DEBUG_UART           UART_1
-#define SERIAL_DEBUG_BAUD_RATE 230400U
-// #define SERIAL_DEBUG_BAUD_RATE      9600U
+#define SERIAL_LINK_ENABLED   1U
+// #define SERIAL_LINK_UART           UART_3 // UART_1
+#define SERIAL_LINK_UART           UART_1
+#define SERIAL_LINK_BAUD_RATE 460800U
+// #define SERIAL_LINK_BAUD_RATE      9600U
 
 #define RX_ENABLED                  1U
 // #define RX_UART                  UART_2

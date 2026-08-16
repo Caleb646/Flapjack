@@ -55,7 +55,6 @@ add_library(drone_bus_obj OBJECT
 add_library(drone_device_obj OBJECT
     ${COMMON_SRC_DIR}/drivers/imu/bmi323.c
     ${COMMON_SRC_DIR}/drivers/imu/sim.c
-    ${COMMON_SRC_DIR}/devices/serial.c
 )
 
 add_library(drone_mc_obj OBJECT

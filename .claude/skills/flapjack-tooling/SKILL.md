@@ -36,6 +36,7 @@ the tool modules directly** (e.g. `python Scripts/sim/bridge.py`); go through `b
 | Run the full JSBSim sim | `python Scripts/board.py sim --port <PORT>` |
 | Launch the flight GUI | `python Scripts/board.py gui` |
 | Build for the Renode SIL | `python Scripts/board.py build -b flapjack-v1 -D sim --single-core` |
+| Build with logs compiled out | `python Scripts/board.py build -b flapjack-v1 --log-level warn` |
 | Boot the firmware in Renode | `python Scripts/board.py renode -b flapjack-v1` |
 | Drive the SIL from the bridge | `python Scripts/board.py sim --port socket://localhost:4000 --rate 400` |
 
@@ -57,7 +58,7 @@ Full background, including every emulator/firmware issue found and fixed: `Emula
 current state and open items: `KnownIssues.md`.
 
 **Debugging a GNC bug rather than running a command?** Use the **flapjack-sil-debugging** skill:
-getting observability out of a `-D sim` build (which has no logging), isolating firmware faults
+getting observability out of a `-D sim` build, isolating firmware faults
 from flight-model faults, and sweeping gains without a Renode round trip.
 
 ### `build` / `flash` flags (`-f`, combine freely)
@@ -71,7 +72,7 @@ beside a single-core image.
 ### `sim` (host side of the sim link)
 
 Everything after `sim` is forwarded verbatim to the JSBSim bridge. Key flags: `--port`
-(required), `--baud` (default **460800**, must equal firmware `SIM_LINK_BAUD`), `--rate`
+(required), `--baud` (default **460800**, must equal the board's `SERIAL_LINK_BAUD_RATE`), `--rate`
 (Hz, default 400), `--model` (default `tiltrotor`), `--dry-run`. Full help:
 `python Scripts/board.py sim --help`; background: `Scripts/sim/README.md`.
 
@@ -89,14 +90,21 @@ Everything after `sim` is forwarded verbatim to the JSBSim bridge. Key flags: `-
 
 ## Gotchas
 
-- **Sim baud must match on both ends.** `bridge.py --baud` and firmware `SIM_LINK_BAUD`
-  (`Firmware/drivers/sim_link/sim_link.h`) are both **460800** — change them together.
+- **Baud must match on both ends.** `bridge.py --baud`, the GUI and the board's
+  `SERIAL_LINK_BAUD_RATE` (`Firmware/target/<board>/<board>.h`) are all **460800**. One
+  number now, for every build — `SIM_LINK_BAUD` is gone.
 - **Never hand-edit `*_pb2.py`.** They live only in `Scripts/proto/` and are produced by
   `board.py gen` (or `build -f g`), which generates them with the venv's `grpc_tools` so the
   gencode matches the installed `protobuf` runtime. If you ever hit a protobuf `VersionError`,
   just re-run `board.py gen`.
-- **A `-D sim` build takes over the debug UART** for binary sim frames — logging and the
-  shell are disabled in HIL (use SWO for logs).
+- **A `-D sim` build shares the debug UART.** Binary sim frames, ASCII debug logs and shell
+  commands all ride it together (`Firmware/drivers/serial/serial_link.c`), so logging and the
+  shell both work in HIL. `bridge.py` prints the log text to stdout.
+- **`--log-level {none,error,warn,info,debug}` compiles logs out**, it does not filter at
+  runtime — the strings leave the image entirely (~9.5 kB at `none`). Default is `debug`.
+  Careful: `debug` also gates `LOG_DATA`, which is what the GUI plots, so a build at `info` or
+  below silently stops those plots. Changing the level forces a clean rebuild, because a `-D`
+  change alone does not reliably invalidate objects under MinGW Make.
 - **SIL needs `--single-core`.** `SINGLE_CORE` also makes CM7 the primary logger; without it
   nothing drains the log ring buffer and the board is silent.
 - **The FC owns the arming interlock, not the bridge.** `tasks/mission/mission.c` refuses to

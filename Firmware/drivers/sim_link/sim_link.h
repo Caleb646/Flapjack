@@ -2,22 +2,18 @@
 #define DRIVERS_SIM_LINK_SIM_LINK_H
 
 /*
- * Shared transport for the JSBSim HIL link (CM7 only).
+ * Protobuf codec for the JSBSim HIL link (CM7 only). Encodes and decodes the
+ * messages defined in msgs/proto/defs/sim.proto; the wire itself belongs to
+ * drivers/serial/serial_link.c, which owns the UART, the framing and the
+ * queueing. All sim driver backends (imu/mag/servo/motor/rx) talk to the PC
+ * only through this module:
  *
- * Owns the debug UART and is the single point that frames/deframes the
- * protobuf messages defined in msgs/proto/defs/sim.proto. All sim driver
- * backends (imu/mag/servo/motor/rx) talk to the PC only through this module:
- *
- *   PC -> FC : SensorData, RcInput   (parsed by the RX task, pushed to slots)
+ *   PC -> FC : SensorData, RcInput   (handlers registered with SerialLink)
  *   FC -> PC : ServoCmd, MotorCmd, Telemetry (sent by TX helpers)
  *
- * Wire frame:  [0xAA][0x55][msg_id][len][payload...][crc8]
- *   crc8 is computed over (msg_id, len, payload). len is the payload byte
- *   count (<= 96). Both ends are little-endian; payload is nanopb-encoded.
- *
  * The module always compiles; SIM_HIL only gates its activation in main.c -
- * claiming the debug UART and starting the RX task - so hardware builds keep it
- * type-checked without ever running it.
+ * registering the inbound handlers - so hardware builds keep it type-checked
+ * without ever running it.
  */
 
 #include "core/core.h"
@@ -25,26 +21,18 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-// Frame message ids (must match the PC bridge and sim.proto comment).
+// Frame message ids (must match the PC bridge and sim.proto comment). These
+// share one namespace with every other SerialLink client - see
+// SERIAL_MSG_SHELL_CMD in drivers/serial/serial_link.h.
 #define SIM_MSG_SENSOR    1U
 #define SIM_MSG_RC        2U
 #define SIM_MSG_SERVO     3U
 #define SIM_MSG_MOTOR     4U
 #define SIM_MSG_TELEMETRY 5U
 
-// UART baud for the sim link. Raised above the 230400 debug default so the
-// sensor stream + framing fits comfortably at a few hundred Hz (460800 carries
-// the ~34 kB/s PC->FC stream at --rate 400 with headroom).
-#ifndef SIM_LINK_BAUD
-#define SIM_LINK_BAUD 460800U
-#endif
-
-// One-time init: claims the debug UART and creates the RX/TX primitives.
-// Call once from main.c before the scheduler starts.
+// One-time init: creates the sensor semaphores and registers the inbound frame
+// handlers. Call once from main.c before the scheduler starts.
 eSTATUS_t SimLink_Init (void);
-
-// RX parser task body: drains the UART stream, deframes, decodes, dispatches.
-void SimLink_RxTask (void* args);
 
 // --- Sensor RX (PC -> FC) ---------------------------------------------------
 // Each SensorData signals both waiters below. They take separate semaphores on

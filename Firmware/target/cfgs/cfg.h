@@ -4,13 +4,33 @@
 // to disable redefinition warnings for default target macros
 #pragma GCC system_header
 
-#if defined(SINGLE_CORE)
-/* No CM4 exists to drain CM7's ring buffer, so CM7 must own the UART itself. */
+/*
+ * CM7 owns the debug UART: it inits the peripheral and runs the SerialLink TX
+ * task, and the FreeRTOS objects guarding that link are CM7's. CM4 therefore
+ * cannot drive the sinks itself - it hands off via SyncNotifyTaskUartOut and
+ * the TX task drains the queue with SyncProcessTasks().
+ */
 #define CFG_PRIMARY_LOGGER                   CM7_CPUID
-#else
-#define CFG_PRIMARY_LOGGER                   CM4_CPUID
-#endif
 #define CFG_LOGGER_SHOULD_BLOCK_ON_OVERWRITE 1U
+
+/*
+ * Compile-time log verbosity. Anything above CFG_LOG_LEVEL is removed by the
+ * preprocessor - the call, its format string and its arguments all disappear
+ * from the image rather than being suppressed at runtime.
+ *
+ * LOG_DATA and its derivatives sit at DEBUG: they carry no severity of their
+ * own, they are the heaviest users of the link, and they are what the GUI
+ * plots - so building below DEBUG silently stops those plots updating.
+ */
+#define CFG_LOG_LEVEL_NONE                   0U
+#define CFG_LOG_LEVEL_ERROR                  1U
+#define CFG_LOG_LEVEL_WARN                   2U
+#define CFG_LOG_LEVEL_INFO                   3U
+#define CFG_LOG_LEVEL_DEBUG                  4U
+
+#ifndef CFG_LOG_LEVEL /* -D CFG_LOG_LEVEL=n overrides (board.py --log-level) */
+#define CFG_LOG_LEVEL CFG_LOG_LEVEL_DEBUG
+#endif
 #define LOG_DATA_TYPE_ATTITUDE               "attitude"
 #define LOG_DATA_TYPE_PID_ATTITUDE           "pid_attitude"
 #define LOG_DATA_TYPE_IMU_CALIB              "imu_calib"

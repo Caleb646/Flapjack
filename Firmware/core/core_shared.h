@@ -180,6 +180,13 @@ extern float ge_ScaledSystemCoreClock;
 eSTATUS_t CoreShared_Init (void);
 
 void CriticalErrorHandler (void);
+/*
+ * Called by CriticalErrorHandler before it halts, so buffered diagnostics are
+ * not swallowed by the very fault they explain. Weakly defined as a no-op here;
+ * drivers/serial/serial_link.c overrides it to drain the UART synchronously.
+ * The weak symbol is what keeps core/ free of any dependency on drivers/.
+ */
+void CriticalErrorFlushHook (void);
 int32_t clipi32 (int32_t v, int32_t lower, int32_t upper);
 float clipf32 (float v, float lower, float upper);
 float mapf32 (float v, float fromMin, float fromMax, float toMin, float toMax);

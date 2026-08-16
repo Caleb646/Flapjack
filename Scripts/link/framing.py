@@ -26,10 +26,26 @@ def frame(msg_id: int, payload: bytes) -> bytes:
 
 
 class FrameParser:
-    """Incremental deframer mirroring the FC RX state machine."""
+    """Incremental deframer mirroring the FC RX state machine.
+
+    The firmware interleaves two streams on one wire: framed binary, and raw
+    ASCII debug log text. Bytes outside a frame are log text and nothing else -
+    log output is 7-bit ASCII, so it can never contain the 0xAA that opens a
+    frame. They accumulate in `text`; drain it with take_text().
+
+    Bytes belonging to a frame that fails CRC are discarded, not treated as
+    text: they were framed, they were just corrupt.
+    """
 
     def __init__(self):
         self.buf = bytearray()
+        self.text = bytearray()
+
+    def take_text(self) -> bytes:
+        """Return and clear the non-frame (log) bytes seen so far."""
+        out = bytes(self.text)
+        self.text.clear()
+        return out
 
     def feed(self, data: bytes):
         self.buf += data
@@ -37,20 +53,27 @@ class FrameParser:
             # find magic
             i = self.buf.find(b"\xAA\x55")
             if i < 0:
-                # keep at most one trailing byte (possible split magic)
-                self.buf = self.buf[-1:]
+                # Keep a trailing 0xAA in case the magic is split across reads;
+                # it cannot be text. Everything before it is.
+                if self.buf[-1:] == b"\xAA":
+                    self.text += self.buf[:-1]
+                    self.buf = self.buf[-1:]
+                else:
+                    self.text += self.buf
+                    self.buf = bytearray()
                 return
-            if len(self.buf) < i + 4:
+            if i:
+                self.text += self.buf[:i]
                 self.buf = self.buf[i:]
+            if len(self.buf) < 4:
                 return
-            msg_id = self.buf[i + 2]
-            length = self.buf[i + 3]
-            end = i + 4 + length + 1
+            msg_id = self.buf[2]
+            length = self.buf[3]
+            end = 4 + length + 1
             if len(self.buf) < end:
-                self.buf = self.buf[i:]
                 return
-            payload = bytes(self.buf[i + 4 : i + 4 + length])
-            crc = self.buf[i + 4 + length]
+            payload = bytes(self.buf[4 : 4 + length])
+            crc = self.buf[4 + length]
             self.buf = self.buf[end:]
             if crc8(bytes([msg_id, length]) + payload) == crc:
                 yield msg_id, payload

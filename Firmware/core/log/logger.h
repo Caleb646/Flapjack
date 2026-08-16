@@ -42,10 +42,48 @@
         PRINT (__VA_ARGS__);                                                                                           \
         PRINT ("\"}>\r\n");                                                                                            \
     } while (0)
-#define LOG_INFO(...)           LOG_ ("[INFO]", __VA_ARGS__)
-#define LOG_DEBUG(...)          LOG_ ("[DEBUG]", __VA_ARGS__)
-#define LOG_WARN(...)           LOG_ ("[WARN]", __VA_ARGS__)
+
+/*
+ * Compiled-out stand-in, selected by CFG_LOG_LEVEL (target/cfgs/cfg.h).
+ *
+ * The `if (0)` is deliberate and must stay: it keeps the arguments referenced,
+ * so a variable used ONLY inside log calls does not become -Wunused, and it
+ * keeps the format string type-checked. GCC drops the branch during
+ * gimplification, so nothing reaches the image even at -O0 (Debug's setting).
+ *
+ * Only the log statement is replaced. The `return` in RETURN_IF and the `goto`
+ * in GOTO_IF sit outside it and still fire at every level, including NONE.
+ */
+#define LOG_NOOP(...)                       \
+    do {                                    \
+        if (0) {                            \
+            PRINT (__VA_ARGS__);            \
+        }                                   \
+    } while (0)
+
+#if CFG_LOG_LEVEL >= CFG_LOG_LEVEL_ERROR
 #define LOG_ERROR(...)          LOG_ ("[ERROR]", __VA_ARGS__)
+#else
+#define LOG_ERROR(...)          LOG_NOOP (__VA_ARGS__)
+#endif
+
+#if CFG_LOG_LEVEL >= CFG_LOG_LEVEL_WARN
+#define LOG_WARN(...)           LOG_ ("[WARN]", __VA_ARGS__)
+#else
+#define LOG_WARN(...)           LOG_NOOP (__VA_ARGS__)
+#endif
+
+#if CFG_LOG_LEVEL >= CFG_LOG_LEVEL_INFO
+#define LOG_INFO(...)           LOG_ ("[INFO]", __VA_ARGS__)
+#else
+#define LOG_INFO(...)           LOG_NOOP (__VA_ARGS__)
+#endif
+
+#if CFG_LOG_LEVEL >= CFG_LOG_LEVEL_DEBUG
+#define LOG_DEBUG(...)          LOG_ ("[DEBUG]", __VA_ARGS__)
+#else
+#define LOG_DEBUG(...)          LOG_NOOP (__VA_ARGS__)
+#endif
 
 #define LOG_ERROR_IF(cond, ...) \
     do {                                 \
@@ -78,13 +116,29 @@
 #define GOTO_IF_NOT(cond, label, ...) GOTO_IF (!(cond), label, __VA_ARGS__)
 #define GOTO_IF_NULL(ptr, label, ...) GOTO_IF ((ptr) == NULL, label, __VA_ARGS__)
 
+/*
+ * Data streams (and every LOG_DATA_* / LOG_n_FLOATS below, which expand to
+ * this) gate at DEBUG. They carry no severity of their own, they are the
+ * heaviest users of the link, and they are what the GUI plots - so a build
+ * below DEBUG stops those plots updating.
+ */
 // Example usage: LOG_DATA("imu", "{\"roll\":%.2f,\"pitch\":%.2f,\"yaw\":%.2f}", roll, pitch, yaw);
+#if CFG_LOG_LEVEL >= CFG_LOG_LEVEL_DEBUG
 #define LOG_DATA(type, fmt, ...)                      \
     do {                                              \
         PRINT ("<{\"type\":\"%s\",\"core\":\"%s\",\"data\":", type, __CORE_NAME__); \
         PRINT (fmt, __VA_ARGS__);                      \
         PRINT ("}>\r\n");                            \
     } while (0)
+#else
+#define LOG_DATA(type, fmt, ...)                      \
+    do {                                              \
+        if (0) {                                      \
+            PRINT ("%s", type);                       \
+            PRINT (fmt, __VA_ARGS__);                 \
+        }                                             \
+    } while (0)
+#endif
 
 
 #define _LOG_JSON_2(key1, val1) "\"%s\":%s", #key1, #val1

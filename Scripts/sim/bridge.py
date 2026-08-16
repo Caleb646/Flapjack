@@ -9,9 +9,12 @@ Timing is free-running real-time: sensors are streamed at a fixed rate and the
 FDM is stepped to wall-clock; the FC consumes the latest sample and replies
 asynchronously.
 
-Wire format (matches Firmware/drivers/sim_link/sim_link.c):
+Wire format (matches Firmware/drivers/serial/serial_link.c):
     [0xAA][0x55][msg_id][len][payload(protobuf)][crc8]
     crc8: poly 0x07, init 0x00, over (msg_id, len, payload).
+
+The FC also interleaves plain ASCII debug logs on the same wire; anything that
+is not a frame is log text and is echoed to stdout.
 
 Run the sensor/link path WITHOUT a working FDM first:
     python bridge.py --port COM7 --dry-run
@@ -21,19 +24,21 @@ Then the full sim:
 
 import argparse
 import math
+import sys
 import time
 from pathlib import Path
 
-from proto import sim_pb2
+from proto import flapjack_pb2, sim_pb2
 from link.framing import frame, FrameParser
 from link.serial_io import open_port
 
-# --- frame ids (keep in sync with sim_link.h) --------------------------------
+# --- frame ids (keep in sync with sim_link.h / serial_link.h) ----------------
 MSG_SENSOR = 1
 MSG_RC = 2
 MSG_SERVO = 3
 MSG_MOTOR = 4
 MSG_TELEMETRY = 5
+MSG_SHELL_CMD = 6
 
 # --- RC channel layout (matches drivers/rx/rx.h) -----------------------------
 RC_MIN, RC_MID, RC_MAX = 1000, 1500, 2000
@@ -122,7 +127,21 @@ def main(argv=None):
                          "holds the request until its own arming gate opens)")
     ap.add_argument("--dry-run", action="store_true",
                     help="no JSBSim: emit a fixed 20deg-roll attitude to validate the link")
+    ap.add_argument("--send-pid", metavar="AXIS:GAIN:VALUE", default=None,
+                    help="send one shell set_pid command over the same link, e.g. "
+                         "roll:kp:0.5 - exercises logging, sim frames and the shell together")
+    ap.add_argument("--pid-delay", type=float, default=3.0,
+                    help="seconds to wait before sending --send-pid")
     args = ap.parse_args(argv)
+
+    pending_pid = None
+    if args.send_pid:
+        axis_s, gain_s, value_s = args.send_pid.split(":")
+        pending_pid = (
+            flapjack_pb2.Axis.Value(axis_s.upper()),
+            flapjack_pb2.PidGainType.Value(gain_s.upper()),
+            float(value_s),
+        )
 
     ser = open_port(args.port, args.baud, timeout=0)
     parser = FrameParser()
@@ -139,6 +158,7 @@ def main(argv=None):
         fdm["ic/h-sl-ft"] = 1.0
         fdm.run_ic()
 
+    log_buf = b""
     t0 = time.perf_counter()
     next_tick = t0
     armed_sent = False
@@ -150,7 +170,7 @@ def main(argv=None):
     while True:
         now = time.perf_counter()
 
-        # --- read FC -> PC frames ---
+        # --- read FC -> PC frames (and the log text interleaved with them) ---
         data = ser.read(256)
         if data:
             for msg_id, payload in parser.feed(data):
@@ -171,6 +191,31 @@ def main(argv=None):
                         last_print = now
                         print(f"[FC] euler(deg)={tm.euler[0]:+6.1f} {tm.euler[1]:+6.1f} "
                               f"{tm.euler[2]:+6.1f} armed={tm.armed} imu#={tm.imu_count}")
+            # Everything that was not a frame is FC log text. It shares this
+            # wire with the binary above; see serial_link.h. Held back until a
+            # newline so the bridge's own prints cannot land mid-line.
+            log_buf += parser.take_text()
+            if b"\n" in log_buf:
+                done, _, log_buf = log_buf.rpartition(b"\n")
+                # Decoded as ASCII with errors ignored, deliberately: log output
+                # is 7-bit ASCII by contract, so a non-ASCII byte here is a
+                # resync artifact (e.g. connecting mid-frame), not a message.
+                # It also keeps a stray byte from killing the bridge on a
+                # console whose encoding cannot represent U+FFFD.
+                line = done.decode("ascii", "ignore").strip("\r\n")
+                if line:
+                    print(line)
+
+        # --- shell command over the same link, once the FC is up ---
+        if pending_pid and now - t0 > args.pid_delay:
+            axis, gain, value = pending_pid
+            cmd = flapjack_pb2.Command()
+            cmd.set_pid.axis = axis
+            cmd.set_pid.gain = gain
+            cmd.set_pid.value = value
+            ser.write(frame(MSG_SHELL_CMD, cmd.SerializeToString()))
+            print(f"[bridge] sent set_pid {args.send_pid}")
+            pending_pid = None
 
         # --- step the model / synthesize attitude ---
         if args.dry_run:

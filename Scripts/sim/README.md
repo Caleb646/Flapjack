@@ -46,9 +46,11 @@ for imu/mag/servo/motor and defines `SIM_HIL`):
 python Scripts/board.py build -b flapjack-v1 -D sim
 ```
 
-In this build the debug UART (UART_1, `SIM_LINK_BAUD` = 460800) carries **binary
-sim frames only** — logging/shell are disabled. Logs are unavailable on UART
-while in HIL (use SWO if you need them).
+In this build the shared UART (UART_1, `SERIAL_LINK_BAUD_RATE` = 460800) carries binary sim
+frames **and** ASCII debug logs, interleaved; the shell shares it too, as frame id
+6. `bridge.py` separates them and prints the log text to stdout. Log output is
+7-bit ASCII and the frame magic is `0xAA`, which is what makes the two
+unambiguous — see `Firmware/drivers/serial/serial_link.h`.
 
 Wire the board's UART_1 TX/RX to a USB-serial adapter on the PC.
 
@@ -80,7 +82,7 @@ and streams synthesized sensors back. Useful flags:
 | flag | default | meaning |
 |---|---|---|
 | `--port` | (required) | serial port, e.g. `COM7`, `/dev/ttyUSB0` |
-| `--baud` | 460800 | must match `SIM_LINK_BAUD` |
+| `--baud` | 460800 | must match the board's `SERIAL_LINK_BAUD_RATE` |
 | `--rate` | 400 | sensor stream rate (Hz) |
 | `--model` | tiltrotor | JSBSim aircraft name under `--root/aircraft/` |
 | `--hover-throttle` | 0.5 | injected throttle once armed |

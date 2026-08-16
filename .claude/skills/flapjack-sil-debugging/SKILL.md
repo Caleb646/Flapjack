@@ -1,6 +1,6 @@
 ---
 name: flapjack-sil-debugging
-description: How to find a GNC bug in the Flapjack SIL (Renode CM7 + JSBSim). Use when the attitude estimate drifts, jumps or goes NaN; the vehicle departs the instant it arms; the sim link wedges or telemetry stops; a task hangs with no fault; or PID/mixer gains need sweeping. Covers getting observability out of a `-D sim` build (which has NO logging), isolating firmware faults from flight-model faults, and tuning gains without a Renode round trip. For plain command syntax use the flapjack-tooling skill instead.
+description: How to find a GNC bug in the Flapjack SIL (Renode CM7 + JSBSim). Use when the attitude estimate drifts, jumps or goes NaN; the vehicle departs the instant it arms; the sim link wedges or telemetry stops; a task hangs with no fault; or PID/mixer gains need sweeping. Covers getting observability out of a `-D sim` build (logs, telemetry and shell all share one UART), isolating firmware faults from flight-model faults, and tuning gains without a Renode round trip. For plain command syntax use the flapjack-tooling skill instead.
 ---
 
 # Debugging the Flapjack GNC stack in the SIL
@@ -10,9 +10,12 @@ how to tell which layer is lying to you.
 
 ## Two facts that shape every investigation
 
-1. **A `-D sim` build has no logging.** The debug UART *is* the binary sim link, so `LOG_*` is
-   unavailable and the shell is gone. The only channel out of the firmware is
-   `SimLink_SendTelemetry(euler[3], armed, count)`.
+1. **A `-D sim` build logs normally.** `LOG_*` and the shell both work — the debug UART carries
+   ASCII log text interleaved with binary sim frames, and `bridge.py` prints the text to stdout
+   as it arrives. So reach for a log line first; the telemetry-hijack trick below is now only
+   for values you need at full loop rate, not for basic visibility. Note `%f` prints nothing
+   (KnownIssues §1.12) — scale to an integer. If logs are missing, check `--log-level`, which
+   compiles them out.
 2. **In `--dry-run`, every sensor sample is byte-identical.** The bridge synthesises a fixed
    20° roll with zero gyro rates. So if the estimate moves, the cause is *either* `dt` *or*
    corrupted data — nothing else can. This collapses the search space enormously; reach for

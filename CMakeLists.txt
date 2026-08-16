@@ -72,6 +72,11 @@ set(APP_DEFS "")
 if(SINGLE_CORE)
     list(APPEND APP_DEFS "SINGLE_CORE")
 endif()
+# Compile-time log verbosity; unset means the cfg.h default (DEBUG = everything).
+if(DEFINED CFG_LOG_LEVEL)
+    list(APPEND APP_DEFS "CFG_LOG_LEVEL=${CFG_LOG_LEVEL}")
+    message(STATUS "Log level: ${CFG_LOG_LEVEL}")
+endif()
 set(APP_INCS
     "${FIRMWARE_ROOT}"
 )

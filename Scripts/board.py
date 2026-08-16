@@ -70,6 +70,9 @@ TOOLS_ROOT    = PROJECT_ROOT / "Tools"
 BOARDS  = ["nucleo-h747zi", "flapjack-v1"]
 CONFIGS = ["Debug", "Release"]
 
+# Mirrors CFG_LOG_LEVEL_* in Firmware/target/cfgs/cfg.h.
+LOG_LEVELS = {"none": 0, "error": 1, "warn": 2, "info": 3, "debug": 4}
+
 # ── Generation ─────────────────────────────────────────────────────
 
 UMSG_FILES_DIR          = PROJECT_ROOT / "Firmware" / "msgs" / "umsg" / "defs"
@@ -361,6 +364,20 @@ def _verify_toolchain() -> None:
         sys.exit(1)
 
 
+def _cached_log_level(out_dir: Path):
+    """CFG_LOG_LEVEL the existing build tree was configured with, or None."""
+    cache = out_dir / "CMakeCache.txt"
+    if not cache.exists():
+        return None
+    for line in cache.read_text(errors="ignore").splitlines():
+        if line.startswith("CFG_LOG_LEVEL:"):
+            try:
+                return int(line.split("=", 1)[1])
+            except (IndexError, ValueError):
+                return None
+    return None
+
+
 def cmd_build(args: argparse.Namespace) -> None:
     # ── Parse flags string character-by-character ──────────────────────────────
     config      = 'Debug'
@@ -391,6 +408,17 @@ def cmd_build(args: argparse.Namespace) -> None:
 
     out_dir = output_dir(args.board, config, args.single_core)
 
+    log_level = LOG_LEVELS[getattr(args, "log_level", "debug")]
+
+    # A changed -D does not reliably force a recompile here: CMake rewrites
+    # flags.make during configure, but MinGW Make compares mtimes at 1-second
+    # resolution, so objects written in the same second look up to date and the
+    # link silently reuses them. That yields an image built at the PREVIOUS log
+    # level. Detect the change against the cache and clean instead.
+    if not clean and _cached_log_level(out_dir) not in (None, log_level):
+        print("Log level changed - forcing a clean rebuild (logs are gated at compile time)")
+        clean = True
+
     if clean and out_dir.exists():
         print(f"Cleaning {out_dir} …")
         shutil.rmtree(out_dir)
@@ -410,6 +438,7 @@ def cmd_build(args: argparse.Namespace) -> None:
         f"-DHIL_TEST={build_tests}",
         f"-DSINGLE_CORE={'ON' if args.single_core else 'OFF'}",
     ]
+    cmake_args.append(f"-DCFG_LOG_LEVEL={LOG_LEVELS[getattr(args, 'log_level', 'debug')]}")
     print(f"Configuring …  ({' '.join(cmake_args)})")
     try:
         subprocess.run(cmake_args, stdout=cmake_cfg_log.open("w"),
@@ -671,6 +700,12 @@ def main() -> None:
                               "(e.g. default=real hardware, sim=no hardware)")
     p_build.add_argument("--single-core", action="store_true",
                          help="Build a single-core CM7 image (no cm4.elf); for Renode SIL")
+    # Always passed to CMake, never left unset: -D values are cached, so an
+    # omitted flag would silently inherit the previous build's level.
+    p_build.add_argument("--log-level", choices=list(LOG_LEVELS), default="debug",
+                         help="Compile out logs above this level. Anything above it is removed "
+                              "by the preprocessor, not suppressed at runtime. Note 'debug' "
+                              "also gates LOG_DATA, which is what the GUI plots.")
 
     # ── flash ──────────────────────────────────────────────────────────────────
     p_flash = sub.add_parser("flash", help="Flash firmware and optionally run HIL tests",

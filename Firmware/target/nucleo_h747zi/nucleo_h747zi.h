@@ -28,9 +28,9 @@
 #define TIMER_13_INSTANCE      TIM13
 #define TIMER_13_AF            GPIO_AF9_TIM13
 
-#define SERIAL_DEBUG_ENABLED   1U
-#define SERIAL_DEBUG_UART      UART_1
-#define SERIAL_DEBUG_BAUD_RATE 230400U
+#define SERIAL_LINK_ENABLED   1U
+#define SERIAL_LINK_UART      UART_1
+#define SERIAL_LINK_BAUD_RATE 460800U
 
 #define IMU_ENABLED            1U
 #define IMU_SPI                SPI_2

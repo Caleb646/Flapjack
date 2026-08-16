@@ -4,7 +4,7 @@
 
 #include "core/core.h"
 
-#include "drivers/serial/uart.h"
+#include "drivers/serial/serial_link.h"
 
 #include "umsg_tune.h"
 #include "umsg_arming.h"
@@ -14,50 +14,6 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-
-// ---------------------------------------------------------------------------
-// RX state machine
-// ---------------------------------------------------------------------------
-
-typedef enum {
-    STATE_WAIT_LEN,
-    STATE_READING,
-} RxState_t;
-
-static RxState_t s_State = STATE_WAIT_LEN;
-static uint8_t s_Len     = 0U;
-static uint8_t s_Buf[128];
-static uint8_t s_Read         = 0U;
-static volatile bool s_HasMsg = false;
-
-static void Shell_RxCb (uint8_t const* pData, uint32_t len) {
-
-    for (uint32_t i = 0U; i < len; i++) {
-        uint8_t b = pData[i];
-        if (s_State == STATE_WAIT_LEN) {
-            s_Len  = b;
-            s_Read = 0U;
-            if (s_Len > 0U && s_Len <= sizeof (s_Buf)) {
-                s_State = STATE_READING;
-            }
-        } else {
-            s_Buf[s_Read++] = b;
-            if (s_Read >= s_Len) {
-                s_HasMsg = true;
-                s_State  = STATE_WAIT_LEN;
-            }
-        }
-    }
-}
-
-static UartPort_t s_Port = {
-    .cfg = {
-        .id          = BRD_GET_UART_ID (SERIAL_DEBUG),
-        .baudRate    = 0U, // preserve baud rate already set by SerialDebug_Init
-        .rxCallback  = Shell_RxCb,
-        .irqPriority = 6U,
-    },
-};
 
 // ---------------------------------------------------------------------------
 // Command handlers
@@ -86,11 +42,17 @@ static void Shell_HandleSetPid (SetPidCmd const* pCmd) {
     umsg_tune_pid_t msg = { .axis = (uint8_t)axisIdx, .gain = gain, .value = pCmd->value };
     umsg_tune_pid_publish (&msg);
 
+    /*
+     * Micro-units, not %f: tfp_format handles u/d/x/c/s only, so a %f prints
+     * nothing at all (and does not consume its vararg). Scaling to an integer
+     * is the convention the LOG_*_FLOATS macros already use. 1e6 because the
+     * rate gains run to ~1e-6.
+     */
     LOG_INFO (
-    "Shell: set pid axis=%d gain=%d value=%f",
+    "Shell: set pid axis=%d gain=%d value=%d e-6",
     (int)pCmd->axis,
     (int)pCmd->gain,
-    (double)pCmd->value
+    (int)(pCmd->value * 1000000.0F)
     );
 }
 
@@ -105,26 +67,17 @@ static void Shell_HandleArm (ArmCmd const* pCmd) {
 // Public API
 // ---------------------------------------------------------------------------
 
-eSTATUS_t Shell_Init (void) {
-
-    return UartPort_Init (&s_Port);
-}
-
-eSTATUS_t Shell_Update (uint32_t usCurrentTime, uint32_t usDeltaTime) {
-
-    (void)usCurrentTime;
-    (void)usDeltaTime;
-
-    if (!s_HasMsg) {
-        return eSTATUS_SUCCESS;
-    }
-    s_HasMsg = false;
+/*
+ * Runs in the SerialLink RX task once a framed SERIAL_MSG_SHELL_CMD passes CRC,
+ * so the payload is already a whole, verified Command.
+ */
+static void Shell_OnCommand (uint8_t const* pPayload, uint8_t len) {
 
     Command cmd     = Command_init_zero;
-    pb_istream_t in = pb_istream_from_buffer (s_Buf, s_Len);
+    pb_istream_t in = pb_istream_from_buffer (pPayload, len);
     if (!pb_decode (&in, Command_fields, &cmd)) {
         LOG_ERROR ("Shell: failed to decode command");
-        return eSTATUS_SUCCESS;
+        return;
     }
 
     switch (cmd.which_cmd) {
@@ -132,6 +85,9 @@ eSTATUS_t Shell_Update (uint32_t usCurrentTime, uint32_t usDeltaTime) {
     case Command_arm_disarm_tag: Shell_HandleArm (&cmd.cmd.arm_disarm); break;
     default: LOG_WARN ("Shell: unknown command tag %d", (int)cmd.which_cmd); break;
     }
+}
 
-    return eSTATUS_SUCCESS;
+eSTATUS_t Shell_Init (void) {
+
+    return SerialLink_RegisterHandler (SERIAL_MSG_SHELL_CMD, Shell_OnCommand);
 }

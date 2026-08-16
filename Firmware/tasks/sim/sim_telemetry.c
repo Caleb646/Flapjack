@@ -10,6 +10,11 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
+
+eSTATUS_t SimTelemetry_Init (void) {
+    return SimLink_Init();
+}
+
 void SimTelemetry_Task (void* args) {
 
     (void)args;
