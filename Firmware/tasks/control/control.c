@@ -15,7 +15,11 @@
 
 #include <string.h>
 
-#define CONTROL_MAX_RATE_DEG_S 180.0f
+// Plausible bounds on one control interval: the loop is IMU-paced, so anything
+// faster than 2 kHz is a duplicated iteration and anything slower than 50 Hz is
+// a stall.
+#define CONTROL_DT_MIN_S 0.0005f
+#define CONTROL_DT_MAX_S 0.02f
 
 typedef struct {
     umsg_sub_handle_t    guidance_sub;
@@ -115,6 +119,12 @@ eSTATUS_t Control_Update(void) {
     float dt = (float)(usNow - s_Control.usLastUpdateTime) / 1000000.0f;
     s_Control.usLastUpdateTime = usNow;
 
+    // The loop is paced by queued IMU samples, so a drained burst can put two
+    // iterations in the same microsecond (dt == 0) and a stall can produce an
+    // arbitrarily long one. Neither is a real control interval; bound dt rather
+    // than let it scale the integral and derivative terms.
+    dt = clipf32(dt, CONTROL_DT_MIN_S, CONTROL_DT_MAX_S);
+
     // Rate PID: guidance w[] is in rad/s, nav gyro[] is in deg/s from the IMU.
     // Convert targets to deg/s to match the sensor units.
     float pid_data[AXIS_IDX_COUNT];
@@ -124,11 +134,13 @@ eSTATUS_t Control_Update(void) {
         RAD2DEG(sp.w[2]),
     };
 
+    // Pid_UpdateAxis already returns the normalised mixer command, clipped to
+    // CFG_PID_MIN/MAX_VALUE (-1..+1). Re-clipping to a rate limit and dividing
+    // by it - as this did - made the +/-5 PID clip bind first and capped every
+    // axis at 2.8% of actuator travel.
     Pid_t* pPid = &s_pid;
     for (uint32_t i = 0; i < 3U; ++i) {
-        float output = Pid_UpdateAxis(&pPid->axes[i], s_Control.nav.gyro[i], targets[i], dt);
-        pid_data[i] = clipf32(output, -CONTROL_MAX_RATE_DEG_S, CONTROL_MAX_RATE_DEG_S)
-                      / CONTROL_MAX_RATE_DEG_S;
+        pid_data[i] = Pid_UpdateAxis(&pPid->axes[i], s_Control.nav.gyro[i], targets[i], dt);
     }
     pid_data[AXIS_IDX_THROTTLE] = sp.vel_b[2];
 

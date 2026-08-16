@@ -53,7 +53,12 @@ hang silently in `main()` waiting for the CM4). Renode itself lives in `Tools/re
 platform overlay and machine script are in `Scripts/renode/`. Flags: `--port` (sim link, 4000),
 `--monitor-port` (3456), `--elf` to override, `--gui` for the Renode window.
 
-Full background, including every emulator/firmware issue found and fixed: `EmulatorResearch.md`.
+Full background, including every emulator/firmware issue found and fixed: `EmulatorResearch.md`;
+current state and open items: `KnownIssues.md`.
+
+**Debugging a GNC bug rather than running a command?** Use the **flapjack-sil-debugging** skill:
+getting observability out of a `-D sim` build (which has no logging), isolating firmware faults
+from flight-model faults, and sweeping gains without a Renode round trip.
 
 ### `build` / `flash` flags (`-f`, combine freely)
 
@@ -94,9 +99,10 @@ Everything after `sim` is forwarded verbatim to the JSBSim bridge. Key flags: `-
   shell are disabled in HIL (use SWO for logs).
 - **SIL needs `--single-core`.** `SINGLE_CORE` also makes CM7 the primary logger; without it
   nothing drains the log ring buffer and the board is silent.
-- **Arming waits for the attitude estimate to settle.** `sim` holds the arm switch low
-  until the estimate has stayed within `--arm-settle-deg` (1.0) for `--arm-settle`
-  seconds (3.0), and never before `--arm-delay` (5.0). Pass `--arm-settle 0` to fall back
-  to the plain delay. From cold the estimate now converges in about 3 s.
+- **The FC owns the arming interlock, not the bridge.** `tasks/mission/mission.c` refuses to
+  arm until the attitude estimate has held still (within 1.0 deg for 3 s) and throttle is at
+  minimum, and it treats a raised arm switch as a standing request until its gate opens. `sim`
+  just plays pilot: throttle down, switch up after `--arm-delay` (2.0 s), wait for
+  `Telemetry.armed`. From cold the estimate converges in about 3 s, so expect to arm ~6 s in.
 - **Bring the link up with `--dry-run` first** (emits a fixed 20° roll, no JSBSim needed) to
   isolate link/baud/framing problems from the flight model.

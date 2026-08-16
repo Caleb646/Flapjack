@@ -26,6 +26,24 @@
 #include "drivers/sim_link/sim_link.h"
 #include "tasks/sim/sim_telemetry.h"
 
+/*
+ * Stack-overflow trap (configCHECK_FOR_STACK_OVERFLOW == 2).
+ *
+ * By the time this runs the overflowing task has already scribbled past its
+ * stack, so do NOT log from here - the logger is printf-shaped and wants the
+ * very stack that just ran out. Park the task name somewhere a debugger can
+ * read it and halt.
+ */
+char const* volatile g_pOverflowedTaskName = NULL;
+
+void vApplicationStackOverflowHook (TaskHandle_t xTask, char* pcTaskName);
+void vApplicationStackOverflowHook (TaskHandle_t xTask, char* pcTaskName) {
+
+    FJ_UNUSED (xTask);
+    g_pOverflowedTaskName = pcTaskName;
+    CriticalErrorHandler ();
+}
+
 FJ_DEFINE_SHARED (bool volatile, s_IsCM4Stuck)     = false;
 FJ_DEFINE_SHARED (bool volatile, s_IsSystemInited) = false;
 FJ_DEFINE_SHARED (bool volatile, s_IsCM4Ready)     = false;
@@ -47,12 +65,30 @@ FJ_DEFINE_SHARED (bool volatile, s_IsCM4Ready)     = false;
 #define TASK_PRIORITY_SIMLINK 6U
 #define TASK_PRIORITY_SIMTLM  1U
 
-#define STACK_SENSOR   128U
-#define STACK_NAV      512U
-#define STACK_GUIDANCE 256U
-#define STACK_CONTROL  512U
-#define STACK_MISSION  128U
-#define STACK_RX       128U
+/*
+ * Stack depths are in WORDS (x4 for bytes) and are sized from measurement, not
+ * guesswork: uxTaskGetStackHighWaterMark() was sampled for every task over a
+ * SIL run. Peak usage observed, against the old allocation:
+ *
+ *     imu 99   mag 82   rc 82   mission 158   guidance 142
+ *     control 253   nav 213   simrx 236   idle 24
+ *
+ * The mission figure is the smoking gun for the overflow that once wedged the
+ * sim link with no diagnostic at all: 158 words used against 128 allocated. Its
+ * locals are a umsg_rc_input_t (68 B) plus a umsg_nav_state_t (72 B) plus the
+ * arming request and outgoing state - ~170 B of message structs before any call
+ * frame - and it logs, which is printf-shaped and stack-hungry.
+ *
+ * Anything that can log is now given roughly 2x its measured peak, because a
+ * log call is the largest and rarest frame each task takes. configCHECK_FOR_
+ * STACK_OVERFLOW is on (see the hook above), so a regression halts loudly.
+ */
+#define STACK_SENSOR   256U   /* imu was at 77% of 128 - one LOG_ERROR from overflow */
+#define STACK_NAV      512U   /* 42% - fine */
+#define STACK_GUIDANCE 384U
+#define STACK_CONTROL  512U   /* 49% - fine */
+#define STACK_MISSION  384U
+#define STACK_RX       128U   /* CM4-only; not exercised by the single-core SIL, so unmeasured */
 
 #define STACK_SIMLINK         512U
 #define STACK_SIMTLM          256U

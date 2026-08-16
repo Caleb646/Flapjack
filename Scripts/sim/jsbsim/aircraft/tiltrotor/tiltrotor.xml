@@ -114,32 +114,43 @@
        them by cos(tilt) and sin(tilt), which rotates the resultant. Applying both
        at the rotor's location gives the roll/yaw moments for free.
 
-       KNOWN LIMITATION - no pitch authority. Both rotors sit at structural
-       (0, +/-0.25, 0), i.e. coincident with the CG in X and Z, so neither the
-       up nor the forward component has a moment arm about Y. Measured: 0.3 rad
-       of COLLECTIVE tilt held for 1 s produces exactly 0.00000 rad/s of pitch
-       rate, while differential tilt produces 43 rad/s of yaw. On real hardware
-       the rotor plane sits ABOVE the CG and collective tilt is precisely how a
-       bicopter pitches - which is what the firmware mixer assumes
-       (g_TiltServoMix in tasks/control/mixer.c). Give the rotors their true
-       height above the CG (structural +Z, a positive z here) before trying to
-       tune or validate the pitch loop in the SIL; until then pitch is
-       open-loop. Yaw is also very over-powered against Izz = 0.014. -->
+       ROTOR HEIGHT (z = +0.06) - ESTIMATE, measure this.
+       Structural +Z is UP, so this puts the rotor plane 60 mm above the CG.
+       That offset is what gives collective tilt its pitch moment, and it is
+       exactly what the firmware mixer assumes (g_TiltServoMix in
+       tasks/control/mixer.c pitches by tilting both rotors together).
+
+       It used to be 0.0 - both rotors coincident with the CG in X and Z - so
+       neither thrust component had any moment arm about Y and the pitch axis
+       was completely uncontrollable: 0.3 rad of collective tilt held for 0.5 s
+       produced exactly 0.00000 rad/s of pitch rate. With 60 mm it produces
+       -8.92 rad/s, i.e. nose DOWN for rotors tilted forward, which is the sign
+       the mixer's -1.0 pitch weight expects. Differential tilt still yaws with
+       no pitch cross-coupling.
+
+       60 mm is a plausible number for this airframe, NOT a measured one - the
+       repo has no airframe CAD. Pitch response scales linearly with it, so
+       replace it with the real rotor-plane height before trusting any pitch
+       tuning done in the SIL. Same status as ROTOR_TMAX_LBS above.
+
+       Yaw authority is large against izz = 0.014 (0.3 rad differential gives
+       ~22 rad/s), but that is the real geometry - the rotors are 0.25 m out on
+       the lateral axis. The controller never commands tilt that big. -->
   <external_reactions>
     <force name="rotor0_up" frame="BODY" unit="LBS">
-      <location unit="M"> <x>0.0</x> <y>-0.25</y> <z>0.0</z> </location>
+      <location unit="M"> <x>0.0</x> <y>-0.25</y> <z>0.06</z> </location>
       <direction> <x>0.0</x> <y>0.0</y> <z>-1.0</z> </direction>
     </force>
     <force name="rotor0_fwd" frame="BODY" unit="LBS">
-      <location unit="M"> <x>0.0</x> <y>-0.25</y> <z>0.0</z> </location>
+      <location unit="M"> <x>0.0</x> <y>-0.25</y> <z>0.06</z> </location>
       <direction> <x>1.0</x> <y>0.0</y> <z>0.0</z> </direction>
     </force>
     <force name="rotor1_up" frame="BODY" unit="LBS">
-      <location unit="M"> <x>0.0</x> <y>0.25</y> <z>0.0</z> </location>
+      <location unit="M"> <x>0.0</x> <y>0.25</y> <z>0.06</z> </location>
       <direction> <x>0.0</x> <y>0.0</y> <z>-1.0</z> </direction>
     </force>
     <force name="rotor1_fwd" frame="BODY" unit="LBS">
-      <location unit="M"> <x>0.0</x> <y>0.25</y> <z>0.0</z> </location>
+      <location unit="M"> <x>0.0</x> <y>0.25</y> <z>0.06</z> </location>
       <direction> <x>1.0</x> <y>0.0</y> <z>0.0</z> </direction>
     </force>
   </external_reactions>

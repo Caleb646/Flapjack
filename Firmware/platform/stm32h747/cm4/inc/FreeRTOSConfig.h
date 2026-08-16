@@ -63,6 +63,10 @@ extern uint32_t SystemD2Clock;
 #define configKERNEL_PROVIDED_STATIC_MEMORY      1
 #define configSUPPORT_DYNAMIC_ALLOCATION         1
 #define configUSE_IDLE_HOOK                      0
+/* 2 = pattern-check the whole stack, not just the pointer. A silent overflow in
+ * the mission task once presented as the sim link wedging with no fault at all;
+ * the cost is a check per context switch, which is worth paying on a vehicle. */
+#define configCHECK_FOR_STACK_OVERFLOW           2
 #define configUSE_TICK_HOOK                      0
 #define configCPU_CLOCK_HZ                       ( SystemD2Clock )
 #define configTICK_RATE_HZ                       ((TickType_t)1000)

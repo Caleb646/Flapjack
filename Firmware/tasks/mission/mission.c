@@ -14,6 +14,21 @@
 #define ARM_THROTTLE_MAX      1100U
 #define MISSION_RC_TIMEOUT_MS 20U
 
+/*
+ * Attitude-settle interlock. The Madgwick estimate needs a few seconds to pull
+ * in from its identity-quaternion start, and NAV_VALID_ATTITUDE is set from the
+ * first sample onwards - it says "the filter is running", not "the filter has
+ * converged". Arming on that alone hands the rate loop a setpoint error of tens
+ * of degrees and the aircraft departs immediately.
+ *
+ * So require the estimate to have actually stopped moving: every Euler axis
+ * within ARM_ATTITUDE_STABLE_DEG of a reference for ARM_ATTITUDE_SETTLE_US. Any
+ * axis leaving the band re-arms the reference and restarts the clock, which
+ * also blocks arming while the airframe is being handled.
+ */
+#define ARM_ATTITUDE_STABLE_DEG 1.0F
+#define ARM_ATTITUDE_SETTLE_US  3000000U
+
 typedef enum {
     ARM_INTENT_NONE = 0,
     ARM_INTENT_ARM,
@@ -29,11 +44,72 @@ typedef struct {
     bool                haveRc;
     bool                haveNav;
     bool                rcArmedRegion;
+    bool                rcArmPending;
     umsg_rc_input_t     lastRc;
     umsg_nav_state_t    lastNav;
+    // Attitude-settle tracking (see ARM_ATTITUDE_* above).
+    bool                haveSettleRef;
+    float               settleEuler[3];
+    uint32_t            usSettleSince;
+    char const*         pLastBlocker;
 } Mission_t;
 
 static Mission_t s_Mission;
+
+// NaN and +/-Inf without pulling in math.h: NaN fails self-comparison, and the
+// magnitude test rejects the infinities that would hang the wrap loop below.
+static bool Mission_IsFinite(float v) {
+    return (v == v) && (v <= 3.0e38f) && (v >= -3.0e38f);
+}
+
+// Absolute angular difference in degrees, wrap-safe so a yaw estimate crossing
+// +/-180 does not read as 360 degrees of movement.
+static float Mission_AngleDeltaDeg(float a, float b) {
+    float d = a - b;
+    while (d > 180.0f)  { d -= 360.0f; }
+    while (d < -180.0f) { d += 360.0f; }
+    return d < 0.0f ? -d : d;
+}
+
+// Fold the latest nav estimate into the settle tracker. Restarts the window
+// whenever any axis leaves the band, or whenever the estimate is not finite.
+static void Mission_TrackAttitudeSettle(void) {
+
+    if (!s_Mission.haveNav || !(s_Mission.lastNav.valid & NAV_VALID_ATTITUDE)) {
+        s_Mission.haveSettleRef = false;
+        return;
+    }
+
+    float const* pEuler = s_Mission.lastNav.euler;
+    for (uint32_t i = 0; i < 3U; ++i) {
+        if (!Mission_IsFinite(pEuler[i])) {
+            s_Mission.haveSettleRef = false;
+            return;
+        }
+    }
+
+    uint32_t usNow = GetMicroseconds();
+
+    bool restart = !s_Mission.haveSettleRef;
+    for (uint32_t i = 0; i < 3U && !restart; ++i) {
+        if (Mission_AngleDeltaDeg(pEuler[i], s_Mission.settleEuler[i]) > ARM_ATTITUDE_STABLE_DEG) {
+            restart = true;
+        }
+    }
+
+    if (restart) {
+        for (uint32_t i = 0; i < 3U; ++i) {
+            s_Mission.settleEuler[i] = pEuler[i];
+        }
+        s_Mission.usSettleSince = usNow;
+        s_Mission.haveSettleRef = true;
+    }
+}
+
+static bool Mission_IsAttitudeSettled(void) {
+    return s_Mission.haveSettleRef &&
+           (GetMicroseconds() - s_Mission.usSettleSince) >= ARM_ATTITUDE_SETTLE_US;
+}
 
 eSTATUS_t Mission_Init(void) {
     s_Mission.rc_sub        = umsg_rc_input_subscribe(1, 4);
@@ -44,18 +120,26 @@ eSTATUS_t Mission_Init(void) {
     s_Mission.haveRc        = false;
     s_Mission.haveNav       = false;
     s_Mission.rcArmedRegion = false;
+    s_Mission.rcArmPending  = false;
+    s_Mission.haveSettleRef = false;
+    s_Mission.pLastBlocker  = NULL;
     return eSTATUS_SUCCESS;
 }
 
-// Arming preconditions: attitude estimate valid, and (when RC is present) throttle at minimum.
-static bool Mission_IsArmable(void) {
-    bool navValid = s_Mission.haveNav && (s_Mission.lastNav.valid & NAV_VALID_ATTITUDE);
+// Arming preconditions. Returns NULL when armable, else why not - the strings
+// are literals, so the caller can compare pointers to log only on change.
+static char const* Mission_ArmBlocker(void) {
 
-    bool throttleOk = true;
-    if (s_Mission.haveRc) {
-        throttleOk = s_Mission.lastRc.channels[RC_CHANNEL_IDX_THROTTLE] <= ARM_THROTTLE_MAX;
+    if (!s_Mission.haveNav || !(s_Mission.lastNav.valid & NAV_VALID_ATTITUDE)) {
+        return "no valid attitude estimate";
     }
-    return navValid && throttleOk;
+    if (!Mission_IsAttitudeSettled()) {
+        return "attitude estimate still settling";
+    }
+    if (s_Mission.haveRc && s_Mission.lastRc.channels[RC_CHANNEL_IDX_THROTTLE] > ARM_THROTTLE_MAX) {
+        return "throttle not at minimum";
+    }
+    return NULL;
 }
 
 eSTATUS_t Mission_Update(void) {
@@ -74,6 +158,7 @@ eSTATUS_t Mission_Update(void) {
         s_Mission.lastNav = nav;
         s_Mission.haveNav = true;
     }
+    Mission_TrackAttitudeSettle();
 
     // RC arm-switch intent (edge-detected with hysteresis).
     ArmIntent_t rcIntent = ARM_INTENT_NONE;
@@ -95,16 +180,37 @@ eSTATUS_t Mission_Update(void) {
         shellIntent = req.arm ? ARM_INTENT_ARM : ARM_INTENT_DISARM;
     }
 
-    // Resolve: a disarm from either source wins; otherwise the latest arm wins, only if armable.
+    // A raised arm switch is a standing request, not a one-shot edge: the
+    // attitude gate can take seconds to open, and an edge-only request would be
+    // dropped and never retried while the pilot holds the switch up. The
+    // request is cleared the moment the switch leaves the armed region.
+    if (rcIntent == ARM_INTENT_ARM) {
+        s_Mission.rcArmPending = true;
+    }
+    if (!s_Mission.rcArmedRegion) {
+        s_Mission.rcArmPending = false;
+    }
+
+    // Resolve: a disarm from either source wins; otherwise arm if armable.
+    // A shell request stays one-shot - it is an explicit command, so a rejection
+    // is reported and dropped rather than latched.
     if (rcIntent == ARM_INTENT_DISARM || shellIntent == ARM_INTENT_DISARM) {
         if (s_Mission.isArmed) { LOG_INFO("Mission: disarmed"); }
-        s_Mission.isArmed = false;
-    } else if (rcIntent == ARM_INTENT_ARM || shellIntent == ARM_INTENT_ARM) {
-        if (Mission_IsArmable()) {
+        s_Mission.isArmed       = false;
+        s_Mission.rcArmPending  = false;
+        s_Mission.pLastBlocker  = NULL;
+    } else if (s_Mission.rcArmPending || shellIntent == ARM_INTENT_ARM) {
+        char const* pBlocker = s_Mission.isArmed ? NULL : Mission_ArmBlocker();
+        if (pBlocker == NULL) {
             if (!s_Mission.isArmed) { LOG_INFO("Mission: armed"); }
-            s_Mission.isArmed = true;
-        } else {
-            LOG_WARN("Mission: arm rejected (not armable)");
+            s_Mission.isArmed      = true;
+            s_Mission.rcArmPending = false;
+            s_Mission.pLastBlocker = NULL;
+        } else if (pBlocker != s_Mission.pLastBlocker) {
+            // Literals, so a pointer compare logs once per reason rather than
+            // once per iteration while the request waits.
+            LOG_WARN("Mission: arm blocked - %s", pBlocker);
+            s_Mission.pLastBlocker = pBlocker;
         }
     }
 

@@ -60,4 +60,13 @@ For multi-step tasks, state a brief plan:
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
+### 5. Use the Project's Tooling
+
+**Never invoke a compiler, emulator or generator by hand.**
+
+- Build / flash / sim / gen / renode → `python Scripts/board.py` — see the **flapjack-tooling** skill.
+- Finding a GNC bug in the SIL → the **flapjack-sil-debugging** skill.
+
+Skills in `.claude/skills/` are discovered automatically, so this is not a directory listing — it is the rule that you read the relevant one *before* improvising your own toolchain invocation.
+
 ---

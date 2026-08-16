@@ -11,9 +11,14 @@
 
 typedef struct {
     float p, i, d;
+    /* Maximum magnitude the I-term may contribute to the OUTPUT, in the same
+     * normalised units the controller returns (so 0.3 lets the integrator claim
+     * at most 30% of actuator travel). It used to bound the raw accumulated
+     * error instead, which made the ceiling depend on the I gain. */
     float integralLimit;
-    float prevError;
+    float prevMeasurement;
     float prevIntegral;
+    bool  hasPrevMeasurement;
 } PidAxis_t;
 
 typedef struct {
