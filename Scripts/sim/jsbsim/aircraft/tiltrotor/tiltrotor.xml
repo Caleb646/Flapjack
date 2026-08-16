@@ -59,27 +59,50 @@
     <location name="CG" unit="M"> <x>0.0</x> <y>0.0</y> <z>0.0</z> </location>
   </mass_balance>
 
+  <!--
+       GEAR GEOMETRY
+       =============
+       <location> here is the STRUCTURAL frame: +X aft, +Y right, +Z up - the
+       opposite sense in X and Z to the body FRD frame used everywhere else.
+       So structural x = -0.15 is 0.15 m FORWARD of the CG, and z = -0.10 puts
+       the contact 0.10 m below it.
+
+       The contacts must straddle the CG in X. They previously did not: both
+       mains sat at x = 0, exactly on the CG station, with a single contact
+       0.25 m away carrying an unbalanced moment. With Iyy = 0.008 kg*m2 a few
+       newtons at that arm is ~1100 rad/s2, so the model picked up ~2.8 rad/s of
+       pitch rate in ONE 2.5 ms step on contact and integrated straight to NaN -
+       from as little as a 0.5 ft drop, not just the 50 ft case. Mains ahead of
+       the CG and a tailwheel behind it makes the standing attitude statically
+       determinate.
+
+       Stiffness is sized for THIS airframe (0.85 kg / 1.874 lbf) and given in
+       JSBSim's native LBS/FT, not N/M: 25 lbf/ft per contact puts the static
+       deflection near 10 mm and the heave mode at ~6 Hz, which 400 Hz resolves
+       comfortably. Damping 1.5 lbf/(ft/s) per contact is just past critical, so
+       a touchdown settles instead of bouncing.
+  -->
   <ground_reactions>
     <contact type="BOGEY" name="LEFT">
-      <location unit="M"> <x>0.0</x> <y>-0.25</y> <z>-0.10</z> </location>
+      <location unit="M"> <x>-0.15</x> <y>-0.25</y> <z>-0.10</z> </location>
       <static_friction>  0.8 </static_friction>
       <dynamic_friction> 0.5 </dynamic_friction>
-      <spring_coeff  unit="N/M">     300 </spring_coeff>
-      <damping_coeff unit="N/M/SEC">  60 </damping_coeff>
+      <spring_coeff  unit="LBS/FT">      25 </spring_coeff>
+      <damping_coeff unit="LBS/FT/SEC"> 1.5 </damping_coeff>
     </contact>
     <contact type="BOGEY" name="RIGHT">
-      <location unit="M"> <x>0.0</x> <y>0.25</y> <z>-0.10</z> </location>
+      <location unit="M"> <x>-0.15</x> <y>0.25</y> <z>-0.10</z> </location>
       <static_friction>  0.8 </static_friction>
       <dynamic_friction> 0.5 </dynamic_friction>
-      <spring_coeff  unit="N/M">     300 </spring_coeff>
-      <damping_coeff unit="N/M/SEC">  60 </damping_coeff>
+      <spring_coeff  unit="LBS/FT">      25 </spring_coeff>
+      <damping_coeff unit="LBS/FT/SEC"> 1.5 </damping_coeff>
     </contact>
     <contact type="BOGEY" name="TAIL">
-      <location unit="M"> <x>-0.25</x> <y>0.0</y> <z>-0.10</z> </location>
+      <location unit="M"> <x>0.25</x> <y>0.0</y> <z>-0.10</z> </location>
       <static_friction>  0.8 </static_friction>
       <dynamic_friction> 0.5 </dynamic_friction>
-      <spring_coeff  unit="N/M">     300 </spring_coeff>
-      <damping_coeff unit="N/M/SEC">  60 </damping_coeff>
+      <spring_coeff  unit="LBS/FT">      25 </spring_coeff>
+      <damping_coeff unit="LBS/FT/SEC"> 1.5 </damping_coeff>
     </contact>
   </ground_reactions>
 
@@ -89,7 +112,19 @@
        Each rotor's thrust is decomposed onto two fixed body-axis forces, up and
        forward, because an external force's <direction> is static. The FCS scales
        them by cos(tilt) and sin(tilt), which rotates the resultant. Applying both
-       at the rotor's location gives the roll/yaw moments for free. -->
+       at the rotor's location gives the roll/yaw moments for free.
+
+       KNOWN LIMITATION - no pitch authority. Both rotors sit at structural
+       (0, +/-0.25, 0), i.e. coincident with the CG in X and Z, so neither the
+       up nor the forward component has a moment arm about Y. Measured: 0.3 rad
+       of COLLECTIVE tilt held for 1 s produces exactly 0.00000 rad/s of pitch
+       rate, while differential tilt produces 43 rad/s of yaw. On real hardware
+       the rotor plane sits ABOVE the CG and collective tilt is precisely how a
+       bicopter pitches - which is what the firmware mixer assumes
+       (g_TiltServoMix in tasks/control/mixer.c). Give the rotors their true
+       height above the CG (structural +Z, a positive z here) before trying to
+       tune or validate the pitch loop in the SIL; until then pitch is
+       open-loop. Yaw is also very over-powered against Izz = 0.014. -->
   <external_reactions>
     <force name="rotor0_up" frame="BODY" unit="LBS">
       <location unit="M"> <x>0.0</x> <y>-0.25</y> <z>0.0</z> </location>

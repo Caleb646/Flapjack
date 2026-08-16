@@ -22,19 +22,22 @@ Every cross-layer dependency is a **subscription**. A layer's primary input is a
 `receive()`; every additional input is a non-blocking `receive(..., 0)` whose result is cached
 locally. There is no way to read a message without subscribing to it.
 
-| Layer | Header | Source | Init fn | Update fn | Blocks on | Also subscribes (non-blocking, cached) | Publishes |
-|---|---|---|---|---|---|---|---|
-| **Sensor: IMU** | `inc/sensors/imu.h` | `src/sensors/imu.c` | — | `SensorImu_Update()` | hardware (ISR/poll) | — | `umsg_sensors_imu_t` |
-| **Sensor: Mag** | `inc/sensors/mag.h` | `src/sensors/mag.c` | — | `SensorMag_Update()` | hardware | — | `umsg_sensors_mag_t` |
-| **Sensor: GPS** | `inc/sensors/gps.h` | `src/sensors/gps.c` | — | `SensorGps_Update()` | hardware | — | `umsg_sensors_gps_t` |
-| **Sensor: Baro** | `inc/sensors/baro.h` | `src/sensors/baro.c` | — | `SensorBaro_Update()` | hardware | — | `umsg_sensors_baro_t` (stub) |
-| **Sensor: RC** | `inc/sensors/rc.h` | `src/sensors/rc.c` | — | `SensorRc_Update()` | CM4 shared mem | — | `umsg_rc_input_t` |
-| **Navigation** | `inc/nav/nav.h` | `src/nav/nav.c` | `Nav_Init()` | `Nav_Update()` | `umsg_sensors_imu_t` | `umsg_sensors_mag_t` | `umsg_nav_state_t` |
-| **Mission** | `inc/mission/mission.h` | `src/mission/mission.c` | `Mission_Init()` | `Mission_Update()` | `umsg_rc_input_t` (20 ms timeout) | `umsg_arming_request_t`, `umsg_nav_state_t` | `umsg_mission_state_t` |
-| **Guidance** | `inc/guidance/guidance.h` | `src/guidance/guidance.c` | `Guidance_Init()` | `Guidance_Update()` | `umsg_nav_state_t` | `umsg_mission_state_t`, `umsg_rc_input_t` | `umsg_guidance_setpoints_t` |
-| **Control** | `inc/control/control.h` | `src/control/control.c` | `Control_Init()` | `Control_Update()` | `umsg_guidance_setpoints_t` | `umsg_nav_state_t`, `umsg_mission_state_t`, `umsg_tune_pid_t` | motors/servos (direct) |
+Paths are relative to `Firmware/`. Each task lives in its own folder under `tasks/`;
+the device and driver layers it uses sit in `devices/` and `drivers/`.
 
-Sensor wrappers have no `_Init` — they are called directly when new hardware data is available.
+| Layer | Task source | Init fn | Update fn | Blocks on | Also subscribes (non-blocking, cached) | Publishes |
+|---|---|---|---|---|---|---|
+| **Sensor: IMU** | `tasks/imu/imu_task.c` (device `devices/imu.c`) | `Imu_Init()` | `Imu_Update()` | hardware (sim link / ISR) | - | `umsg_sensors_imu_t` |
+| **Sensor: Mag** | `tasks/mag/mag_task.c` (device `devices/mag.c`) | `Mag_Init()` | `Mag_Update()` | hardware | - | `umsg_sensors_mag_t` |
+| **Sensor: RC** | `tasks/rc/rc.c` (driver `drivers/rx/rx.c`) | `Rc_Init()` | `Rc_Update()` | nothing - 50 Hz `vTaskDelay` | - | `umsg_rc_input_t` |
+| **Navigation** | `tasks/nav/nav.c` | `Nav_Init()` | `Nav_Update()` | `umsg_sensors_imu_t` | `umsg_sensors_mag_t` | `umsg_nav_state_t` |
+| **Mission** | `tasks/mission/mission.c` | `Mission_Init()` | `Mission_Update()` | `umsg_rc_input_t` (20 ms timeout) | `umsg_arming_request_t`, `umsg_nav_state_t` | `umsg_mission_state_t` |
+| **Guidance** | `tasks/guidance/guidance.c` | `Guidance_Init()` | `Guidance_Update()` | `umsg_nav_state_t` | `umsg_mission_state_t`, `umsg_rc_input_t` | `umsg_guidance_setpoints_t` |
+| **Control** | `tasks/control/control.c` (mixer `tasks/control/mixer.c`) | `Control_Init()` | `Control_Update()` | `umsg_guidance_setpoints_t` | `umsg_nav_state_t`, `umsg_mission_state_t`, `umsg_tune_pid_t` | motors/servos (direct) |
+
+GPS and Baro have device wrappers (`devices/gps.c`, `devices/baro.c`) but no task yet.
+Tasks are created and registered in `Firmware/main.c`.
+
 
 The SIL-only `SimTelemetry_Task` (`tasks/sim/sim_telemetry.c`) subscribes to `umsg_nav_state_t`
 and `umsg_mission_state_t` the same way; it blocks on nothing and runs off `vTaskDelay()` at 50 Hz.
@@ -98,7 +101,7 @@ Sensor tasks for Mag, GPS, Baro run at their own hardware rates independently.
 
 ## umsg Message Types
 
-All message structs are in `Vendor/umsg/umsg_lib/inc/`. JSON definitions are the source of truth at `Firmware/msgs/umsg/`.
+Generated message structs are in `Firmware/msgs/umsg/`. The JSON definitions are the source of truth at `Firmware/msgs/umsg/defs/`.
 
 | Header | Struct | Key fields |
 |---|---|---|
@@ -118,7 +121,7 @@ All message structs are in `Vendor/umsg/umsg_lib/inc/`. JSON definitions are the
 
 ### NAV_VALID bits (`umsg_nav_state_t.valid`)
 
-Defined in `inc/nav/nav.h`:
+Defined in `tasks/nav/nav.h`:
 
 | Bit | Macro | Meaning |
 |---|---|---|
@@ -131,7 +134,7 @@ Guidance and Control must check `NAV_VALID_ATTITUDE` before using attitude data.
 
 ### Mission modes (`eMissionMode_t`)
 
-Defined in `inc/mission/mission.h`:
+Defined in `tasks/mission/mission.h`:
 
 ```c
 eMISSION_MODE_MANUAL        = 0   // RC sticks → rate setpoints (implemented)
@@ -145,12 +148,19 @@ eMISSION_MODE_RTL           = 4   // stub
 
 ## Adding or Changing a Message Type
 
-1. Edit the appropriate JSON in `Firmware/msgs/umsg/`
-2. Regenerate the C library:
+1. Edit the appropriate JSON in `Firmware/msgs/umsg/defs/`
+2. Regenerate, normally via the board tool (it does proto + umsg together):
    ```
-   python Vendor/umsg/umsg_gen/umsg_gen/umsg_gen.py -d Firmware/msgs/umsg -o Vendor/umsg/umsg_lib
+   python Scripts/board.py gen
    ```
-3. Re-run CMake configure (CMakeLists.txt globs `umsg_lib/src/*.c`)
+   The underlying call is:
+   ```
+   python Vendor/umsg/umsg_gen/umsg_gen/umsg_gen.py -d Firmware/msgs/umsg/defs -o Firmware/msgs/umsg
+   ```
+   Generated `umsg_<topic>.h` / `<topic>.c` land in `Firmware/msgs/umsg/`. The umsg
+   *core* is not generated - it is compiled straight from `Vendor/umsg/umsg_lib/core/`
+   (see `UMSG_ROOT` in the root `CMakeLists.txt`).
+3. Re-run CMake configure
 4. Update any layer that subscribes to or publishes the changed type
 
 ---

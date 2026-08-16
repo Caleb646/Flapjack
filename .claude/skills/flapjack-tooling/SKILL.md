@@ -59,7 +59,9 @@ Full background, including every emulator/firmware issue found and fixed: `Emula
 
 `d`=Debug (default), `r`=Release, `c`=clean, `t`=HIL tests, `g`=regenerate proto+umsg.
 Driver profile via `-D` on `build` (`default`=real hardware, `sim`=HIL). Artifacts land
-in `Build/<board>/<config>/` as `cm7.elf` / `cm4.elf`.
+in `Build/<board>/<config>/` as `cm7.elf` / `cm4.elf`; a `--single-core` build goes to
+`Build/<board>/<config>-single-core/` (`cm7.elf` only) so a stale `cm4.elf` can never sit
+beside a single-core image.
 
 ### `sim` (host side of the sim link)
 
@@ -92,8 +94,9 @@ Everything after `sim` is forwarded verbatim to the JSBSim bridge. Key flags: `-
   shell are disabled in HIL (use SWO for logs).
 - **SIL needs `--single-core`.** `SINGLE_CORE` also makes CM7 the primary logger; without it
   nothing drains the log ring buffer and the board is silent.
-- **The attitude filter takes tens of seconds to converge from cold.** `sim --arm-delay`
-  defaults to 1.0 s, which arms into a garbage attitude estimate and tumbles the aircraft.
-  Raise it for closed-loop (non-`--dry-run`) work.
+- **Arming waits for the attitude estimate to settle.** `sim` holds the arm switch low
+  until the estimate has stayed within `--arm-settle-deg` (1.0) for `--arm-settle`
+  seconds (3.0), and never before `--arm-delay` (5.0). Pass `--arm-settle 0` to fall back
+  to the plain delay. From cold the estimate now converges in about 3 s.
 - **Bring the link up with `--dry-run` first** (emits a fixed 20° roll, no JSBSim needed) to
   isolate link/baud/framing problems from the flight model.

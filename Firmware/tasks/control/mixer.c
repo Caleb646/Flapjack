@@ -14,28 +14,38 @@ FJ_DEFINE_SHARED (MotorMix_t, g_TestMotorMix[]) = {
 };
 
 FJ_DEFINE_SHARED (ServoMix_t, g_TestServoMix[]) = {
-    { eSERVO_LEFT_MOTOR_ID, eSERVO_MIX_INPUT_PID_ROLL },
-    { eSERVO_LEFT_MOTOR_ID, eSERVO_MIX_INPUT_PID_PITCH },
-    { eSERVO_LEFT_MOTOR_ID, eSERVO_MIX_INPUT_PID_YAW },
-    { eSERVO_LEFT_MOTOR_ID, eSERVO_MIX_INPUT_PID_THROTTLE }
+    { eSERVO_LEFT_MOTOR_ID, eSERVO_MIX_INPUT_PID_ROLL,     1.0F },
+    { eSERVO_LEFT_MOTOR_ID, eSERVO_MIX_INPUT_PID_PITCH,    1.0F },
+    { eSERVO_LEFT_MOTOR_ID, eSERVO_MIX_INPUT_PID_YAW,      1.0F },
+    { eSERVO_LEFT_MOTOR_ID, eSERVO_MIX_INPUT_PID_THROTTLE, 1.0F }
 };
 // clang-format on
 
+/*
+ * Twin tilt-rotor ("bicopter") mixing. Body frame is FRD: +roll = right side
+ * down, +pitch = nose up, +yaw = nose right. The two rotors sit on the lateral
+ * axis, left at -y and right at +y, each on a servo that tilts it fore/aft
+ * (mixer output +1.0 = rotor tilted fully FORWARD, see drivers/servo/sim.c).
+ *
+ * That geometry gives three independent authorities:
+ *   roll  - differential THRUST   (more thrust on the left rolls right)
+ *   yaw   - differential TILT     (left rotor forward yaws the nose right)
+ *   pitch - collective TILT       (rotors sit above the CG, so tilting them
+ *                                  forward pitches the nose DOWN; hence -1.0)
+ *
+ * Throttle drives both rotors together and must NOT reach the tilt servos.
+ */
 FJ_DEFINE_SHARED (MotorMix_t, g_TiltMotorMix[]) = {
-    { .throttle = 1.0F, .roll = 0.0F, .pitch = 0.0F, .yaw = 0.0F }, // Left
-    { .throttle = 1.0F, .roll = 0.0F, .pitch = 0.0F, .yaw = 0.0F }, // Right
+    { .throttle = 1.0F, .roll = 1.0F,  .pitch = 0.0F, .yaw = 0.0F }, // Left
+    { .throttle = 1.0F, .roll = -1.0F, .pitch = 0.0F, .yaw = 0.0F }, // Right
 };
 
 FJ_DEFINE_SHARED (ServoMix_t, g_TiltServoMix[]) = {
-    { eSERVO_LEFT_MOTOR_ID, eSERVO_MIX_INPUT_PID_ROLL },
-    { eSERVO_LEFT_MOTOR_ID, eSERVO_MIX_INPUT_PID_PITCH },
-    { eSERVO_LEFT_MOTOR_ID, eSERVO_MIX_INPUT_PID_YAW },
-    { eSERVO_LEFT_MOTOR_ID, eSERVO_MIX_INPUT_PID_THROTTLE },
+    { eSERVO_LEFT_MOTOR_ID,  eSERVO_MIX_INPUT_PID_PITCH, -1.0F },
+    { eSERVO_LEFT_MOTOR_ID,  eSERVO_MIX_INPUT_PID_YAW,    1.0F },
 
-    { eSERVO_RIGHT_MOTOR_ID, eSERVO_MIX_INPUT_PID_ROLL },
-    { eSERVO_RIGHT_MOTOR_ID, eSERVO_MIX_INPUT_PID_PITCH },
-    { eSERVO_RIGHT_MOTOR_ID, eSERVO_MIX_INPUT_PID_YAW },
-    { eSERVO_RIGHT_MOTOR_ID, eSERVO_MIX_INPUT_PID_THROTTLE },
+    { eSERVO_RIGHT_MOTOR_ID, eSERVO_MIX_INPUT_PID_PITCH, -1.0F },
+    { eSERVO_RIGHT_MOTOR_ID, eSERVO_MIX_INPUT_PID_YAW,   -1.0F },
 };
 
 FJ_DEFINE_SHARED (MotorMix_t, g_AirplaneMotorMix[]) = {
@@ -45,13 +55,13 @@ FJ_DEFINE_SHARED (MotorMix_t, g_AirplaneMotorMix[]) = {
 
 // clang-format off
 FJ_DEFINE_SHARED (ServoMix_t, g_AirplaneServoMix[]) = {
-    { eSERVO_LEFT_AILERON_ID, eSERVO_MIX_INPUT_PID_ROLL },
+    { eSERVO_LEFT_AILERON_ID,  eSERVO_MIX_INPUT_PID_ROLL,  1.0F },
 
-    { eSERVO_RIGHT_AILERON_ID, eSERVO_MIX_INPUT_PID_ROLL },
+    { eSERVO_RIGHT_AILERON_ID, eSERVO_MIX_INPUT_PID_ROLL,  1.0F },
 
-    { eSERVO_ELEVATOR_ID, eSERVO_MIX_INPUT_PID_PITCH },
+    { eSERVO_ELEVATOR_ID,      eSERVO_MIX_INPUT_PID_PITCH, 1.0F },
 
-    { eSERVO_RUDDER_ID, eSERVO_MIX_INPUT_PID_YAW }
+    { eSERVO_RUDDER_ID,        eSERVO_MIX_INPUT_PID_YAW,   1.0F }
 };
 // clang-format on
 
@@ -66,7 +76,7 @@ FJ_DEFINE_SHARED (Mixer_t, g_Mixer) = {
         },
         [eMIXER_PROFILE_TILT_ROTOR] = {
             .motorCount    = 2U,
-            .servoCount    = 3U,
+            .servoCount    = 2U,
             .pMotorMix     = g_TiltMotorMix,
             .pServoMix     = g_TiltServoMix,
             .servoMixCount = ARRAY_SIZE (g_TiltServoMix),
@@ -85,7 +95,13 @@ void Mixer_MixMotors (Mixer_t* pMixer, float const pidData[AXIS_IDX_COUNT], floa
 
     MixerProfile_t const* pProfile = pMixer->pCurrentProfile;
     MotorMix_t const* pMix         = pProfile->pMotorMix;
-    for (uint32_t i = 0; i < pProfile->motorCount; ++i) {
+    /* A profile may declare more motors than this board fits (the tilt and
+     * airplane profiles want 2; nucleo-h747zi has 1), so bound by the board. */
+    uint32_t motorCount = pProfile->motorCount;
+    if (motorCount > BRD_MOTOR_COUNT) {
+        motorCount = BRD_MOTOR_COUNT;
+    }
+    for (uint32_t i = 0; i < motorCount; ++i) {
         float mixedThrottle = pMix[i].throttle * pidData[AXIS_IDX_THROTTLE];
         mixedThrottle += pMix[i].pitch * ABS_F32 (pidData[AXIS_IDX_PITCH]);
         mixedThrottle += pMix[i].roll * pidData[AXIS_IDX_ROLL];
@@ -96,16 +112,21 @@ void Mixer_MixMotors (Mixer_t* pMixer, float const pidData[AXIS_IDX_COUNT], floa
 
 void Mixer_MixServos (Mixer_t* pMixer, float const pidData[AXIS_IDX_COUNT], uint16_t servoOutputs[BRD_SERVO_COUNT]) {
 
-    MixerProfile_t const* pProfile          = pMixer->pCurrentProfile;
-    ServoMix_t const* pServoMix             = pProfile->pServoMix;
-    uint16_t inputs[eSERVO_MIX_INPUT_COUNT] = { 0 };
-    // TODO: Should PID be between -1 and 1 or another range????
+    MixerProfile_t const* pProfile = pMixer->pCurrentProfile;
+    ServoMix_t const* pServoMix    = pProfile->pServoMix;
     // TODO: Some servos will need access to Rc channel data for flight mode switching
-    inputs[eSERVO_MIX_INPUT_PID_ROLL] =
-    (uint16_t)mapf32 (pidData[AXIS_IDX_ROLL], -1.0F, 1.0F, SERVO_LEFT_US_DC, SERVO_RIGHT_US_DC);
 
     float mixedInputs[BRD_SERVO_COUNT] = { 0.0F };
     for (uint32_t mixIdx = 0; mixIdx < pProfile->servoMixCount; ++mixIdx) {
+        /* A profile may name servo IDs this board does not fit - the airplane
+         * profile goes up to ID 6 while BRD_SERVO_COUNT is 2 - so drop those
+         * entries instead of writing past mixedInputs. eSERVO_ID_NONE underflows
+         * to a huge index and is caught by the same test. */
+        uint32_t servoIdx = SERVO_ID_TO_IDX (pServoMix[mixIdx].targetServo);
+        if (servoIdx >= BRD_SERVO_COUNT) {
+            continue;
+        }
+
         float mixedInput = 0.0F;
         switch (pServoMix[mixIdx].inputIndex) {
         case eSERVO_MIX_INPUT_PID_ROLL: mixedInput = pidData[AXIS_IDX_ROLL]; break;
@@ -114,7 +135,7 @@ void Mixer_MixServos (Mixer_t* pMixer, float const pidData[AXIS_IDX_COUNT], uint
         case eSERVO_MIX_INPUT_PID_THROTTLE: mixedInput = pidData[AXIS_IDX_THROTTLE]; break;
         default: break;
         }
-        mixedInputs[SERVO_ID_TO_IDX (pServoMix[mixIdx].targetServo)] += mixedInput;
+        mixedInputs[servoIdx] += mixedInput * pServoMix[mixIdx].weight;
     }
 
     /* Accumulate the signed mix contributions in float, then convert to a pulse

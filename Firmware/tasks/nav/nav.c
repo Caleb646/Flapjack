@@ -10,6 +10,7 @@ typedef struct {
     umsg_sub_handle_t imu_sub;
     umsg_sub_handle_t mag_sub;
     uint32_t usLastUpdateTime;
+    bool haveFirstSample;
 } Nav_t;
 
 static Nav_t s_Nav;
@@ -59,6 +60,7 @@ eSTATUS_t Nav_Init(void) {
     s_Nav.imu_sub          = umsg_sensors_imu_subscribe(1, 4);
     s_Nav.mag_sub          = umsg_sensors_mag_subscribe(1, 4);
     s_Nav.usLastUpdateTime = GetMicroseconds();
+    s_Nav.haveFirstSample  = false;
 
     s_Nav.filter.cfg.gyroMeasureDriftDegs = CFG_GYRO_MEASURE_DRIFT_DEGS;
     s_Nav.filter.cfg.gyroMeasureErrorDegs = CFG_GYRO_MEASURE_ERROR_DEGS;
@@ -74,6 +76,15 @@ eSTATUS_t Nav_Update(void) {
     uint32_t usNow = GetMicroseconds();
     float dt = (float)(usNow - s_Nav.usLastUpdateTime) / 1000000.0f;
     s_Nav.usLastUpdateTime = usNow;
+
+    /* Nav_Init() timestamps at boot but the first IMU sample only arrives once
+     * the link is up - measured at 4.4 s in the SIL. Integrating that as one dt
+     * throws the estimate ~14 deg past the true attitude and costs several
+     * seconds of beta-limited slewing to recover. Seed the timestamp instead. */
+    if (!s_Nav.haveFirstSample) {
+        s_Nav.haveFirstSample = true;
+        return eSTATUS_SUCCESS;
+    }
 
     Vec3f accel;
     accel.x = imu_msg.accel[0];

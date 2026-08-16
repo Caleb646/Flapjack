@@ -76,6 +76,10 @@ enum {
 typedef struct ServoMix_s {
     eSERVO_ID_t targetServo;
     eSERVO_MIX_INPUT_IDX_t inputIndex;
+    /* Signed contribution of this input to the servo, in normalised servo travel
+     * (+1.0 = full deflection towards SERVO_RIGHT_US_DC). Mixes that need a pair
+     * of surfaces to move oppositely (differential tilt, ailerons) do it here. */
+    float weight;
 } ServoMix_t;
 
 typedef uint8_t eMIXER_PROFILE_ID_t;

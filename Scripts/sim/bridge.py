@@ -100,6 +100,11 @@ def make_sensor_frame(accel, gyro, mag) -> bytes:
     return frame(MSG_SENSOR, msg.SerializeToString())
 
 
+def angle_delta_deg(a: float, b: float) -> float:
+    """Absolute difference between two angles in degrees, wrap-safe (yaw wraps +/-180)."""
+    return abs((a - b + 180.0) % 360.0 - 180.0)
+
+
 def make_rc_frame(throttle_norm: float, armed: bool) -> bytes:
     ch = [RC_MID] * 16
     ch[CH_THROTTLE] = int(RC_MIN + throttle_norm * (RC_MAX - RC_MIN))
@@ -117,7 +122,14 @@ def main(argv=None):
     ap.add_argument("--root", default=str(Path(__file__).parent / "jsbsim"),
                     help="JSBSim root dir (contains aircraft/, engine/)")
     ap.add_argument("--hover-throttle", type=float, default=0.5)
-    ap.add_argument("--arm-delay", type=float, default=1.0, help="seconds before sending arm")
+    ap.add_argument("--arm-delay", type=float, default=5.0,
+                    help="minimum seconds before arming (arming also waits for the "
+                         "attitude estimate to settle)")
+    ap.add_argument("--arm-settle", type=float, default=3.0,
+                    help="seconds the attitude estimate must hold still before arming; "
+                         "0 disables the check and arms on --arm-delay alone")
+    ap.add_argument("--arm-settle-deg", type=float, default=1.0,
+                    help="max attitude movement (deg) tolerated during the settle window")
     ap.add_argument("--dry-run", action="store_true",
                     help="no JSBSim: emit a fixed 20deg-roll attitude to validate the link")
     args = ap.parse_args(argv)
@@ -141,8 +153,16 @@ def main(argv=None):
     next_tick = t0
     armed_sent = False
     hover_sent = False
+    settle_announced = False
     fc_armed = False
     last_print = t0
+
+    # Attitude-settle gate. The filter needs tens of seconds to converge from
+    # cold, and arming into an unconverged estimate tumbles the aircraft
+    # immediately. Hold the estimate against a reference and only call it settled
+    # once it has stayed inside --arm-settle-deg for --arm-settle seconds.
+    settle_ref = None
+    settle_since = None
 
     print(f"[bridge] {'DRY-RUN' if args.dry_run else 'JSBSim'} on {args.port}@{args.baud}, {args.rate:.0f} Hz")
     while True:
@@ -165,6 +185,12 @@ def main(argv=None):
                 elif msg_id == MSG_TELEMETRY:
                     tm = sim_pb2.Telemetry(); tm.ParseFromString(payload)
                     fc_armed = tm.armed
+                    euler = tuple(tm.euler[:3])
+                    if (settle_ref is None
+                            or max(angle_delta_deg(a, b) for a, b in zip(euler, settle_ref))
+                            > args.arm_settle_deg):
+                        settle_ref = euler
+                        settle_since = now
                     if now - last_print > 0.5:
                         last_print = now
                         print(f"[FC] euler(deg)={tm.euler[0]:+6.1f} {tm.euler[1]:+6.1f} "
@@ -189,10 +215,18 @@ def main(argv=None):
         # the instant it arms. Raising throttle and the arm switch together (as
         # this used to) is rejected forever. Hold throttle down with the switch
         # up, wait for the FC to report armed, and only then go to hover.
-        if now - t0 < args.arm_delay:
+        attitude_settled = (args.arm_settle <= 0.0
+                            or (settle_since is not None
+                                and now - settle_since >= args.arm_settle))
+
+        if now - t0 < args.arm_delay or not attitude_settled:
             ser.write(make_rc_frame(0.0, armed=False))          # settle, disarmed
         elif not fc_armed:
             if not armed_sent:
+                if not settle_announced:
+                    print(f"[bridge] attitude settled within "
+                          f"{args.arm_settle_deg:.1f} deg for {args.arm_settle:.1f}s")
+                    settle_announced = True
                 print("[bridge] arm switch high, throttle low - waiting for FC to arm")
                 armed_sent = True
             ser.write(make_rc_frame(0.0, armed=True))           # throttle LOW + AUX1 high

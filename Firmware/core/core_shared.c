@@ -65,7 +65,7 @@ float clipf32 (float v, float lower, float upper) {
 }
 
 float mapf32 (float v, float fromMin, float fromMax, float toMin, float toMax) {
-    if ((fromMin - fromMax) < 0.0001F) {
+    if (ABS_F32 (fromMax - fromMin) < 0.0001F) {
         return toMin;
     }
     return toMin + ((v - fromMin) / (fromMax - fromMin)) * (toMax - toMin);
@@ -120,18 +120,47 @@ uint32_t GetMilliseconds (void) {
 }
 
 uint32_t GetMicroseconds (void) {
-    /* CTRL  -->  Offset: 0x000 (R/W)  SysTick Control and Status Register */
-    /* LOAD  -->  Offset: 0x004 (R/W)  SysTick Reload Value Register */
-    /* VAL   -->  Offset: 0x008 (R/W)  SysTick Current Value Register */
-    /* CALIB -->  Offset: 0x00C (R/ )  SysTick Calibration Register */
-    /* Systick->LOAD Initial Value -->  SYSTICK_CLOCK_HZ (64MHz) / 1000U ) - 1UL = 64,000 */
+    /*
+     * Derived from DWT->CYCCNT rather than (HAL tick + SysTick->VAL).
+     *
+     * That pair cannot be read coherently under an RTOS. The millisecond tick
+     * only advances when the SysTick ISR runs, and FreeRTOS masks interrupts for
+     * every critical section, so SysTick can wrap and reload while the tick is
+     * still stale. Combining them then produces a timestamp up to a millisecond
+     * in the PAST, and no amount of re-reading the tick detects it because both
+     * reads return the same stale value.
+     *
+     * Every caller takes an unsigned difference against a previous reading, so
+     * one backwards step underflows to ~4295 seconds. Handed to the attitude
+     * filter as dt, that integrates a single enormous step and leaves the
+     * quaternion at an arbitrary orientation - measured at roughly one event
+     * every five seconds, which is what destroyed the estimate in the SIL.
+     * The same underflow corrupts the dt in pid.c and control.c.
+     *
+     * CYCCNT is one free-running register, so a single read is inherently
+     * coherent. It wraps every 2^32 cycles (67 s at 64 MHz), too soon to divide
+     * down directly - the quotient would wrap at ~67e6 instead of 2^32 and break
+     * the callers' difference arithmetic - so accumulate whole microseconds and
+     * carry the leftover cycles. This must be called at least once per 67 s or a
+     * wrap goes unnoticed; the GNC loop calls it hundreds of times a second.
+     */
 #ifndef UNIT_TEST
-    uint32_t msTime = GetMilliseconds ();
-    if (SysTick->LOAD == SysTick->VAL) {
-        return msTime * 1000U;
-    }
-    uint32_t usTime = (SysTick->LOAD - SysTick->VAL) / (SysTick->LOAD / 1000U);
-    return msTime * 1000U + usTime;
+    static uint32_t s_lastCycles = 0U;
+    static uint32_t s_us         = 0U;
+
+    uint32_t const cyclesPerUs = (SystemCoreClock / 1000000U);
+
+    uint32_t const primask = __get_PRIMASK ();
+    __disable_irq ();
+
+    uint32_t const elapsed = DWT->CYCCNT - s_lastCycles; /* correct across wrap */
+    uint32_t const us      = elapsed / cyclesPerUs;
+    s_lastCycles += us * cyclesPerUs;                    /* keep the remainder */
+    s_us += us;
+    uint32_t const now = s_us;
+
+    __set_PRIMASK (primask);
+    return now;
 #endif // UNIT_TEST
     return 0;
 }

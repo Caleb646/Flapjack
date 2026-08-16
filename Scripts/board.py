@@ -54,6 +54,17 @@ PLATFORM = sys.platform
 PROJECT_ROOT  = Path(__file__).parent.parent
 SCRIPTS_ROOT  = Path(__file__).parent
 BUILD_ROOT    = PROJECT_ROOT / "Build"
+
+
+def output_dir(board: str, config: str, single_core: bool) -> Path:
+    """Artifact directory for one (board, config, core-count) combination.
+
+    Single- and dual-core images used to share Build/<board>/<config>/, so a
+    stale cm4.elf could sit beside a freshly built single-core cm7.elf and
+    `flash` would happily write both. Keeping them apart makes the tree say
+    which kind of image it holds.
+    """
+    return BUILD_ROOT / board / (f"{config}-single-core" if single_core else config)
 TOOLS_ROOT    = PROJECT_ROOT / "Tools"
 
 BOARDS  = ["nucleo-h747zi", "flapjack-v1"]
@@ -378,20 +389,20 @@ def cmd_build(args: argparse.Namespace) -> None:
     env = os.environ.copy()
     env["PATH"] = str(_HOST_ARM_BIN) + os.pathsep + env["PATH"]
 
-    output_dir = BUILD_ROOT / args.board / config
+    out_dir = output_dir(args.board, config, args.single_core)
 
-    if clean and output_dir.exists():
-        print(f"Cleaning {output_dir} …")
-        shutil.rmtree(output_dir)
+    if clean and out_dir.exists():
+        print(f"Cleaning {out_dir} …")
+        shutil.rmtree(out_dir)
 
-    cmake_cfg_log   = output_dir / "cmake_configure.log"
-    cmake_build_log = output_dir / "cmake_build.log"
-    os.makedirs(output_dir, exist_ok=True)
+    cmake_cfg_log   = out_dir / "cmake_configure.log"
+    cmake_build_log = out_dir / "cmake_build.log"
+    os.makedirs(out_dir, exist_ok=True)
 
     cmake_args = [
         "cmake",
         "-S", str(PROJECT_ROOT),
-        "-B", str(output_dir),
+        "-B", str(out_dir),
         "-G", _CMAKE_GENERATOR,
         f"-DCMAKE_BUILD_TYPE={config}",
         f"-DBOARD_NAME={args.board}",
@@ -409,14 +420,14 @@ def cmd_build(args: argparse.Namespace) -> None:
 
     print("Building …")
     try:
-        subprocess.run(["cmake", "--build", str(output_dir), "-j"],
+        subprocess.run(["cmake", "--build", str(out_dir), "-j"],
                        stdout=cmake_build_log.open("w"),
                        stderr=subprocess.STDOUT, check=True, env=env)
     except subprocess.CalledProcessError:
         print(f"ERROR: CMake build failed — see {cmake_build_log}")
         sys.exit(1)
 
-    print(f"Build complete.  Artifacts: {output_dir}")
+    print(f"Build complete.  Artifacts: {out_dir}")
 
 
 
@@ -425,8 +436,15 @@ def cmd_build(args: argparse.Namespace) -> None:
 # ══════════════════════════════════════════════════════════════════════════════
 
 def _flash(board: str, config: str, run_tests: bool, openocd: str) -> None:
-    m7     = BUILD_ROOT / board / config / "cm7.elf"
-    m4     = BUILD_ROOT / board / config / "cm4.elf"
+    # Flashing writes both cores, so it wants the dual-core tree.
+    out    = output_dir(board, config, single_core=False)
+    m7     = out / "cm7.elf"
+    m4     = out / "cm4.elf"
+    for elf in (m7, m4):
+        if not elf.exists():
+            print(f"ERROR: {elf} not found.")
+            print(f"       Build it first: python Scripts/board.py build -b {board}")
+            sys.exit(1)
     target = _TARGET_DUAL
     cmds   = [
         "init",
@@ -568,17 +586,18 @@ def _renode_binary() -> str:
 
 def cmd_renode(args: argparse.Namespace) -> None:
     config = "Release" if "r" in args.flags else "Debug"
-    output_dir = BUILD_ROOT / args.board / config
-    elf = Path(args.elf) if args.elf else output_dir / "cm7.elf"
+    # Renode models the CM7 only, so it always wants the single-core tree; a
+    # dual-core image spins forever in main() waiting on s_IsCM4Ready.
+    out_dir = output_dir(args.board, config, single_core=True)
+    elf = Path(args.elf) if args.elf else out_dir / "cm7.elf"
 
     if not elf.exists():
         print(f"ERROR: {elf} not found.")
         print(f"       Build it first: python Scripts/board.py build -b {args.board} -D sim --single-core")
         sys.exit(1)
 
-    # Renode models the CM7 only. A dual-core image spins forever in main()
-    # waiting on s_IsCM4Ready, which looks like a silent hang - catch it here.
-    cache = output_dir / "CMakeCache.txt"
+    # Belt and braces: the directory says single-core, so confirm the cache agrees.
+    cache = out_dir / "CMakeCache.txt"
     if args.elf is None and cache.exists() and "SINGLE_CORE:BOOL=ON" not in cache.read_text():
         print(f"ERROR: {elf} was built dual-core (SINGLE_CORE=OFF).")
         print("       Renode emulates the CM7 only; a dual-core image hangs in main() waiting for CM4.")

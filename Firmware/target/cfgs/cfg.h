@@ -24,8 +24,10 @@
 #define CFG_GYRO_MEASURE_ERROR_DEGS          5.0F
 #define CFG_GYRO_MEASURE_DRIFT_DEGS          0.2F
 
-#define CFG_PID_MIN_VALUE                    0.0F
+/* Rate-loop authority is symmetric: a non-negative lower clip leaves every axis
+ * unable to correct a negative error, which is not a controller. */
 #define CFG_PID_MAX_VALUE                    5.0F
+#define CFG_PID_MIN_VALUE                    (-CFG_PID_MAX_VALUE)
 #define CFG_PID_ROLL_P                       0.2F
 #define CFG_PID_ROLL_I                       0.3F
 #define CFG_PID_ROLL_D                       0.05F
