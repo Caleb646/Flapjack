@@ -3,6 +3,15 @@
 
 #include "core/core.h"
 
-eSTATUS_t SensorBaro_Update(void);
+#include "drivers/baro/barodrv.h"
+
+typedef struct {
+    BaroDriver_t drv;
+    BaroData_t data;
+    uint32_t usLastUpdate;
+} Baro_t;
+
+eSTATUS_t Baro_Init (Baro_t* pOutSensor);
+eSTATUS_t Baro_Update (Baro_t* pSensor);
 
 #endif // SENSORS_BARO_H

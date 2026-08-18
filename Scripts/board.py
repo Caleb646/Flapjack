@@ -640,7 +640,8 @@ def cmd_renode(args: argparse.Namespace) -> None:
 
     # $bin is declared with '?=' in the .resc, so setting it first wins.
     # usart1 carries the sim link (sensors/actuators/telemetry/logs); usart3 is
-    # the RX UART, so the bridge can feed real CRSF frames to Rx_Task there.
+    # the RX UART, so the bridge can feed real CRSF frames to Rx_Task there; and
+    # usart2 is the GPS UART, carrying real NMEA sentences to Gps_Task.
     monitor_cmds = "; ".join([
         f"$bin=@{elf.resolve().as_posix()}",
         f"i @{RENODE_SCRIPT.resolve().as_posix()}",
@@ -648,6 +649,8 @@ def cmd_renode(args: argparse.Namespace) -> None:
         "connector Connect sysbus.usart1 simlink",
         f'emulation CreateServerSocketTerminal {args.rc_port} "rclink" false',
         "connector Connect sysbus.usart3 rclink",
+        f'emulation CreateServerSocketTerminal {args.gps_port} "gpslink" false',
+        "connector Connect sysbus.usart2 gpslink",
         "start",
     ])
 
@@ -661,9 +664,11 @@ def cmd_renode(args: argparse.Namespace) -> None:
     print(f"Renode  |  board: {args.board}  |  config: {config}  |  {elf.name}")
     print(f"  sim link : socket://localhost:{args.port}")
     print(f"  rc link  : socket://localhost:{args.rc_port}")
+    print(f"  gps link : socket://localhost:{args.gps_port}")
     print(f"  monitor  : localhost:{args.monitor_port}")
     print(f"  bridge   : python Scripts/board.py sim --port socket://localhost:{args.port} "
-          f"--rc-port socket://localhost:{args.rc_port} --rate 400")
+          f"--rc-port socket://localhost:{args.rc_port} "
+          f"--gps-port socket://localhost:{args.gps_port} --rate 400")
     print("  Ctrl-C to stop.\n")
     try:
         subprocess.run(cmd, cwd=PROJECT_ROOT, check=False)
@@ -748,6 +753,8 @@ def main() -> None:
                           help="TCP port exposing USART1 as the sim link")
     p_renode.add_argument("--rc-port", type=int, default=4001,
                           help="TCP port exposing USART3 as the CRSF RC link")
+    p_renode.add_argument("--gps-port", type=int, default=4002,
+                          help="TCP port exposing USART2 as the NMEA GPS link")
     p_renode.add_argument("--monitor-port", type=int, default=3456,
                           help="TCP port for the Renode monitor")
     p_renode.add_argument("--elf", default=None,

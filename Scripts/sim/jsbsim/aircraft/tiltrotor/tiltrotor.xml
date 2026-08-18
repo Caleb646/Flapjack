@@ -272,4 +272,23 @@
     </axis>
   </aerodynamics>
 
+  <!--
+    Sensor models, vendored from JSBSim's own systems/ into ../../systems/.
+    <system file> resolves against the FDM root, not the installed package, so
+    they have to live in-tree; vendoring also pins them against a JSBSim upgrade.
+
+    Each publishes both sensor/<x>/<field>_true_* and a post-error
+    sensor/<x>/<field>, so the bridge can send the corrupted measurement and
+    assert against truth from the same run. Shipped with noise/bias/drift/lag
+    all zero - turn them on there, not here.
+
+    SensorImu is deliberately NOT included. Its accelerometer reports specific
+    force with the opposite Z sign to this project's convention (measured -9.80
+    resting, sim.proto specifies +9.81), and its magnetometer disagrees with
+    WMM both in Z sign and magnitude (32.2 uT against ~48 uT real). bridge.py's
+    synthesize_sensors() stays the source for accel/gyro/mag.
+  -->
+  <system file="SensorBaro"/>
+  <system file="SensorGps"/>
+
 </fdm_config>

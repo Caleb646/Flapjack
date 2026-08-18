@@ -37,6 +37,14 @@
 #define SIM_MSG_SERVO     3U
 #define SIM_MSG_MOTOR     4U
 #define SIM_MSG_TELEMETRY 5U
+/* 6 is SERIAL_MSG_SHELL_CMD (drivers/serial/serial_link.h) - one namespace. */
+#define SIM_MSG_BARO      7U
+/* 7 is the LAST usable id: SerialLink_RegisterHandler rejects msgId >=
+ * SERIAL_LINK_MAX_MSG_ID (8). Only 0 is left; the next frame after that has to
+ * raise the ceiling and grow the handler table. */
+
+/* GPS has no id here on purpose - it arrives as real NMEA on the GPS UART, the
+ * same reasoning that moved RC onto real CRSF. See tasks/gps/. */
 
 // One-time init: creates the sensor semaphores and registers the inbound frame
 // handlers. Call once from main.c before the scheduler starts.
@@ -55,9 +63,41 @@ bool SimLink_WaitMag (float mag[3], uint32_t timeoutTicks);
 // Count of SensorData samples consumed by the IMU driver (pacing telemetry).
 uint32_t SimLink_GetSensorCount (void);
 
+/*
+ * Block up to timeoutTicks for the next BaroData; copies the latest sample.
+ * Its own frame and its own semaphore, so Baro_Task is paced by the bridge's
+ * baro rate (~50 Hz) rather than the 400 Hz SensorData stream.
+ */
+bool SimLink_WaitBaro (float* pPressurePa, float* pTemperatureC, uint32_t timeoutTicks);
+
 // --- Actuator / telemetry TX (FC -> PC) -------------------------------------
 eSTATUS_t SimLink_SendServos (float const* anglesRad, uint32_t count);
 eSTATUS_t SimLink_SendThrottles (float const* throttles, uint32_t count);
-eSTATUS_t SimLink_SendTelemetry (float const eulerDeg[3], bool armed, uint32_t imuCount, bool rcLinkUp);
+
+/*
+ * Telemetry payload, gathered by tasks/sim/sim_telemetry.c.
+ *
+ * The baro/gps members are a loopback of what the FC decoded, read from the
+ * umsg topics rather than from this module's own decode slots - deliberately,
+ * so the round trip the bridge asserts on covers the driver, the device and the
+ * publish, not just the frame. A struct rather than 11 positional args.
+ */
+typedef struct {
+    float const* pEulerDeg;   // 3 elements, deg [roll, pitch, yaw]
+    bool         armed;
+    uint32_t     imuCount;
+    bool         rcLinkUp;
+
+    float        baroPa;
+    uint32_t     baroCount;
+
+    double       gpsLat;
+    double       gpsLon;
+    float        gpsAlt;
+    uint32_t     gpsSats;
+    uint32_t     gpsCount;
+} SimLinkTelemetry_t;
+
+eSTATUS_t SimLink_SendTelemetry (SimLinkTelemetry_t const* pTelemetry);
 
 #endif // DRIVERS_SIM_LINK_SIM_LINK_H

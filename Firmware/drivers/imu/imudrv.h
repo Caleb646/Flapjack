@@ -90,7 +90,7 @@ typedef struct {
 typedef struct ImuDriver_s {
     void* ctx;
     eSTATUS_t (*Read) (void* ctx, bool forcePolling, Vec3f* pAccel, Vec3f* pGyro);
-    eSTATUS_t (*IsDataReady) (void* ctx);
+    bool (*IsDataReady) (void* ctx);
 } ImuDriver_t;
 
 eSTATUS_t ImuDrv_Init(ImuDriverConf_t const* pConf, ImuDriver_t* pOutDriver);

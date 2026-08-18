@@ -29,14 +29,20 @@ the device and driver layers it uses sit in `devices/` and `drivers/`.
 |---|---|---|---|---|---|---|
 | **Sensor: IMU** | `tasks/imu/imu_task.c` (device `devices/imu.c`) | `Imu_Init()` | `Imu_Update()` | hardware (sim link / ISR) | - | `umsg_sensors_imu_t` |
 | **Sensor: Mag** | `tasks/mag/mag_task.c` (device `devices/mag.c`) | `Mag_Init()` | `Mag_Update()` | hardware | - | `umsg_sensors_mag_t` |
+| **Sensor: Baro** | `tasks/baro/baro_task.c` (device `devices/baro.c`) | `Baro_Init()` | `Baro_Update()` | hardware (sim link `BaroData`) | - | `umsg_sensors_baro_t` |
+| **Sensor: GPS** | `tasks/gps/gps_task.c` (device `devices/gps.c`) | `Gps_Init()` | `Gps_Update()` | nothing - 100 Hz `vTaskDelay` | - | `umsg_sensors_gps_t` |
 | **Sensor: RC** | `tasks/rc/rc.c` (driver `drivers/rx/rx.c` + `crsf.c`) | `Rc_Init()` | `Rc_Update()` | nothing - 50 Hz `vTaskDelay` | - | `umsg_rc_input_t` |
 | **Navigation** | `tasks/nav/nav.c` | `Nav_Init()` | `Nav_Update()` | `umsg_sensors_imu_t` | `umsg_sensors_mag_t` | `umsg_nav_state_t` |
 | **Mission** | `tasks/mission/mission.c` | `Mission_Init()` | `Mission_Update()` | `umsg_rc_input_t` (20 ms timeout) | `umsg_arming_request_t`, `umsg_nav_state_t` | `umsg_mission_state_t` |
 | **Guidance** | `tasks/guidance/guidance.c` | `Guidance_Init()` | `Guidance_Update()` | `umsg_nav_state_t` | `umsg_mission_state_t`, `umsg_rc_input_t` | `umsg_guidance_setpoints_t` |
 | **Control** | `tasks/control/control.c` (mixer `tasks/control/mixer.c`) | `Control_Init()` | `Control_Update()` | `umsg_guidance_setpoints_t` | `umsg_nav_state_t`, `umsg_mission_state_t`, `umsg_tune_pid_t` | motors/servos (direct) |
 
-GPS and Baro have device wrappers (`devices/gps.c`, `devices/baro.c`) but no task yet.
 Tasks are created and registered in `Firmware/main.c`.
+
+**Baro and GPS publish, but nothing subscribes yet.** Both topics reach umsg and are echoed in
+SIL telemetry; `Nav_Update` does not consume either, so `nav.alt` / `pos_ned` / `vel_ned` are
+still hardcoded zero. Wiring them in is the altitude-estimator task, not a plumbing task — see
+"What Is Not Yet Implemented".
 
 ### The RC path
 
@@ -69,6 +75,44 @@ the sticks centred, which is what `CRSF_CHANNEL_MIN/MAX` being wrong used to do.
 
 The SIL-only `SimTelemetry_Task` (`tasks/sim/sim_telemetry.c`) subscribes to `umsg_nav_state_t`
 and `umsg_mission_state_t` the same way; it blocks on nothing and runs off `vTaskDelay()` at 50 Hz.
+It also subscribes to `umsg_sensors_baro_t` and `umsg_sensors_gps_t` and echoes them back to the
+bridge, which asserts that what it sent is what the firmware decoded — see "The sensor loopback".
+
+### The GPS path
+
+Mirrors the RC path exactly. A receiver drives the GPS UART (`GPS_UART`, 115200 baud 8N1) with
+NMEA; the byte-wise ISR in `drivers/gps/gps.c` assembles sentences, and `Gps_Task` polls
+`Gps_Update()` at 100 Hz to parse them with `minmea`, and publishes `umsg_sensors_gps_t` on
+any sentence that carried a position.
+
+**Only a sentence carrying an actual fix publishes.** A void RMC (status `V`), a GGA with
+`fix_quality` 0, and the non-positional types (GSV/GST) all return non-`SUCCESS`, so a receiver
+with no lock cannot be mistaken for one sitting at 0,0. This matters more than it looks: the
+parser used to run and then discard every field while returning `SUCCESS`, so a fix and no fix
+were indistinguishable forever.
+
+**The driver holds exactly one assembled sentence.** A second landing before `Gps_Task` polls
+overwrites the first, so the poll rate has to outpace the *sentence* rate (a 10 Hz receiver
+emitting GGA + RMC is 20 sentences/s), and the SIL bridge spaces the two halves of a fix half a
+period apart. Renode does not pace bytes at the baud rate, so a back-to-back pair would otherwise
+land together.
+
+As with RC, the SIL feeds **real NMEA on the real UART** rather than injecting a decoded fix, so
+the emulated run exercises the assembler, the checksum and minmea. `Tests/UnitTest/test_gps.c`
+asserts the firmware's parse against golden sentences from `Scripts/sim/nmea.py`, the same encoder
+the bridge uses, so host and firmware cannot drift apart.
+
+### The sensor loopback
+
+Baro and GPS are echoed back in the SIL `Telemetry` frame (`baro_pa`, `gps_lat`, `gps_lon`,
+`gps_sats`, plus `*_count` pacing counters). The bridge asserts that every echo matches something
+it actually sent — bit-exact for baro (both hops are binary32), within ~1.1 cm for GPS (NMEA
+quantises to 5 decimal places of a minute). A run fails if the FC reports a value that was never
+sent, or decodes nothing at all.
+
+The echo is read from the **umsg topics**, not from the sim link's own decode slots. That is the
+point: it covers the driver, the device and the publish, so a parser that decodes a frame and then
+throws the fields away still fails the check.
 
 ---
 
@@ -123,7 +167,9 @@ The natural task rates emerge from the blocking receive:
 - **Guidance task** → drives Control at nav rate
 - **Mission task** → driven by RC link rate (~150 Hz)
 
-Sensor tasks for Mag, GPS, Baro run at their own hardware rates independently.
+Sensor tasks for Mag, GPS, Baro run at their own hardware rates independently — mag off the sim
+link's `SensorData`, baro off its own `BaroData` frame (~50 Hz), GPS off the NMEA UART (100 Hz
+poll of a ~10 Hz receiver).
 
 ---
 
@@ -199,7 +245,14 @@ eMISSION_MODE_RTL           = 4   // stub
   CRSF spec) and reports it through `link_quality` and a log line, but nothing acts on it: the
   channels keep their last values and the vehicle keeps flying them. Choosing an action is open, and
   a controlled descent is blocked on the missing altitude estimate below
-- **Position / velocity estimation** — `nav.pos_ned`, `nav.vel_ned`, `nav.alt` are zeroed; `NAV_VALID_POSITION/VELOCITY/BARO_ALT` are never set
+- **Position / velocity / altitude estimation** — `nav.pos_ned`, `nav.vel_ned`, `nav.alt` are
+  zeroed and `NAV_VALID_POSITION/VELOCITY/BARO_ALT` are never set. The *inputs* now exist:
+  `umsg_sensors_baro_t` and `umsg_sensors_gps_t` are published and verified end to end in the SIL.
+  What is missing is the estimator itself — `common/filter.h` has a Madgwick filter and a low-pass
+  and nothing else. The filter primitive belongs in `common/filter.c` (host-testable without a
+  board); the wiring belongs in `Nav_Update`, following the mag pattern of a non-blocking cached
+  `receive`. Open design questions: complementary vs Kalman, where the pressure datum is taken
+  (arming?), and how baro and GPS altitude blend when they disagree by metres at different rates
 - **Autonomous guidance modes** — only `eMISSION_MODE_MANUAL` is implemented in `guidance.c`
 - **PID gain tuning** — gains come from `CFG_PID_*` macros in the target config; the rate loop is wired but untested
 

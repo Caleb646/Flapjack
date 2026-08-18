@@ -9,6 +9,7 @@
 # rx stays on the (unused-in-sim) CRSF driver and needs no backend swap.
 select_driver(imu   sim)
 select_driver(mag   sim)
+select_driver(baro  sim)
 select_driver(servo sim)
 select_driver(motor sim)
 

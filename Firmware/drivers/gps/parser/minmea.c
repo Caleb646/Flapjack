@@ -367,7 +367,9 @@ enum minmea_sentence_id minmea_sentence_id (const char* sentence, bool strict) {
     if (!minmea_scan (sentence, "t", &type))
         return MINMEA_INVALID;
 
-    for (uint i = 0; i < countof (sentence_id_map); i++) {
+    /* `uint` is a POSIX extension: newlib supplies it for the ARM build, MinGW
+     * does not, so the host unit-test build could not compile this file. */
+    for (unsigned i = 0; i < countof (sentence_id_map); i++) {
         if (!memcmp (type.sentence_id, sentence_id_map[i].str, sizeof (type.sentence_id))) {
             return sentence_id_map[i].id;
         }

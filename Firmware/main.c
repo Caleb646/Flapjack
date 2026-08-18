@@ -16,6 +16,8 @@
 
 #include "tasks/imu/imu_task.h"
 #include "tasks/mag/mag_task.h"
+#include "tasks/baro/baro_task.h"
+#include "tasks/gps/gps_task.h"
 #include "tasks/rc/rc.h"
 #include "tasks/nav/nav.h"
 #include "tasks/guidance/guidance.h"
@@ -54,6 +56,14 @@ FJ_DEFINE_SHARED (bool volatile, s_IsCM4Ready)     = false;
 
 #define TASK_PRIORITY_SENSOR_IMU 2U
 #define TASK_PRIORITY_SENSOR_MAG 1U
+/* Baro sits with mag at the bottom of the sensor group: it is a ~50 Hz part and
+ * nothing consumes it on the flight path yet, so it must never preempt the
+ * 400 Hz imu chain. */
+#define TASK_PRIORITY_SENSOR_BARO 1U
+/* GPS polls a UART-fed buffer at 100 Hz and nothing on the flight path consumes
+ * it yet. One above baro/mag so a poll is not deferred behind them long enough
+ * to miss a sentence - the driver only holds one. */
+#define TASK_PRIORITY_SENSOR_GPS  2U
 #define TASK_PRIORITY_SENSOR_RC  3U
 #define TASK_PRIORITY_NAV        5U
 #define TASK_PRIORITY_GUIDANCE   4U
@@ -174,6 +184,8 @@ int main (void) {
     LOG_INFO ("Starting scheduler");
     CREATE_TASK (Imu_Task,          "imu",      STACK_SENSOR,    TASK_PRIORITY_SENSOR_IMU);
     CREATE_TASK (Mag_Task,          "mag",      STACK_SENSOR,    TASK_PRIORITY_SENSOR_MAG);
+    CREATE_TASK (Baro_Task,         "baro",     STACK_SENSOR,    TASK_PRIORITY_SENSOR_BARO);
+    CREATE_TASK (Gps_Task,          "gps",      STACK_SENSOR,    TASK_PRIORITY_SENSOR_GPS);
     CREATE_TASK (Rc_Task,           "rc",       STACK_SENSOR,    TASK_PRIORITY_SENSOR_RC);
     CREATE_TASK (Nav_Task,          "nav",      STACK_NAV,       TASK_PRIORITY_NAV);
     CREATE_TASK (Guidance_Task,     "guidance", STACK_GUIDANCE,  TASK_PRIORITY_GUIDANCE);

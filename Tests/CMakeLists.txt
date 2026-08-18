@@ -62,10 +62,19 @@ add_library(drone_rx_obj OBJECT
     ${COMMON_SRC_DIR}/drivers/rx/crsf.c
 )
 
+# gps.c + its vendored minmea parser. Same arrangement as drone_rx_obj: the UART
+# dependency (UartPort_Init, reached via Gps_Init_) is stubbed in the test itself
+# rather than pulling in uart.c, which does not build against hal_stub.c.
+add_library(drone_gps_obj OBJECT
+    ${COMMON_SRC_DIR}/drivers/gps/gps.c
+    ${COMMON_SRC_DIR}/drivers/gps/parser/minmea.c
+)
+
 foreach(lib
     drone_common_obj
     drone_peripherals_obj
     drone_rx_obj
+    drone_gps_obj
 )
     target_include_directories(${lib} PRIVATE
         ${COMMON_INC_DIR}
@@ -95,3 +104,4 @@ function(add_test_exe test_name)
 endfunction()
 
 add_test_exe(test_crsf OBJECTS drone_common_obj drone_peripherals_obj drone_rx_obj)
+add_test_exe(test_gps  OBJECTS drone_common_obj drone_peripherals_obj drone_gps_obj)

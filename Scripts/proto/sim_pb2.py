@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\tsim.proto\"6\n\nSensorData\x12\r\n\x05\x61\x63\x63\x65l\x18\x01 \x03(\x02\x12\x0c\n\x04gyro\x18\x02 \x03(\x02\x12\x0b\n\x03mag\x18\x03 \x03(\x02\"\x19\n\x08ServoCmd\x12\r\n\x05\x61ngle\x18\x01 \x03(\x02\"\x1c\n\x08MotorCmd\x12\x10\n\x08throttle\x18\x01 \x03(\x02\"P\n\tTelemetry\x12\r\n\x05\x65uler\x18\x01 \x03(\x02\x12\r\n\x05\x61rmed\x18\x02 \x01(\x08\x12\x11\n\timu_count\x18\x03 \x01(\r\x12\x12\n\nrc_link_up\x18\x04 \x01(\x08\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\tsim.proto\"6\n\nSensorData\x12\r\n\x05\x61\x63\x63\x65l\x18\x01 \x03(\x02\x12\x0c\n\x04gyro\x18\x02 \x03(\x02\x12\x0b\n\x03mag\x18\x03 \x03(\x02\"6\n\x08\x42\x61roData\x12\x13\n\x0bpressure_pa\x18\x01 \x01(\x02\x12\x15\n\rtemperature_c\x18\x02 \x01(\x02\"\x19\n\x08ServoCmd\x12\r\n\x05\x61ngle\x18\x01 \x03(\x02\"\x1c\n\x08MotorCmd\x12\x10\n\x08throttle\x18\x01 \x03(\x02\"\xcd\x01\n\tTelemetry\x12\r\n\x05\x65uler\x18\x01 \x03(\x02\x12\r\n\x05\x61rmed\x18\x02 \x01(\x08\x12\x11\n\timu_count\x18\x03 \x01(\r\x12\x12\n\nrc_link_up\x18\x04 \x01(\x08\x12\x0f\n\x07\x62\x61ro_pa\x18\x05 \x01(\x02\x12\x12\n\nbaro_count\x18\x06 \x01(\r\x12\x0f\n\x07gps_lat\x18\x07 \x01(\x01\x12\x0f\n\x07gps_lon\x18\x08 \x01(\x01\x12\x0f\n\x07gps_alt\x18\t \x01(\x02\x12\x10\n\x08gps_sats\x18\n \x01(\r\x12\x11\n\tgps_count\x18\x0b \x01(\rb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,10 +33,12 @@ if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_SENSORDATA']._serialized_start=13
   _globals['_SENSORDATA']._serialized_end=67
-  _globals['_SERVOCMD']._serialized_start=69
-  _globals['_SERVOCMD']._serialized_end=94
-  _globals['_MOTORCMD']._serialized_start=96
-  _globals['_MOTORCMD']._serialized_end=124
-  _globals['_TELEMETRY']._serialized_start=126
-  _globals['_TELEMETRY']._serialized_end=206
+  _globals['_BARODATA']._serialized_start=69
+  _globals['_BARODATA']._serialized_end=123
+  _globals['_SERVOCMD']._serialized_start=125
+  _globals['_SERVOCMD']._serialized_end=150
+  _globals['_MOTORCMD']._serialized_start=152
+  _globals['_MOTORCMD']._serialized_end=180
+  _globals['_TELEMETRY']._serialized_start=183
+  _globals['_TELEMETRY']._serialized_end=388
 # @@protoc_insertion_point(module_scope)

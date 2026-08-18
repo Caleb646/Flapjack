@@ -7,23 +7,52 @@ binary) debug UART:
 
 ```
  PC: JSBSim + bridge.py  ──SensorData───────────►  FC (sim driver profile)
+                         ──BaroData─────────────►
                          ◄──ServoCmd/MotorCmd────  Control loop
-                         ◄──Telemetry────────────  (validation)
+                         ◄──Telemetry────────────  (validation + sensor loopback)
 
-                         ──CRSF 0x16────────────►  FC RX UART (USART3)
+                         ──CRSF 0x16────────────►  FC RX UART  (USART3)
+                         ──NMEA GGA/RMC─────────►  FC GPS UART (USART2)
 ```
 
-**Two wires, deliberately.** Sensors, actuators, telemetry and logs share the
-debug UART. RC goes down a *separate* wire as real CRSF, exactly as a receiver
-would drive it, so a SIL run exercises the UART ISR, CRSF deframing, the CRC,
-the 11-bit channel unpack and the tick→µs mapping. There used to be an `RcInput`
-sim-link message that wrote `g_Rx.channels` directly; it bypassed all of that and
-has been removed. **Frame id 2 is retired — do not reuse it.**
+**Three wires, deliberately.** Sensors, actuators, telemetry and logs share the
+debug UART. RC and GPS go down *separate* wires as real CRSF and real NMEA,
+exactly as the parts would drive them, so a SIL run exercises the UART ISRs, the
+deframing, the checksums and the parsers. There used to be an `RcInput` sim-link
+message that wrote `g_Rx.channels` directly; it bypassed all of that and has been
+removed. **Frame id 2 is retired — do not reuse it.** GPS was never given a
+sim-link frame for the same reason.
+
+Baro is the exception that proves the rule: it is a register read on real
+hardware, not a byte protocol, so there is no wire path worth exercising and it
+rides the sim link — but on **its own frame at its own rate**, not folded into
+the 400 Hz `SensorData`. A 10–50 Hz part arriving 400 times a second would pace
+`Baro_Task` wrongly and erase the rate mismatch a nav filter has to cope with.
 
 - **PC → FC:** synthesized IMU (accel m/s², gyro deg/s) + mag (normalized) on the
-  sim link; RC channels as CRSF `0x16` frames on the RX UART.
+  sim link at 400 Hz; `BaroData` (Pa, °C) on the sim link at 50 Hz; RC channels as
+  CRSF `0x16` frames on the RX UART; GPS as NMEA `GGA`/`RMC` on the GPS UART.
 - **FC → PC:** per-servo tilt **angle** (rad) and per-motor **throttle** (0–1),
-  plus a `Telemetry` frame (nav euler, armed, IMU sample count, RC link state).
+  plus a `Telemetry` frame (nav euler, armed, IMU sample count, RC link state,
+  and the baro/GPS **loopback** described below).
+
+### The sensor loopback
+
+`Telemetry` echoes back the baro pressure and GPS fix the firmware decoded, read
+from the **umsg topics** rather than from the sim link's own decode slots. The
+bridge asserts every echo matches something it actually sent:
+
+- **baro: bit-exact.** Both hops are IEEE 754 binary32, so a correct chain
+  reproduces the sent value exactly — no tolerance, and under `--dry-run` the
+  pressure is *swept* so a latched or stale value cannot pass by accident.
+- **GPS: within ~1.1 cm.** NMEA quantises the coordinate to 5 decimal places of a
+  minute (~1.9 cm), so the check compares against the post-quantisation value.
+  The tolerance is tight enough that narrowing the chain back to `float`
+  (~2.2e-6 deg at mid latitudes) fails.
+
+This covers the whole chain — wire, driver, device, umsg publish — in one
+comparison. It is specifically the check that catches a parser which succeeds
+while discarding its result, which is exactly what `Gps_Update_` used to do.
 
 Timing is **free-running real-time**: sensors stream at a fixed rate and JSBSim
 is stepped to wall-clock; the FC consumes the latest sample and replies async.
@@ -49,7 +78,7 @@ python Scripts/board.py gen
 ## 2. Build + flash the HIL firmware
 
 Configure the firmware with the `sim` driver profile (selects the sim backends
-for imu/mag/servo/motor and defines `SIM_HIL`):
+for imu/mag/baro/servo/motor and defines `SIM_HIL`):
 
 ```
 python Scripts/board.py build -b flapjack-v1 -D sim
@@ -100,6 +129,10 @@ and streams synthesized sensors back. Useful flags:
 | `--rc-port` | (none) | port carrying CRSF to the FC's RX UART. **The only RC path** — without it the FC never arms |
 | `--rc-baud` | 416666 | CRSF spec default; ignored for a `socket://` URL |
 | `--rc-rate` | 50 | CRSF frame rate (Hz); a real link runs 50–150 |
+| `--baro-rate` | 50 | `BaroData` frame rate (Hz); 0 disables baro |
+| `--gps-port` | (none) | port carrying NMEA to the FC's GPS UART. **The only GPS path** |
+| `--gps-baud` | 115200 | matches `GPS_BAUD_RATE`; ignored for a `socket://` URL |
+| `--gps-rate` | 10 | fix rate (Hz). GGA and RMC go out half a period apart — the driver holds one sentence, so a burst would lose the first |
 | `--plan` | (none) | YAML flight plan to fly once armed |
 | `--rc-stop` | (none) | stop sending CRSF after N seconds, imitating a receiver failsafe |
 | `--hold-until-armed` | on | freeze the FDM at its IC until the FC arms |
@@ -131,6 +164,19 @@ not pinned at 1.000, servos inside ±π/2, FC actually armed — deliberately *n
 golden trajectory, because manual mode is a rate loop and the attitude a run
 settles at is not repeatable (`KnownIssues.md` §1.13).
 
+The **sensor loopback** lines are the exception: they *are* exact assertions, and
+they can be, because they compare the firmware against what the bridge itself
+sent rather than against an unvalidated flight model. A healthy run reads:
+
+```
+[checks] baro         2342 sent, 2331 echoed, 0 mismatched
+[checks] gps          976 sent, 976 echoed, 0 mismatched
+```
+
+Both lines are silent when the sensor was not streamed, so an older plan or a
+`--baro-rate 0` run still passes. `0 echoed` against a non-zero `sent` is a
+failure, not a skip — that is the "FC decoded none" case.
+
 ## Wire protocol
 
 `[0xAA][0x55][msg_id][len][payload][crc8]` — `crc8` poly 0x07, init 0x00, over
@@ -144,6 +190,18 @@ settles at is not repeatable (`KnownIssues.md` §1.13).
   the firmware's deframer, CRC, channel unpack and tick→µs mapping against the spec,
   and asserts a golden frame produced by `Scripts/sim/crsf.py` byte for byte, so the
   encoder here and the decoder there cannot drift apart.
+- **The NMEA path is too.** `Tests/UnitTest/test_gps.c` does the same job for GPS
+  against golden sentences from `Scripts/sim/nmea.py`: the byte assembler
+  (resync, partial sentences, one-byte-at-a-time delivery), the coordinate and
+  knots→m/s conversions, checksum rejection, and that a void RMC or a
+  `fix_quality` 0 GGA is **not** reported as a fix.
+- **The sensor models come from JSBSim.** `SensorBaro.xml` and `SensorGps.xml` are
+  vendored into `jsbsim/systems/` from the JSBSim distribution and included by
+  `tiltrotor.xml`. They ship with `<noise>`/`<bias>`/`<drift_rate>`/`<lag>` all
+  zero — turn them on **there** to test estimator robustness, not in `bridge.py`.
+  `SensorImu.xml` is deliberately **not** used: its accelerometer reports the
+  opposite Z sign to this project's convention, and its magnetometer disagrees
+  with WMM in both sign and magnitude (32.2 µT against ~48 µT real).
 - **The FDM is sized to the real airframe** (0.85 kg, 7 in props, 1000 KV assumed
   on 6S): hover at 50 % throttle, 2:1 thrust-to-weight, tilt verified against
   measured force directions. Thrust comes from `<external_reactions>` rather than
@@ -170,8 +228,14 @@ protobuf messages, same `bridge.py`.
 ```bash
 python Scripts/board.py build -b flapjack-v1 -D sim --single-core
 python Scripts/board.py renode -b flapjack-v1                          # terminal 1
-python Scripts/board.py sim --port socket://localhost:4000 --rc-port socket://localhost:4001 --rate 400   # terminal 2
+python Scripts/board.py sim --port socket://localhost:4000 --rc-port socket://localhost:4001 \
+    --gps-port socket://localhost:4002 --rate 400                      # terminal 2
 ```
+
+USART2 (the GPS UART) is exposed on **4002** alongside the other two. Like
+USART3 it needed no Renode work beyond a frequency pin — it is a real
+`UART.STM32F7_USART` in the shipped platform. `--gps-port` is optional: leave it
+off and `Gps_Task` simply never sees a fix, and the GPS checks stay silent.
 
 `renode` takes the place of `flash`; it blocks until Ctrl-C. **Restart it between
 runs** rather than re-attaching the bridge: a gap in the sensor stream hands
@@ -180,7 +244,10 @@ several seconds of recovery.
 
 USART3 needed no Renode work beyond a frequency pin in the overlay — it is a real
 `UART.STM32F7_USART` in the shipped platform, wired through `exti@28 -> nvic@39`,
-and `Crsf_Init` was already claiming it on every SIL boot.
+and `Crsf_Init` was already claiming it on every SIL boot. USART2 is the same
+story, except that nothing was claiming it: `Gps_Init` had no callers at all, and
+the port config it passed to `UartPort_Init` was zeroed, so the GPS UART was
+never opened on any build.
 
 Measured behaviour (see `EmulatorResearch.md` §12):
 

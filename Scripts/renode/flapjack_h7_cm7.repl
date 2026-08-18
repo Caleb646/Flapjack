@@ -26,6 +26,9 @@ timer16:                        // HAL timebase (stm32h7xx_hal_timebase_tim.c)
 usart1:                         // debug log / sim link
     frequency: 64000000
 
+usart2:                         // NMEA GPS receiver (BRD_GET_UART_ID(GPS))
+    frequency: 64000000
+
 usart3:                         // CRSF RC receiver (BRD_GET_UART_ID(RX))
     frequency: 64000000
 

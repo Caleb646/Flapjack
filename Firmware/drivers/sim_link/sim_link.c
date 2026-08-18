@@ -27,10 +27,14 @@ typedef struct {
 static SemaphoreHandle_t s_sensorSem;   // given on each fresh SensorData (IMU consumer)
 static SemaphoreHandle_t s_magSem;      // ditto for the mag consumer - separate because a
                                         // binary semaphore only ever wakes one waiter
+static SemaphoreHandle_t s_baroSem;     // given on each fresh BaroData (its own frame, own rate)
 
 static SensorSlot_t s_sensor;           // latest sample (critical-section guarded)
 static volatile bool s_haveSensor;
 static volatile uint32_t s_sensorCount;
+
+static float s_baroPa;                  // latest BaroData (critical-section guarded)
+static float s_baroTempC;
 
 /* --- frame handlers (called from the SerialLink RX task) ------------------- */
 
@@ -50,16 +54,33 @@ static void SimLink_OnSensor (uint8_t const* pPayload, uint8_t len) {
     (void)xSemaphoreGive (s_magSem);
 }
 
+static void SimLink_OnBaro (uint8_t const* pPayload, uint8_t len) {
+    BaroData msg = BaroData_init_zero;
+    pb_istream_t is = pb_istream_from_buffer (pPayload, len);
+    if (!pb_decode (&is, BaroData_fields, &msg)) {
+        return;
+    }
+    taskENTER_CRITICAL ();
+    s_baroPa    = msg.pressure_pa;
+    s_baroTempC = msg.temperature_c;
+    taskEXIT_CRITICAL ();
+    (void)xSemaphoreGive (s_baroSem);
+}
+
 eSTATUS_t SimLink_Init (void) {
 
     s_sensorSem = xSemaphoreCreateBinary ();
     s_magSem    = xSemaphoreCreateBinary ();
-    if (!s_sensorSem || !s_magSem) {
+    s_baroSem   = xSemaphoreCreateBinary ();
+    if (!s_sensorSem || !s_magSem || !s_baroSem) {
         return eSTATUS_FAILURE;
     }
 
     /* FC->PC ids (3-5) are never expected inbound, so they get no handler. */
     if (STATUS_FAIL (SerialLink_RegisterHandler (SIM_MSG_SENSOR, SimLink_OnSensor))) {
+        return eSTATUS_FAILURE;
+    }
+    if (STATUS_FAIL (SerialLink_RegisterHandler (SIM_MSG_BARO, SimLink_OnBaro))) {
         return eSTATUS_FAILURE;
     }
     return eSTATUS_SUCCESS;
@@ -86,6 +107,17 @@ bool SimLink_WaitMag (float mag[3], uint32_t timeoutTicks) {
     }
     taskENTER_CRITICAL ();
     memcpy (mag, s_sensor.mag, sizeof (s_sensor.mag));
+    taskEXIT_CRITICAL ();
+    return true;
+}
+
+bool SimLink_WaitBaro (float* pPressurePa, float* pTemperatureC, uint32_t timeoutTicks) {
+    if (xSemaphoreTake (s_baroSem, timeoutTicks) != pdTRUE) {
+        return false;
+    }
+    taskENTER_CRITICAL ();
+    *pPressurePa   = s_baroPa;
+    *pTemperatureC = s_baroTempC;
     taskEXIT_CRITICAL ();
     return true;
 }
@@ -126,11 +158,21 @@ eSTATUS_t SimLink_SendThrottles (float const* throttles, uint32_t count) {
     return SimLink_SendFrame (SIM_MSG_MOTOR, MotorCmd_fields, &msg);
 }
 
-eSTATUS_t SimLink_SendTelemetry (float const eulerDeg[3], bool armed, uint32_t imuCount, bool rcLinkUp) {
+eSTATUS_t SimLink_SendTelemetry (SimLinkTelemetry_t const* pTelemetry) {
+    if (!pTelemetry || !pTelemetry->pEulerDeg) {
+        return eSTATUS_NULL_ARG;
+    }
     Telemetry msg = Telemetry_init_zero;
-    memcpy (msg.euler, eulerDeg, sizeof (msg.euler));
-    msg.armed       = armed;
-    msg.imu_count   = imuCount;
-    msg.rc_link_up  = rcLinkUp;
+    memcpy (msg.euler, pTelemetry->pEulerDeg, sizeof (msg.euler));
+    msg.armed       = pTelemetry->armed;
+    msg.imu_count   = pTelemetry->imuCount;
+    msg.rc_link_up  = pTelemetry->rcLinkUp;
+    msg.baro_pa     = pTelemetry->baroPa;
+    msg.baro_count  = pTelemetry->baroCount;
+    msg.gps_lat     = pTelemetry->gpsLat;
+    msg.gps_lon     = pTelemetry->gpsLon;
+    msg.gps_alt     = pTelemetry->gpsAlt;
+    msg.gps_sats    = pTelemetry->gpsSats;
+    msg.gps_count   = pTelemetry->gpsCount;
     return SimLink_SendFrame (SIM_MSG_TELEMETRY, Telemetry_fields, &msg);
 }

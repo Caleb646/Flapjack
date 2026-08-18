@@ -4,9 +4,11 @@
 # Machine setup only - no `start`, no UART backend. Callers decide how to run it
 # and where the two UARTs go:
 #
-#   usart1  sim link   - sensors, actuators, telemetry, logs, shell
+#   usart1  sim link   - sensors (IMU/mag/baro), actuators, telemetry, logs, shell
 #   usart3  RX UART    - real CRSF frames from the bridge. This is the FC's only
 #                        RC input; with nothing attached it never arms.
+#   usart2  GPS UART   - real NMEA sentences from the bridge. Optional: with
+#                        nothing attached Gps_Task simply never sees a fix.
 #
 # e.g.:
 #
@@ -14,14 +16,16 @@
 #   renode --console --disable-xwt -P -1 -e "i @Scripts/renode/flapjack_sil.resc; \
 #       sysbus.usart1 CreateFileBackend @boot.log; emulation RunFor \"3\"; quit"
 #
-#   # sim link on TCP 4000 + CRSF RC on 4001, for Scripts/sim/bridge.py
+#   # sim link on TCP 4000 + CRSF RC on 4001 + NMEA GPS on 4002, for bridge.py
 #   renode --console -e "i @Scripts/renode/flapjack_sil.resc; \
 #       emulation CreateServerSocketTerminal 4000 \"simlink\" false; \
 #       connector Connect sysbus.usart1 simlink; \
 #       emulation CreateServerSocketTerminal 4001 \"rclink\" false; \
-#       connector Connect sysbus.usart3 rclink; start"
+#       connector Connect sysbus.usart3 rclink; \
+#       emulation CreateServerSocketTerminal 4002 \"gpslink\" false; \
+#       connector Connect sysbus.usart2 gpslink; start"
 #
-# `board.py renode` wires both for you (--port / --rc-port).
+# `board.py renode` wires all three for you (--port / --rc-port / --gps-port).
 
 $bin ?= @Build/flapjack-v1/Debug/cm7.elf
 

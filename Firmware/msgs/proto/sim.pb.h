@@ -17,6 +17,15 @@ typedef struct _SensorData {
     float mag[3]; /* normalized field, body frame */
 } SensorData;
 
+/* PC -> FC: barometer sample, on its OWN frame rather than folded into
+ SensorData. A baro is a 10-50 Hz part; riding the 400 Hz IMU frame would
+ either pace Baro_Task at 400 Hz or force an artificial decimation on the FC,
+ and it removes the very rate mismatch a nav filter has to cope with. */
+typedef struct _BaroData {
+    float pressure_pa; /* static pressure, Pa */
+    float temperature_c; /* degrees C */
+} BaroData;
+
 /* FC -> PC: servo (tilt) command, one angle per servo. */
 typedef struct _ServoCmd {
     pb_size_t angle_count;
@@ -29,12 +38,30 @@ typedef struct _MotorCmd {
     float throttle[8]; /* 0.0 - 1.0, per motor */
 } MotorCmd;
 
-/* FC -> PC: telemetry for open-loop validation. */
+/* FC -> PC: telemetry for open-loop validation.
+
+ The baro_* and gps_* fields are a deliberate LOOPBACK, not an estimate: the
+ FC echoes back the sensor value it decoded, so the bridge can assert that
+ what it sent is what the firmware understood. That round trip is the whole
+ acceptance test for the sensor path - it covers the frame/UART, the driver,
+ the device and the umsg publish in one comparison, and it is exactly the
+ check that catches a parser which succeeds while discarding its result.
+
+ The *_count fields are the pacing metric, same role as imu_count: they should
+ track frames/sentences sent 1:1, and a shortfall means samples are being
+ dropped rather than mis-decoded. */
 typedef struct _Telemetry {
     float euler[3]; /* deg [roll, pitch, yaw] from nav */
     bool armed;
     uint32_t imu_count; /* increments per consumed IMU sample (pacing check) */
     bool rc_link_up; /* CRSF frames still arriving (Rx_IsLinkUp) */
+    float baro_pa; /* last pressure decoded from BaroData, Pa */
+    uint32_t baro_count; /* BaroData frames consumed by the baro driver */
+    double gps_lat; /* last fix decoded from NMEA, degrees */
+    double gps_lon;
+    float gps_alt; /* metres MSL */
+    uint32_t gps_sats;
+    uint32_t gps_count; /* GPS publishes consumed (NMEA sentences decoded) */
 } Telemetry;
 
 
@@ -44,24 +71,35 @@ extern "C" {
 
 /* Initializer values for message structs */
 #define SensorData_init_default                  {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}}
+#define BaroData_init_default                    {0, 0}
 #define ServoCmd_init_default                    {0, {0, 0, 0, 0, 0, 0, 0, 0}}
 #define MotorCmd_init_default                    {0, {0, 0, 0, 0, 0, 0, 0, 0}}
-#define Telemetry_init_default                   {{0, 0, 0}, 0, 0, 0}
+#define Telemetry_init_default                   {{0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 #define SensorData_init_zero                     {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}}
+#define BaroData_init_zero                       {0, 0}
 #define ServoCmd_init_zero                       {0, {0, 0, 0, 0, 0, 0, 0, 0}}
 #define MotorCmd_init_zero                       {0, {0, 0, 0, 0, 0, 0, 0, 0}}
-#define Telemetry_init_zero                      {{0, 0, 0}, 0, 0, 0}
+#define Telemetry_init_zero                      {{0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define SensorData_accel_tag                     1
 #define SensorData_gyro_tag                      2
 #define SensorData_mag_tag                       3
+#define BaroData_pressure_pa_tag                 1
+#define BaroData_temperature_c_tag               2
 #define ServoCmd_angle_tag                       1
 #define MotorCmd_throttle_tag                    1
 #define Telemetry_euler_tag                      1
 #define Telemetry_armed_tag                      2
 #define Telemetry_imu_count_tag                  3
 #define Telemetry_rc_link_up_tag                 4
+#define Telemetry_baro_pa_tag                    5
+#define Telemetry_baro_count_tag                 6
+#define Telemetry_gps_lat_tag                    7
+#define Telemetry_gps_lon_tag                    8
+#define Telemetry_gps_alt_tag                    9
+#define Telemetry_gps_sats_tag                   10
+#define Telemetry_gps_count_tag                  11
 
 /* Struct field encoding specification for nanopb */
 #define SensorData_FIELDLIST(X, a) \
@@ -70,6 +108,12 @@ X(a, STATIC,   FIXARRAY, FLOAT,    gyro,              2) \
 X(a, STATIC,   FIXARRAY, FLOAT,    mag,               3)
 #define SensorData_CALLBACK NULL
 #define SensorData_DEFAULT NULL
+
+#define BaroData_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, FLOAT,    pressure_pa,       1) \
+X(a, STATIC,   SINGULAR, FLOAT,    temperature_c,     2)
+#define BaroData_CALLBACK NULL
+#define BaroData_DEFAULT NULL
 
 #define ServoCmd_FIELDLIST(X, a) \
 X(a, STATIC,   REPEATED, FLOAT,    angle,             1)
@@ -85,27 +129,37 @@ X(a, STATIC,   REPEATED, FLOAT,    throttle,          1)
 X(a, STATIC,   FIXARRAY, FLOAT,    euler,             1) \
 X(a, STATIC,   SINGULAR, BOOL,     armed,             2) \
 X(a, STATIC,   SINGULAR, UINT32,   imu_count,         3) \
-X(a, STATIC,   SINGULAR, BOOL,     rc_link_up,        4)
+X(a, STATIC,   SINGULAR, BOOL,     rc_link_up,        4) \
+X(a, STATIC,   SINGULAR, FLOAT,    baro_pa,           5) \
+X(a, STATIC,   SINGULAR, UINT32,   baro_count,        6) \
+X(a, STATIC,   SINGULAR, DOUBLE,   gps_lat,           7) \
+X(a, STATIC,   SINGULAR, DOUBLE,   gps_lon,           8) \
+X(a, STATIC,   SINGULAR, FLOAT,    gps_alt,           9) \
+X(a, STATIC,   SINGULAR, UINT32,   gps_sats,         10) \
+X(a, STATIC,   SINGULAR, UINT32,   gps_count,        11)
 #define Telemetry_CALLBACK NULL
 #define Telemetry_DEFAULT NULL
 
 extern const pb_msgdesc_t SensorData_msg;
+extern const pb_msgdesc_t BaroData_msg;
 extern const pb_msgdesc_t ServoCmd_msg;
 extern const pb_msgdesc_t MotorCmd_msg;
 extern const pb_msgdesc_t Telemetry_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
 #define SensorData_fields &SensorData_msg
+#define BaroData_fields &BaroData_msg
 #define ServoCmd_fields &ServoCmd_msg
 #define MotorCmd_fields &MotorCmd_msg
 #define Telemetry_fields &Telemetry_msg
 
 /* Maximum encoded size of messages (where known) */
+#define BaroData_size                            10
 #define MotorCmd_size                            40
-#define SIM_PB_H_MAX_SIZE                        SensorData_size
+#define SIM_PB_H_MAX_SIZE                        Telemetry_size
 #define SensorData_size                          45
 #define ServoCmd_size                            40
-#define Telemetry_size                           25
+#define Telemetry_size                           71
 
 #ifdef __cplusplus
 } /* extern "C" */

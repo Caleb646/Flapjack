@@ -1,22 +1,48 @@
-#include "devices/gps.h"
-#include "drivers/gps/gps.h"
-#include "umsg_sensors.h"
+#include "core/core.h"
 
-eSTATUS_t SensorGps_Update(void) {
-    eSTATUS_t status = Gps_Update();
+#include "devices/gps.h"
+
+#include "drivers/gps/gpsdrv.h"
+
+#include <string.h>
+
+eSTATUS_t Gps_Init(Gps_t* pOutGps) {
+
+    if (!pOutGps) {
+        return eSTATUS_NULL_ARG;
+    }
+
+    memset(pOutGps, 0, sizeof(Gps_t));
+    eSTATUS_t status = GpsDrv_Init(&pOutGps->driver);
     if (STATUS_FAIL(status)) {
+        LOG_ERROR ("Failed to initialize GPS driver");
         return status;
     }
 
-    umsg_sensors_gps_t msg = {
-        .lat      = (double)g_Gps.data.latitude,
-        .lon      = (double)g_Gps.data.longitude,
-        .alt      = g_Gps.data.altitude,
-        .speed    = g_Gps.data.speed,
-        .course   = g_Gps.data.course,
-        .fix_type = g_Gps.data.fixType,
-        .sats     = g_Gps.data.satellitesInUse,
-    };
-    umsg_sensors_gps_publish(&msg);
     return eSTATUS_SUCCESS;
+}
+
+eSTATUS_t Gps_Update(Gps_t* pGps) {
+
+    if (!pGps) {
+        return eSTATUS_NULL_ARG;
+    }
+
+    if(!pGps->driver.IsDataReady(pGps->driver.ctx)) {
+        return eSTATUS_BUSY;
+    }
+
+    return pGps->driver.Read(pGps->driver.ctx, false, &pGps->data);
+}
+
+bool Gps_HasFix(Gps_t const* pGps) {
+
+    if (!pGps || pGps->data.fixType == 0U) {
+        return false;
+    }
+
+    /* Unsigned subtraction, deliberately: a uint32_t of microseconds wraps every
+     * ~71.6 minutes, and (now - then) stays correct across the wrap where an
+     * absolute comparison would not. */
+    return (GetMicroseconds() - pGps->data.usLastFix) < GPS_FIX_TIMEOUT_US;
 }
