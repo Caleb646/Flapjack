@@ -372,3 +372,90 @@ eSTATUS_t LowPassFilter_Init (LowPassFilter_t* pFilter) {
     }
     return eSTATUS_SUCCESS;
 }
+/*
+ * ISA inverse barometric formula, h = 44330 * (1 - (P/P0)^(1/5.255)).
+ *
+ * referencePa is the DATUM, not necessarily sea level: pass the pressure
+ * measured where altitude should read zero and the result is height above that
+ * point. Passing 101325 gives ISA pressure altitude instead.
+ *
+ * Measured against JSBSim's atmosphere from 0 to 1000 m, this agrees to within
+ * 5 cm (SensorSilResearch.md 2.3). That is what makes it usable as a SIL test
+ * oracle: the check is firmware against the ISA, not firmware against an
+ * unvalidated flight model.
+ */
+float Baro_PressureToAltitude (float pressurePa, float referencePa) {
+
+    /* powf of a non-positive base is a domain error, and a zero reference is a
+     * divide by zero. Both mean the datum or the sample is garbage rather than
+     * that the vehicle is at some altitude, so report the datum height and let
+     * the caller's validity flag carry the doubt. */
+    if (pressurePa <= 0.0F || referencePa <= 0.0F) {
+        return 0.0F;
+    }
+    return 44330.0F * (1.0F - powf (pressurePa / referencePa, 1.0F / 5.255F));
+}
+
+eSTATUS_t AltitudeFilter_Init (AltitudeFilter_t* pFilter) {
+
+    if (!pFilter || pFilter->cfg.kAlt < 0.0F || pFilter->cfg.kVel < 0.0F ||
+        pFilter->cfg.kBias < 0.0F || pFilter->cfg.maxBias <= 0.0F) {
+        return eSTATUS_FAILURE;
+    }
+    pFilter->alt       = 0.0F;
+    pFilter->vz        = 0.0F;
+    pFilter->accelBias = 0.0F;
+    return eSTATUS_SUCCESS;
+}
+
+/*
+ * Dead-reckon the vertical state forward one IMU sample. accelUp is UP-positive
+ * acceleration with gravity already removed - see Nav_VerticalAccelUp(), which
+ * owns the frame rotation and the sign convention.
+ *
+ * The 0.5*a*dt^2 term is not decoration: at 400 Hz it is small, but this is the
+ * only place altitude gains any information faster than the baro's 50 Hz, and
+ * dropping it biases every climb and descent in the same direction.
+ */
+eSTATUS_t AltitudeFilter_Predict (AltitudeFilter_t* pFilter, float accelUp, float dt) {
+
+    if (!pFilter || dt <= 0.0F) {
+        return eSTATUS_FAILURE;
+    }
+    float accel = accelUp - pFilter->accelBias;
+    pFilter->alt += (pFilter->vz * dt) + (0.5F * accel * dt * dt);
+    pFilter->vz += accel * dt;
+    return eSTATUS_SUCCESS;
+}
+
+/*
+ * Pull the state towards a fresh baro altitude. dt is the interval since the
+ * LAST baro sample, not since the last predict - the gains are per second of
+ * correction, so feeding the IMU's dt here would scale every gain by the rate
+ * ratio and turn a 1 s time constant into an oscillation.
+ *
+ * Call this only on iterations where a new sample actually arrived. Re-applying
+ * the same measurement does not average out; it just multiplies the gain.
+ */
+eSTATUS_t AltitudeFilter_Correct (AltitudeFilter_t* pFilter, float baroAlt, float dt) {
+
+    if (!pFilter || dt <= 0.0F) {
+        return eSTATUS_FAILURE;
+    }
+
+    float error = baroAlt - pFilter->alt;
+    pFilter->alt += pFilter->cfg.kAlt * error * dt;
+    pFilter->vz += pFilter->cfg.kVel * error * dt;
+
+    /* Estimated altitude below the baro's (error > 0) means the accel path is
+     * under-integrating, i.e. the bias being subtracted is too large - so the
+     * bias moves opposite the error. */
+    pFilter->accelBias -= pFilter->cfg.kBias * error * dt;
+
+    if (pFilter->accelBias > pFilter->cfg.maxBias) {
+        pFilter->accelBias = pFilter->cfg.maxBias;
+    } else if (pFilter->accelBias < -pFilter->cfg.maxBias) {
+        pFilter->accelBias = -pFilter->cfg.maxBias;
+    }
+    return eSTATUS_SUCCESS;
+}

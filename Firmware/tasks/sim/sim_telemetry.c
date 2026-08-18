@@ -67,8 +67,13 @@ void SimTelemetry_Task (void* args) {
             gpsCount++;
         }
 
+        /* Element-wise rather than a memcpy after the fact: C cannot copy one
+         * array into another inside a designated initializer, and splitting the
+         * copies out below would mean a forgotten one leaves the field silently
+         * zeroed by the initializer. Spelled out here, every field is visible in
+         * one place and the compiler checks the counts. */
         SimLinkTelemetry_t tlm = {
-            .pEulerDeg = nav.euler,
+            .eulerDeg  = { nav.euler[0], nav.euler[1], nav.euler[2] },
             .armed     = mission.armed != 0U,
             .imuCount  = SimLink_GetSensorCount (),
             .rcLinkUp  = Rx_IsLinkUp (),
@@ -79,6 +84,9 @@ void SimTelemetry_Task (void* args) {
             .gpsAlt    = gps.alt,
             .gpsSats   = gps.sats,
             .gpsCount  = gpsCount,
+            .posNed    = { nav.pos_ned[0], nav.pos_ned[1], nav.pos_ned[2] },
+            .velNed    = { nav.vel_ned[0], nav.vel_ned[1], nav.vel_ned[2] },
+            .navValid  = nav.valid,
         };
         SimLink_SendTelemetry (&tlm);
         vTaskDelay (pdMS_TO_TICKS (20));   // 50 Hz

@@ -83,19 +83,28 @@ eSTATUS_t SimLink_SendThrottles (float const* throttles, uint32_t count);
  * publish, not just the frame. A struct rather than 11 positional args.
  */
 typedef struct {
-    float const* pEulerDeg;   // 3 elements, deg [roll, pitch, yaw]
-    bool         armed;
-    uint32_t     imuCount;
-    bool         rcLinkUp;
+    /* The vectors are arrays, not pointers, so their length is part of the type
+     * rather than a comment nobody can check - and so the struct OWNS its data
+     * instead of borrowing three buffers that have to outlive the call. */
+    float    eulerDeg[3];   // deg [roll, pitch, yaw]
+    bool     armed;
+    uint32_t imuCount;
+    bool     rcLinkUp;
 
-    float        baroPa;
-    uint32_t     baroCount;
+    float    baroPa;
+    uint32_t baroCount;
 
-    double       gpsLat;
-    double       gpsLon;
-    float        gpsAlt;
-    uint32_t     gpsSats;
-    uint32_t     gpsCount;
+    double   gpsLat;
+    double   gpsLon;
+    float    gpsAlt;
+    uint32_t gpsSats;
+    uint32_t gpsCount;
+
+    /* Estimator output, NOT a loopback - see the nav_* comment in sim.proto.
+     * NED, down positive, straight from umsg_nav_state_t. */
+    float    posNed[3];   // metres
+    float    velNed[3];   // metres/second
+    uint32_t navValid;    // NAV_VALID_* bitmask
 } SimLinkTelemetry_t;
 
 eSTATUS_t SimLink_SendTelemetry (SimLinkTelemetry_t const* pTelemetry);

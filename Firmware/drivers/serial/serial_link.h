@@ -42,12 +42,21 @@
 #define SERIAL_MSG_SHELL_CMD     6U
 #define SERIAL_LINK_MAX_MSG_ID   8U
 
-/* Comfortably above every message on the wire: SensorData_size (45) is the
- * largest sim message and the shell's Command_size is 11. It was sized to the
- * old RcInput_size (96), which retired with the sim-link RC path; the headroom
- * is kept rather than trimmed, since three buffers depend on it and nothing
- * gains from shaving them. */
-#define SERIAL_LINK_MAX_PAYLOAD  96U
+/* Comfortably above every message on the wire. Telemetry is now the largest at
+ * Telemetry_size (107) - it outgrew SensorData (45) when the nav estimator's
+ * pos/vel/valid output was added to it, which is what took this constant from
+ * 96 to 128.
+ *
+ * The wire format does not care: the length field is one byte, so anything up
+ * to 255 frames correctly. The cost is memory - one static s_rxPayload plus two
+ * stack buffers in serial_link.c - so 32 bytes of .bss and 32 more on the stack
+ * of any task that sends a frame. Every one of those tasks has at least 700
+ * bytes of measured headroom (see main.c), so this is affordable rather than
+ * merely convenient.
+ *
+ * nanopb emits Telemetry_size as a compile-time constant; static_assert it
+ * against this if the two ever look like converging again. */
+#define SERIAL_LINK_MAX_PAYLOAD  128U
 #define SERIAL_LINK_MAX_FRAME    (5U + SERIAL_LINK_MAX_PAYLOAD)
 
 typedef void (*SerialLink_Handler_t) (uint8_t const* pPayload, uint8_t len);

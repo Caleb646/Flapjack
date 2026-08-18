@@ -62,6 +62,23 @@ typedef struct _Telemetry {
     float gps_alt; /* metres MSL */
     uint32_t gps_sats;
     uint32_t gps_count; /* GPS publishes consumed (NMEA sentences decoded) */
+    /* The nav_* fields are the ESTIMATOR OUTPUT, and are the opposite of a
+ loopback: nothing here was sent by the bridge. They are what the FC
+ worked out from the baro and GPS it was fed, so the bridge can compare
+ them against the FDM's own truth and gate on the difference.
+
+ Straight from umsg_nav_state_t, so NED and down-positive - altitude is
+ -nav_pos_ned[2] and climb rate is -nav_vel_ned[2]. Carried once rather
+ than duplicated into scalar alt/vz fields, which would only cost payload
+ and invite the two copies to disagree.
+
+ nav_valid is the NAV_VALID_* bitmask and is what makes the rest
+ interpretable: it separates "the estimate says 0 m" from "there is no
+ estimate yet", and asserting against an unpopulated field is exactly how
+ a green gate comes to mean nothing. */
+    float nav_pos_ned[3]; /* metres, NED (down positive) */
+    float nav_vel_ned[3]; /* metres/second, NED (down positive) */
+    uint32_t nav_valid; /* NAV_VALID_* bitmask from nav.json */
 } Telemetry;
 
 
@@ -74,12 +91,12 @@ extern "C" {
 #define BaroData_init_default                    {0, 0}
 #define ServoCmd_init_default                    {0, {0, 0, 0, 0, 0, 0, 0, 0}}
 #define MotorCmd_init_default                    {0, {0, 0, 0, 0, 0, 0, 0, 0}}
-#define Telemetry_init_default                   {{0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+#define Telemetry_init_default                   {{0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, {0, 0, 0}, {0, 0, 0}, 0}
 #define SensorData_init_zero                     {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}}
 #define BaroData_init_zero                       {0, 0}
 #define ServoCmd_init_zero                       {0, {0, 0, 0, 0, 0, 0, 0, 0}}
 #define MotorCmd_init_zero                       {0, {0, 0, 0, 0, 0, 0, 0, 0}}
-#define Telemetry_init_zero                      {{0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+#define Telemetry_init_zero                      {{0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, {0, 0, 0}, {0, 0, 0}, 0}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define SensorData_accel_tag                     1
@@ -100,6 +117,9 @@ extern "C" {
 #define Telemetry_gps_alt_tag                    9
 #define Telemetry_gps_sats_tag                   10
 #define Telemetry_gps_count_tag                  11
+#define Telemetry_nav_pos_ned_tag                12
+#define Telemetry_nav_vel_ned_tag                13
+#define Telemetry_nav_valid_tag                  14
 
 /* Struct field encoding specification for nanopb */
 #define SensorData_FIELDLIST(X, a) \
@@ -136,7 +156,10 @@ X(a, STATIC,   SINGULAR, DOUBLE,   gps_lat,           7) \
 X(a, STATIC,   SINGULAR, DOUBLE,   gps_lon,           8) \
 X(a, STATIC,   SINGULAR, FLOAT,    gps_alt,           9) \
 X(a, STATIC,   SINGULAR, UINT32,   gps_sats,         10) \
-X(a, STATIC,   SINGULAR, UINT32,   gps_count,        11)
+X(a, STATIC,   SINGULAR, UINT32,   gps_count,        11) \
+X(a, STATIC,   FIXARRAY, FLOAT,    nav_pos_ned,      12) \
+X(a, STATIC,   FIXARRAY, FLOAT,    nav_vel_ned,      13) \
+X(a, STATIC,   SINGULAR, UINT32,   nav_valid,        14)
 #define Telemetry_CALLBACK NULL
 #define Telemetry_DEFAULT NULL
 
@@ -159,7 +182,7 @@ extern const pb_msgdesc_t Telemetry_msg;
 #define SIM_PB_H_MAX_SIZE                        Telemetry_size
 #define SensorData_size                          45
 #define ServoCmd_size                            40
-#define Telemetry_size                           71
+#define Telemetry_size                           107
 
 #ifdef __cplusplus
 } /* extern "C" */

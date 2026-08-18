@@ -73,4 +73,24 @@ message Telemetry {
     float  gps_alt       = 9;       // metres MSL
     uint32 gps_sats      = 10;
     uint32 gps_count     = 11;      // GPS publishes consumed (NMEA sentences decoded)
+
+    /*
+     * The nav_* fields are the ESTIMATOR OUTPUT, and are the opposite of a
+     * loopback: nothing here was sent by the bridge. They are what the FC
+     * worked out from the baro and GPS it was fed, so the bridge can compare
+     * them against the FDM's own truth and gate on the difference.
+     *
+     * Straight from umsg_nav_state_t, so NED and down-positive - altitude is
+     * -nav_pos_ned[2] and climb rate is -nav_vel_ned[2]. Carried once rather
+     * than duplicated into scalar alt/vz fields, which would only cost payload
+     * and invite the two copies to disagree.
+     *
+     * nav_valid is the NAV_VALID_* bitmask and is what makes the rest
+     * interpretable: it separates "the estimate says 0 m" from "there is no
+     * estimate yet", and asserting against an unpopulated field is exactly how
+     * a green gate comes to mean nothing.
+     */
+    repeated float nav_pos_ned = 12;   // metres, NED (down positive)
+    repeated float nav_vel_ned = 13;   // metres/second, NED (down positive)
+    uint32 nav_valid           = 14;   // NAV_VALID_* bitmask from nav.json
 }

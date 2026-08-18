@@ -32,17 +32,16 @@ the device and driver layers it uses sit in `devices/` and `drivers/`.
 | **Sensor: Baro** | `tasks/baro/baro_task.c` (device `devices/baro.c`) | `Baro_Init()` | `Baro_Update()` | hardware (sim link `BaroData`) | - | `umsg_sensors_baro_t` |
 | **Sensor: GPS** | `tasks/gps/gps_task.c` (device `devices/gps.c`) | `Gps_Init()` | `Gps_Update()` | nothing - 100 Hz `vTaskDelay` | - | `umsg_sensors_gps_t` |
 | **Sensor: RC** | `tasks/rc/rc.c` (driver `drivers/rx/rx.c` + `crsf.c`) | `Rc_Init()` | `Rc_Update()` | nothing - 50 Hz `vTaskDelay` | - | `umsg_rc_input_t` |
-| **Navigation** | `tasks/nav/nav.c` | `Nav_Init()` | `Nav_Update()` | `umsg_sensors_imu_t` | `umsg_sensors_mag_t` | `umsg_nav_state_t` |
+| **Navigation** | `tasks/nav/nav.c` | `Nav_Init()` | `Nav_Update()` | `umsg_sensors_imu_t` | `umsg_sensors_mag_t`, `umsg_sensors_baro_t`, `umsg_sensors_gps_t` | `umsg_nav_state_t` |
 | **Mission** | `tasks/mission/mission.c` | `Mission_Init()` | `Mission_Update()` | `umsg_rc_input_t` (20 ms timeout) | `umsg_arming_request_t`, `umsg_nav_state_t` | `umsg_mission_state_t` |
 | **Guidance** | `tasks/guidance/guidance.c` | `Guidance_Init()` | `Guidance_Update()` | `umsg_nav_state_t` | `umsg_mission_state_t`, `umsg_rc_input_t` | `umsg_guidance_setpoints_t` |
 | **Control** | `tasks/control/control.c` (mixer `tasks/control/mixer.c`) | `Control_Init()` | `Control_Update()` | `umsg_guidance_setpoints_t` | `umsg_nav_state_t`, `umsg_mission_state_t`, `umsg_tune_pid_t` | motors/servos (direct) |
 
 Tasks are created and registered in `Firmware/main.c`.
 
-**Baro and GPS publish, but nothing subscribes yet.** Both topics reach umsg and are echoed in
-SIL telemetry; `Nav_Update` does not consume either, so `nav.alt` / `pos_ned` / `vel_ned` are
-still hardcoded zero. Wiring them in is the altitude-estimator task, not a plumbing task — see
-"What Is Not Yet Implemented".
+**Baro and GPS are consumed by `Nav_Update`.** Baro drives a vertical complementary filter and
+GPS drives the horizontal position/velocity estimate — see "The altitude and position estimate"
+below.
 
 ### The RC path
 
@@ -102,6 +101,49 @@ the emulated run exercises the assembler, the checksum and minmea. `Tests/UnitTe
 asserts the firmware's parse against golden sentences from `Scripts/sim/nmea.py`, the same encoder
 the bridge uses, so host and firmware cannot drift apart.
 
+### The altitude and position estimate
+
+`Nav_Update` blocks on the IMU and does a non-blocking cached `receive` for mag, baro and GPS —
+the same pattern for all three secondary inputs. What it does with them differs:
+
+**Vertical (baro + accel).** A third-order complementary filter in `common/filter.c`
+(`AltitudeFilter_t`) fusing baro-derived altitude with the vertical acceleration recovered from
+the IMU. `Predict` runs at the 400 Hz IMU rate; `Correct` runs only on iterations where a NEW baro
+sample arrived, which is why the two are separate calls — re-applying one measurement at 400 Hz
+instead of 50 would multiply the effective gain eightfold. The third state is the accelerometer's
+vertical bias, without which a constant offset becomes a permanent phantom climb rate.
+
+`Nav_VerticalAccelUp()` owns the frame rotation. It applies only the "down" row of the body→NED
+matrix to the specific-force vector and subtracts g. Note the project's accel convention is
+`g - a` (level and still reads `(0, 0, +9.81)` in FRD), the negative of physical proper
+acceleration, so no extra sign flip is needed — see the comment on that function before touching it.
+
+**The pressure datum is taken at BOOT**, averaged over the first 50 baro samples (~1 s), so
+`nav.alt` is height above wherever the board was switched on. Arming would be the better physical
+reference, but nav would have to subscribe to `umsg_mission_state_t` and mission already subscribes
+to `umsg_nav_state_t` — that closes a dependency cycle the layer rules forbid.
+
+Referencing the sea-level ISA formula to a datum that is not at sea level leaves a systematic scale
+error of about **+0.23 % of height per 1000 m of datum elevation** (zero at sea level). Accepted,
+because every consumer is relative; `Tests/UnitTest/test_altitude.c` pins the size.
+
+**Horizontal (GPS).** Flat-earth projection of lat/lon onto NED about an origin captured at the
+first usable fix, with velocity resolved from the reported speed and course. No accel aiding, so
+these step at the receiver's ~10 Hz and hold in between, while the vertical channel next door runs
+at 400 Hz. A position-hold loop will want the smooth version; that is a separate job.
+
+**Validity bits do not partition the vectors the way their names suggest**, because the sensors do
+not either — baro owns the vertical and GPS owns the horizontal:
+
+| Bit | Covers |
+|---|---|
+| `NAV_VALID_BARO_ALT` | `alt`, `pos_ned[2]`, `vel_ned[2]` |
+| `NAV_VALID_POSITION` | `pos_ned[0..1]` |
+| `NAV_VALID_VELOCITY` | `vel_ned[0..1]` |
+
+`Gps_Task` republishes with `fix_type` 0 on a lost or timed-out fix, so nav needs no timer of its
+own; the NED origin is deliberately NOT re-derived after a dropout.
+
 ### The sensor loopback
 
 Baro and GPS are echoed back in the SIL `Telemetry` frame (`baro_pa`, `gps_lat`, `gps_lon`,
@@ -113,6 +155,15 @@ sent, or decodes nothing at all.
 The echo is read from the **umsg topics**, not from the sim link's own decode slots. That is the
 point: it covers the driver, the device and the publish, so a parser that decodes a frame and then
 throws the fields away still fails the check.
+
+The `Telemetry` frame also carries `nav_pos_ned`, `nav_vel_ned` and `nav_valid`, which are the
+**opposite** of a loopback — nothing sent them to the FC. The bridge compares them against the
+FDM's own truth and fails the run if altitude, climb rate or horizontal position drifts past
+`NAV_*_EPS` in `bridge.py`, or if a sensor was streamed and its validity bit never appeared.
+Measured against the hover plan the estimate tracks truth to 0.01 m and 0.05 m/s.
+
+Adding those fields took `Telemetry_size` to 107 bytes, which is what raised
+`SERIAL_LINK_MAX_PAYLOAD` from 96 to 128.
 
 ---
 
@@ -245,14 +296,15 @@ eMISSION_MODE_RTL           = 4   // stub
   CRSF spec) and reports it through `link_quality` and a log line, but nothing acts on it: the
   channels keep their last values and the vehicle keeps flying them. Choosing an action is open, and
   a controlled descent is blocked on the missing altitude estimate below
-- **Position / velocity / altitude estimation** — `nav.pos_ned`, `nav.vel_ned`, `nav.alt` are
-  zeroed and `NAV_VALID_POSITION/VELOCITY/BARO_ALT` are never set. The *inputs* now exist:
-  `umsg_sensors_baro_t` and `umsg_sensors_gps_t` are published and verified end to end in the SIL.
-  What is missing is the estimator itself — `common/filter.h` has a Madgwick filter and a low-pass
-  and nothing else. The filter primitive belongs in `common/filter.c` (host-testable without a
-  board); the wiring belongs in `Nav_Update`, following the mag pattern of a non-blocking cached
-  `receive`. Open design questions: complementary vs Kalman, where the pressure datum is taken
-  (arming?), and how baro and GPS altitude blend when they disagree by metres at different rates
+- **Accel-aided horizontal estimation** — `pos_ned[0..1]` / `vel_ned[0..1]` come straight from the
+  GPS fix at ~10 Hz and hold between fixes. Position hold wants them propagated through the
+  accelerometer between fixes, the way the vertical channel already is. The vertical filter is the
+  template; the missing piece is that the horizontal channels need the full body→NED rotation
+  rather than just its bottom row
+- **GPS altitude is not used at all** — the vertical estimate is baro-only. GPS altitude is
+  decoded, published and echoed, but nothing blends it in, so there is no absolute MSL reference
+  and no cross-check on a failed baro. Deciding how the two blend when they disagree by metres at
+  different rates is still open
 - **Autonomous guidance modes** — only `eMISSION_MODE_MANUAL` is implemented in `guidance.c`
 - **PID gain tuning** — gains come from `CFG_PID_*` macros in the target config; the rate loop is wired but untested
 

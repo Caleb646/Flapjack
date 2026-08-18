@@ -94,6 +94,45 @@ GPS_COORD_EPS = 1e-7
 # the trip and not just its coordinates.
 GPS_SATS = 9
 
+# NAV_VALID_* bits from Firmware/msgs/umsg/defs/nav.json. Duplicated here rather
+# than imported because umsg generates C, not Python; keep in step with that file.
+NAV_VALID_ATTITUDE = 1 << 0
+NAV_VALID_POSITION = 1 << 1
+NAV_VALID_VELOCITY = 1 << 2
+NAV_VALID_BARO_ALT = 1 << 3
+
+# Gates on the ESTIMATOR, not on the sensor loopback - these compare what the FC
+# worked out against what the FDM knows, so unlike the loopback checks there is
+# no bit-exact answer and the tolerance is an engineering judgement.
+#
+# These are set from MEASUREMENT, not from guesswork. Observed maxima over a
+# full run, FC estimate against FDM truth:
+#
+#            hover     yaw_step
+#   alt      0.01 m    0.02 m
+#   vz       0.05 m/s  0.13 m/s
+#   pos      0.01 m    0.05 m
+#
+# The limits below sit roughly an order of magnitude above that. The headroom is
+# for plans that manoeuvre harder than these two, not for slop: the SIL's baro
+# and GPS are noise-free (JSBSim's Sensor*.xml ship with every error term at
+# zero), so if noise is ever turned on these want re-measuring rather than
+# widening on the first red run.
+NAV_ALT_EPS_M = 0.5
+
+# Climb rate is the noisier channel - it is the derivative the accel path
+# supplies and the baro only trims - so it gets the loosest gate relative to its
+# measured error.
+NAV_VZ_EPS_MPS = 1.0
+
+# Horizontal position is unfiltered, straight off the fix, so the only error is
+# NMEA quantisation (~2 cm) plus the flat-earth projection (sub-cm at these
+# ranges). Worth knowing about this gate: it is only as strong as the
+# trajectory. A plan that barely translates cannot catch north and east being
+# swapped, because both are near zero - that needs a plan that actually flies
+# somewhere, which none of the current three really do.
+NAV_POS_EPS_M = 0.5
+
 # Reference Earth field in NED (unit), ~60 deg inclination, 0 declination.
 _INCL = math.radians(60.0)
 B_NED = (math.cos(_INCL), 0.0, math.sin(_INCL))
@@ -206,6 +245,28 @@ class _Checks:
         self.gps_stopped = False
         self.gps_lost_reports = 0
 
+        # --- estimator gates (see the nav_* comment in sim.proto) ------------
+        # The opposite of the loopback above: nothing here was sent to the FC,
+        # so these compare the FC's own estimate against the FDM's truth.
+        #
+        # Truth for altitude is height above the point where the FC took its
+        # pressure datum, NOT h-agl - the datum is whatever the baro averaged in
+        # the first second of firmware boot. So the reference is captured at the
+        # exact frame NAV_VALID_BARO_ALT first appears, which is by construction
+        # the moment the datum exists. The FDM is frozen at its IC until the FC
+        # arms, so that capture is not a race.
+        self.nav_alt_datum_m = None
+        self.nav_alt_samples = 0
+        self.nav_alt_err_max = 0.0
+        self.nav_vz_err_max = 0.0
+
+        # Same idea horizontally: the origin is the FC's first usable fix.
+        self.nav_origin = None       # (lat_deg, lon_deg)
+        self.nav_pos_samples = 0
+        self.nav_pos_err_max = 0.0
+
+        self.nav_valid_seen = 0      # union of every bitmask observed
+
     def motors(self, values):
         for v in values:
             if v != v:
@@ -279,6 +340,49 @@ class _Checks:
                 return
         self.gps_miss += 1
 
+    def nav_rx(self, telemetry, fdm):
+        """Compare the FC's position/velocity estimate against the FDM."""
+        if fdm is None:
+            return
+
+        valid = telemetry.nav_valid
+        self.nav_valid_seen |= valid
+
+        # NED, down positive - altitude is the negated third element. Reading it
+        # the other way round is exactly the sign fault this gate exists to
+        # catch, so it is spelled out rather than folded into the comparison.
+        est_alt = -telemetry.nav_pos_ned[2]
+        est_vz = -telemetry.nav_vel_ned[2]
+
+        if valid & NAV_VALID_BARO_ALT:
+            h_sl = fdm["position/h-sl-meters"]
+            if self.nav_alt_datum_m is None:
+                self.nav_alt_datum_m = h_sl
+            true_alt = h_sl - self.nav_alt_datum_m
+            # h-dot is the FDM's climb rate, positive up, in ft/s.
+            true_vz = fdm["velocities/h-dot-fps"] * FT2M
+
+            self.nav_alt_samples += 1
+            self.nav_alt_err_max = max(self.nav_alt_err_max, abs(est_alt - true_alt))
+            self.nav_vz_err_max = max(self.nav_vz_err_max, abs(est_vz - true_vz))
+
+        if valid & NAV_VALID_POSITION:
+            lat = math.degrees(fdm[PROP_GPS_LAT_RAD])
+            lon = math.degrees(fdm[PROP_GPS_LON_RAD])
+            if self.nav_origin is None:
+                self.nav_origin = (lat, lon)
+            lat0, lon0 = self.nav_origin
+            # The same flat-earth projection nav.c uses, deliberately: this gate
+            # is checking that the FC applied it to the right fields with the
+            # right signs, not that the approximation itself is any good.
+            true_n = math.radians(lat - lat0) * 6371000.0
+            true_e = math.radians(lon - lon0) * 6371000.0 * math.cos(math.radians(lat0))
+
+            self.nav_pos_samples += 1
+            err = math.hypot(telemetry.nav_pos_ned[0] - true_n,
+                             telemetry.nav_pos_ned[1] - true_e)
+            self.nav_pos_err_max = max(self.nav_pos_err_max, err)
+
     def state(self, alt, euler):
         self.samples += 1
         if alt != alt or any(e != e for e in euler):
@@ -323,6 +427,32 @@ class _Checks:
                 fails.append("gps: NMEA was cut but the FC never reported the fix lost "
                              "(check GPS_FIX_TIMEOUT_US / Gps_HasFix)")
 
+        # Estimator gates. Each is silent unless its INPUT was actually streamed,
+        # so a --dry-run or an older plan still passes - but once the sensor was
+        # fed, "the estimator never produced anything" is a failure rather than a
+        # quiet skip. That distinction is the whole point: asserting against a
+        # field nobody populated is how a green gate comes to mean nothing.
+        if self.baro_frames:
+            if not (self.nav_valid_seen & NAV_VALID_BARO_ALT):
+                fails.append("nav: baro streamed but NAV_VALID_BARO_ALT never set - "
+                             "the altitude estimate never came up (check the datum "
+                             "warmup in Nav_UpdateBaro)")
+            elif self.nav_alt_err_max > NAV_ALT_EPS_M:
+                fails.append(f"nav altitude off by {self.nav_alt_err_max:.2f} m "
+                             f"(limit {NAV_ALT_EPS_M:.1f}) - check the sign of "
+                             f"Nav_VerticalAccelUp and the pos_ned[2] negation")
+            elif self.nav_vz_err_max > NAV_VZ_EPS_MPS:
+                fails.append(f"nav climb rate off by {self.nav_vz_err_max:.2f} m/s "
+                             f"(limit {NAV_VZ_EPS_MPS:.1f})")
+        if self.gps_sentences and not self.gps_stopped:
+            if not (self.nav_valid_seen & NAV_VALID_POSITION):
+                fails.append("nav: GPS streamed but NAV_VALID_POSITION never set - "
+                             "the fix reached the topic but not the estimate")
+            elif self.nav_pos_err_max > NAV_POS_EPS_M:
+                fails.append(f"nav position off by {self.nav_pos_err_max:.2f} m "
+                             f"(limit {NAV_POS_EPS_M:.1f}) - check the north/east "
+                             f"projection in Nav_UpdateGps")
+
         print()
         print("[checks] ---------------------------------------------")
         print(f"[checks] samples      {self.samples}")
@@ -336,6 +466,19 @@ class _Checks:
             lost = f", {self.gps_lost_reports} fix-loss report(s)" if self.gps_stopped else ""
             print(f"[checks] gps          {self.gps_sentences} sent, {self.gps_echoed} echoed, "
                   f"{self.gps_miss} mismatched{lost}")
+        if self.nav_alt_samples:
+            print(f"[checks] nav alt      {self.nav_alt_samples} samples, "
+                  f"max err {self.nav_alt_err_max:.2f} m, "
+                  f"vz max err {self.nav_vz_err_max:.2f} m/s")
+        if self.nav_pos_samples:
+            print(f"[checks] nav pos      {self.nav_pos_samples} samples, "
+                  f"max err {self.nav_pos_err_max:.2f} m")
+        if self.baro_frames or self.gps_sentences:
+            print(f"[checks] nav valid    0x{self.nav_valid_seen:02x} "
+                  f"(attitude={bool(self.nav_valid_seen & NAV_VALID_ATTITUDE)} "
+                  f"baro_alt={bool(self.nav_valid_seen & NAV_VALID_BARO_ALT)} "
+                  f"position={bool(self.nav_valid_seen & NAV_VALID_POSITION)} "
+                  f"velocity={bool(self.nav_valid_seen & NAV_VALID_VELOCITY)})")
         print(f"[checks] NaN samples  {self.nan}")
         for f in fails:
             print(f"[checks] FAIL: {f}")
@@ -494,6 +637,7 @@ def main(argv=None):
                     fc_armed = tm.armed
                     checks.baro_rx(tm)
                     checks.gps_rx(tm)
+                    checks.nav_rx(tm, fdm)
                     if now - last_print > 0.5:
                         last_print = now
                         print(f"[FC] euler(deg)={tm.euler[0]:+6.1f} {tm.euler[1]:+6.1f} "
@@ -538,11 +682,28 @@ def main(argv=None):
             # integrating ground contact, which KnownIssues records as a route
             # to NaN. The FC still gets a valid level-and-still sample stream,
             # which is what lets the filter converge in the first place.
-            if fc_armed or not args.hold_until_armed:
+            held = not (fc_armed or not args.hold_until_armed)
+            if not held:
                 fdm.run()
             phi = fdm[PROP_PHI]; theta = fdm[PROP_THETA]; psi = fdm[PROP_PSI]
             p = fdm[PROP_P]; q = fdm[PROP_Q]; r = fdm[PROP_R]
-            udot = fdm[PROP_UDOT]; vdot = fdm[PROP_VDOT]; wdot = fdm[PROP_WDOT]
+            if held:
+                # A model that has never been stepped has not resolved its gear
+                # reaction yet, so it reports the only force it knows about:
+                # gravity. wdot comes back as a full -32.2 ft/s^2, and
+                # synthesize_sensors' (g_body - a_lin) then cancels to EXACTLY
+                # (0, 0, 0) - a free-falling accelerometer, on a vehicle that is
+                # parked. Nothing physical reads 0 g sitting on its gear.
+                #
+                # A held vehicle is not accelerating, by definition, so the
+                # honest linear acceleration during the hold is zero and the
+                # accelerometer reads its 1 g. Taking the frozen model's word
+                # instead fed the FC free fall for the whole pre-arm window,
+                # which the altitude estimator faithfully integrated to -7.7 m/s
+                # before the first real step rescued it.
+                udot = vdot = wdot = 0.0
+            else:
+                udot = fdm[PROP_UDOT]; vdot = fdm[PROP_VDOT]; wdot = fdm[PROP_WDOT]
 
         accel, gyro, mag = synthesize_sensors(phi, theta, psi, p, q, r, udot, vdot, wdot)
         ser.write(make_sensor_frame(accel, gyro, mag))

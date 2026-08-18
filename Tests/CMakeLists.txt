@@ -70,11 +70,21 @@ add_library(drone_gps_obj OBJECT
     ${COMMON_SRC_DIR}/drivers/gps/parser/minmea.c
 )
 
+# filter.c only. The altitude estimator is deliberately pure maths with no
+# FreeRTOS, umsg or driver dependency, precisely so it can be exercised here -
+# Nav_Update cannot be, so the filter is where the vertical maths has to be
+# pinned down. It pulls in GetMicroseconds via the Madgwick half, which
+# drone_common_obj already provides.
+add_library(drone_filter_obj OBJECT
+    ${COMMON_SRC_DIR}/common/filter.c
+)
+
 foreach(lib
     drone_common_obj
     drone_peripherals_obj
     drone_rx_obj
     drone_gps_obj
+    drone_filter_obj
 )
     target_include_directories(${lib} PRIVATE
         ${COMMON_INC_DIR}
@@ -105,3 +115,4 @@ endfunction()
 
 add_test_exe(test_crsf OBJECTS drone_common_obj drone_peripherals_obj drone_rx_obj)
 add_test_exe(test_gps  OBJECTS drone_common_obj drone_peripherals_obj drone_gps_obj)
+add_test_exe(test_altitude OBJECTS drone_common_obj drone_filter_obj)

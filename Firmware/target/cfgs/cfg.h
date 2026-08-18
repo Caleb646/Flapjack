@@ -45,6 +45,25 @@
 #define CFG_GYRO_MEASURE_DRIFT_DEGS          0.2F
 
 /*
+ * Vertical complementary filter (common/filter.c), as the standard third-order
+ * set for a time constant T: kAlt = 3/T, kVel = 3/T^2, kBias = 1/T^3.
+ *
+ * T = 1 s. That trades roughly a second of lag behind a step in TRUE altitude
+ * for heavy suppression of baro noise, which is the right way round here: the
+ * accel path already carries the fast response, so all the baro has to do is
+ * stop it drifting. Shorten T only if the baro turns out quieter than expected
+ * on real hardware - the SIL's baro is noise-free, so it cannot answer that.
+ *
+ * The bias clamp is deliberately loose. 2 m/s^2 is far beyond any healthy IMU
+ * (a good part sits under 0.5), so it never fights a real bias; it exists only
+ * to stop the integrator running away if the datum is wrong or the part failed.
+ */
+#define CFG_ALT_FILTER_K_ALT                 3.0F
+#define CFG_ALT_FILTER_K_VEL                 3.0F
+#define CFG_ALT_FILTER_K_BIAS                1.0F
+#define CFG_ALT_FILTER_MAX_BIAS_MPS2         2.0F
+
+/*
  * Rate-loop PID.
  *
  * The output IS the normalised mixer command: -1.0 .. +1.0 spans full actuator

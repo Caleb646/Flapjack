@@ -4,6 +4,8 @@ SensorData.accel    max_count:3  fixed_count:true
 SensorData.gyro     max_count:3  fixed_count:true
 SensorData.mag      max_count:3  fixed_count:true
 Telemetry.euler     max_count:3  fixed_count:true
+Telemetry.nav_pos_ned max_count:3  fixed_count:true
+Telemetry.nav_vel_ned max_count:3  fixed_count:true
 
 # Variable-length: capacity sized to the largest board, actual count on the wire.
 ServoCmd.angle      max_count:8

@@ -159,11 +159,11 @@ eSTATUS_t SimLink_SendThrottles (float const* throttles, uint32_t count) {
 }
 
 eSTATUS_t SimLink_SendTelemetry (SimLinkTelemetry_t const* pTelemetry) {
-    if (!pTelemetry || !pTelemetry->pEulerDeg) {
+    if (!pTelemetry) {
         return eSTATUS_NULL_ARG;
     }
     Telemetry msg = Telemetry_init_zero;
-    memcpy (msg.euler, pTelemetry->pEulerDeg, sizeof (msg.euler));
+    memcpy (msg.euler, pTelemetry->eulerDeg, sizeof (msg.euler));
     msg.armed       = pTelemetry->armed;
     msg.imu_count   = pTelemetry->imuCount;
     msg.rc_link_up  = pTelemetry->rcLinkUp;
@@ -174,5 +174,8 @@ eSTATUS_t SimLink_SendTelemetry (SimLinkTelemetry_t const* pTelemetry) {
     msg.gps_alt     = pTelemetry->gpsAlt;
     msg.gps_sats    = pTelemetry->gpsSats;
     msg.gps_count   = pTelemetry->gpsCount;
+    memcpy (msg.nav_pos_ned, pTelemetry->posNed, sizeof (msg.nav_pos_ned));
+    memcpy (msg.nav_vel_ned, pTelemetry->velNed, sizeof (msg.nav_vel_ned));
+    msg.nav_valid   = pTelemetry->navValid;
     return SimLink_SendFrame (SIM_MSG_TELEMETRY, Telemetry_fields, &msg);
 }
