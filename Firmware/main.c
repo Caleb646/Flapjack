@@ -11,6 +11,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
+#include "drivers/bus/spi.h"
 #include "drivers/serial/serial_link.h"
 #include "drivers/serial/uart.h"
 

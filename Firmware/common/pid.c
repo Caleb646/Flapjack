@@ -11,6 +11,33 @@
 #define PID_CREATE_AXIS(AXIS_NAME) \
     { .p = CFG_PID_##AXIS_NAME##_P, .i = CFG_PID_##AXIS_NAME##_I, .d = CFG_PID_##AXIS_NAME##_D, .integralLimit = CFG_PID_INTEGRAL_LIMIT }
 
+/*
+ * Smallest I gain the back-calculation below will divide by.
+ *
+ * A magnitude test rather than `i != 0.0F`, for two reasons:
+ *
+ *   - An i small enough that integralLimit / i overflows binary32 stores +inf
+ *     into the integral. The next cycle recomputes iTerm = i * inf = inf, clamps
+ *     it, and stores inf again - the axis latches a saturated I-term for the
+ *     rest of the flight. The window is narrow (|i| < ~1e-39 at the default
+ *     limit) but reachable: Control_Update assigns tune.value straight to the
+ *     gain with no validation, so a shell set_pid can put any float there.
+ *   - `i != 0.0F` is TRUE when i is NaN, which would feed NaN into the stored
+ *     integral and from there into the output. The comparison below is FALSE for
+ *     NaN, so a NaN gain resets the integrator instead of poisoning it.
+ *
+ * 1e-9 is five orders of magnitude below the smallest configured gain
+ * (CFG_PID_YAW_I = 2.8e-4), so no real tune can reach it, and it keeps
+ * integralLimit / i finite for any limit up to ~3e29.
+ */
+#define PID_MIN_I_GAIN 1.0e-9F
+
+static bool Pid_IsIGainUsable (float i) {
+    /* Two-sided rather than fabsf() so pid.c does not take a math.h dependency
+     * for one comparison. Also false for NaN, which is the point. */
+    return (i > PID_MIN_I_GAIN) || (i < -PID_MIN_I_GAIN);
+}
+
 eSTATUS_t Pid_Init(Pid_t* pOutPid) {
 
     if(!pOutPid) {
@@ -60,10 +87,10 @@ float Pid_UpdateAxis (PidAxis_t* pAxis, float current, float target, float dt) {
     float iTerm    = pAxis->i * integral;
     if (iTerm > pAxis->integralLimit) {
         iTerm    = pAxis->integralLimit;
-        integral = (pAxis->i != 0.0F) ? (iTerm / pAxis->i) : 0.0F;
+        integral = Pid_IsIGainUsable (pAxis->i) ? (iTerm / pAxis->i) : 0.0F;
     } else if (iTerm < -pAxis->integralLimit) {
         iTerm    = -pAxis->integralLimit;
-        integral = (pAxis->i != 0.0F) ? (iTerm / pAxis->i) : 0.0F;
+        integral = Pid_IsIGainUsable (pAxis->i) ? (iTerm / pAxis->i) : 0.0F;
     }
 
     /*

@@ -40,9 +40,9 @@ STATIC eSTATUS_t Sim_Read (void* ctx, bool forcePolling, Vec3f* pAccel, Vec3f* p
     return eSTATUS_SUCCESS;
 }
 
-STATIC eSTATUS_t Sim_IsDataReady (void* ctx) {
+STATIC bool Sim_IsDataReady (void* ctx) {
     FJ_UNUSED (ctx);
-    return eSTATUS_SUCCESS;
+    return true;
 }
 
 eSTATUS_t ImuDrv_Init (ImuDriverConf_t const* pConf, ImuDriver_t* pOutDriver) {

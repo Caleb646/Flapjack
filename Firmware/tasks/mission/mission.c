@@ -58,9 +58,18 @@ static Mission_t s_Mission;
 
 // NaN and +/-Inf without pulling in math.h: NaN fails self-comparison, and the
 // magnitude test rejects the infinities that would hang the wrap loop below.
+//
+// -Wfloat-equal is suppressed rather than satisfied: `v == v` IS the test, not a
+// sloppy equality that wants an epsilon. Comparing v against a tolerance would
+// not detect NaN at all, since every comparison with NaN is false. The
+// suppression is scoped to this function so the flag keeps working everywhere
+// else.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
 static bool Mission_IsFinite(float v) {
     return (v == v) && (v <= 3.0e38f) && (v >= -3.0e38f);
 }
+#pragma GCC diagnostic pop
 
 // Absolute angular difference in degrees, wrap-safe so a yaw estimate crossing
 // +/-180 does not read as 360 degrees of movement.
