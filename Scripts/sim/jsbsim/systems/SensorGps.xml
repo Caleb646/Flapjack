@@ -82,7 +82,7 @@
 
             <lag>0</lag>
 
-            <noise distribution="GAUSSIAN" variation="ABSOLUTE">0.0</noise>
+            <noise distribution="GAUSSIAN" variation="ABSOLUTE">2.5e-7</noise>
 
             <drift_rate>0</drift_rate>
 
@@ -102,7 +102,7 @@
 
             <lag>0</lag>
 
-            <noise distribution="GAUSSIAN" variation="ABSOLUTE">0.0</noise>
+            <noise distribution="GAUSSIAN" variation="ABSOLUTE">2.5e-7</noise>
 
             <drift_rate>0</drift_rate>
 
@@ -122,7 +122,7 @@
 
             <lag>0</lag>
 
-            <noise distribution="GAUSSIAN" variation="ABSOLUTE">0.0</noise>
+            <noise distribution="GAUSSIAN" variation="ABSOLUTE">3.0</noise>
 
             <drift_rate>0</drift_rate>
 
@@ -142,7 +142,7 @@
 
             <lag>0</lag>
 
-            <noise distribution="GAUSSIAN" variation="ABSOLUTE">0.0</noise>
+            <noise distribution="GAUSSIAN" variation="ABSOLUTE">0.1</noise>
 
             <drift_rate>0</drift_rate>
 
@@ -162,7 +162,7 @@
 
             <lag>0</lag>
 
-            <noise distribution="GAUSSIAN" variation="ABSOLUTE">0.0</noise>
+            <noise distribution="GAUSSIAN" variation="ABSOLUTE">0.1</noise>
 
             <drift_rate>0</drift_rate>
 
@@ -182,7 +182,7 @@
 
             <lag>0</lag>
 
-            <noise distribution="GAUSSIAN" variation="ABSOLUTE">0.0</noise>
+            <noise distribution="GAUSSIAN" variation="ABSOLUTE">0.1</noise>
 
             <drift_rate>0</drift_rate>
 

@@ -22,6 +22,9 @@
 
 // Pressures JSBSim reported at these altitudes; see SensorSilResearch.md 2.3.
 #define ISA_SEA_LEVEL_PA 101325.0F
+// ISA sea-level temperature. Paired with ISA_SEA_LEVEL_PA it reproduces the
+// textbook 44330 coefficient exactly, since 288.15 / 0.0065 == 44330.
+#define ISA_SEA_LEVEL_C  15.0F
 
 void setUp (void) {
 }
@@ -58,13 +61,20 @@ static void RunFilter (AltitudeFilter_t* pFilter, float baroAlt, float accelUp, 
 }
 
 void test_PressureToAltitude_MatchesIsaTable (void) {
-    // Measured pressures, and the altitude each was measured at.
-    TEST_ASSERT_FLOAT_WITHIN (0.1F, 0.0F, Baro_PressureToAltitude (101325.55F, ISA_SEA_LEVEL_PA));
-    TEST_ASSERT_FLOAT_WITHIN (0.1F, 50.0F, Baro_PressureToAltitude (100726.33F, ISA_SEA_LEVEL_PA));
-    TEST_ASSERT_FLOAT_WITHIN (0.1F, 100.0F, Baro_PressureToAltitude (100129.97F, ISA_SEA_LEVEL_PA));
-    TEST_ASSERT_FLOAT_WITHIN (0.1F, 200.0F, Baro_PressureToAltitude (98945.93F, ISA_SEA_LEVEL_PA));
-    TEST_ASSERT_FLOAT_WITHIN (0.1F, 500.0F, Baro_PressureToAltitude (95461.78F, ISA_SEA_LEVEL_PA));
-    TEST_ASSERT_FLOAT_WITHIN (0.1F, 1000.0F, Baro_PressureToAltitude (89876.73F, ISA_SEA_LEVEL_PA));
+    // Measured pressures, and the altitude each was measured at. At the ISA
+    // sea-level datum this must reproduce the old fixed-coefficient answers.
+    TEST_ASSERT_FLOAT_WITHIN (0.1F, 0.0F,
+    Baro_PressureToAltitude (101325.55F, ISA_SEA_LEVEL_PA, ISA_SEA_LEVEL_C));
+    TEST_ASSERT_FLOAT_WITHIN (0.1F, 50.0F,
+    Baro_PressureToAltitude (100726.33F, ISA_SEA_LEVEL_PA, ISA_SEA_LEVEL_C));
+    TEST_ASSERT_FLOAT_WITHIN (0.1F, 100.0F,
+    Baro_PressureToAltitude (100129.97F, ISA_SEA_LEVEL_PA, ISA_SEA_LEVEL_C));
+    TEST_ASSERT_FLOAT_WITHIN (0.1F, 200.0F,
+    Baro_PressureToAltitude (98945.93F, ISA_SEA_LEVEL_PA, ISA_SEA_LEVEL_C));
+    TEST_ASSERT_FLOAT_WITHIN (0.1F, 500.0F,
+    Baro_PressureToAltitude (95461.78F, ISA_SEA_LEVEL_PA, ISA_SEA_LEVEL_C));
+    TEST_ASSERT_FLOAT_WITHIN (0.1F, 1000.0F,
+    Baro_PressureToAltitude (89876.73F, ISA_SEA_LEVEL_PA, ISA_SEA_LEVEL_C));
 }
 
 /*
@@ -73,42 +83,73 @@ void test_PressureToAltitude_MatchesIsaTable (void) {
  * makes nav.alt "height above where the board booted" rather than MSL.
  */
 void test_PressureToAltitude_IsRelativeToDatum (void) {
-    TEST_ASSERT_FLOAT_WITHIN (0.001F, 0.0F, Baro_PressureToAltitude (95461.78F, 95461.78F));
-    TEST_ASSERT_FLOAT_WITHIN (0.001F, 0.0F, Baro_PressureToAltitude (101325.0F, 101325.0F));
+    TEST_ASSERT_FLOAT_WITHIN (0.001F, 0.0F, Baro_PressureToAltitude (95461.78F, 95461.78F, 11.75F));
+    TEST_ASSERT_FLOAT_WITHIN (0.001F, 0.0F, Baro_PressureToAltitude (101325.0F, 101325.0F, 15.0F));
+    // True whatever the temperature - it is a scale factor on a zero.
+    TEST_ASSERT_FLOAT_WITHIN (0.001F, 0.0F, Baro_PressureToAltitude (95461.78F, 95461.78F, -40.0F));
 }
 
 /*
- * Referencing the sea-level formula to a datum that is NOT at sea level leaves
- * a systematic SCALE error, and this test pins its size rather than pretending
- * it is absent. Datum at 500 m, sample from 1000 m: the true height above the
- * datum is 500 m and the formula reads 505.7, i.e. +1.14%.
+ * The datum-elevation scale error is GONE, and this is the test that used to
+ * pin its size. Referencing the sea-level 44330 coefficient to a datum that is
+ * not at sea level over-read by +0.23 % of height per 1000 m of field
+ * elevation; feeding the datum's own temperature removes it, because 44330 was
+ * only ever T0/L for T0 = 288.15 K.
  *
- * Measured across the range (Scripts are in the commit notes): the error is
- * about +0.23% of height per 1000 m of DATUM elevation, and is exactly zero for
- * a sea-level datum. So a 100 m climb reads +0.23 m high from a 100 m field,
- * +1.14 m from a 500 m field, +2.31 m from 1000 m.
- *
- * That is accepted, not overlooked. Removing it means using the measured
- * temperature at the datum instead of the ISA's assumed 288.15 K - the baro
- * message already carries temperature, so it is available if wanted. It is not
- * done because every consumer of this number is RELATIVE (hold this height,
- * climb at this rate), and a sub-percent scale error is invisible to all of
- * them. Revisit it if absolute AGL ever has to agree with a survey.
+ * Datum at 500 m (95461.78 Pa, ISA 11.75 C), sample from 1000 m: the true
+ * height above the datum is 500 m. The old form read 505.70.
  */
-void test_PressureToAltitude_DatumScaleErrorIsBounded (void) {
-    float relative = Baro_PressureToAltitude (89876.73F, 95461.78F);
-    TEST_ASSERT_FLOAT_WITHIN (0.1F, 505.7F, relative);
+void test_PressureToAltitude_HasNoDatumElevationScaleError (void) {
+    TEST_ASSERT_FLOAT_WITHIN (0.05F, 500.0F,
+    Baro_PressureToAltitude (89876.73F, 95461.78F, 11.75F));
 
-    // Still monotonic and still the right order of magnitude - the error is a
-    // scale factor, never a sign flip or a discontinuity.
-    TEST_ASSERT_TRUE (relative > 500.0F);
-    TEST_ASSERT_TRUE (relative < 510.0F);
+    // 1000 m field (89876.73 Pa, ISA 8.50 C) climbing to 2000 m. The fixed
+    // coefficient over-read this one by ~23 m.
+    TEST_ASSERT_FLOAT_WITHIN (0.2F, 1000.0F,
+    Baro_PressureToAltitude (79498.43F, 89876.37F, 8.50F));
+}
+
+/*
+ * What the fix above COSTS: accuracy now rides on the temperature reading
+ * rather than on field elevation. The error is dT/T0, about 0.35 % per degree,
+ * and this test pins that so the trade cannot be forgotten.
+ *
+ * It is the reason to care that a barometer reports its own DIE temperature and
+ * not ambient. Break-even against the coefficient this replaced is roughly
+ * 0.65 C per 100 m of field elevation - so a part reading 5 C warm than ambient
+ * is still ahead at a 1000 m field and BEHIND at sea level.
+ *
+ * The SIL cannot catch this: JSBSim reports true air temperature, with no
+ * self-heating model. See KnownIssues 4.15 for the same lesson about noise.
+ */
+void test_PressureToAltitude_ScalesWithDatumTemperature (void) {
+    // 10 C too warm -> reads ~3.5 % high.
+    float warm = Baro_PressureToAltitude (94322.81F, 95461.78F, 11.75F + 10.0F);
+    TEST_ASSERT_FLOAT_WITHIN (0.05F, 103.51F, warm);
+
+    // 10 C too cold -> ~3.5 % low, symmetric.
+    float cold = Baro_PressureToAltitude (94322.81F, 95461.78F, 11.75F - 10.0F);
+    TEST_ASSERT_FLOAT_WITHIN (0.05F, 96.49F, cold);
+
+    TEST_ASSERT_TRUE (warm > cold);
+}
+
+/*
+ * A temperature below absolute zero is a dead or unread sensor, not weather.
+ * Falling back to the ISA sea-level value keeps the function behaving exactly
+ * as it did before it took a temperature at all, rather than returning a
+ * negative-scaled altitude.
+ */
+void test_PressureToAltitude_RejectsImpossibleTemperature (void) {
+    float sane   = Baro_PressureToAltitude (100129.97F, ISA_SEA_LEVEL_PA, ISA_SEA_LEVEL_C);
+    float broken = Baro_PressureToAltitude (100129.97F, ISA_SEA_LEVEL_PA, -300.0F);
+    TEST_ASSERT_FLOAT_WITHIN (0.001F, sane, broken);
 }
 
 void test_PressureToAltitude_RejectsBadInput (void) {
-    TEST_ASSERT_EQUAL_FLOAT (0.0F, Baro_PressureToAltitude (0.0F, ISA_SEA_LEVEL_PA));
-    TEST_ASSERT_EQUAL_FLOAT (0.0F, Baro_PressureToAltitude (-1.0F, ISA_SEA_LEVEL_PA));
-    TEST_ASSERT_EQUAL_FLOAT (0.0F, Baro_PressureToAltitude (ISA_SEA_LEVEL_PA, 0.0F));
+    TEST_ASSERT_EQUAL_FLOAT (0.0F, Baro_PressureToAltitude (0.0F, ISA_SEA_LEVEL_PA, ISA_SEA_LEVEL_C));
+    TEST_ASSERT_EQUAL_FLOAT (0.0F, Baro_PressureToAltitude (-1.0F, ISA_SEA_LEVEL_PA, ISA_SEA_LEVEL_C));
+    TEST_ASSERT_EQUAL_FLOAT (0.0F, Baro_PressureToAltitude (ISA_SEA_LEVEL_PA, 0.0F, ISA_SEA_LEVEL_C));
 }
 
 void test_AltitudeFilter_InitRejectsBadConfig (void) {
@@ -256,7 +297,9 @@ int main (void) {
     UNITY_BEGIN ();
     RUN_TEST (test_PressureToAltitude_MatchesIsaTable);
     RUN_TEST (test_PressureToAltitude_IsRelativeToDatum);
-    RUN_TEST (test_PressureToAltitude_DatumScaleErrorIsBounded);
+    RUN_TEST (test_PressureToAltitude_HasNoDatumElevationScaleError);
+    RUN_TEST (test_PressureToAltitude_ScalesWithDatumTemperature);
+    RUN_TEST (test_PressureToAltitude_RejectsImpossibleTemperature);
     RUN_TEST (test_PressureToAltitude_RejectsBadInput);
     RUN_TEST (test_AltitudeFilter_InitRejectsBadConfig);
     RUN_TEST (test_AltitudeFilter_RejectsNonPositiveDt);

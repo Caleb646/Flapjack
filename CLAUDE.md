@@ -69,4 +69,24 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 Skills in `.claude/skills/` are discovered automatically, so this is not a directory listing — it is the rule that you read the relevant one *before* improvising your own toolchain invocation.
 
+### 6. Comments Earn Their Place
+
+**Explain why, never what. The code already says what.**
+
+Write a comment when:
+- The reason isn't in the code: a convention, a spec quirk, a hardware
+  constraint, a unit, a sign convention, or a bug this shape prevents.
+- The obvious approach is wrong and someone will "fix" it back.
+
+Don't write a comment when:
+- It restates the line below it.
+- It narrates the change ("Added X", "Now handles Y") - that's a commit message.
+- It's a section banner over self-evident code.
+
+Never commit commented-out code. Delete it; git has it.
+
+Length follows from this: a one-line "why" is one line, a sign convention that
+took a day to debug is a paragraph. Prune redundant comments in code you're
+already editing - leave the rest alone (see Rule 3).
+
 ---

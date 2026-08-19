@@ -106,19 +106,26 @@ NAV_VALID_BARO_ALT = 1 << 3
 # no bit-exact answer and the tolerance is an engineering judgement.
 #
 # These are set from MEASUREMENT, not from guesswork. Observed maxima over a
-# full run, FC estimate against FDM truth:
+# full run, FC estimate against FDM truth, with the sensor error models in
+# jsbsim/systems/Sensor*.xml ENABLED (2.0 Pa baro noise + 20 Pa bias +
+# 0.05 Pa/s drift, ~1.6 m GPS):
 #
-#            hover     yaw_step
-#   alt      0.01 m    0.02 m
-#   vz       0.05 m/s  0.13 m/s
-#   pos      0.01 m    0.05 m
+#            hover      yaw_step     (noise-free, for reference)
+#   alt      0.46 m     0.43 m        0.01 / 0.02 m
+#   vz       0.26 m/s   0.28 m/s      0.05 / 0.13 m/s
+#   pos      0.00 m     0.00 m        0.01 / 0.05 m
 #
-# The limits below sit roughly an order of magnitude above that. The headroom is
-# for plans that manoeuvre harder than these two, not for slop: the SIL's baro
-# and GPS are noise-free (JSBSim's Sensor*.xml ship with every error term at
-# zero), so if noise is ever turned on these want re-measuring rather than
-# widening on the first red run.
-NAV_ALT_EPS_M = 0.5
+# Altitude and climb rate went up ~40x when the noise went on, which is the
+# whole point: with perfect sensors those numbers measured roundoff, and ANY
+# CFG_ALT_FILTER_K_* would have passed. They now measure how much baro noise the
+# complementary filter actually lets through, so they are a real constraint on
+# the tuning rather than a formality.
+#
+# Position went the other way - to zero - because the check is now made against
+# the FC's own echoed fix from the SAME telemetry frame, differentially. Noise is
+# common to both sides and cancels exactly, which is what leaves the projection
+# itself as the only thing being measured.
+NAV_ALT_EPS_M = 1.5
 
 # Climb rate is the noisier channel - it is the derivative the accel path
 # supplies and the baro only trims - so it gets the loosest gate relative to its
@@ -244,6 +251,16 @@ class _Checks:
         # same value arriving while NMEA is still streaming IS a fault.
         self.gps_stopped = False
         self.gps_lost_reports = 0
+        # Ticks on which the FDM handed back a non-finite position, so GPS could
+        # not be encoded. Non-zero means the flight model diverged; it is
+        # reported as its own line rather than folded into the NaN count, which
+        # counts FC-side NaN.
+        self.gps_nonfinite = 0
+        # First (echoed fix, reported position) pair seen with NAV_VALID_POSITION
+        # set. The projection gate is differential against this, so the FC's own
+        # origin cancels instead of having to be reconstructed.
+        self.nav_pos_ref = None
+        self.nav_pos_prev = []
 
         # --- estimator gates (see the nav_* comment in sim.proto) ------------
         # The opposite of the loopback above: nothing here was sent to the FC,
@@ -366,22 +383,50 @@ class _Checks:
             self.nav_alt_err_max = max(self.nav_alt_err_max, abs(est_alt - true_alt))
             self.nav_vz_err_max = max(self.nav_vz_err_max, abs(est_vz - true_vz))
 
-        if valid & NAV_VALID_POSITION:
-            lat = math.degrees(fdm[PROP_GPS_LAT_RAD])
-            lon = math.degrees(fdm[PROP_GPS_LON_RAD])
-            if self.nav_origin is None:
-                self.nav_origin = (lat, lon)
-            lat0, lon0 = self.nav_origin
-            # The same flat-earth projection nav.c uses, deliberately: this gate
-            # is checking that the FC applied it to the right fields with the
-            # right signs, not that the approximation itself is any good.
-            true_n = math.radians(lat - lat0) * 6371000.0
-            true_e = math.radians(lon - lon0) * 6371000.0 * math.cos(math.radians(lat0))
+        if (valid & NAV_VALID_POSITION) and telemetry.gps_sats:
+            # Checked against the FC's OWN echoed fix, from the SAME telemetry
+            # frame - not against a fresh FDM read, and not against the bridge's
+            # last transmission.
+            #
+            # Both of those alternatives were tried and both measure noise rather
+            # than firmware. sensor/gps/lat_rad is a fresh random draw every tick
+            # once the error models are on, and the FC's telemetry necessarily
+            # lags the bridge's most recent send by a poll and a decode - so
+            # either comparison differences two independent ~1.6 m draws and
+            # reports 6-9 m of "estimator error" on a vehicle that is hovering.
+            # Same frame means zero skew by construction.
+            #
+            # It is also DIFFERENTIAL, against the first sample rather than an
+            # absolute origin, so the FC's own choice of origin cancels out
+            # instead of having to be guessed at from outside.
+            #
+            # What survives is exactly what this gate always claimed to test: did
+            # the FC apply the flat-earth projection to the right fields, with
+            # the right signs, at the right scale.
+            if self.nav_pos_ref is None:
+                self.nav_pos_ref = (telemetry.gps_lat, telemetry.gps_lon,
+                                    telemetry.nav_pos_ned[0], telemetry.nav_pos_ned[1])
+            lat0, lon0, n0, e0 = self.nav_pos_ref
+            actual_dn = telemetry.nav_pos_ned[0] - n0
+            actual_de = telemetry.nav_pos_ned[1] - e0
+
+            # One frame of skew is structural and has to be tolerated.
+            # SimTelemetry_Task reads umsg_nav_state_t first and drains
+            # umsg_sensors_gps_t after, so a fix landing between those two reads
+            # puts an OLD nav position alongside a NEW echoed fix. Bounded at
+            # exactly one fix - hence two candidates, not a deque: allowing more
+            # would let the gate find a match for anything.
+            best = None
+            for lat, lon in [(telemetry.gps_lat, telemetry.gps_lon)] + self.nav_pos_prev:
+                expect_dn = math.radians(lat - lat0) * 6371000.0
+                expect_de = (math.radians(lon - lon0) * 6371000.0
+                             * math.cos(math.radians(lat0)))
+                e = math.hypot(actual_dn - expect_dn, actual_de - expect_de)
+                best = e if best is None else min(best, e)
+            self.nav_pos_prev = [(telemetry.gps_lat, telemetry.gps_lon)]
 
             self.nav_pos_samples += 1
-            err = math.hypot(telemetry.nav_pos_ned[0] - true_n,
-                             telemetry.nav_pos_ned[1] - true_e)
-            self.nav_pos_err_max = max(self.nav_pos_err_max, err)
+            self.nav_pos_err_max = max(self.nav_pos_err_max, best)
 
     def state(self, alt, euler):
         self.samples += 1
@@ -398,6 +443,9 @@ class _Checks:
             fails.append("FC never armed")
         if self.nan:
             fails.append(f"{self.nan} NaN samples")
+        if self.gps_nonfinite:
+            fails.append(f"FDM position went non-finite on {self.gps_nonfinite} ticks "
+                         f"- the flight model diverged (see KnownIssues 1.14)")
         if self.motor_pinned:
             fails.append(f"motor saturated at 1.000 on {self.motor_pinned} samples")
         if self.motor_max > 1.0 or self.motor_min < 0.0:
@@ -480,6 +528,8 @@ class _Checks:
                   f"position={bool(self.nav_valid_seen & NAV_VALID_POSITION)} "
                   f"velocity={bool(self.nav_valid_seen & NAV_VALID_VELOCITY)})")
         print(f"[checks] NaN samples  {self.nan}")
+        if self.gps_nonfinite:
+            print(f"[checks] FDM diverged {self.gps_nonfinite} non-finite ticks")
         for f in fails:
             print(f"[checks] FAIL: {f}")
         print("[checks] " + ("PASS" if not fails else f"FAIL ({len(fails)})"))
@@ -743,13 +793,26 @@ def main(argv=None):
                 gps_alt = fdm[PROP_GPS_ALT_M]
                 gps_vn = fdm[PROP_GPS_VN]
                 gps_ve = fdm[PROP_GPS_VE]
-            if gps_send_rmc:
-                speed = math.hypot(gps_vn, gps_ve)
-                course = math.degrees(math.atan2(gps_ve, gps_vn)) % 360.0
-                gps_ser.write(nmea.rmc(gps_lat, gps_lon, speed, course).encode("ascii"))
+            # A diverged FDM hands back NaN, and nmea's ddmm.mmmmm encoder does
+            # int(degrees) on it - which raises, kills the bridge mid-run and
+            # takes Checks.report() with it, hiding the actual failure behind a
+            # crash in the sensor encoder. Go quiet instead: a receiver that has
+            # stopped producing fixes is a real thing the FC already handles
+            # (GPS_FIX_TIMEOUT_US -> Gps_HasFix), and staying alive means the run
+            # still reaches its verdict.
+            if not all(map(math.isfinite, (gps_lat, gps_lon, gps_alt, gps_vn, gps_ve))):
+                if not checks.gps_nonfinite:
+                    print("[bridge] WARNING: FDM position is not finite - GPS has gone "
+                          "silent for the rest of this run (the FDM has diverged)")
+                checks.gps_nonfinite += 1
             else:
-                gps_ser.write(nmea.gga(gps_lat, gps_lon, gps_alt, sats=GPS_SATS).encode("ascii"))
-            checks.gps_tx(gps_lat, gps_lon, GPS_SATS)
+                if gps_send_rmc:
+                    speed = math.hypot(gps_vn, gps_ve)
+                    course = math.degrees(math.atan2(gps_ve, gps_vn)) % 360.0
+                    gps_ser.write(nmea.rmc(gps_lat, gps_lon, speed, course).encode("ascii"))
+                else:
+                    gps_ser.write(nmea.gga(gps_lat, gps_lon, gps_alt, sats=GPS_SATS).encode("ascii"))
+                checks.gps_tx(gps_lat, gps_lon, GPS_SATS)
             gps_send_rmc = not gps_send_rmc
 
         # --- RC: mimic a real pilot's arming gesture ---

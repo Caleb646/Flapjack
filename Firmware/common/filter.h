@@ -75,7 +75,7 @@ eSTATUS_t MadgwickFilter_Init (MadgwickFilter_t* pFilter);
 
 eSTATUS_t LowPassFilter_Init (LowPassFilter_t* pFilter);
 
-float Baro_PressureToAltitude (float pressurePa, float referencePa);
+float Baro_PressureToAltitude (float pressurePa, float referencePa, float referenceTempC);
 eSTATUS_t AltitudeFilter_Init (AltitudeFilter_t* pFilter);
 eSTATUS_t AltitudeFilter_Predict (AltitudeFilter_t* pFilter, float accelUp, float dt);
 eSTATUS_t AltitudeFilter_Correct (AltitudeFilter_t* pFilter, float baroAlt, float dt);

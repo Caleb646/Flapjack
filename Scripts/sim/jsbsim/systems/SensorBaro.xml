@@ -53,13 +53,13 @@
 
             <lag>0</lag>
 
-            <noise distribution="GAUSSIAN" variation="ABSOLUTE">0.0</noise>
+            <noise distribution="GAUSSIAN" variation="ABSOLUTE">2.0</noise>
 
-            <drift_rate>0</drift_rate>
+            <drift_rate>0.05</drift_rate>
 
             <gain>1</gain>
 
-            <bias>0</bias>
+            <bias>20.0</bias>
 
             <delay>0</delay>
 
@@ -74,7 +74,7 @@
 
             <lag>0</lag>
 
-            <noise distribution="GAUSSIAN" variation="ABSOLUTE">0.0</noise>
+            <noise distribution="GAUSSIAN" variation="ABSOLUTE">0.1</noise>
 
             <drift_rate>0</drift_rate>
 

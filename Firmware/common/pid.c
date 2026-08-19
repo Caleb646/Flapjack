@@ -83,7 +83,32 @@ float Pid_UpdateAxis (PidAxis_t* pAxis, float current, float target, float dt) {
      * authority depend on the I gain: at the old limit of 25 error-seconds with
      * i = 0.00167 the integrator could only ever reach 4% of travel.
      */
-    float integral = pAxis->prevIntegral + (error * dt);
+    /*
+     * Output-saturation anti-windup, by conditional integration.
+     *
+     * The I-term clamp below bounds the integrator's own CONTRIBUTION, but on
+     * its own it cannot stop the integral growing while the total output is
+     * already pinned at CFG_PID_MIN/MAX_VALUE. The actuator cannot deliver more
+     * than full travel, so every error-second accumulated past that point is
+     * pure stored lag that has to be unwound before the loop can respond in the
+     * other direction at all.
+     *
+     * That is not theoretical here. Once the FDM was given realistic servo rate
+     * limits, a saturated rate loop with no anti-windup kept integrating through
+     * the saturation, and the recovery it eventually commanded was large enough
+     * to saturate the other way - a limit cycle it never left.
+     *
+     * The rule: integrate unless the output is already saturated AND this
+     * error would push it further out. Errors that would bring it back toward
+     * the linear region are always integrated, so the term recovers immediately
+     * rather than waiting out the accumulated excess.
+     */
+    float provisional = (pAxis->p * error) + (pAxis->i * pAxis->prevIntegral);
+    bool blockedHigh  = (provisional >= CFG_PID_MAX_VALUE) && (error > 0.0F);
+    bool blockedLow   = (provisional <= CFG_PID_MIN_VALUE) && (error < 0.0F);
+
+    float integral = (blockedHigh || blockedLow) ? pAxis->prevIntegral
+                                                 : pAxis->prevIntegral + (error * dt);
     float iTerm    = pAxis->i * integral;
     if (iTerm > pAxis->integralLimit) {
         iTerm    = pAxis->integralLimit;

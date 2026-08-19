@@ -246,7 +246,8 @@ Generated message structs are in `Firmware/msgs/umsg/`. The JSON definitions are
 
 ### NAV_VALID bits (`umsg_nav_state_t.valid`)
 
-Defined in `tasks/nav/nav.h`:
+Generated into `msgs/umsg/umsg_nav.h` from the `valid` enum in
+`msgs/umsg/defs/nav.json` — edit the JSON and regenerate, not the header:
 
 | Bit | Macro | Meaning |
 |---|---|---|

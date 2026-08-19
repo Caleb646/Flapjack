@@ -55,10 +55,15 @@ typedef struct {
     uint32_t usLastUpdateTime;
     bool haveFirstSample;
 
-    /* Pressure datum, averaged over the first NAV_BARO_DATUM_SAMPLES samples. */
+    /* Pressure and temperature datum, averaged over the first
+     * NAV_BARO_DATUM_SAMPLES samples. The temperature is part of the datum, not
+     * incidental telemetry - Baro_PressureToAltitude scales the whole altitude
+     * by it. */
     float datumSumPa;
+    float datumSumTempC;
     uint32_t datumSamples;
     float refPressurePa;
+    float refTempC;
     bool haveDatum;
     uint32_t usLastBaroTime;
 
@@ -128,14 +133,17 @@ STATIC void Nav_UpdateBaro (uint32_t usNow) {
 
     if (!s_Nav.haveDatum) {
         s_Nav.datumSumPa += baro.pressure;
+        s_Nav.datumSumTempC += baro.temperature;
         s_Nav.datumSamples++;
         if (s_Nav.datumSamples < NAV_BARO_DATUM_SAMPLES) {
             return;
         }
         s_Nav.refPressurePa  = s_Nav.datumSumPa / (float)s_Nav.datumSamples;
+        s_Nav.refTempC       = s_Nav.datumSumTempC / (float)s_Nav.datumSamples;
         s_Nav.haveDatum      = true;
         s_Nav.usLastBaroTime = usNow;
-        LOG_INFO ("NAV baro datum %u Pa", (unsigned)s_Nav.refPressurePa);
+        LOG_INFO ("NAV baro datum %u Pa at %d C", (unsigned)s_Nav.refPressurePa,
+                  (int)s_Nav.refTempC);
         return;
     }
 
@@ -143,8 +151,11 @@ STATIC void Nav_UpdateBaro (uint32_t usNow) {
     float dtBaro         = (float)(usNow - s_Nav.usLastBaroTime) / 1000000.0F;
     s_Nav.usLastBaroTime = usNow;
 
+    /* The DATUM temperature, not the current sample's: it scales height above
+     * the datum, so it has to be the temperature of the air column's base. */
     AltitudeFilter_Correct (&s_Nav.altFilter,
-                            Baro_PressureToAltitude (baro.pressure, s_Nav.refPressurePa),
+                            Baro_PressureToAltitude (baro.pressure, s_Nav.refPressurePa,
+                                                     s_Nav.refTempC),
                             dtBaro);
 }
 

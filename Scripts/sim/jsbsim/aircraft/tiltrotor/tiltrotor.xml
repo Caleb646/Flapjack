@@ -165,6 +165,43 @@
     <property value="0.0"> fcs/tilt-cmd-rad[0] </property>
     <property value="0.0"> fcs/tilt-cmd-rad[1] </property>
 
+    <!--
+      SERVO DYNAMICS. The FC's commanded tilt does NOT reach the rotors
+      instantly; it goes through this channel first, and the force functions
+      below read fcs/tilt-pos-rad[N] - the servo's actual position - never
+      fcs/tilt-cmd-rad[N].
+
+      This exists because its absence was a divergence, not merely optimism.
+      Without it a saturated rate loop could command a full +pi/2 -> -pi/2
+      reversal and have it applied inside ONE 2.5 ms frame: a full-scale step
+      discontinuity at Nyquist, into a rotational plant of ixx = 0.012 kg*m^2.
+      JSBSim's integrator answered that with angular accelerations 6-13x beyond
+      anything the actuators can physically produce, and the model ran away to
+      NaN (KnownIssues 1.14). A real servo cannot do that, and now neither can
+      this one.
+
+      rate_limit is the dominant term and the one that matters: 10.5 rad/s is
+      0.10 s per 60 deg, a mid-range hobby digital servo. lag adds the
+      electrical/controller delay on top. Replace both with bench measurements
+      of the actual servo before trusting a tune taken against this model - the
+      numbers are representative, not measured.
+    -->
+    <channel name="actuators">
+      <actuator name="fcs/tilt-actuator[0]">
+        <input> fcs/tilt-cmd-rad[0] </input>
+        <rate_limit> 10.5 </rate_limit>
+        <lag> 50.0 </lag>
+        <output> fcs/tilt-pos-rad[0] </output>
+      </actuator>
+
+      <actuator name="fcs/tilt-actuator[1]">
+        <input> fcs/tilt-cmd-rad[1] </input>
+        <rate_limit> 10.5 </rate_limit>
+        <lag> 50.0 </lag>
+        <output> fcs/tilt-pos-rad[1] </output>
+      </actuator>
+    </channel>
+
     <channel name="propulsion">
       <!-- Static thrust per rotor, then de-rated with airspeed.
            Thrust is LINEAR in throttle so hover lands exactly at 0.5, matching
@@ -221,7 +258,7 @@
         <function>
           <product>
             <property> fcs/rotor0-thrust-lbs </property>
-            <cos> <property> fcs/tilt-cmd-rad[0] </property> </cos>
+            <cos> <property> fcs/tilt-pos-rad[0] </property> </cos>
           </product>
         </function>
         <output> external_reactions/rotor0_up/magnitude </output>
@@ -231,7 +268,7 @@
         <function>
           <product>
             <property> fcs/rotor0-thrust-lbs </property>
-            <sin> <property> fcs/tilt-cmd-rad[0] </property> </sin>
+            <sin> <property> fcs/tilt-pos-rad[0] </property> </sin>
           </product>
         </function>
         <output> external_reactions/rotor0_fwd/magnitude </output>
@@ -241,7 +278,7 @@
         <function>
           <product>
             <property> fcs/rotor1-thrust-lbs </property>
-            <cos> <property> fcs/tilt-cmd-rad[1] </property> </cos>
+            <cos> <property> fcs/tilt-pos-rad[1] </property> </cos>
           </product>
         </function>
         <output> external_reactions/rotor1_up/magnitude </output>
@@ -251,7 +288,7 @@
         <function>
           <product>
             <property> fcs/rotor1-thrust-lbs </property>
-            <sin> <property> fcs/tilt-cmd-rad[1] </property> </sin>
+            <sin> <property> fcs/tilt-pos-rad[1] </property> </sin>
           </product>
         </function>
         <output> external_reactions/rotor1_fwd/magnitude </output>
