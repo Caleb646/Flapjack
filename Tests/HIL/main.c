@@ -18,6 +18,13 @@
 
 static UART_HandleTypeDef s_huart = { 0 };
 
+void vApplicationStackOverflowHook (TaskHandle_t xTask, char* pcTaskName) {
+    (void)xTask;
+    (void)pcTaskName;
+    LOG_ERROR ("Stack overflow in task %s", pcTaskName);
+    while (1) {}
+}
+
 void Uart_PutChar (void* p, char c) {
     HAL_UART_Transmit (&s_huart, (uint8_t const*)&c, sizeof (c), 100);
 }

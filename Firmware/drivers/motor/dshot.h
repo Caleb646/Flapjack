@@ -1,5 +1,11 @@
-#ifndef __MOTION_CONTROL_DSHOT_H__
-#define __MOTION_CONTROL_DSHOT_H__
+#ifndef DRIVERS_MOTOR_DSHOT_H
+#define DRIVERS_MOTOR_DSHOT_H
+
+/*
+ * Bit-banged DShot wire protocol, private to the DShot motor backend. The
+ * device layer never sees this - it goes through MotorDriver_t (motordrv.h).
+ * Exposed as a header only so the HIL test can drive the bitstream directly.
+ */
 
 #include "hal.h"
 #include "target.h"
@@ -58,4 +64,4 @@ eSTATUS_t DShotBB_Write (uint16_t motorVals[BRD_MOTOR_COUNT]);
 uint16_t DShotPreparePacket (uint16_t value);
 #endif
 
-#endif /* __MOTION_CONTROL_DSHOT_H__ */
+#endif /* DRIVERS_MOTOR_DSHOT_H */

@@ -38,7 +38,6 @@
  */
 char const* volatile g_pOverflowedTaskName = NULL;
 
-void vApplicationStackOverflowHook (TaskHandle_t xTask, char* pcTaskName);
 void vApplicationStackOverflowHook (TaskHandle_t xTask, char* pcTaskName) {
 
     FJ_UNUSED (xTask);

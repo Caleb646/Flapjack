@@ -2,7 +2,7 @@
 
 #include "drivers/dma.h"
 #include "hal.h"
-#include "drivers/dshot/dshot.h"
+#include "drivers/motor/dshot.h"
 #include "target.h"
 #include "unity.h"
 
