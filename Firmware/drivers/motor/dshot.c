@@ -36,9 +36,7 @@ FJ_DEFINE_SHARED (DShotBB_t, g_DShotBB) = {
                   } }
 };
 
-#ifndef UNIT_TEST
 static uint16_t DShotPreparePacket (uint16_t value);
-#endif
 
 static void DShotDMA_TC_Callback (DMA_HandleTypeDef* hdma) {
     (void)hdma;
@@ -149,7 +147,7 @@ eSTATUS_t DShotBB_Write (uint16_t motorVals[BRD_MOTOR_COUNT]) {
 }
 
 
-STATIC uint16_t DShotPreparePacket (uint16_t value) {
+static uint16_t DShotPreparePacket (uint16_t value) {
 
     uint16_t packet         = 0U;
     uint8_t dshot_telemetry = false;
