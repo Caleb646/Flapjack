@@ -48,6 +48,14 @@ cmake -S Tests -B Build/UnitTest -G "MinGW Makefiles" && ctest --test-dir Build/
 
 # Flight GUI (telemetry + command console)
 python3 Scripts/board.py gui
+
+# Watch a SIL run in the GUI. The bridge owns the FC's wire, so the GUI cannot
+# read the board during a sim; it publishes FDM truth, the FC's estimate and the
+# FC's servo/motor commands as JSON over UDP instead. On by default (--gui-port,
+# 5005; 0 disables), so the sim command above needs no extra flag - just hit
+# Listen in the GUI's "Sim Graphs" tab. JSBSim's attitude and altitude then
+# drive the 3D viewer too.
+python3 Scripts/board.py gui
 ```
 
 Supported boards: `nucleo-h747zi`, `flapjack-v1`. Build configs: `Debug`, `Release`.
@@ -72,7 +80,11 @@ Build artifacts land in `Build/<board>/<config>/` as `cm7.elf` and `cm4.elf`. CM
   (`--rc-port`, the only RC path — without it the FC never arms) and GPS as NMEA on the GPS UART
   (`--gps-port`, optional). Baro rides the sim link but on its own `BaroData` frame at its own
   rate, not folded into the 400 Hz `SensorData`.
-- **`gui/`** — the PyQt flight GUI (`app.py`, `conf.py`, `data/`).
+- **`gui/`** — the PyQt flight GUI (`app.py`, `conf.py`, `data/`). Two independent
+  input interfaces: the serial link to a real FC (`<json>` telemetry over
+  `QSerialPort`), and the sim link (`SimLink`, a UDP feed from the bridge's
+  `--gui-port`) which supplies the "Sim Graphs" tab and the 3D viewer during a
+  SIL run. They are never live at once - the bridge holds the FC's wire.
 - **`utils.py`** — two helpers used by other scripts: `is_installed(binary)` (shutil.which) and `run_command(cmd, ...)` (subprocess, exits on failure).
 - **`stm32h747_dual_core.cfg`** — OpenOCD config for the dual-core STM32H747. Used directly by `flash`. Enables `DUAL_BANK` and `DUAL_CORE`, resets via `connect_assert_srst`, flashes both CM7 and CM4 banks.
 

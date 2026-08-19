@@ -5,6 +5,7 @@ from collections import deque
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtWidgets import QApplication, QTabWidget, QVBoxLayout, QHBoxLayout, QPushButton, QCheckBox
 from PyQt5.QtSerialPort import QSerialPort
+from PyQt5.QtNetwork import QUdpSocket, QHostAddress
 from pyqtgraph.opengl import GLViewWidget, GLGridItem, GLLinePlotItem, GLMeshItem, MeshData
 import pyqtgraph as pg
 from datetime import datetime
@@ -20,6 +21,22 @@ CONF = conf.conf_init()
 
 START_DELIM = b"<"
 END_DELIM = b">"
+
+# Sim link: the UDP feed from `board.py sim --gui-port`. A second interface
+# alongside the serial one, because during a SIL run the bridge owns the FC's
+# wire and the GUI cannot read the board directly at all. Matches GUI_PORT in
+# Scripts/sim/bridge.py, which the bridge publishes to by default; keep the two
+# in step.
+SIM_LINK_PORT = 5005
+SIM_REDRAW_MS = 50
+SIM_PLOT_KEYS = ("alt", "roll", "pitch", "yaw")
+
+# Viewer units per metre of altitude. The grid spans ~40 units and the camera
+# sits 5 away, so a unit-per-metre mapping would fly the model out of frame
+# during an ordinary hover; the readout carries the true value.
+ALT_SCENE_SCALE = 0.2
+
+ACTUATOR_COLORS = ('r', 'g', 'b', 'y', 'm', 'c')
 
 LETTER_X = [
     [(-0.05, -0.05, 0), (0.05, 0.05, 0)],
@@ -69,6 +86,13 @@ def make_letter(points, offset=(0, 0, 0), color=(1, 1, 1)):
     colors = np.tile(np.array(color), (len(pts), 1))
     return GLLinePlotItem(pos=pts, color=colors, width=2, antialias=True)
 
+def set_curve_data(curve, time_array, series, visible):
+    """Show a curve, or blank it without dropping the data behind it."""
+    if visible:
+        curve.setData(time_array, np.array(series))
+    else:
+        curve.setData([], [])
+
 def make_axis_line(direction, color):
     """
     direction: tuple of 3 floats (x, y, z)
@@ -100,6 +124,9 @@ class FlightViewer(QtWidgets.QWidget):
         self.actuator_tab = ActuatorPlotter()
         self.tab_widget.addTab(self.actuator_tab, "Actuator Graphs")
         
+        self.sim_tab = SimPlotter(self)
+        self.tab_widget.addTab(self.sim_tab, "Sim Graphs")
+        
         self.control_tab = FlightControlTab(self)
         self.tab_widget.addTab(self.control_tab, "Flight Control")
         
@@ -129,6 +156,9 @@ class FlightViewer(QtWidgets.QWidget):
         # if not self.serial.setBaudRate(9600, QSerialPort.AllDirections):
             raise RuntimeError("Could not set baud rate for serial port")
         self.buffer = b""
+
+        self.sim_link = SimLink(self)
+        self.sim_link.sample.connect(self.on_sim_sample)
 
         os.makedirs(os.path.join(_GUI_DIR, "Logs"), exist_ok=True)
         self.debug_log = None
@@ -166,8 +196,11 @@ class FlightViewer(QtWidgets.QWidget):
         self.airplane, self.airplane_scale = load_mesh(os.path.join(_GUI_DIR, "data", "mesh", "plane.stl"))
         self.airplane_scale = 1.0 / self.airplane_scale # normalize scale
         self.view.addItem(self.airplane)
+
+        self.altitude_label = QtWidgets.QLabel("Altitude: --")
         
-        layout.addWidget(self.view)
+        layout.addWidget(self.view, 1)
+        layout.addWidget(self.altitude_label)
         
     def setup_serial_controls(self, main_layout):
         """Setup serial communication controls"""
@@ -324,6 +357,9 @@ class FlightViewer(QtWidgets.QWidget):
         roll_deg = orientation.get("roll", 0)
         pitch_deg = orientation.get("pitch", 0)
         yaw_deg = orientation.get("yaw", 0)
+        # Only the sim link carries altitude; the FC's attitude log has no
+        # "alt" key, so that path keeps the model on the grid as it always has.
+        alt_m = orientation.get("alt")
  
         self.airplane.resetTransform()
         self.airplane.scale(self.airplane_scale, self.airplane_scale, self.airplane_scale)
@@ -332,6 +368,30 @@ class FlightViewer(QtWidgets.QWidget):
         # self.airplane.rotate(roll_deg, 1, 0, 0)   # Roll (X axis)
         self.airplane.rotate(pitch_deg, 1, 0, 0)  # Pitch (Y axis)
         self.airplane.rotate(roll_deg, 0, 1, 0)   # Roll (X axis)
+        if alt_m is not None:
+            # Last, and so outermost: the model turns about its own centre and
+            # is then lifted in the world frame, not along its own body axis.
+            self.airplane.translate(0, 0, alt_m * ALT_SCENE_SCALE)
+            self.altitude_label.setText(f"Altitude: {alt_m:+.2f} m")
+
+    def start_sim_link(self, port) -> bool:
+        ok = self.sim_link.listen(port)
+        if ok:
+            self.append_debug_console(f"Sim link listening on UDP {port}", "[INFO]")
+        else:
+            self.append_debug_console(f"Failed to bind UDP port {port}", "[ERROR]")
+        return ok
+
+    def stop_sim_link(self):
+        self.sim_link.stop()
+        self.append_debug_console("Sim link stopped", "[INFO]")
+
+    @QtCore.pyqtSlot(dict)
+    def on_sim_sample(self, state):
+        truth = state.get("truth")
+        if truth:
+            self.update_orientation(truth)
+        self.sim_tab.add_sample(state)
 
     def closeEvent(self, event):
         self.close_session_files()
@@ -1609,6 +1669,292 @@ class AttitudePlotter(QtWidgets.QWidget):
             
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to load data: {str(e)}")
+
+class SimLink(QtCore.QObject):
+    """Receiver for the sim bridge's state feed (``board.py sim --gui-port``).
+
+    A second interface alongside the serial link, not another producer on it:
+    during a SIL run bridge.py owns the FC's wire, so the GUI cannot read the
+    board at all and takes the FDM's truth, the FC's estimate and the FC's
+    actuator commands from the bridge instead.
+
+    No deframing here, unlike the serial path - UDP preserves message
+    boundaries, so one datagram is exactly one JSON state object.
+    """
+
+    sample = QtCore.pyqtSignal(dict)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.socket = QUdpSocket(self)
+        self.socket.readyRead.connect(self.receive)
+
+    def listen(self, port) -> bool:
+        self.socket.close()
+        return self.socket.bind(QHostAddress.LocalHost, port)
+
+    def stop(self):
+        self.socket.close()
+
+    @QtCore.pyqtSlot()
+    def receive(self):
+        while self.socket.hasPendingDatagrams():
+            data, _, _ = self.socket.readDatagram(self.socket.pendingDatagramSize())
+            try:
+                self.sample.emit(json.loads(data))
+            except json.JSONDecodeError:
+                print(f"Failed to decode sim datagram: {data[:64]}")
+
+
+class SimPlotter(QtWidgets.QWidget):
+    """The SIL run as graphs: the FC's own estimate against JSBSim's truth,
+    plus the servo and motor commands the FC produced.
+
+    Fed by SimLink, so it works while the serial tab is disconnected.
+    """
+
+    def __init__(self, parent_viewer):
+        super().__init__()
+        self.parent_viewer = parent_viewer
+        self.setup_ui()
+        self.setup_data()
+
+    def setup_ui(self):
+        layout = QVBoxLayout(self)
+
+        controls = QHBoxLayout()
+
+        link_group = QtWidgets.QGroupBox("Sim Link (UDP)")
+        link_layout = QHBoxLayout(link_group)
+
+        self.port_spinbox = QtWidgets.QSpinBox()
+        self.port_spinbox.setRange(1024, 65535)
+        self.port_spinbox.setValue(SIM_LINK_PORT)
+
+        self.listen_btn = QPushButton("Listen", checkable=True, toggled=self.on_listen_toggled)
+        self.link_status = QtWidgets.QLabel("Not listening")
+
+        link_layout.addWidget(QtWidgets.QLabel("Port:"))
+        link_layout.addWidget(self.port_spinbox)
+        link_layout.addWidget(self.listen_btn)
+        link_layout.addWidget(self.link_status)
+
+        show_group = QtWidgets.QGroupBox("Show")
+        show_layout = QHBoxLayout(show_group)
+
+        self.estimate_checkbox = QCheckBox("FC Estimate")
+        self.estimate_checkbox.setChecked(True)
+        self.estimate_checkbox.stateChanged.connect(self.toggle_estimate)
+
+        self.truth_checkbox = QCheckBox("JSBSim Truth")
+        self.truth_checkbox.setChecked(True)
+        self.truth_checkbox.stateChanged.connect(self.toggle_truth)
+
+        show_layout.addWidget(self.estimate_checkbox)
+        show_layout.addWidget(self.truth_checkbox)
+
+        buttons_group = QtWidgets.QGroupBox("Controls")
+        buttons_layout = QHBoxLayout(buttons_group)
+
+        self.clear_btn = QPushButton("Clear Data")
+        self.clear_btn.clicked.connect(self.clear_data)
+
+        buttons_layout.addWidget(self.clear_btn)
+
+        controls.addWidget(link_group)
+        controls.addWidget(show_group)
+        controls.addWidget(buttons_group)
+        controls.addStretch()
+
+        layout.addLayout(controls)
+
+        self.altitude_widget = pg.PlotWidget()
+        self.altitude_widget.setLabel('left', 'Altitude (m)')
+        self.altitude_widget.setLabel('bottom', 'Sim Time (seconds)')
+        self.altitude_widget.setTitle('Altitude - FC Estimate vs JSBSim')
+        self.altitude_widget.addLegend()
+        self.altitude_widget.showGrid(x=True, y=True)
+
+        self.attitude_widget = pg.PlotWidget()
+        self.attitude_widget.setLabel('left', 'Angle (degrees)')
+        self.attitude_widget.setLabel('bottom', 'Sim Time (seconds)')
+        self.attitude_widget.setTitle('Attitude - FC Estimate vs JSBSim')
+        self.attitude_widget.addLegend()
+        self.attitude_widget.showGrid(x=True, y=True)
+
+        self.servo_widget = pg.PlotWidget()
+        self.servo_widget.setLabel('left', 'Angle (degrees)')
+        self.servo_widget.setLabel('bottom', 'Sim Time (seconds)')
+        self.servo_widget.setTitle('Servo Commands (from FC)')
+        self.servo_widget.addLegend()
+        self.servo_widget.showGrid(x=True, y=True)
+
+        self.motor_widget = pg.PlotWidget()
+        self.motor_widget.setLabel('left', 'Throttle (0-1)')
+        self.motor_widget.setLabel('bottom', 'Sim Time (seconds)')
+        self.motor_widget.setTitle('Motor Commands (from FC)')
+        self.motor_widget.addLegend()
+        self.motor_widget.showGrid(x=True, y=True)
+
+        # Each label already names its unit, so pyqtgraph's automatic SI prefix
+        # only obscures it - a hovering throttle would read "500 (x0.001)".
+        for widget in (self.altitude_widget, self.attitude_widget,
+                       self.servo_widget, self.motor_widget):
+            widget.getAxis('left').enableAutoSIPrefix(False)
+
+        plots = QtWidgets.QGridLayout()
+        plots.addWidget(self.altitude_widget, 0, 0)
+        plots.addWidget(self.attitude_widget, 0, 1)
+        plots.addWidget(self.servo_widget, 1, 0)
+        plots.addWidget(self.motor_widget, 1, 1)
+        layout.addLayout(plots)
+
+    def setup_data(self):
+        self.max_points = 5_000  # Maximum number of points to display
+
+        self.time_data = deque(maxlen=self.max_points)
+
+        self.nav_data = {k: deque(maxlen=self.max_points) for k in SIM_PLOT_KEYS}
+        self.truth_data = {k: deque(maxlen=self.max_points) for k in SIM_PLOT_KEYS}
+
+        # One curve per servo/motor, created when that index is first seen: the
+        # feed carries however many the FC actually commanded, which the GUI has
+        # no other way to know.
+        self.servo_data = {}
+        self.motor_data = {}
+        self.servo_curves = {}
+        self.motor_curves = {}
+
+        # connect="finite" throughout, so a NaN draws as a gap. The estimate does
+        # not exist until the FC's first Telemetry frame, and a gap is the only
+        # honest way to show that - plotting it as 0 m would look like a vehicle
+        # sitting on the ground.
+        self.nav_curves = {
+            'alt': self.altitude_widget.plot(
+                pen=pg.mkPen(color='c', width=2), connect="finite",
+                name='Estimated Altitude'
+            )
+        }
+        self.truth_curves = {
+            'alt': self.altitude_widget.plot(
+                pen=pg.mkPen(color='w', width=2, style=QtCore.Qt.DashLine), connect="finite",
+                name='JSBSim Altitude'
+            )
+        }
+        for axis, color in (('roll', 'r'), ('pitch', 'g'), ('yaw', 'b')):
+            self.nav_curves[axis] = self.attitude_widget.plot(
+                pen=pg.mkPen(color=color, width=2), connect="finite",
+                name=f'Estimated {axis.capitalize()}'
+            )
+            self.truth_curves[axis] = self.attitude_widget.plot(
+                pen=pg.mkPen(color=color, width=2, style=QtCore.Qt.DashLine), connect="finite",
+                name=f'JSBSim {axis.capitalize()}'
+            )
+
+        # Redrawn on a timer rather than per datagram: the feed runs at 50 Hz and
+        # this tab holds a dozen curves, so repainting on arrival spends the
+        # whole UI thread on plots. Runs only while the link is up.
+        self.redraw_timer = QtCore.QTimer(self)
+        self.redraw_timer.timeout.connect(self.update_plots)
+
+    @QtCore.pyqtSlot(bool)
+    def on_listen_toggled(self, checked):
+        port = self.port_spinbox.value()
+        if checked:
+            if not self.parent_viewer.start_sim_link(port):
+                # Re-enters this slot with checked=False, which resets the
+                # labels - so the failure is reported after that, not before.
+                self.listen_btn.setChecked(False)
+                self.link_status.setText(f"Could not bind UDP port {port}")
+                return
+            self.listen_btn.setText("Stop")
+            self.link_status.setText(f"Listening on {port}")
+            self.port_spinbox.setEnabled(False)
+            self.redraw_timer.start(SIM_REDRAW_MS)
+        else:
+            self.parent_viewer.stop_sim_link()
+            self.redraw_timer.stop()
+            self.listen_btn.setText("Listen")
+            self.link_status.setText("Not listening")
+            self.port_spinbox.setEnabled(True)
+
+    def add_sample(self, state):
+        """Add one datagram of sim state"""
+        self.time_data.append(state.get("t", 0.0))
+
+        nav = state.get("nav") or {}
+        truth = state.get("truth") or {}
+        for key in SIM_PLOT_KEYS:
+            self.nav_data[key].append(nav.get(key, float("nan")))
+            self.truth_data[key].append(truth.get(key, float("nan")))
+
+        self.add_actuator_data(self.servo_data, self.servo_curves,
+                               self.servo_widget, state.get("servo", []), "Servo")
+        self.add_actuator_data(self.motor_data, self.motor_curves,
+                               self.motor_widget, state.get("motor", []), "Motor")
+
+    def add_actuator_data(self, data, curves, widget, values, label):
+        for i, value in enumerate(values):
+            if i not in data:
+                # Backfilled to the length time_data already has: the FC's first
+                # command frames arrive after the feed has started, and setData
+                # needs x and y the same length.
+                data[i] = deque([float("nan")] * (len(self.time_data) - 1),
+                                maxlen=self.max_points)
+                curves[i] = widget.plot(
+                    pen=pg.mkPen(color=ACTUATOR_COLORS[i % len(ACTUATOR_COLORS)], width=2),
+                    connect="finite", name=f'{label} {i}'
+                )
+            data[i].append(value)
+
+        # An actuator missing from this datagram still needs a point, for the
+        # same length reason.
+        for i, series in data.items():
+            if i >= len(values):
+                series.append(float("nan"))
+
+    def update_plots(self):
+        """Update the plot curves with current data"""
+        time_array = np.array(self.time_data)
+
+        show_estimate = self.estimate_checkbox.isChecked()
+        show_truth = self.truth_checkbox.isChecked()
+
+        for key in SIM_PLOT_KEYS:
+            set_curve_data(self.nav_curves[key], time_array,
+                           self.nav_data[key], show_estimate)
+            set_curve_data(self.truth_curves[key], time_array,
+                           self.truth_data[key], show_truth)
+
+        for i, curve in self.servo_curves.items():
+            curve.setData(time_array, np.array(self.servo_data[i]))
+
+        for i, curve in self.motor_curves.items():
+            curve.setData(time_array, np.array(self.motor_data[i]))
+
+    def toggle_estimate(self, state):
+        self.update_plots()
+
+    def toggle_truth(self, state):
+        self.update_plots()
+
+    def clear_data(self):
+        self.time_data.clear()
+
+        for series in self.nav_data.values():
+            series.clear()
+
+        for series in self.truth_data.values():
+            series.clear()
+
+        for series in self.servo_data.values():
+            series.clear()
+
+        for series in self.motor_data.values():
+            series.clear()
+
+        self.update_plots()
+
 
 def main():
     app = QApplication(sys.argv)

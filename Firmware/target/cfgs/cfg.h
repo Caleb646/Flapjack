@@ -132,6 +132,37 @@
 #define CFG_MOTOR_STARTUP_THROTTLE           0.25F // 25% throttle
 
 /*
+ * Mixer output band. Deliberately NOT the CFG_MOTOR_* values above: those are a
+ * bench cap the DShot driver applies on its own (dshot.c), and 0.40 sits below
+ * the ~0.50 this airframe needs to hover. The mixer desaturates against the band
+ * it is actually allowed to use, so raise the driver cap before flying hardware
+ * or it will re-clip the differential this band exists to protect.
+ *
+ * The idle floor is what keeps roll available at low throttle: differential
+ * thrust is the only roll effector on a bicopter and a motor commanded to zero
+ * has none. Props therefore spin whenever the vehicle is ARMED, not just when
+ * the throttle stick is raised.
+ */
+#define CFG_MIXER_IDLE_THROTTLE              0.05F
+#define CFG_MIXER_MAX_THROTTLE               1.00F
+
+/*
+ * Ceiling on total tilt-servo deflection, in normalised travel where 1.0 is full
+ * mechanical travel - 90 deg on the sim backend (drivers/servo/sim.c). Pitch and
+ * yaw share the tilt servos at weight 1.0 each and each PID output spans +/-1, so
+ * an unbounded sum reaches +/-2 and pins the rotors horizontal on any saturated
+ * rate loop.
+ *
+ * 0.3333 is +/-30 deg, and it DOES bind in normal flight - measured, not assumed.
+ * Unlimited, the `hover` plan peaks at 0.760 rad (43.5 deg) on the takeoff
+ * transient; clamped it peaks at the limit and hover still passes with the same
+ * altitude tracking (0.44 m nav error against a 1.5 m budget). Raise it if a
+ * measured airframe turns out to need the extra travel, but do not assume the
+ * loop only asks for this much when something has gone wrong.
+ */
+#define CFG_MIXER_SERVO_TRAVEL_LIMIT         0.3333F
+
+/*
  * PID mixing magnitudes for the Motors. They determine how much each PID axis contributes to the motor throttle.
  * For example (PID values are between -1 to 1) if a PID pitch value of 0.5 is received the motor should
  * increase its throttle to maintain the current altitude while allowing the drone to pitch up.

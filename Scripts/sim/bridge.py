@@ -25,7 +25,9 @@ Then the full sim:
 
 import argparse
 import collections
+import json
 import math
+import socket
 import struct
 import sys
 import time
@@ -83,6 +85,18 @@ PROP_TILT = ["fcs/tilt-cmd-rad[0]", "fcs/tilt-cmd-rad[1]"]
 G = 9.81
 FT2M = 0.3048
 RAD2DEG = 180.0 / math.pi
+
+# --- flight GUI feed (--gui-port) -------------------------------------------
+# The GUI cannot read the FC itself during a SIL run - the bridge owns that
+# wire - so it takes both the FDM's truth and the FC's own telemetry from here,
+# on its own UDP port. Fire-and-forget by design: a GUI that is not running, or
+# one that has fallen behind, must never pace the sim.
+GUI_HOST = "127.0.0.1"
+GUI_RATE = 50.0
+# Matches SIM_LINK_PORT in Scripts/gui/app.py, which is the other half of this
+# link; keep the two in step. On by default because the feed costs a datagram
+# nobody has to read - pass --gui-port 0 to turn it off.
+GUI_PORT = 5005
 
 # Loopback tolerance on an echoed GPS coordinate, in degrees. ~1.1 cm: well
 # below NMEA's own ~1.9 cm quantisation step (so it cannot mask a wrong field)
@@ -193,6 +207,44 @@ def make_sensor_frame(accel, gyro, mag) -> bytes:
 def make_baro_frame(pressure_pa, temperature_c) -> bytes:
     msg = sim_pb2.BaroData(pressure_pa=pressure_pa, temperature_c=temperature_c)
     return frame(MSG_BARO, msg.SerializeToString())
+
+
+def make_gui_packet(sim_t, euler_rad, truth_alt_m, telemetry, servo_rad, motor) -> bytes:
+    """One JSON datagram of sim state for the flight GUI.
+
+    This feeds a display, not the firmware, so it carries display units rather
+    than the wire's: degrees, and altitude in metres positive UP (the wire is
+    radians and NED, down positive). `nav` is null until the FC's first
+    Telemetry frame, so the GUI can tell "no estimate yet" from "estimate of 0".
+
+    `truth.alt` and `nav.alt` share the FC's own pressure datum as their zero -
+    see _Checks.nav_alt_datum_m - which is what makes the two comparable on one
+    set of axes.
+    """
+    phi, theta, psi = euler_rad
+    state = {
+        "t": round(sim_t, 4),
+        "truth": {
+            "roll": phi * RAD2DEG,
+            "pitch": theta * RAD2DEG,
+            "yaw": psi * RAD2DEG,
+            "alt": truth_alt_m,
+        },
+        "nav": None,
+        "servo": [a * RAD2DEG for a in servo_rad],
+        "motor": list(motor),
+    }
+    if telemetry is not None:
+        state["nav"] = {
+            "roll": telemetry.euler[0],
+            "pitch": telemetry.euler[1],
+            "yaw": telemetry.euler[2],
+            # NED, down positive - the same negation the nav gate makes.
+            "alt": -telemetry.nav_pos_ned[2],
+            "valid": telemetry.nav_valid,
+            "armed": telemetry.armed,
+        }
+    return json.dumps(state).encode("ascii")
 
 
 def rc_channels(throttle_norm: float, armed: bool) -> list:
@@ -591,6 +643,10 @@ def main(argv=None):
     ap.add_argument("--arm-delay", type=float, default=2.0,
                     help="seconds to settle before raising the arm switch (the FC "
                          "holds the request until its own arming gate opens)")
+    ap.add_argument("--gui-port", type=int, default=GUI_PORT, metavar="PORT",
+                    help="publish sim state (FDM truth + FC telemetry + actuator "
+                         f"commands) as JSON over UDP to {GUI_HOST}:PORT at "
+                         f"{GUI_RATE:.0f} Hz, for `board.py gui`; 0 disables")
     ap.add_argument("--dry-run", action="store_true",
                     help="no JSBSim: emit a fixed 20deg-roll attitude to validate the link")
     ap.add_argument("--send-pid", metavar="AXIS:GAIN:VALUE", default=None,
@@ -650,6 +706,17 @@ def main(argv=None):
         fdm["ic/h-sl-ft"] = 1.0
         fdm.run_ic()
 
+    gui_sock = None
+    if args.gui_port:
+        gui_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    gui_period = 1.0 / GUI_RATE
+    next_gui = 0.0
+    # Latest FC output, held between publishes: the FC replies asynchronously,
+    # so a frame type that did not arrive this tick is stale, not absent.
+    last_servo = []
+    last_motor = []
+    last_tm = None
+
     log_buf = b""
     t0 = time.perf_counter()
     next_tick = t0
@@ -663,6 +730,8 @@ def main(argv=None):
         print(f"[bridge] CRSF RC on {args.rc_port}@{args.rc_baud}, {args.rc_rate:.0f} Hz")
     else:
         print("[bridge] WARNING: no --rc-port, so the FC receives no RC and will not arm")
+    if gui_sock is not None:
+        print(f"[bridge] GUI feed on udp://{GUI_HOST}:{args.gui_port}, {GUI_RATE:.0f} Hz")
     while True:
         now = time.perf_counter()
 
@@ -673,18 +742,21 @@ def main(argv=None):
                 if msg_id == MSG_SERVO:
                     sc = sim_pb2.ServoCmd(); sc.ParseFromString(payload)
                     checks.servos(sc.angle)
+                    last_servo = list(sc.angle)
                     if fdm:
                         for i, a in enumerate(sc.angle[:2]):
                             fdm[PROP_TILT[i]] = a
                 elif msg_id == MSG_MOTOR:
                     mc = sim_pb2.MotorCmd(); mc.ParseFromString(payload)
                     checks.motors(mc.throttle)
+                    last_motor = list(mc.throttle)
                     if fdm:
                         for i, thr in enumerate(mc.throttle[:2]):
                             fdm[PROP_THROTTLE[i]] = max(0.0, min(1.0, thr))
                 elif msg_id == MSG_TELEMETRY:
                     tm = sim_pb2.Telemetry(); tm.ParseFromString(payload)
                     fc_armed = tm.armed
+                    last_tm = tm
                     checks.baro_rx(tm)
                     checks.gps_rx(tm)
                     checks.nav_rx(tm, fdm)
@@ -872,6 +944,28 @@ def main(argv=None):
 
         if fdm is not None:
             checks.state(fdm["position/h-agl-ft"], (phi, theta, psi))
+
+        # --- publish state to the flight GUI, on its own wire ---
+        if gui_sock is not None and now >= next_gui:
+            next_gui = now + gui_period
+            # Truth altitude is referenced to the FC's own pressure datum so it
+            # shares a zero with the estimate the GUI plots it against. Before
+            # that datum exists the FDM is still frozen at its IC, so ground
+            # level is both the honest answer and the same one the datum will be.
+            h_sl = fdm["position/h-sl-meters"] if fdm is not None else 0.0
+            datum = checks.nav_alt_datum_m
+            truth_alt = h_sl - (datum if datum is not None else h_sl)
+            # A datagram nobody is listening for draws an ICMP port-unreachable,
+            # which Winsock then reports as an error on the NEXT send. The GUI
+            # not being up is the normal case, so drop the packet rather than
+            # let a viewer end a flight.
+            try:
+                gui_sock.sendto(
+                    make_gui_packet(sim_t, (phi, theta, psi), truth_alt,
+                                    last_tm, last_servo, last_motor),
+                    (GUI_HOST, args.gui_port))
+            except OSError:
+                pass
 
         # --- pace to real time ---
         tick += 1
