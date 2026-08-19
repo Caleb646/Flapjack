@@ -9,6 +9,14 @@
 
 #include <stdbool.h>
 
+/*
+ * Half the barometer's 50 Hz sample period. The part free-runs on its own clock
+ * rather than this task's, so sampling at the same 20 ms period would beat
+ * against it and skip samples; checking twice per period picks each one up
+ * within 10 ms, and the intervening call simply reports no new data.
+ */
+#define BARO_POLL_PERIOD_MS 10U
+
 static Baro_t s_baro;
 
 void Baro_Task (void* args) {
@@ -29,5 +37,6 @@ void Baro_Task (void* args) {
             };
             umsg_sensors_baro_publish (&msg);
         }
+        vTaskDelay (pdMS_TO_TICKS (BARO_POLL_PERIOD_MS));
     }
 }
