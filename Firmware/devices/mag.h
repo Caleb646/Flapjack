@@ -7,7 +7,7 @@
 
 typedef struct {
     MagDriver_t drv;
-    Vec3f field;
+    MagData_t data;
     Vec3f fieldFiltered;
     uint32_t usLastUpdate;
 } Mag_t;

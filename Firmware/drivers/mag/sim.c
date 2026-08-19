@@ -16,11 +16,11 @@
 #include <string.h>
 #include <stdbool.h>
 
-STATIC eSTATUS_t Sim_Read (void* ctx, bool forcePolling, Vec3f* pField) {
+STATIC eSTATUS_t Sim_Read (void* ctx, bool forcePolling, MagData_t* pOutData) {
 
     FJ_UNUSED (forcePolling);
     FJ_UNUSED (ctx);
-    if (!pField) {
+    if (!pOutData) {
         return eSTATUS_FAILURE;
     }
 
@@ -29,9 +29,9 @@ STATIC eSTATUS_t Sim_Read (void* ctx, bool forcePolling, Vec3f* pField) {
         return eSTATUS_FAILURE;
     }
 
-    pField->x = mag[0];
-    pField->y = mag[1];
-    pField->z = mag[2];
+    pOutData->field.x = mag[0];
+    pOutData->field.y = mag[1];
+    pOutData->field.z = mag[2];
     return eSTATUS_SUCCESS;
 }
 

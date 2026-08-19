@@ -9,6 +9,14 @@
 
 #include <stdbool.h>
 
+/*
+ * Heading is the only consumer and it moves slowly, so 100 Hz is well clear of
+ * what the estimate needs. Without a limit this task reads as fast as SPI5
+ * allows, which saturates the bus the barometer shares and burns a core at the
+ * lowest priority for samples nothing asks for.
+ */
+#define MAG_POLL_PERIOD_MS 10U
+
 static Mag_t s_mag;
 
 void Mag_Task (void* args) {
@@ -28,5 +36,6 @@ void Mag_Task (void* args) {
             };
             umsg_sensors_mag_publish (&msg);
         }
+        vTaskDelay (pdMS_TO_TICKS (MAG_POLL_PERIOD_MS));
     }
 }

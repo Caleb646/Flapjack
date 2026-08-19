@@ -1,3 +1,17 @@
+/*
+ * MMC5983MA magnetometer backend. Sits on SPI5, sharing the bus with the
+ * barometer on its own NSS (target/flapjack_v1/flapjack_v1.h).
+ *
+ * The part runs in continuous measurement mode at 1000 Hz, so Read never waits
+ * on it: it checks MEAS_M_DONE once and reports eSTATUS_BUSY when no new sample
+ * has landed. Sampling rate is Mag_Task's to choose, not the driver's.
+ *
+ * Continuous mode is also why there is no one-shot TM_M trigger here. Firing
+ * one per read and then waiting out the conversion - which is what this driver
+ * used to do - duplicates work the part is already doing on its own clock, and
+ * spends the wait hammering the SPI bus the barometer shares.
+ */
+
 #include "hal.h"
 #include "target.h"
 
@@ -6,24 +20,54 @@
 #include "drivers/bus/spi.h"
 
 #include "drivers/mag/magdrv.h"
-#include "drivers/mag/mmc5983.h"
 
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 
-#define NUM_CONTROL_REGISTERS 4U
-#define CONTROL_REG2IDX(REG) ((REG) - MMC5983_INT_CTRL_0_REG)
-#define MAG_UNSIGNED_MAX     ((1U << 18U) - 1U)
-#define MAG_SIGNED_POS_MAX   (1U << 17U)
+#if defined(MAG_SPI_BUS_ID)
+
+#define MMC5983_PROD_ID        0x30U
+
+#define MMC5983_REG_X_OUT_0    0x00U
+#define MMC5983_REG_STATUS     0x08U
+#define MMC5983_REG_INT_CTRL_0 0x09U
+#define MMC5983_REG_INT_CTRL_1 0x0AU
+#define MMC5983_REG_INT_CTRL_2 0x0BU
+#define MMC5983_REG_PROD_ID    0x2FU
+
+// STATUS
+#define MMC5983_MEAS_M_DONE    (1U << 0U)
+
+// INT_CTRL_0
+#define MMC5983_AUTO_SR_EN     (1U << 5U)
+
+// INT_CTRL_1
+#define MMC5983_BW0            (1U << 0U)
+#define MMC5983_BW1            (1U << 1U)
+#define MMC5983_SW_RST         (1U << 7U)
+
+// INT_CTRL_2
+#define MMC5983_CM_FREQ_0      (1U << 0U)
+#define MMC5983_CM_FREQ_1      (1U << 1U)
+#define MMC5983_CM_FREQ_2      (1U << 2U)
+#define MMC5983_CMM_EN         (1U << 3U)
+#define MMC5983_PRD_SET_0      (1U << 4U)
+#define MMC5983_PRD_SET_1      (1U << 5U)
+#define MMC5983_PRD_SET_2      (1U << 6U)
+#define MMC5983_EN_PRD_SET     (1U << 7U)
+
+#define DATA_LEN               7U // X/Y/Z high+low bytes, then their shared low-2-bit byte
+
+// Output is 18-bit unsigned with zero field at mid-scale, so the midpoint is
+// both the zero offset and the full-scale divisor.
+#define MAG_SIGNED_POS_MAX     (1U << 17U)
+
+#define RESET_SETTLE_US        15000U // 10 ms reset time + 5 ms margin
 
 typedef struct Mmc5983_s {
     SpiDev_t spiDev;
-    Vec3u rawData;
-    uint32_t usLastUpdateTime;
-    bool dataUpdated;
     bool normalize;
-    uint8_t controlRegs[NUM_CONTROL_REGISTERS];
 } Mmc5983_t;
 
 STATIC eSTATUS_t MagRead (Mmc5983_t* pMag, uint8_t reg, uint8_t* pData, uint16_t size) {
@@ -33,86 +77,27 @@ STATIC eSTATUS_t MagRead (Mmc5983_t* pMag, uint8_t reg, uint8_t* pData, uint16_t
     return status;
 }
 
-STATIC eSTATUS_t MagWrite (Mmc5983_t* pMag, uint8_t reg, uint8_t const* pData, uint16_t size) {
+STATIC eSTATUS_t MagWrite (Mmc5983_t* pMag, uint8_t reg, uint8_t value) {
 
-    eSTATUS_t status = SpiDev_WriteRegister (&pMag->spiDev, reg, pData, size);
+    eSTATUS_t status = SpiDev_WriteRegister (&pMag->spiDev, reg, &value, 1U);
     DelayMicroseconds (2);
     return status;
 }
 
-STATIC bool MagControlRegWrite (Mmc5983_t* pMag, uint8_t reg, uint8_t bitMask, bool doWrite) {
+STATIC eSTATUS_t MagSoftReset (Mmc5983_t* pMag) {
 
-    uint8_t* pValue = &pMag->controlRegs[CONTROL_REG2IDX (reg)];
-    *pValue |= bitMask;
-    if (doWrite) {
-        if (MagWrite (pMag, reg, pValue, 1U) != eSTATUS_SUCCESS) {
-            *pValue &= ~(uint32_t)bitMask; // unset the bit on failure
-            LOG_ERROR ("Failed to write MAG control register");
-            return false;
-        }
-    }
-    return true;
-}
-
-STATIC uint8_t MagReadStatusReg (Mmc5983_t* pMag) {
-
-    uint8_t status = 0;
-    if (MagRead (pMag, MMC5983_STATUS_REG, &status, 1U) != eSTATUS_SUCCESS) {
-        LOG_ERROR ("Failed to read MAG status register");
-        return 0;
-    }
+    eSTATUS_t status = MagWrite (pMag, MMC5983_REG_INT_CTRL_1, MMC5983_SW_RST);
+    DelayMicroseconds (RESET_SETTLE_US);
     return status;
 }
 
-STATIC bool MagXYZIsReady (Mmc5983_t* pMag) {
+STATIC Vec3f MagRaw2Norm (Mmc5983_t const* pMag, Vec3u raw) {
 
-    return (MagReadStatusReg (pMag) & MMC5983_MEAS_M_DONE) > 0 ? true : false;
-}
-
-STATIC UNUSED_FN_DECL eSTATUS_t MagSoftReset (Mmc5983_t* pMag) {
-
-    memset (pMag->controlRegs, 0, sizeof (pMag->controlRegs));
-
-    bool success = MagControlRegWrite (pMag, MMC5983_INT_CTRL_1_REG, MMC5983_SW_RST, true);
-    // 10 ms reset time + 5 ms margin
-    DelayMicroseconds (15000);
-    // Clear the software reset bit on our registers
-    MagControlRegWrite (pMag, MMC5983_INT_CTRL_1_REG, (uint8_t)~MMC5983_SW_RST, false);
-    return success == true ? eSTATUS_SUCCESS : eSTATUS_FAILURE;
-}
-
-/*
- * Could be called inside an interrupt
- */
-STATIC bool MagUpdateRawData (Mmc5983_t* pMag) {
-
-    uint8_t pXYZ[7]  = { 0 };
-    eSTATUS_t status = MagRead (pMag, MMC5983_X_OUT_0_REG, pXYZ, 7U);
-    if (status != eSTATUS_SUCCESS) {
-        return false;
-    }
-
-    uint32_t x1 = 0, x2 = 0, y1 = 0, y2 = 0, z1 = 0, z2 = 0, xyz = 0;
-    x1 = pXYZ[0], x2 = pXYZ[1];
-    y1 = pXYZ[2], y2 = pXYZ[3];
-    z1 = pXYZ[4], z2 = pXYZ[5];
-    xyz                    = pXYZ[6];
-    pMag->rawData.x        = (((x1 << 8U) | x2) << 2U) | (xyz >> 6U);
-    pMag->rawData.y        = (((y1 << 8U) | y2) << 2U) | ((xyz >> 4U) & 0x3U);
-    pMag->rawData.z        = (((z1 << 8U) | z2) << 2U) | ((xyz >> 2U) & 0x3U);
-    pMag->dataUpdated      = true;
-    pMag->usLastUpdateTime = GetMicroseconds ();
-    return true;
-}
-
-STATIC Vec3f MagRaw2NormedGauss (Mmc5983_t const* pMag, Vec3u raw, bool doNormalization) {
-
-    FJ_UNUSED (pMag);
     Vec3f output = { 0 };
     output.x     = ((float)raw.x) - (float)MAG_SIGNED_POS_MAX;
     output.y     = ((float)raw.y) - (float)MAG_SIGNED_POS_MAX;
     output.z     = ((float)raw.z) - (float)MAG_SIGNED_POS_MAX;
-    if (doNormalization == true) {
+    if (pMag->normalize == true) {
         output.x /= (float)MAG_SIGNED_POS_MAX;
         output.y /= (float)MAG_SIGNED_POS_MAX;
         output.z /= (float)MAG_SIGNED_POS_MAX;
@@ -120,46 +105,22 @@ STATIC Vec3f MagRaw2NormedGauss (Mmc5983_t const* pMag, Vec3u raw, bool doNormal
     return output;
 }
 
-/*
- * Called by interrupt handler
- */
-STATIC UNUSED_FN_DECL bool MagUpdateFromINT (Mmc5983_t* pMag) {
+STATIC bool Mmc5983_IsDataReady (void* ctx) {
 
-    if (MagXYZIsReady (pMag) == false) {
+    Mmc5983_t* pMag = (Mmc5983_t*)ctx;
+    if (!pMag) {
         return false;
     }
-    if (MagUpdateRawData (pMag) == false) {
+
+    uint8_t status = 0;
+    if (MagRead (pMag, MMC5983_REG_STATUS, &status, 1U) != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to read MAG status register");
         return false;
     }
-    return true;
-}
-
-STATIC bool MagUpdateFromPolling (Mmc5983_t* pMag) {
-
-    bool success = true;
-    // Initiate measurement
-    success = MagControlRegWrite (pMag, MMC5983_INT_CTRL_0_REG, MMC5983_TM_M, true);
-    GOTO_IF (success == false, error, "Failed to initiate MAG measurement");
-
-    uint16_t timeout = 500U;
-    while (MagXYZIsReady (pMag) == false && timeout-- > 0U) {
-        DelayMicroseconds (5);
-    }
-    GOTO_IF (timeout == 0U, error, "MAG measurement timed out");
-
-    success = MagUpdateRawData (pMag);
-    GOTO_IF (success == false, error, "Failed to update MAG raw data");
-    // Clear measurement done flag in saved registers
-    MagControlRegWrite (pMag, MMC5983_INT_CTRL_0_REG, (uint8_t)~MMC5983_MEAS_M_DONE, false);
-    return success;
-error:
-    MagControlRegWrite (pMag, MMC5983_INT_CTRL_0_REG, (uint8_t)~MMC5983_MEAS_M_DONE, false);
-    return false;
+    return (status & MMC5983_MEAS_M_DONE) > 0U;
 }
 
 STATIC eSTATUS_t Mmc5983_HwInit (Mmc5983_t* pMag) {
-
-#if defined(MAG_SPI_BUS_ID)
 
     pMag->spiDev.cfg.busId    = MAG_SPI_BUS_ID;
     pMag->spiDev.cfg.pNssPort = MAG_SPI_NSS_GPIO_PORT;
@@ -172,25 +133,22 @@ STATIC eSTATUS_t Mmc5983_HwInit (Mmc5983_t* pMag) {
     GOTO_IF (MagSoftReset (pMag) != eSTATUS_SUCCESS, error, "Failed to soft reset MAG");
 
     uint8_t chipId = 0;
-    GOTO_IF (MagRead (pMag, MMC5983_PROD_ID_REG, &chipId, 1U) != eSTATUS_SUCCESS, error, "Failed to read MAG chip ID");
+    GOTO_IF (MagRead (pMag, MMC5983_REG_PROD_ID, &chipId, 1U) != eSTATUS_SUCCESS, error, "Failed to read MAG chip ID");
     GOTO_IF (chipId != MMC5983_PROD_ID, error, "Invalid MAG chip ID");
 
-    bool success  = true;
-    uint8_t flags = 0;
-    flags |= MMC5983_AUTO_SR_EN; // Enable automatic set/reset
-    success = MagControlRegWrite (pMag, MMC5983_INT_CTRL_0_REG, flags, true);
-    GOTO_IF (success == false, error, "Failed to configure MAG INT_CTRL_0 register");
+    // Automatic set/reset, which cancels the bridge offset the part accumulates.
+    GOTO_IF (MagWrite (pMag, MMC5983_REG_INT_CTRL_0, MMC5983_AUTO_SR_EN) != eSTATUS_SUCCESS, error, "Failed to configure MAG INT_CTRL_0 register");
 
-    flags   = MMC5983_BW0 | MMC5983_BW1; // Set bandwidth to 800Hz
-    success = MagControlRegWrite (pMag, MMC5983_INT_CTRL_1_REG, flags, true);
-    GOTO_IF (success == false, error, "Failed to configure MAG INT_CTRL_1 register");
+    // 800 Hz bandwidth: the shortest measurement time, which is what the 1000 Hz
+    // continuous rate set below needs to keep up with.
+    GOTO_IF (MagWrite (pMag, MMC5983_REG_INT_CTRL_1, MMC5983_BW0 | MMC5983_BW1) != eSTATUS_SUCCESS, error, "Failed to configure MAG INT_CTRL_1 register");
 
-    // Set continuous measurement mode with 1000Hz output rate
-    flags = MMC5983_CM_FREQ_0 | MMC5983_CM_FREQ_1 | MMC5983_CM_FREQ_2 | MMC5983_CMM_EN;
-    // Set how often chip will perform a set operation
-    flags |= MMC5983_PRD_SET_0 | MMC5983_PRD_SET_1 | MMC5983_PRD_SET_2 | MMC5983_EN_PRD_SET;
-    success = MagControlRegWrite (pMag, MMC5983_INT_CTRL_2_REG, flags, true);
-    GOTO_IF (success == false, error, "Failed to configure MAG INT_CTRL_2 register");
+    // Last: this starts continuous conversions, so bandwidth and set/reset above
+    // have to already be in place. PRD_SET picks how often the automatic
+    // set/reset runs.
+    uint8_t ctrl2 = MMC5983_CM_FREQ_0 | MMC5983_CM_FREQ_1 | MMC5983_CM_FREQ_2 | MMC5983_CMM_EN;
+    ctrl2 |= MMC5983_PRD_SET_0 | MMC5983_PRD_SET_1 | MMC5983_PRD_SET_2 | MMC5983_EN_PRD_SET;
+    GOTO_IF (MagWrite (pMag, MMC5983_REG_INT_CTRL_2, ctrl2) != eSTATUS_SUCCESS, error, "Failed to configure MAG INT_CTRL_2 register");
 
     LOG_INFO ("Successfully initialized MAG");
     return eSTATUS_SUCCESS;
@@ -198,38 +156,43 @@ STATIC eSTATUS_t Mmc5983_HwInit (Mmc5983_t* pMag) {
 error:
     memset (pMag, 0, sizeof (Mmc5983_t));
     return eSTATUS_FAILURE;
-
-#else  // board has no magnetometer wiring
-
-    FJ_UNUSED (pMag);
-    return eSTATUS_FAILURE;
-
-#endif // MAG_SPI_BUS_ID
 }
 
-STATIC eSTATUS_t Mmc5983_Read (void* ctx, bool forcePolling, Vec3f* pField) {
+STATIC eSTATUS_t Mmc5983_Read (void* ctx, bool forcePolling, MagData_t* pOutData) {
 
     FJ_UNUSED (forcePolling);
     Mmc5983_t* pMag = (Mmc5983_t*)ctx;
-    if (!pMag || !pField) {
-        return eSTATUS_FAILURE;
+    if (!pMag || !pOutData) {
+        return eSTATUS_NULL_ARG;
     }
 
-    if (MagUpdateFromPolling (pMag) == false) {
-        LOG_ERROR ("Failed to update MAG data from polling");
-        return eSTATUS_FAILURE;
+    // One drdy check, no wait. Reporting BUSY rather than re-reading stops a
+    // sample being published twice, the same contract bmp390.c keeps.
+    if (Mmc5983_IsDataReady (pMag) == false) {
+        return eSTATUS_BUSY;
     }
-    *pField = MagRaw2NormedGauss (pMag, pMag->rawData, pMag->normalize);
+
+    // One burst: the low two bits of all three axes share the seventh byte, so
+    // reading it separately can pair them with a different measurement.
+    uint8_t raw[DATA_LEN] = { 0 };
+    eSTATUS_t status      = MagRead (pMag, MMC5983_REG_X_OUT_0, raw, DATA_LEN);
+    if (status != eSTATUS_SUCCESS) {
+        LOG_ERROR ("Failed to read MAG data registers");
+        return status;
+    }
+
+    uint32_t x1 = raw[0], x2 = raw[1];
+    uint32_t y1 = raw[2], y2 = raw[3];
+    uint32_t z1 = raw[4], z2 = raw[5];
+    uint32_t xyz = raw[6];
+
+    Vec3u rawField = { 0 };
+    rawField.x     = (((x1 << 8U) | x2) << 2U) | (xyz >> 6U);
+    rawField.y     = (((y1 << 8U) | y2) << 2U) | ((xyz >> 4U) & 0x3U);
+    rawField.z     = (((z1 << 8U) | z2) << 2U) | ((xyz >> 2U) & 0x3U);
+
+    pOutData->field = MagRaw2Norm (pMag, rawField);
     return eSTATUS_SUCCESS;
-}
-
-STATIC bool Mmc5983_IsDataReady (void* ctx) {
-
-    Mmc5983_t* pMag = (Mmc5983_t*)ctx;
-    if (!pMag) {
-        return false;
-    }
-    return MagXYZIsReady (pMag);
 }
 
 eSTATUS_t MagDrv_Init (MagDriverConf_t const* pConf, MagDriver_t* pOutDriver) {
@@ -252,3 +215,14 @@ eSTATUS_t MagDrv_Init (MagDriverConf_t const* pConf, MagDriver_t* pOutDriver) {
 
     return Mmc5983_HwInit (pMag);
 }
+
+#else // board declares no magnetometer wiring
+
+eSTATUS_t MagDrv_Init (MagDriverConf_t const* pConf, MagDriver_t* pOutDriver) {
+
+    FJ_UNUSED (pConf);
+    FJ_UNUSED (pOutDriver);
+    return eSTATUS_UNSUPPORTED;
+}
+
+#endif // MAG_SPI_BUS_ID

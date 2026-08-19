@@ -13,8 +13,7 @@
  * full-scale when conf.normalize is set) - register access and scaling are
  * backend concerns.
  *
- * This header is the boundary: it must not depend on any backend header
- * (mmc5983.h / ...).
+ * This header is the boundary: it must not depend on any backend header.
  */
 
 #include "core/core.h"
@@ -26,9 +25,13 @@ typedef struct {
     bool normalize;   // normalise field to full-scale [-1, 1]
 } MagDriverConf_t;
 
+typedef struct {
+    Vec3f field;
+} MagData_t;
+
 typedef struct MagDriver_s {
     void* ctx;
-    eSTATUS_t (*Read) (void* ctx, bool forcePolling, Vec3f* pField);
+    eSTATUS_t (*Read) (void* ctx, bool forcePolling, MagData_t* pOutData);
     bool (*IsDataReady) (void* ctx);
 } MagDriver_t;
 

@@ -25,13 +25,13 @@ eSTATUS_t Mag_Update (Mag_t* pSensor) {
         return eSTATUS_NULL_ARG;
     }
 
-    eSTATUS_t status = pSensor->drv.Read (pSensor->drv.ctx, false, &pSensor->field);
+    eSTATUS_t status = pSensor->drv.Read (pSensor->drv.ctx, false, &pSensor->data);
     if (STATUS_FAIL (status)) {
         return status;
     }
 
     // TODO: apply low-pass filtering (common/filter.h). Pass-through for now.
-    pSensor->fieldFiltered = pSensor->field;
+    pSensor->fieldFiltered = pSensor->data.field;
     pSensor->usLastUpdate  = GetMicroseconds ();
 
     return eSTATUS_SUCCESS;
