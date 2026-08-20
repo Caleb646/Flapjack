@@ -54,7 +54,11 @@ python3 Scripts/board.py gui
 # FC's servo/motor commands as JSON over UDP instead. On by default (--gui-port,
 # 5005; 0 disables), so the sim command above needs no extra flag - just hit
 # Listen in the GUI's "Sim Graphs" tab. JSBSim's attitude and altitude then
-# drive the 3D viewer too.
+# drive the 3D viewer too. The same link runs the other way: tick "Send Sticks"
+# in that tab's RC Sticks panel to fly throttle/roll/pitch/yaw by hand, and
+# "Altitude Hold" for the AUX2 mode switch the FC reads. The
+# bridge overrides whatever it would otherwise send with those sticks, and takes
+# its own back 0.5 s after the GUI goes quiet.
 python3 Scripts/board.py gui
 ```
 
@@ -84,7 +88,10 @@ Build artifacts land in `Build/<board>/<config>/` as `cm7.elf` and `cm4.elf`. CM
   input interfaces: the serial link to a real FC (`<json>` telemetry over
   `QSerialPort`), and the sim link (`SimLink`, a UDP feed from the bridge's
   `--gui-port`) which supplies the "Sim Graphs" tab and the 3D viewer during a
-  SIL run. They are never live at once - the bridge holds the FC's wire.
+  SIL run. They are never live at once - the bridge holds the FC's wire. The
+  sim link is bidirectional: the GUI answers the feed with stick positions,
+  which the bridge folds into the CRSF it is already sending. Arming is not
+  among them - that stays with the bridge's own gesture.
 - **`utils.py`** — two helpers used by other scripts: `is_installed(binary)` (shutil.which) and `run_command(cmd, ...)` (subprocess, exits on failure).
 - **`stm32h747_dual_core.cfg`** — OpenOCD config for the dual-core STM32H747. Used directly by `flash`. Enables `DUAL_BANK` and `DUAL_CORE`, resets via `connect_assert_srst`, flashes both CM7 and CM4 banks.
 

@@ -122,13 +122,28 @@
 #define CFG_PID_YAW_P                        0.00166667F
 #define CFG_PID_YAW_I                        0.00027778F
 #define CFG_PID_YAW_D                        0.00000083F
-#define CFG_PID_THROTTLE_P                   0.00055556F
-#define CFG_PID_THROTTLE_I                   0.00111111F
-#define CFG_PID_THROTTLE_D                   0.00027778F
+/*
+ * Altitude-hold gains. Error is in METRES and the output is normalised throttle
+ * trim about CFG_HOVER_THROTTLE - not the units the previous values (~1/1800)
+ * were scaled for, which gave 0.0006 of throttle for a 1 m error and could not
+ * hold anything.
+ *
+ * Swept on the host against the JSBSim tiltrotor at 100/200/400 Hz (the loop is
+ * IMU-paced, so one rate proves nothing), with the MEASUREMENT NOISE MODELLED -
+ * see CFG_ALT_HOLD_VZ_DAMPING for why that matters. On a 5 m step from the
+ * ground: 0.38 m overshoot, zero steady-state error, 0.02 m of ripple.
+ *
+ * D is zero deliberately, and must stay zero. This axis takes its damping from
+ * CFG_ALT_HOLD_VZ_DAMPING instead; a non-zero D here differentiates the baro
+ * correction steps and does nothing else useful.
+ */
+#define CFG_PID_THROTTLE_P                   0.50F
+#define CFG_PID_THROTTLE_I                   0.20F
+#define CFG_PID_THROTTLE_D                   0.00F
 #define CFG_PID_INTEGRAL_LIMIT               0.3F
 
-#define CFG_MOTOR_MIN_THROTTLE               0.20F // 20% throttle
-#define CFG_MOTOR_MAX_THROTTLE               0.40F // 40% throttle
+#define CFG_MOTOR_MIN_THROTTLE               0.05F // 5% throttle
+#define CFG_MOTOR_MAX_THROTTLE               1.00F // 100% throttle
 #define CFG_MOTOR_STARTUP_THROTTLE           0.25F // 25% throttle
 
 /*
@@ -145,6 +160,58 @@
  */
 #define CFG_MIXER_IDLE_THROTTLE              0.05F
 #define CFG_MIXER_MAX_THROTTLE               1.00F
+
+/*
+ * Altitude hold.
+ *
+ * CFG_HOVER_THROTTLE is the collective this airframe needs to hold height,
+ * and it is a FEEDFORWARD - the throttle PID only trims around it. Without it
+ * the integrator has to manufacture the whole hover thrust itself, which is
+ * slow and saturates against CFG_PID_INTEGRAL_LIMIT (0.3) well before it
+ * gets there.
+ *
+ * 0.50 is MEASURED, not nominal: stepping the JSBSim tiltrotor open-loop
+ * gives +0.09 m/s at 0.50 and +3.02 m/s at 0.55, so the trim point is 0.50
+ * and the response either side is steep. Re-measure for a real airframe -
+ * and note CFG_MOTOR_MAX_THROTTLE (0.40) sits BELOW this, so hardware cannot
+ * hover until that driver cap is raised.
+ */
+#define CFG_HOVER_THROTTLE                   0.50F
+
+/*
+ * Throttle-stick authority in ALTITUDE_HOLD: full deflection walks the target
+ * altitude at this rate. The stick commands a RATE, not a height, which is
+ * what makes centre mean "hold" rather than "descend to the bottom of the
+ * range".
+ */
+#define CFG_ALT_HOLD_CLIMB_RATE_MPS          1.0F
+
+/*
+ * Stick travel either side of centre that still counts as centred. CRSF
+ * quantises to ~1 us and no real transmitter sits exactly on 1500, so without
+ * a deadband the target creeps whenever the pilot is not touching the stick.
+ */
+#define CFG_ALT_HOLD_STICK_DEADBAND          0.05F
+
+/*
+ * Vertical damping, in throttle per m/s of climb. This is the altitude loop's
+ * D term, taken from the nav filter's climb rate rather than by
+ * differentiating its altitude - which is why CFG_PID_THROTTLE_D is 0.
+ *
+ * The distinction is not cosmetic, it is the whole difference between the
+ * loop working and not. Both are estimates of the same quantity, but the
+ * altitude estimate STEPS when a baro correction lands: measured in the SIL,
+ * 0.041 m between 50 Hz corrections. Differentiated over one 2.5 ms control
+ * tick that reads as 16.4 m/s, so a D of 0.50 asked for 8.2 of throttle trim
+ * against a PID output clip of 1.0 - the term simply sat on the clip and
+ * pinned the motors at 1.000 on 6% of frames. nav vel_ned is accelerometer-
+ * aided and smooth, and the same damping off it saturates on 0.5%.
+ *
+ * Do not be tempted to drop the damping instead: thrust to altitude is a
+ * double integrator, and a host sweep with this term removed oscillates 6.5 m
+ * peak to peak or diverges outright.
+ */
+#define CFG_ALT_HOLD_VZ_DAMPING              0.50F
 
 /*
  * Ceiling on total tilt-servo deflection, in normalised travel where 1.0 is full

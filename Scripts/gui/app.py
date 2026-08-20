@@ -38,6 +38,13 @@ ALT_SCENE_SCALE = 0.2
 
 ACTUATOR_COLORS = ('r', 'g', 'b', 'y', 'm', 'c')
 
+# Stick positions in microseconds, the unit the whole RC path speaks
+# (Firmware/drivers/rx/rx.h, Scripts/sim/plan.py).
+RC_MIN, RC_MID, RC_MAX = 1000, 1500, 2000
+# Well inside the bridge's GUI_RC_TIMEOUT, so a stick held still keeps control
+# without the pilot having to keep moving it.
+SIM_RC_SEND_MS = 50
+
 LETTER_X = [
     [(-0.05, -0.05, 0), (0.05, 0.05, 0)],
     [(-0.05, 0.05, 0), (0.05, -0.05, 0)],
@@ -385,6 +392,9 @@ class FlightViewer(QtWidgets.QWidget):
     def stop_sim_link(self):
         self.sim_link.stop()
         self.append_debug_console("Sim link stopped", "[INFO]")
+
+    def send_sim_rc(self, sticks) -> bool:
+        return self.sim_link.send_rc(sticks)
 
     @QtCore.pyqtSlot(dict)
     def on_sim_sample(self, state):
@@ -1678,6 +1688,9 @@ class SimLink(QtCore.QObject):
     board at all and takes the FDM's truth, the FC's estimate and the FC's
     actuator commands from the bridge instead.
 
+    Also the way back: stick positions go to the bridge as a reply on this same
+    socket, so flying the sim needs no second port and no address to configure.
+
     No deframing here, unlike the serial path - UDP preserves message
     boundaries, so one datagram is exactly one JSON state object.
     """
@@ -1688,22 +1701,131 @@ class SimLink(QtCore.QObject):
         super().__init__(parent)
         self.socket = QUdpSocket(self)
         self.socket.readyRead.connect(self.receive)
+        # Where the feed came from, and so where a stick reply goes. Learned
+        # from the feed rather than configured: the bridge publishes from an
+        # ephemeral port, which nothing can know in advance.
+        self.peer = None
 
     def listen(self, port) -> bool:
         self.socket.close()
+        self.peer = None
         return self.socket.bind(QHostAddress.LocalHost, port)
 
     def stop(self):
         self.socket.close()
+        self.peer = None
+
+    def send_rc(self, sticks) -> bool:
+        """Send stick positions (microseconds, by channel name) to the bridge."""
+        if self.peer is None:
+            return False
+        host, port = self.peer
+        payload = json.dumps({"rc": sticks}).encode("ascii")
+        return self.socket.writeDatagram(payload, host, port) == len(payload)
 
     @QtCore.pyqtSlot()
     def receive(self):
         while self.socket.hasPendingDatagrams():
-            data, _, _ = self.socket.readDatagram(self.socket.pendingDatagramSize())
+            data, host, port = self.socket.readDatagram(self.socket.pendingDatagramSize())
+            self.peer = (host, port)
             try:
                 self.sample.emit(json.loads(data))
             except json.JSONDecodeError:
                 print(f"Failed to decode sim datagram: {data[:64]}")
+
+
+class SimRcControls(QtWidgets.QGroupBox):
+    """Stick inputs for a SIL run, sent to the bridge over the sim link.
+
+    Not RC frames the GUI puts on a wire: the bridge owns the CRSF link, so
+    these are an override it folds into the sticks it is already sending, which
+    is what lets it keep flying the instant this is switched off.
+
+    The arm switch is deliberately absent. Arming stays with the bridge's own
+    gesture - throttle low, switch up, wait for the FC's interlock - so a run
+    arms the same way whether or not anyone is holding the sticks. The mode
+    switch is here, though: it is an ordinary transmitter switch, and a pilot
+    holding the sticks holds that too.
+    """
+
+    def __init__(self, parent_viewer):
+        super().__init__("RC Sticks")
+        self.parent_viewer = parent_viewer
+        self.sliders = {}
+        self.setup_ui()
+
+        # Resent on a timer, not only when a slider moves: the bridge drops back
+        # to its own sticks after GUI_RC_TIMEOUT of silence, so a stick held
+        # still has to keep saying so.
+        self.send_timer = QtCore.QTimer(self)
+        self.send_timer.timeout.connect(self.send)
+
+    def setup_ui(self):
+        layout = QHBoxLayout(self)
+
+        buttons = QVBoxLayout()
+        self.enable_checkbox = QCheckBox("Send Sticks")
+        self.enable_checkbox.toggled.connect(self.on_enable_toggled)
+        self.alt_hold_checkbox = QCheckBox("Altitude Hold")
+        self.center_btn = QPushButton("Center", clicked=self.center_sticks)
+        self.status_label = QtWidgets.QLabel("Off")
+
+        buttons.addWidget(self.enable_checkbox)
+        buttons.addWidget(self.alt_hold_checkbox)
+        buttons.addWidget(self.center_btn)
+        buttons.addWidget(self.status_label)
+        layout.addLayout(buttons)
+
+        # Throttle alone starts at the bottom of its range rather than centred:
+        # that is where the FC's arming interlock (ARM_THROTTLE_MAX) needs it.
+        for name, initial in (("throttle", RC_MIN), ("roll", RC_MID),
+                              ("pitch", RC_MID), ("yaw", RC_MID)):
+            slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+            slider.setRange(RC_MIN, RC_MAX)
+            slider.setValue(initial)
+            slider.setMinimumWidth(110)
+
+            value_label = QtWidgets.QLabel(f"{initial} us")
+            slider.valueChanged.connect(
+                lambda us, label=value_label: label.setText(f"{us} us"))
+
+            column = QVBoxLayout()
+            column.addWidget(QtWidgets.QLabel(name.capitalize()))
+            column.addWidget(slider)
+            column.addWidget(value_label)
+            layout.addLayout(column)
+
+            self.sliders[name] = slider
+
+    @QtCore.pyqtSlot(bool)
+    def on_enable_toggled(self, checked):
+        if checked:
+            self.send()
+            self.send_timer.start(SIM_RC_SEND_MS)
+        else:
+            # Nothing is sent to hand control back - going quiet is the signal,
+            # and it is the same path a closed GUI takes.
+            self.send_timer.stop()
+            self.status_label.setText("Off")
+
+    def center_sticks(self):
+        """Centre roll, pitch and yaw. Throttle is left alone: it has no centre,
+        and cutting it mid-hover would drop the vehicle."""
+        for name in ("roll", "pitch", "yaw"):
+            self.sliders[name].setValue(RC_MID)
+
+    def send(self):
+        sticks = {name: slider.value() for name, slider in self.sliders.items()}
+        # AUX2 is what the FC reads for its mode (MODE_AUX_THRESHOLD, 1750us, in
+        # tasks/mission/mission.c). Sent either way rather than only when on, so
+        # the switch works in both directions - and mission.c tracks it even
+        # while disarmed, so whatever is set here is the mode the vehicle arms
+        # into.
+        sticks["aux2"] = RC_MAX if self.alt_hold_checkbox.isChecked() else RC_MID
+        if self.parent_viewer.send_sim_rc(sticks):
+            self.status_label.setText("Sending")
+        else:
+            self.status_label.setText("No bridge yet")
 
 
 class SimPlotter(QtWidgets.QWidget):
@@ -1761,7 +1883,10 @@ class SimPlotter(QtWidgets.QWidget):
 
         buttons_layout.addWidget(self.clear_btn)
 
+        self.rc_controls = SimRcControls(self.parent_viewer)
+
         controls.addWidget(link_group)
+        controls.addWidget(self.rc_controls)
         controls.addWidget(show_group)
         controls.addWidget(buttons_group)
         controls.addStretch()
@@ -1874,6 +1999,9 @@ class SimPlotter(QtWidgets.QWidget):
         else:
             self.parent_viewer.stop_sim_link()
             self.redraw_timer.stop()
+            # Dropping the link loses the bridge's address, so the sticks have
+            # nowhere to go anyway.
+            self.rc_controls.enable_checkbox.setChecked(False)
             self.listen_btn.setText("Listen")
             self.link_status.setText("Not listening")
             self.port_spinbox.setEnabled(True)

@@ -1,0 +1,26 @@
+# Altitude hold: take off, engage the mode in the air, verify it holds height
+# with the stick centred and walks it on stick command.
+#
+# AUX2 selects EMISSION_MODE_ALTITUDE_HOLD (mission.c). Throttle at 1500 is the
+# centred stick, which in that mode means "hold", NOT 50% power - the hover
+# feedforward supplies the thrust and the PID trims around it.
+#
+# THE TAKEOFF IS THE POINT. 1500 us is 0.5 normalised, which is EXACTLY this
+# airframe's hover throttle - measured against the FDM, it holds height to
+# within 0.07 m/s. Exact hover has no excess thrust, so a plan that only ramps
+# to 1500 never leaves the ground: it sits on its gear and "holds altitude" at
+# zero by doing nothing, which tests none of this mode. Hence the burst below.
+#
+# The mode is engaged FROM the climb, not after levelling off, because there is
+# no levelling off to be had open-loop: 1500 us holds vertical VELOCITY, not
+# height, so a plan that tries to trim the climb out by hand just carries the
+# residual sink into the ground (measured: back on the gear 3 s later). Handing
+# the mode a vehicle still moving is also the harder, more honest test - it has
+# to arrest the climb before it can hold anything.
+name: alt_hold
+plan:
+  - {t: 0.0,  dur: 3.0}                          # settle at idle after arming
+  - {t: 3.0,  dur: 3.0, set: {throttle: 1600}}   # break ground and climb, ~+3 m/s
+  - {t: 6.0,  dur: 9.0, set: {aux2: 2000, throttle: 1500}}  # engage mid-climb: capture, arrest, hold
+  - {t: 15.0, dur: 4.0, set: {throttle: 1800}}   # walk the target up (~0.6 m/s)
+  - {t: 19.0, dur: 9.0, set: {throttle: 1500}}   # centre: hold the new altitude

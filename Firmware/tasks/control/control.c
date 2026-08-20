@@ -46,6 +46,7 @@ static Pid_t     s_pid = { .axes = {
 
 static Motors_t s_motors    = { 0 };
 static bool     s_prevArmed = false;
+static bool     s_prevAltHold = false;
 
 eSTATUS_t Control_Init(void) {
     
@@ -142,7 +143,45 @@ eSTATUS_t Control_Update(void) {
     for (uint32_t i = 0; i < 3U; ++i) {
         pid_data[i] = Pid_UpdateAxis(&pPid->axes[i], s_Control.nav.gyro[i], targets[i], dt);
     }
-    pid_data[AXIS_IDX_THROTTLE] = sp.vel_b[2];
+    /*
+     * Throttle. In MANUAL, vel_b[2] is the normalised collective the mixer
+     * consumes and passes straight through. In ALTITUDE_HOLD it is a TARGET
+     * ALTITUDE in metres, and the throttle PID trims around a hover
+     * feedforward to reach it.
+     *
+     * This axis is deliberately not folded into the rate loop above: those
+     * three close on gyro, and there is no gyro for the vertical axis. It
+     * closes on the nav altitude estimate instead.
+     *
+     * NAV_VALID_BARO_ALT is re-checked here rather than trusted from guidance:
+     * the estimate can drop out between the two tasks, and closing a loop on
+     * an altitude that no longer exists commands full throttle at whatever the
+     * stale error was.
+     */
+    bool altHold = (s_Control.mission.mode == EMISSION_MODE_ALTITUDE_HOLD) &&
+                   ((s_Control.nav.valid & NAV_VALID_BARO_ALT) != 0U);
+
+    /* Entering the mode - or arming into it - starts from a clean integrator.
+     * A stale one carries in the wind-up from the last engagement and spends
+     * the first second of the hold unwinding it. */
+    if (altHold && (!s_prevAltHold || !s_prevArmed)) {
+        s_pid.axes[AXIS_IDX_THROTTLE].prevIntegral       = 0.0f;
+        s_pid.axes[AXIS_IDX_THROTTLE].hasPrevMeasurement = false;
+    }
+    s_prevAltHold = altHold;
+
+    if (altHold) {
+        float alt = -s_Control.nav.pos_ned[2];   // NED, down positive
+        float vz  = -s_Control.nav.vel_ned[2];   // climb rate, up positive
+        float trim = Pid_UpdateAxis(&pPid->axes[AXIS_IDX_THROTTLE], alt, sp.vel_b[2], dt);
+        /* Damping term, applied outside the PID because it is derived from a
+         * different (and far cleaner) estimate than the one the PID closes on
+         * - see CFG_ALT_HOLD_VZ_DAMPING. */
+        trim -= CFG_ALT_HOLD_VZ_DAMPING * vz;
+        pid_data[AXIS_IDX_THROTTLE] = clipf32(CFG_HOVER_THROTTLE + trim, 0.0f, 1.0f);
+    } else {
+        pid_data[AXIS_IDX_THROTTLE] = sp.vel_b[2];
+    }
 
     Mixer_MixMotors(&g_Mixer, pid_data, g_Mixer.motorOutputs);
     memset(g_Mixer.servoOutputs, 0, sizeof(g_Mixer.servoOutputs));

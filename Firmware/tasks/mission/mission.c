@@ -11,6 +11,10 @@
 
 #define ARM_AUX_THRESHOLD     1750U
 #define DISARM_AUX_THRESHOLD  1250U
+/* Single threshold, not the two-sided hysteresis the arm switch uses: a
+ * mode change is not an edge-triggered latch, so there is no state to get
+ * stuck in if the stick sits near the boundary. */
+#define MODE_AUX_THRESHOLD    1750U
 #define ARM_THROTTLE_MAX      1100U
 #define MISSION_RC_TIMEOUT_MS 20U
 
@@ -168,6 +172,15 @@ eSTATUS_t Mission_Update(void) {
         s_Mission.haveNav = true;
     }
     Mission_TrackAttitudeSettle();
+
+    /* Flight mode from AUX2. Tracked continuously rather than only while
+     * armed, so the mode the pilot selected before takeoff is the one that
+     * is active the moment the vehicle arms. */
+    if (s_Mission.haveRc) {
+        s_Mission.mode = (s_Mission.lastRc.channels[RC_CHANNEL_IDX_AUX_2] > MODE_AUX_THRESHOLD)
+                             ? EMISSION_MODE_ALTITUDE_HOLD
+                             : EMISSION_MODE_MANUAL;
+    }
 
     // RC arm-switch intent (edge-detected with hysteresis).
     ArmIntent_t rcIntent = ARM_INTENT_NONE;

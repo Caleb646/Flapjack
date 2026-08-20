@@ -97,6 +97,16 @@ GUI_RATE = 50.0
 # link; keep the two in step. On by default because the feed costs a datagram
 # nobody has to read - pass --gui-port 0 to turn it off.
 GUI_PORT = 5005
+# The GUI can also fly the sim: it answers this feed on the same socket, so the
+# pair needs no second port and no address to configure - the bridge replies to
+# whoever is listening to it. Sticks go stale after GUI_RC_TIMEOUT seconds, so a
+# closed or wedged GUI hands control back instead of leaving the last throttle
+# latched forever.
+GUI_RC_TIMEOUT = 0.5
+# AUX2 is here because it is a transmitter switch like any other - it selects
+# the flight mode (MODE_AUX_THRESHOLD in tasks/mission/mission.c). AUX1 is not:
+# see apply_gui_rc.
+GUI_RC_CHANNELS = ("roll", "pitch", "yaw", "throttle", "aux2")
 
 # Loopback tolerance on an echoed GPS coordinate, in degrees. ~1.1 cm: well
 # below NMEA's own ~1.9 cm quantisation step (so it cannot mask a wrong field)
@@ -245,6 +255,43 @@ def make_gui_packet(sim_t, euler_rad, truth_alt_m, telemetry, servo_rad, motor) 
             "armed": telemetry.armed,
         }
     return json.dumps(state).encode("ascii")
+
+
+def poll_gui_rc(sock):
+    """The newest stick positions the GUI has sent, or None if it sent none.
+
+    Drains the queue rather than reading one datagram: only the newest sticks
+    matter, an older one is a position the pilot has already moved off.
+    """
+    latest = None
+    while True:
+        try:
+            data, _ = sock.recvfrom(512)
+        except OSError:
+            # Either nothing pending (the socket is non-blocking) or Windows
+            # reporting an earlier send's ICMP port-unreachable as
+            # WSAECONNRESET. Neither is a datagram.
+            break
+        try:
+            rc = json.loads(data).get("rc")
+        except (ValueError, AttributeError):
+            continue
+        if isinstance(rc, dict):
+            latest = rc
+    return latest
+
+
+def apply_gui_rc(channels, rc):
+    """Overwrite the GUI-driven channels in `channels` (us), leaving the rest.
+
+    AUX1 is deliberately not one of them: the arm switch stays with the bridge's
+    arming gesture, so the FC's interlock is exercised the same way whether or
+    not a GUI is attached.
+    """
+    for name in GUI_RC_CHANNELS:
+        us = rc.get(name)
+        if us is not None:
+            channels[planlib.CHANNELS[name]] = max(RC_MIN, min(RC_MAX, int(us)))
 
 
 def rc_channels(throttle_norm: float, armed: bool) -> list:
@@ -646,7 +693,8 @@ def main(argv=None):
     ap.add_argument("--gui-port", type=int, default=GUI_PORT, metavar="PORT",
                     help="publish sim state (FDM truth + FC telemetry + actuator "
                          f"commands) as JSON over UDP to {GUI_HOST}:PORT at "
-                         f"{GUI_RATE:.0f} Hz, for `board.py gui`; 0 disables")
+                         f"{GUI_RATE:.0f} Hz, for `board.py gui`, and accept that "
+                         "GUI's stick overrides in reply; 0 disables")
     ap.add_argument("--dry-run", action="store_true",
                     help="no JSBSim: emit a fixed 20deg-roll attitude to validate the link")
     ap.add_argument("--send-pid", metavar="AXIS:GAIN:VALUE", default=None,
@@ -709,6 +757,9 @@ def main(argv=None):
     gui_sock = None
     if args.gui_port:
         gui_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # Also the receive side, for the GUI's stick overrides. Never blocks:
+        # the sim's pace must not depend on a viewer having something to say.
+        gui_sock.setblocking(False)
     gui_period = 1.0 / GUI_RATE
     next_gui = 0.0
     # Latest FC output, held between publishes: the FC replies asynchronously,
@@ -716,6 +767,9 @@ def main(argv=None):
     last_servo = []
     last_motor = []
     last_tm = None
+    # Sticks the GUI is flying with, and when they last arrived.
+    gui_rc = None
+    gui_rc_at = 0.0
 
     log_buf = b""
     t0 = time.perf_counter()
@@ -731,7 +785,8 @@ def main(argv=None):
     else:
         print("[bridge] WARNING: no --rc-port, so the FC receives no RC and will not arm")
     if gui_sock is not None:
-        print(f"[bridge] GUI feed on udp://{GUI_HOST}:{args.gui_port}, {GUI_RATE:.0f} Hz")
+        print(f"[bridge] GUI feed on udp://{GUI_HOST}:{args.gui_port}, {GUI_RATE:.0f} Hz "
+              "(replies fly the sticks)")
     while True:
         now = time.perf_counter()
 
@@ -887,6 +942,17 @@ def main(argv=None):
                 checks.gps_tx(gps_lat, gps_lon, GPS_SATS)
             gps_send_rmc = not gps_send_rmc
 
+        # --- sticks from the GUI, when someone is flying this run by hand ---
+        if gui_sock is not None:
+            rc = poll_gui_rc(gui_sock)
+            if rc is not None:
+                if gui_rc is None:
+                    print("[bridge] flying the GUI's sticks")
+                gui_rc, gui_rc_at = rc, now
+            elif gui_rc is not None and now - gui_rc_at > GUI_RC_TIMEOUT:
+                print("[bridge] GUI sticks stale - back to the bridge's own")
+                gui_rc = None
+
         # --- RC: mimic a real pilot's arming gesture ---
         # The FC refuses to arm unless throttle is at or below ARM_THROTTLE_MAX
         # (1100us) while AUX1 is high - a safety interlock so nothing spins up
@@ -923,6 +989,13 @@ def main(argv=None):
                 channels = flight_plan.channels_at(plan_t)
             else:
                 channels = rc_channels(args.hover_throttle, armed=True)
+
+        # Last word, over the hover hold and over a plan alike: the sticks are
+        # whatever the pilot is holding, and a GUI attached to a plan run is a
+        # deliberate act. Only the four sticks move - AUX1 stays as computed
+        # above, so arming and disarming still follow the FC's own interlock.
+        if gui_rc is not None:
+            apply_gui_rc(channels, gui_rc)
 
         # Paced to a realistic link rate rather than the sensor rate: one whole
         # frame per write, never split, so the FC's length-driven deframer sees
