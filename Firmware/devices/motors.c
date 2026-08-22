@@ -24,7 +24,14 @@ eSTATUS_t Motors_Write (Motors_t* pMotors, float throttles[BRD_MOTOR_COUNT]) {
 
 eSTATUS_t Motors_Arm (Motors_t* pMotors) {
 
-    if (STATUS_FAIL (pMotors->drv.Arm (pMotors->drv.ctx))) {
+    /* BUSY means the arm handshake is under way and wants calling again, not
+     * that anything went wrong - so it is checked before STATUS_FAIL, which
+     * treats every non-success alike. */
+    eSTATUS_t status = pMotors->drv.Arm (pMotors->drv.ctx);
+    if (status == eSTATUS_BUSY) {
+        return status;
+    }
+    if (STATUS_FAIL (status)) {
         LOG_ERROR ("Failed to arm motor");
         return eSTATUS_FAILURE;
     }

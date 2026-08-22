@@ -128,7 +128,17 @@ eSTATUS_t Control_Update(void) {
     umsg_mission_state_receive(s_Control.mission_sub, &s_Control.mission, 0);
 
     bool armed = s_Control.mission.armed != 0;
-    if (armed && !s_prevArmed) {
+    if (armed && !s_motors.armed) {
+        /*
+         * Called every iteration, not on the arm edge: the ESC arms only after a
+         * continuous run of zero-throttle frames, and Dshot_Arm emits exactly one
+         * per call. This loop is the frame clock, which puts them CONTROL_RATE_HZ
+         * apart - 2 ms, inside the 5 ms an ESC tolerates - and keeps the handshake
+         * off the CPU. It used to block here for 350 ms.
+         *
+         * s_motors.armed rather than the s_prevArmed edge, because the condition
+         * has to stay true for the whole handshake rather than for one iteration.
+         */
         Motors_Arm(&s_motors);
     } else if (!armed && s_prevArmed) {
         Motors_Disarm(&s_motors);
@@ -178,7 +188,9 @@ eSTATUS_t Control_Update(void) {
      * above too, so the first armed interval is one period rather than however
      * long the vehicle sat on the ground.
      */
-    if (!armed) {
+    /* Arming counts as disarmed here: the ESC is still being handshaken, so the
+     * loop holds its state reset and writes no actuators until it is live. */
+    if (!armed || !s_motors.armed) {
         for (uint32_t i = 0; i < AXIS_IDX_COUNT; ++i) {
             Pid_ResetAxis (&s_pid.axes[i]);
         }

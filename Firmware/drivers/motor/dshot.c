@@ -182,28 +182,57 @@ static eSTATUS_t Dshot_Write (void* ctx, float const throttles[BRD_MOTOR_COUNT])
     return DShotBB_Write (dshotThrottles);
 }
 
+/* An ESC arms only after a continuous run of zero-throttle frames this long. */
+#define DSHOT_ARM_DURATION_MS 350U
+
+static bool s_armInProgress = false;
+static uint32_t s_msArmDeadline = 0;
+
+/*
+ * Emits ONE zero-throttle frame per call and reports eSTATUS_BUSY until the ESC
+ * has had its full run of them; the caller keeps calling until it succeeds.
+ *
+ * This used to send all 350 frames itself, 1 ms apart, with a busy-wait between
+ * them - a third of a second holding the CPU at TASK_PRIORITY_CONTROL, which
+ * starved the IMU, mag, baro and the log drain immediately before takeoff.
+ * The frames still have to be continuous, because the ESC is counting them, so
+ * the fix is not to space them out but to let the control loop be the clock:
+ * it already emits exactly one DShot frame per iteration. Intervals up to 5 ms
+ * are fine, and CONTROL_RATE_HZ puts them 2 ms apart.
+ */
 static eSTATUS_t Dshot_Arm (void* ctx) {
 
     FJ_UNUSED (ctx);
-    uint32_t msDelay                       = 1;
-    uint32_t msTotalTimeToArm              = 350;
-    uint32_t iterations                    = msTotalTimeToArm / msDelay;
     uint16_t armThrottles[BRD_MOTOR_COUNT] = { 0 };
-    for (uint32_t i = 0; i < iterations; ++i) {
-        /* NOTE: A DShot value of all 0s is a special command to
-         * the esc to arm/disarm the motor depending on the esc's current state. */
-        if (DShotBB_Write (armThrottles) != eSTATUS_SUCCESS) {
-            return eSTATUS_FAILURE;
-        }
-        /* Busy-wait: the ESC is timing this frame cadence, so the arm stream
-         * must not be stretched by whatever else wants to run. */
-        DelayBusyWait (msDelay);
+    /* NOTE: A DShot value of all 0s is a special command to
+     * the esc to arm/disarm the motor depending on the esc's current state. */
+    if (DShotBB_Write (armThrottles) != eSTATUS_SUCCESS) {
+        s_armInProgress = false;
+        return eSTATUS_FAILURE;
     }
+
+    if (!s_armInProgress) {
+        s_armInProgress = true;
+        s_msArmDeadline = GetMilliseconds () + DSHOT_ARM_DURATION_MS;
+        return eSTATUS_BUSY;
+    }
+
+    /* Signed difference so the comparison survives the millisecond counter
+     * wrapping mid-handshake. */
+    if ((int32_t)(GetMilliseconds () - s_msArmDeadline) < 0) {
+        return eSTATUS_BUSY;
+    }
+
+    s_armInProgress = false;
     return eSTATUS_SUCCESS;
 }
 
 static eSTATUS_t Dshot_Disarm (void* ctx) {
     FJ_UNUSED (ctx);
+    /* A disarm partway through the handshake must not leave a stale deadline
+     * behind: the next arm would see it already expired and go live after a
+     * single frame. */
+    s_armInProgress = false;
     return eSTATUS_SUCCESS;
 }
 
