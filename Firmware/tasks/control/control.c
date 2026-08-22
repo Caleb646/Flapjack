@@ -175,8 +175,7 @@ eSTATUS_t Control_Update(void) {
      */
     if (!armed) {
         for (uint32_t i = 0; i < AXIS_IDX_COUNT; ++i) {
-            s_pid.axes[i].prevIntegral       = 0.0f;
-            s_pid.axes[i].hasPrevMeasurement = false;
+            Pid_ResetAxis (&s_pid.axes[i]);
         }
         /* So the altitude-hold entry below sees a genuine entry on arming,
          * rather than carrying s_prevAltHold across a disarm from the last
@@ -223,8 +222,7 @@ eSTATUS_t Control_Update(void) {
      * A stale one carries in the wind-up from the last engagement and spends
      * the first second of the hold unwinding it. */
     if (altHold && (!s_prevAltHold || !s_prevArmed)) {
-        s_pid.axes[AXIS_IDX_THROTTLE].prevIntegral       = 0.0f;
-        s_pid.axes[AXIS_IDX_THROTTLE].hasPrevMeasurement = false;
+        Pid_ResetAxis (&s_pid.axes[AXIS_IDX_THROTTLE]);
     }
     s_prevAltHold = altHold;
 
@@ -232,10 +230,27 @@ eSTATUS_t Control_Update(void) {
         float alt = -s_Control.nav.pos_ned[2];   // NED, down positive
         float vz  = -s_Control.nav.vel_ned[2];   // climb rate, up positive
         float trim = Pid_UpdateAxis(&pPid->axes[AXIS_IDX_THROTTLE], alt, s_Control.sp.vel_b[2], dt);
-        /* Damping term, applied outside the PID because it is derived from a
-         * different (and far cleaner) estimate than the one the PID closes on
-         * - see CFG_ALT_HOLD_VZ_DAMPING. */
-        trim -= CFG_ALT_HOLD_VZ_DAMPING * vz;
+        /*
+         * Vertical damping, on the climb-rate ERROR rather than on vz itself.
+         * It lives outside the PID because it is derived from a different (and
+         * far cleaner) estimate than the one the PID closes on - see
+         * CFG_ALT_HOLD_VZ_DAMPING.
+         *
+         * Subtracting the COMMANDED rate is what keeps this a damper rather
+         * than a brake. Against raw vz it opposed the climb the pilot had just
+         * asked for: at the full 1 m/s stick the term contributes -0.5 of
+         * throttle, which P and I then have to manufacture back, so the vehicle
+         * settled ~0.4 m under the target with the integrator pinned at
+         * CFG_PID_INTEGRAL_LIMIT for the whole climb - and ballooned when the
+         * stick centred, because the pinned integrator was left with nothing to
+         * cancel. Zeroed in a tracked climb, the term now only fights the part
+         * of vz the pilot did not ask for, and carries the climb-rate
+         * feedforward for free.
+         *
+         * sp.climb_rate is d(sp.vel_b[2])/dt by construction (guidance.c); that
+         * is the invariant this depends on, not merely a convenience.
+         */
+        trim -= CFG_ALT_HOLD_VZ_DAMPING * (vz - s_Control.sp.climb_rate);
 
         /*
          * Tilt compensation. Lift is the VERTICAL component of thrust, so a

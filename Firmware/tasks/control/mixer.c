@@ -204,17 +204,70 @@ void Mixer_MixServos (Mixer_t* pMixer, float const pidData[AXIS_IDX_COUNT], uint
         mixedInputs[servoIdx] += mixedInput * pServoMix[mixIdx].weight;
     }
 
+    /*
+     * Bound total deflection BEFORE the pulse-width conversion, so the limit is
+     * expressed in tilt angle rather than in whatever travel the servo
+     * calibration happens to allow. Pitch and yaw both drive the tilt servos at
+     * weight 1.0, so the unbounded sum reaches +/-2 - rotors pinned horizontal
+     * on any saturated rate loop.
+     *
+     * Scale the whole SET by one factor rather than clipping each servo, for the
+     * reason Mixer_MixMotors gives for its differential: several servos carry
+     * the same axes with different signs, so their values are a decomposition,
+     * not independent numbers. Clipping them separately does not attenuate the
+     * axes evenly - it hits whichever axis is asking for LESS far harder, and
+     * pitch is already this airframe's weak axis. Measured in the SIL on the
+     * tilt pair (left = -pitch + yaw, right = -pitch - yaw), flying full pitch
+     * and 0.8 yaw together: clipping kept 81-87% of the pitch command against
+     * 97-98% of the yaw, where one common factor keeps 94-96% of both.
+     *
+     * The gap grows with saturation depth - it is 5x here at 5% past the limit,
+     * and a constructed pitch 0.2 / yaw 0.5 (110% past) loses 92% of the pitch
+     * against 37% of the yaw. Real flight on the current tune only reaches the
+     * shallow end, and rarely: 7 frames in a 30 s aggressive manoeuvre. This is
+     * cheap insurance that scales with the tune, not a hot path.
+     *
+     * One common factor costs both axes the same fraction and leaves the
+     * commanded direction in the (pitch, yaw) plane intact.
+     *
+     * There is no counterpart to the motors' second step, the common offset.
+     * That band is asymmetric about the operating point, so sliding within it
+     * spends collective thrust; this limit is symmetric about centre, so the
+     * same offset would just be an uncommanded collective tilt - a pitch
+     * command, not a desaturation.
+     *
+     * The factor is taken over every servo the profile drives. For the tilt
+     * pair that is exactly right. It does couple servos that share no inputs -
+     * an airplane profile's elevator saturating would trim the ailerons too -
+     * which is a uniform authority loss rather than a distorted one, but worth
+     * revisiting if that profile is ever wired up (Mixer_Init still hardcodes
+     * the tilt-rotor).
+     */
+    float maxAbs = 0.0F;
+    for (uint32_t i = 0; i < BRD_SERVO_COUNT; ++i) {
+        float magnitude = ABS_F32 (mixedInputs[i]);
+        if (magnitude > maxAbs) {
+            maxAbs = magnitude;
+        }
+    }
+    float scale = 1.0F;
+    if (maxAbs > pMixer->servoTravelLimit) {
+        scale = pMixer->servoTravelLimit / maxAbs;
+    }
+
     /* Accumulate the signed mix contributions in float, then convert to a pulse
      * width centred on SERVO_CENTER_US_DC and clamp to the servo's legal travel.
      * Summing straight into the uint16_t output wraps on any negative
      * contribution and never clamps, so the driver saw out-of-range widths. */
     for (uint32_t i = 0; i < BRD_SERVO_COUNT; ++i) {
-        /* Bound total deflection BEFORE the pulse-width conversion, so the limit
-         * is expressed in tilt angle rather than in whatever travel the servo
-         * calibration happens to allow. Pitch and yaw both drive the tilt servos
-         * at weight 1.0, so the unbounded sum reaches +/-2 - rotors pinned
-         * horizontal on any saturated rate loop. */
-        float travel = clipf32 (mixedInputs[i], -pMixer->servoTravelLimit, pMixer->servoTravelLimit);
+        /* The scale above already puts every servo inside the limit, so this
+         * clip is NOT the desaturation - it is the NaN guard. A NaN mix survives
+         * both the max scan (every comparison against it is false) and the
+         * multiply, and clipf32 is what keeps it from reaching the pulse-width
+         * cast; see the NaN note on clipf32 itself, and KnownIssues 1.14 and
+         * 2.25. Removing it as redundant restores that bug. */
+        float travel = clipf32 (mixedInputs[i] * scale, -pMixer->servoTravelLimit,
+                                pMixer->servoTravelLimit);
 
         float us = (float)SERVO_CENTER_US_DC +
                    (travel * (float)(SERVO_RIGHT_US_DC - SERVO_CENTER_US_DC));

@@ -12,6 +12,7 @@ typedef struct
 {
     float w[3];
     float vel_b[3];
+    float climb_rate;
     float quat[4];
 } umsg_guidance_setpoints_t;
 

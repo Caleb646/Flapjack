@@ -146,6 +146,65 @@
 #define CFG_PID_YAW_P                        0.00166667F
 #define CFG_PID_YAW_I                        0.00027778F
 #define CFG_PID_YAW_D                        0.00000083F
+
+/*
+ * D-term low-pass corner, in Hz, applied to the measurement the derivative is
+ * taken from (common/pid.c). 0 disables it and restores the previous
+ * bit-for-bit behaviour.
+ *
+ * This is NOT a substitute for filtering the gyro itself, and it does not make
+ * one unnecessary. The two do different jobs:
+ *
+ *   - P has flat gain against frequency and I has FALLING gain, so I actually
+ *     attenuates noise. D differentiates: its gain RISES at +20 dB/decade, so it
+ *     is the only term that amplifies whatever the sensor path leaves behind.
+ *   - Filtering is paid for in phase lag, and lag at crossover is the scarce
+ *     resource. Filtering the shared gyro hard enough to satisfy D would charge
+ *     that lag to P and to the attitude estimator, neither of which needs it.
+ *     Betaflight splits it for exactly this reason: gyro low-passes at 250-500
+ *     Hz (deliberately mild) and D-term low-passes at 75-150 Hz (aggressive) -
+ *     same signal, two cutoffs, because the terms differ in noise gain.
+ *
+ * What the sensor path does today, which this cannot substitute for: the BMI323
+ * is set to ODR 400 Hz, bandwidth ODR/2 = 200 Hz, 16x averaging
+ * (drivers/imu/bmi323.c), and devices/imu.c is still a documented pass-through.
+ * Note the ODR EQUALS the control-loop rate, so there is no oversampling and
+ * anything above 200 Hz has already aliased into the band by the time any
+ * software sees it - no filter here or in imu.c can undo that. Fixing it means
+ * raising the ODR above the loop rate, which is a sensor-layer change.
+ * See ControlResearch.md 2.4.
+ *
+ * Measured on the host against the same JSBSim tiltrotor the gains were swept
+ * on, with gyro noise injected at the READING (the FDM state stays clean, which
+ * is what sensor noise actually is). At 400 Hz, 3 deg/s RMS noise, recovering a
+ * 10 deg/s roll disturbance:
+ *
+ *     fc (Hz)   D-term RMS   servo activity   settle (clean gyro)
+ *        off       0.0564         0.1384            0.128 s
+ *         30       0.0124         0.0383            0.130 s
+ *         60       0.0203         0.0562            0.130 s
+ *        100       0.0273         0.0722            0.130 s
+ *
+ * So 60 Hz removes ~64% of the D term's noise energy and ~59% of the resulting
+ * servo activity, and costs 2 ms of settling time on a clean gyro. At 10 deg/s
+ * of noise - a badly balanced prop - the unfiltered loop is driven to 25.9 deg/s
+ * peak by noise alone against the 10 deg/s disturbance; filtered it reaches
+ * 15.3.
+ *
+ * Do NOT read that table as "lower is better". Settling barely moves across the
+ * whole range because neither the FDM nor the host replica has any actuator
+ * dynamics (KnownIssues 1.9), so neither can charge a filter for phase lag - and
+ * lag is what a low cutoff spends. A PT1 lags by atan(f/fc): 4.8 deg at 5 Hz
+ * here, but 9.5 deg at 30 Hz and 14 deg at 20 Hz, and real servo lag adds to it.
+ * 60 Hz takes most of the available noise rejection while leaving the phase
+ * budget mostly intact; going lower needs a model that can price the cost.
+ *
+ * The SIL cannot show any of this. Scripts/sim/jsbsim/systems models baro and
+ * GPS noise but there is no IMU noise model at all, so the emulated gyro arrives
+ * clean and the filter has nothing to remove. Re-tune against a real gyro's
+ * noise spectrum on the bench.
+ */
+#define CFG_PID_DTERM_LPF_HZ                 60.0F
 /*
  * Angle mode. The roll and pitch sticks command a BANK ANGLE, not a rate: an
  * outer P loop turns the angle error into the rate setpoint the rate PIDs above
@@ -260,9 +319,16 @@
 #define CFG_ALT_HOLD_STICK_DEADBAND          0.05F
 
 /*
- * Vertical damping, in throttle per m/s of climb. This is the altitude loop's
- * D term, taken from the nav filter's climb rate rather than by
+ * Vertical damping, in throttle per m/s of climb-rate ERROR. This is the
+ * altitude loop's D term, taken from the nav filter's climb rate rather than by
  * differentiating its altitude - which is why CFG_PID_THROTTLE_D is 0.
+ *
+ * "Error" and not "climb rate": control.c subtracts the COMMANDED climb rate
+ * (guidance's sp.climb_rate) before applying this gain, so the term is zero in
+ * a climb the loop is tracking and only fights vertical motion the pilot did
+ * not ask for. Against raw vz this gain opposed the commanded climb too, which
+ * cost 0.5 of throttle at the full 1 m/s stick and left the vehicle half a
+ * metre under its own target for the whole climb.
  *
  * The distinction is not cosmetic, it is the whole difference between the
  * loop working and not. Both are estimates of the same quantity, but the
@@ -285,6 +351,11 @@
  * yaw share the tilt servos at weight 1.0 each and each PID output spans +/-1, so
  * an unbounded sum reaches +/-2 and pins the rotors horizontal on any saturated
  * rate loop.
+ *
+ * It is the threshold at which Mixer_MixServos scales the whole servo set down,
+ * not a per-servo clip: the servos carry a shared pitch/yaw decomposition, and
+ * clipping them one at a time attenuates the two axes by wildly different
+ * amounts. See the comment there.
  *
  * 0.3333 is +/-30 deg, and it DOES bind in normal flight - measured, not assumed.
  * Unlimited, the `hover` plan peaks at 0.760 rad (43.5 deg) on the takeoff

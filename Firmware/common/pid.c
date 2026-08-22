@@ -48,7 +48,29 @@ eSTATUS_t Pid_Init(Pid_t* pOutPid) {
     pOutPid->axes[AXIS_IDX_YAW]      = (PidAxis_t)PID_CREATE_AXIS (YAW);
     pOutPid->axes[AXIS_IDX_THROTTLE] = (PidAxis_t)PID_CREATE_AXIS (THROTTLE);
     pOutPid->usLastUpdateTime        = GetMicroseconds();
+
+    /* Set here rather than in PID_CREATE_AXIS because that macro is duplicated
+     * in control.c for a static initialiser; a field added to only one copy is
+     * a trap. This runs after those assignments and covers every axis. */
+    for (uint32_t i = 0; i < AXIS_IDX_COUNT; ++i) {
+        pOutPid->axes[i].dLpf.cfg.cutoffHz = CFG_PID_DTERM_LPF_HZ;
+        LowPassFilter_Init (&pOutPid->axes[i].dLpf);
+    }
     return eSTATUS_SUCCESS;
+}
+
+void Pid_ResetAxis (PidAxis_t* pAxis) {
+
+    if (!pAxis) {
+        return;
+    }
+    pAxis->prevIntegral       = 0.0F;
+    pAxis->hasPrevMeasurement = false;
+    /* The D filter carries state too, and a stale one is the same false-spike
+     * problem hasPrevMeasurement guards against - it just arrives spread over a
+     * time constant instead of in one frame. Init clears state and leaves the
+     * configured cutoff alone. */
+    LowPassFilter_Init (&pAxis->dLpf);
 }
 
 float Pid_UpdateAxis (PidAxis_t* pAxis, float current, float target, float dt) {
@@ -131,14 +153,31 @@ float Pid_UpdateAxis (PidAxis_t* pAxis, float current, float target, float dt) {
      * Skip the first sample - prevMeasurement is meaningless then, and current/dt
      * would be a large false spike.
      */
+    /*
+     * Low-pass the MEASUREMENT and difference that, rather than differencing the
+     * raw signal and low-passing the result. For a linear filter the two are
+     * algebraically the same, but this ordering never forms the raw difference
+     * at all, and that difference - divided by a dt as small as 0.5 ms - is the
+     * large intermediate. It is also the order Betaflight uses.
+     *
+     * prevMeasurement therefore holds the FILTERED value. Both sides of the
+     * subtraction have to come from the same signal; mixing a filtered sample
+     * with a raw one differences two different signals and reports the filter's
+     * own lag as vehicle motion.
+     *
+     * With cutoffHz <= 0 this is exact pass-through, so the axis behaves
+     * bit-for-bit as it did before the filter existed.
+     */
+    float dMeasurement = LowPassFilter_Update (&pAxis->dLpf, current, dt);
+
     float derivative = 0.0F;
     if (pAxis->hasPrevMeasurement) {
-        derivative = (current - pAxis->prevMeasurement) / dt;
+        derivative = (dMeasurement - pAxis->prevMeasurement) / dt;
     }
     pAxis->hasPrevMeasurement = true;
 
     pAxis->prevIntegral    = integral;
-    pAxis->prevMeasurement = current;
+    pAxis->prevMeasurement = dMeasurement;
 
     return clipf32 ((pAxis->p * error) + iTerm - (pAxis->d * derivative), CFG_PID_MIN_VALUE, CFG_PID_MAX_VALUE);
 }

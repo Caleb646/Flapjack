@@ -6,12 +6,29 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+/*
+ * First-order (PT1) low-pass, parameterised by CUTOFF rather than by a fixed
+ * coefficient.
+ *
+ * The obvious form - y += alpha * (x - y) with a constant alpha, which is what
+ * this struct used to hold - pins the corner to the SAMPLE RATE:
+ * f_c = alpha / (2*pi*dt*(1 - alpha)). Every loop here is sensor-paced rather
+ * than fixed; the rate PID follows the IMU and the same build has been measured
+ * between 250 and 366 Hz depending only on host load in the SIL. A constant
+ * alpha would let the corner wander with that, which is the same class of bug
+ * the CONTROL_RATE_HZ static assert in control.c exists to prevent. Taking dt
+ * per call and deriving alpha from it keeps the corner where it was configured.
+ *
+ * cutoffHz <= 0 disables the filter and Update passes its input straight
+ * through, so a configured 0 means "no filtering" rather than "filter
+ * everything away".
+ */
 typedef struct {
     struct {
-        float alpha;
-        bool isFirstUpdate;
+        float cutoffHz; // -3 dB corner, Hz. <= 0 disables (pass-through).
     } cfg;
-    uint32_t usLastUpdateTime;
+    float state;
+    bool  hasState;
 } LowPassFilter_t;
 
 /*
@@ -74,6 +91,7 @@ void MadgwickFilter_QuatToEuler (MadgwickFilter_t const* pFilter, Vec3f* pOutEul
 eSTATUS_t MadgwickFilter_Init (MadgwickFilter_t* pFilter);
 
 eSTATUS_t LowPassFilter_Init (LowPassFilter_t* pFilter);
+float LowPassFilter_Update (LowPassFilter_t* pFilter, float input, float dt);
 
 float Baro_PressureToAltitude (float pressurePa, float referencePa, float referenceTempC);
 eSTATUS_t AltitudeFilter_Init (AltitudeFilter_t* pFilter);

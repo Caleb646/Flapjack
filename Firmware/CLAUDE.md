@@ -237,12 +237,17 @@ Generated message structs are in `Firmware/msgs/umsg/`. The JSON definitions are
 | `umsg_rc.h` | `umsg_rc_input_t` | `channels[16]` (µs, 1000–2000), `rssi` (always 0 — needs CRSF 0x14), `link_quality` (100 or 0, from `link_up`) |
 | `umsg_nav.h` | `umsg_nav_state_t` | `quat[4]`, `euler[3]` (deg), `gyro[3]` (deg/s), `pos_ned[3]`, `vel_ned[3]`, `alt`, `valid` |
 | `umsg_mission.h` | `umsg_mission_state_t` | `mode` (`eMissionMode_t`), `target_pos[3]`, `target_heading`, `armed` |
-| `umsg_guidance.h` | `umsg_guidance_setpoints_t` | `w[3]` (rad/s), `vel_b[3]` (body vel, `[2]`=throttle 0–1), `quat[4]` |
+| `umsg_guidance.h` | `umsg_guidance_setpoints_t` | `w[3]` (rad/s), `vel_b[3]` (body vel, `[2]`=target altitude in m, or throttle 0–1 in passthrough), `climb_rate` (m/s, up +ve), `quat[4]` |
 
 ### Unit conventions
 
 - **Gyro rates in `umsg_sensors_imu_t` and `umsg_nav_state_t`**: degrees/second — matches the IMU driver and Madgwick filter input.
 - **Guidance `w[]`**: radians/second — `control.c` converts to deg/s via `RAD2DEG()` before the rate PID.
+- **Guidance `climb_rate`**: metres/second, up positive, and it is a **contract, not telemetry**. It
+  must always equal `d(vel_b[2])/dt` — the rate the altitude target is actually walking at, zero
+  whenever the target is stationary or `vel_b[2]` is a passthrough throttle. `control.c` subtracts
+  it from the measured climb rate in the vertical damping term, so a value the target is not
+  really moving at becomes a feedforward the loop will chase.
 
 ### NAV_VALID bits (`umsg_nav_state_t.valid`)
 

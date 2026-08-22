@@ -167,13 +167,29 @@ eSTATUS_t Guidance_Update(void) {
             (climbCmd < CFG_ALT_HOLD_STICK_DEADBAND)) {
             climbCmd = 0.0f;
         }
+
+        /*
+         * climb_rate is published as exactly d(altTarget)/dt, and control.c's
+         * vertical damping subtracts it from the measured climb rate. That
+         * makes it a contract, not just telemetry: it must stay zero on any
+         * iteration where the target is NOT walking, or the damping term
+         * becomes a feedforward for motion the target is not making and the
+         * loop chases it. Hence it is computed inside the same armed test that
+         * gates the integration below rather than from climbCmd directly.
+         */
+        float climbRate = 0.0f;
         if (s_Guidance.mission.armed != 0U) {
-            s_Guidance.altTarget += climbCmd * CFG_ALT_HOLD_CLIMB_RATE_MPS * dt;
+            climbRate = climbCmd * CFG_ALT_HOLD_CLIMB_RATE_MPS;
+            s_Guidance.altTarget += climbRate * dt;
         }
 
-        sp.vel_b[2] = s_Guidance.altTarget;
+        sp.vel_b[2]   = s_Guidance.altTarget;
+        sp.climb_rate = climbRate;
     } else {
         sp.vel_b[2] = throt;
+        /* Passthrough: vel_b[2] is a raw throttle, not an altitude, so there is
+         * no target moving at any rate. */
+        sp.climb_rate = 0.0f;
         s_Guidance.altHoldActive = false;
     }
 

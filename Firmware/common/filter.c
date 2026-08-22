@@ -411,12 +411,46 @@ eSTATUS_t MadgwickFilter_Init (MadgwickFilter_t* pFilter) {
     return eSTATUS_SUCCESS;
 }
 
+/*
+ * Clears the STATE and leaves cfg alone, so it doubles as the reset a caller
+ * needs after a discontinuity (arming, a mode change) without having to
+ * re-supply the cutoff. Pid_ResetAxis relies on that.
+ */
 eSTATUS_t LowPassFilter_Init (LowPassFilter_t* pFilter) {
 
-    if (!pFilter || pFilter->cfg.alpha < 0.0F || pFilter->cfg.alpha > 1.0F) {
+    if (!pFilter) {
         return eSTATUS_FAILURE;
     }
+    pFilter->state    = 0.0F;
+    pFilter->hasState = false;
     return eSTATUS_SUCCESS;
+}
+
+float LowPassFilter_Update (LowPassFilter_t* pFilter, float input, float dt) {
+
+    /* Disabled, or a dt that cannot produce a meaningful alpha: pass the input
+     * through rather than invent state from it. `!(x > 0)` rather than `x <= 0`
+     * so NaN takes these branches too - same idiom, and same reason, as the dt
+     * guard in Pid_UpdateAxis. */
+    if (!pFilter || !(pFilter->cfg.cutoffHz > 0.0F) || !(dt > 0.0F)) {
+        return input;
+    }
+
+    /* Seed from the first sample rather than from zero. Starting at zero makes
+     * the output ramp from the origin over a full time constant, and on the D
+     * path that ramp reads as a large false derivative for exactly as long -
+     * the same spike PidAxis_t.hasPrevMeasurement exists to suppress, just
+     * spread over more frames. */
+    if (!pFilter->hasState) {
+        pFilter->state    = input;
+        pFilter->hasState = true;
+        return input;
+    }
+
+    float rc    = 1.0F / (6.283185307179586F * pFilter->cfg.cutoffHz); // 1 / (2π·fc)
+    float alpha = dt / (dt + rc);
+    pFilter->state += alpha * (input - pFilter->state);
+    return pFilter->state;
 }
 /*
  * Hypsometric altitude above a pressure datum:
