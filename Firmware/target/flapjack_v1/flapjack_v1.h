@@ -73,6 +73,18 @@
 #define IMU_SPI_NSS_GPIO_PORT  GPIOC
 #define IMU_SPI_NSS_GPIO_PIN   GPIO_PIN_4
 /*
+ * BMI323 INT1, data ready. The EXTI line is the PIN NUMBER, not the port, and
+ * SYSCFG_EXTICR routes exactly one port to each line - so the three sensor
+ * interrupt pins must differ in pin number even though they sit on different
+ * ports. They do: 5, 3 and 10.
+ *
+ * The pin numbers these collide with (PA5 on SPI1, PC10 on SPI3) are
+ * alternate-function pins and never drive EXTI, so those lines are free.
+ */
+#define IMU_INT_ENABLED        1U
+#define IMU_INT_GPIO_PORT      GPIOC
+#define IMU_INT_GPIO_PIN       GPIO_PIN_5
+/*
  * BMI323 die placement (common/align.h). Recovered from the BMI323's own axis
  * remap register config - YXZ with all three sign bits negative, i.e.
  * out = (-y, -x, -z) - which is the only record of this part's placement that
@@ -95,6 +107,10 @@
 #define MAG_SPI_BUS_ID              eSPI_5_BUS_ID
 #define MAG_SPI_NSS_GPIO_PORT       GPIOF
 #define MAG_SPI_NSS_GPIO_PIN        GPIO_PIN_4
+// MMC5983 INT, measurement done. EXTI line 3 - see IMU_INT_GPIO_PIN.
+#define MAG_INT_ENABLED             1U
+#define MAG_INT_GPIO_PORT           GPIOF
+#define MAG_INT_GPIO_PIN            GPIO_PIN_3
 /*
  * TODO: the MMC5983 placement has never been established - unlike the IMU there
  * is no register config to recover it from, because MagDriverConf_t has never
@@ -111,6 +127,10 @@
 #define BARO_SPI_BUS_ID             eSPI_5_BUS_ID
 #define BARO_SPI_NSS_GPIO_PORT      GPIOF
 #define BARO_SPI_NSS_GPIO_PIN       GPIO_PIN_6
+// BMP390 INT, data ready. EXTI line 10 - see IMU_INT_GPIO_PIN.
+#define BARO_INT_ENABLED            1U
+#define BARO_INT_GPIO_PORT          GPIOF
+#define BARO_INT_GPIO_PIN           GPIO_PIN_10
 
 #define UART_1_ENABLED         1U
 #define UART_1_INSTANCE        USART1
