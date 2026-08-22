@@ -64,8 +64,8 @@ platform overlay and machine script are in `Scripts/renode/`. Flags: `--port` (s
 `--rc-port` (CRSF, 4001), `--monitor-port` (3456), `--elf` to override, `--gui` for the Renode
 window.
 
-Full background, including every emulator/firmware issue found and fixed: `EmulatorResearch.md`;
-current state and open items: `KnownIssues.md`.
+How the rig works, what it measures and where it lies to you: `SilResearch.md`; every firmware
+issue it found, and the open ones: `KnownIssues.md`.
 
 **Debugging a GNC bug rather than running a command?** Use the **flapjack-sil-debugging** skill:
 getting observability out of a `-D sim` build, isolating firmware faults

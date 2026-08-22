@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Common Commands
 
-All commands run from the project root (`/home/caleb/projects/Flapjack`).
+All commands run from the project root.
 
 ```bash
 # Install toolchain (one-time; downloads ARM GCC, LLVM, OpenOCD into Tools/)
@@ -76,7 +76,7 @@ Build artifacts land in `Build/<board>/<config>/` as `cm7.elf` and `cm4.elf`. CM
 `Scripts/` is the home for all of the project's Python tooling. `board.py` is the single CLI entry point (`python Scripts/board.py <cmd>`); it runs with `Scripts/` on `sys.path`, so the subpackages import as top-level (`proto`, `link`, `sim`, `gui`). Dependencies are pinned in the repo-root `pyproject.toml` (base + `[sim]`/`[gui]`/`[gen]` extras).
 
 - **`board.py`** — single CLI entry point. Subcommands: `install`, `build`, `flash` (firmware); `gen` (regenerate proto + umsg, no toolchain/build); `renode` (boot the firmware under the Renode CM7 emulator); `sim` (JSBSim HIL bridge — remaining args are forwarded to it); `gui` (PyQt flight GUI). `sim`/`gui` imports are lazy so `build`/`flash` never require their heavy deps. `build` calls `install` automatically if the toolchain is missing.
-- **`renode/`** — Renode platform overlay (`flapjack_h7_cm7.repl`) and machine script (`flapjack_sil.resc`) for the single-core CM7 SIL. Driven by `board.py renode`, which exposes USART1 as the sim link on port 4000, USART3 as the CRSF RC link on 4001, and USART2 as the NMEA GPS link on 4002; see `EmulatorResearch.md` for why each overlay entry exists.
+- **`renode/`** — Renode platform overlay (`flapjack_h7_cm7.repl`) and machine script (`flapjack_sil.resc`) for the single-core CM7 SIL. Driven by `board.py renode`, which exposes USART1 as the sim link on port 4000, USART3 as the CRSF RC link on 4001, and USART2 as the NMEA GPS link on 4002; see `SilResearch.md` §2 for why each overlay entry exists.
 - **`proto/`** — the single home for generated protobuf Python stubs (`flapjack_pb2.py`, `sim_pb2.py`), emitted here by `build -f g`; all tools import `from proto import …`.
 - **`link/`** — shared host-side link plumbing: `framing.py` (crc8/frame/deframe, mirrors `sim_link.c`) and `serial_io.py` (pyserial helpers).
 - **`sim/`** — the JSBSim HIL bridge (`bridge.py`), the CRSF encoder (`crsf.py`), the NMEA encoder

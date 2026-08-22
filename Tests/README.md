@@ -23,12 +23,22 @@ against `UnitTest/stubs/hal_stub.c`, and Unity is vendored rather than fetched.
 
 ### Current contents
 
-`test_crsf.c` only. It covers the receiver path in `drivers/rx/crsf.c` against the TBS CRSF
-specification: frame layout and the 2–62 length range, CRC8 (poly 0xD5, over type + payload),
-the 16 × 11-bit LSB-first channel unpack, the `TICKS_TO_US` mapping, and the spec's rule that a
-longer-than-expected frame must be accepted with its extra fields ignored. It also asserts a
-**golden frame** produced by `Scripts/sim/crsf.py` byte for byte, so the host encoder used by the
-SIL and the firmware decoder cannot drift apart.
+Four suites. Two of them assert a **golden frame** produced by the host encoder the SIL uses, so
+the encoder there and the decoder here cannot drift apart.
+
+- **`test_crsf.c`** — the receiver path in `drivers/rx/crsf.c` against the TBS CRSF specification:
+  frame layout and the 2–62 length range, CRC8 (poly 0xD5, over type + payload), the
+  16 × 11-bit LSB-first channel unpack, the `TICKS_TO_US` mapping, and the spec's rule that a
+  longer-than-expected frame must be accepted with its extra fields ignored. Golden frame from
+  `Scripts/sim/crsf.py`.
+- **`test_gps.c`** — the NMEA path: the byte assembler (resync, partial sentences,
+  one-byte-at-a-time delivery), the coordinate and knots→m/s conversions, checksum rejection, and
+  that a void RMC or a `fix_quality` 0 GGA is **not** reported as a fix. Golden sentences from
+  `Scripts/sim/nmea.py`.
+- **`test_altitude.c`** — the ISA pressure conversion against an **analytic oracle** (SilResearch
+  §5.2), plus the vertical complementary filter: convergence to the measurement, acceleration
+  integration in between, and bias absorption.
+- **`test_align.c`** — the board/sensor alignment composition.
 
 ### Adding a test
 
@@ -89,5 +99,5 @@ N Tests M Failures 0 Ignored
 
 Neither suite covers the GNC loop end to end. That is the SIL's job — Renode plus JSBSim, driven
 by `board.py renode` and `board.py sim`. A flight plan run (`sim --plan …`) exits 0 or 1 on a set
-of physics invariants, which makes it usable as a coarse regression gate. See `RcSilResearch.md`
+of physics invariants, which makes it usable as a coarse regression gate. See `SilResearch.md`
 and the `flapjack-sil-debugging` skill.

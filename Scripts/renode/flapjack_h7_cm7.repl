@@ -4,7 +4,7 @@
 // rather than redefining it: the upstream memory map already matches
 // Firmware/platform/stm32h747/cm7/cm7_flash.ld exactly.
 //
-// See EmulatorResearch.md §4 for why each entry below is here.
+// See SilResearch.md §2 for why each entry below is here.
 
 using "platforms/cpus/stm32h747.repl"
 

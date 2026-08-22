@@ -2,7 +2,7 @@
  * Altitude estimator: the ISA pressure conversion and the vertical
  * complementary filter, on the host.
  *
- * The pressure half has an ANALYTIC oracle. SensorSilResearch.md 2.3 measured
+ * The pressure half has an ANALYTIC oracle. SilResearch.md 5.2 measured
  * JSBSim's atmosphere against the inverse barometric formula from 0 to 1000 m
  * and found them within 5 cm, so the numbers below are real pressures at known
  * altitudes and the assertion is against the ISA rather than against a flight
@@ -20,7 +20,7 @@
 
 #include <math.h>
 
-// Pressures JSBSim reported at these altitudes; see SensorSilResearch.md 2.3.
+// Pressures JSBSim reported at these altitudes; see SilResearch.md 5.2.
 #define ISA_SEA_LEVEL_PA 101325.0F
 // ISA sea-level temperature. Paired with ISA_SEA_LEVEL_PA it reproduces the
 // textbook 44330 coefficient exactly, since 288.15 / 0.0065 == 44330.
@@ -120,7 +120,7 @@ void test_PressureToAltitude_HasNoDatumElevationScaleError (void) {
  * is still ahead at a 1000 m field and BEHIND at sea level.
  *
  * The SIL cannot catch this: JSBSim reports true air temperature, with no
- * self-heating model. See KnownIssues 4.15 for the same lesson about noise.
+ * self-heating model. See KnownIssues 3.13 for the same lesson about noise.
  */
 void test_PressureToAltitude_ScalesWithDatumTemperature (void) {
     // 10 C too warm -> reads ~3.5 % high.

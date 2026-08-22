@@ -115,9 +115,10 @@ flip the sign in `synthesize_sensors()` (clearly marked).
 python Scripts/board.py sim --port COM7
 ```
 
-The bridge loads `Scripts/sim/jsbsim/aircraft/tiltrotor/tiltrotor.xml`, sends arm + hover
-throttle ~1 s after start, applies the FC's servo/motor commands to the model,
-and streams synthesized sensors back. Useful flags:
+The bridge loads `Scripts/sim/jsbsim/aircraft/tiltrotor/tiltrotor.xml`, raises the
+arm switch after `--arm-delay`, waits for the FC to report armed, then goes to
+hover throttle, applies the FC's servo/motor commands to the model, and streams
+synthesized sensors back. Useful flags:
 
 | flag | default | meaning |
 |---|---|---|
@@ -197,24 +198,26 @@ failure, not a skip — that is the "FC decoded none" case.
   `fix_quality` 0 GGA is **not** reported as a fix.
 - **The sensor models come from JSBSim.** `SensorBaro.xml` and `SensorGps.xml` are
   vendored into `jsbsim/systems/` from the JSBSim distribution and included by
-  `tiltrotor.xml`. They ship with `<noise>`/`<bias>`/`<drift_rate>`/`<lag>` all
-  zero — turn them on **there** to test estimator robustness, not in `bridge.py`.
-  `SensorImu.xml` is deliberately **not** used: its accelerometer reports the
-  opposite Z sign to this project's convention, and its magnetometer disagrees
-  with WMM in both sign and magnitude (32.2 µT against ~48 µT real).
+  `tiltrotor.xml`. Their `<noise>`/`<bias>`/`<drift_rate>` terms are **on** — see
+  `KnownIssues.md` §3.13 for each value and why. Tune realism **there**, not in
+  `bridge.py`. There is still **no IMU noise model**: the gyro and accel the
+  bridge synthesises are exact. `SensorImu.xml` is deliberately **not** used —
+  its accelerometer reports the opposite Z sign to this project's convention, and
+  its magnetometer disagrees with WMM in both sign and magnitude (32.2 µT against
+  ~48 µT real).
 - **The FDM is sized to the real airframe** (0.85 kg, 7 in props, 1000 KV assumed
   on 6S): hover at 50 % throttle, 2:1 thrust-to-weight, tilt verified against
   measured force directions. Thrust comes from `<external_reactions>` rather than
-  JSBSim's propeller model, which diverged — see `EmulatorResearch.md` §13.
+  JSBSim's propeller model, which diverged — see `SilResearch.md` §6.
   Inertias are still estimates, and `ROTOR_TMAX` (1.874 lbf per rotor) is the one
   number to replace with thrust-stand data.
 - **Forward flight is approximated** by a thrust-vs-airspeed table rather than
   blade-element physics. Fine for hover and low-speed control work; revisit before
   trusting cruise or transition results.
-- Achieving a stable hover still needs the tilt-rotor **mixer + hover control
-  law**. The SIL has already caught two faults there: motor output saturates at
-  1.000 with the throttle stick at minimum, and servo output is unclamped
-  (~41,553 µs against a 500–2500 µs range).
+- **The gains are provisional.** The stack flies closed-loop, but the tune is
+  fitted to an estimated rotor height and unmeasured servo dynamics — see
+  `KnownIssues.md` §1.9. `roll_pitch.yaml` still departs (§1.14); `hover`,
+  `yaw_step` and `alt_hold` pass.
 
 ---
 
@@ -242,14 +245,7 @@ runs** rather than re-attaching the bridge: a gap in the sensor stream hands
 `Nav_Update` one enormous `dt`, which throws the attitude estimate and costs
 several seconds of recovery.
 
-USART3 needed no Renode work beyond a frequency pin in the overlay — it is a real
-`UART.STM32F7_USART` in the shipped platform, wired through `exti@28 -> nvic@39`,
-and `Crsf_Init` was already claiming it on every SIL boot. USART2 is the same
-story, except that nothing was claiming it: `Gps_Init` had no callers at all, and
-the port config it passed to `UartPort_Init` was zeroed, so the GPS UART was
-never opened on any build.
-
-Measured behaviour (see `EmulatorResearch.md` §12):
+Measured behaviour (see `SilResearch.md` §3):
 
 - Renode tracks wall clock **1.00x** under load, so the bridge's real-time pacing
   is correct as-is.
@@ -257,9 +253,8 @@ Measured behaviour (see `EmulatorResearch.md` §12):
   beyond which throughput collapses.
 - `Telemetry.imu_count` vs frames sent is the health metric — it should track 1:1.
 
-Two things to know before running closed-loop (without `--dry-run`):
-
-- The attitude filter takes **tens of seconds** to converge from cold. The
-  `--arm-delay` default of 1.0 s arms into a garbage estimate and tumbles the
-  aircraft; hold level and raise it.
-- The FDM NaNs on hard ground impact, so start airborne for now.
+The FC arms itself: `bridge.py` holds throttle low with the switch up after
+`--arm-delay` (2.0 s) and waits for `Telemetry.armed`. The interlock that decides
+when is in the firmware, not the bridge — the estimate must be converged and
+still for 3 s (`KnownIssues.md` §2.13) — so arming lands anywhere from ~3 s to
+~24 s in. Ground start and landing are fine; the gear no longer diverges (§3.4).

@@ -294,7 +294,7 @@ def synthesize_sensors(phi, theta, psi, p, q, r, udot, vdot, wdot):
        Gravity points down, which is +z in FRD, so LEVEL & STILL is (0, 0, -9.81)
        in BODY frame - a part reads +1g along whichever axis points up, and FRD z
        points down. This is also the sign JSBSim's own accelerometer model uses
-       (SensorSilResearch 2.4 measured -9.800 against this function's former
+       (SilResearch 5.3 measured -9.800 against this function's former
        +9.789), so the two now agree instead of differing by a sign on Z. If your
        FDM's signs differ, this is the one place to flip.
 
