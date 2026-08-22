@@ -38,8 +38,18 @@
 #define LOG_DATA_TYPE_RAW_IMU_DATA           "imu_raw_data"
 #define LOG_DATA_TYPE_ACTUATORS              "actuators"
 
-// main control loop update rate in Hz
-#define CFG_LOOP_UPDATE_RATE_HZ              200U
+/*
+ * How the flight controller is bolted into the airframe (common/align.h),
+ * composed onto each sensor's own die placement (IMU_ALIGN / MAG_ALIGN in the
+ * board header) to give the die-to-body rotation the device layer applies.
+ *
+ * It is split from those on purpose. The die placements are facts about the
+ * PCB and differ per part; this is a fact about the build and is shared by
+ * every sensor on the board. Folding them into one constant per sensor would
+ * mean remounting the board required editing each of them in step, and letting
+ * the IMU and mag drift out of agreement is exactly what breaks heading.
+ */
+#define CFG_BOARD_ALIGN                      eALIGN_CW0
 
 /*
  * Madgwick beta, as the gyro measurement error it is derived from:

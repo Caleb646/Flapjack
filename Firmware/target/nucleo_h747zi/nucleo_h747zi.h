@@ -37,6 +37,15 @@
 #define IMU_SPI_BUS_ID         eSPI_2_BUS_ID
 #define IMU_SPI_NSS_GPIO_PORT  GPIOA
 #define IMU_SPI_NSS_GPIO_PIN   GPIO_PIN_11
+/*
+ * Breakout on flying leads rather than a fixed placement, and there is no
+ * magnetometer on this board at all - devices/mag.c still compiles for it, so
+ * MAG_ALIGN has to exist. Identity for both: this target is for bring-up, not
+ * flight. There is deliberately no default in cfg.h, so a new board that
+ * forgets these fails to compile rather than silently flying at identity.
+ */
+#define IMU_ALIGN              eALIGN_CW0
+#define MAG_ALIGN              eALIGN_CW0
 
 #define MOTOR_1_ENABLED        1U
 #define MOTOR_1_GPIO_PORT      GPIOC

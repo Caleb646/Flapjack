@@ -2,6 +2,8 @@
 
 #include "drivers/mag/magdrv.h"
 
+#include "target.h"
+
 #include <string.h>
 
 eSTATUS_t Mag_Init (Mag_t* pOutSensor) {
@@ -11,6 +13,8 @@ eSTATUS_t Mag_Init (Mag_t* pOutSensor) {
     }
 
     memset (pOutSensor, 0, sizeof (Mag_t));
+
+    pOutSensor->align = Align_Compose (MAG_ALIGN, CFG_BOARD_ALIGN);
 
     MagDriverConf_t conf = {
         .normalize = true,
@@ -29,6 +33,10 @@ eSTATUS_t Mag_Update (Mag_t* pSensor) {
     if (STATUS_FAIL (status)) {
         return status;
     }
+
+    // Die frame -> body FRD. No sign convention to undo: the field is a plain
+    // vector, not specific force, so unlike the accel it needs only the rotation.
+    Align_Apply (pSensor->align, &pSensor->data.field, &pSensor->data.field);
 
     // TODO: apply low-pass filtering (common/filter.h). Pass-through for now.
     pSensor->fieldFiltered = pSensor->data.field;

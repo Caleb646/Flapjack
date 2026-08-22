@@ -86,6 +86,83 @@ G = 9.81
 FT2M = 0.3048
 RAD2DEG = 180.0 / math.pi
 
+# --- sensor mounting -------------------------------------------------------
+# This link stands in for the parts soldered to the board, and a part has no
+# knowledge of the body frame - it reports what its own die sees. So the bridge
+# rotates the FDM's body-frame truth INTO the die frame here, and the firmware's
+# IMU_ALIGN / MAG_ALIGN rotate it back out (Firmware/common/align.c). That round
+# trip is what puts the alignment path on the SIL's critical path; with the
+# bridge emitting body frame it was skipped entirely and align.c was exercised
+# only by test_align.c.
+#
+# These duplicate Firmware/target/flapjack_v1/flapjack_v1.h ON PURPOSE, and must
+# be kept in step with it by hand. Taking the alignment from the firmware
+# instead - by parsing the header, or having the FC report it - would make the
+# round trip cancel by construction and assert nothing. Two independent
+# statements are what let a mismatch fail the run.
+#
+# NOTE what this does and does not prove. It exercises the alignment MACHINERY:
+# composition order, Align_Apply, the device wiring. It cannot tell you the
+# CONSTANT is right - both sides wrong the same way still cancels. Whether
+# FLIP_CW270 describes the real board is a six-face bench test, not a SIL run.
+IMU_ALIGN = "FLIP_CW270"
+MAG_ALIGN = "CW0"
+
+_COS = {0: 1, 90: 0, 180: -1, 270: 0}
+_SIN = {0: 0, 90: 1, 180: 0, 270: -1}
+# Base rotation each alignment name starts from, as (axis, degrees).
+_ALIGN_BASES = {
+    "": ("z", 0),
+    "FLIP": ("x", 180),
+    "ROLL90": ("x", 90),
+    "ROLL270": ("x", 270),
+    "PITCH90": ("y", 90),
+    "PITCH270": ("y", 270),
+}
+
+
+def _rot(axis, deg):
+    c, s = _COS[deg], _SIN[deg]
+    if axis == "x":
+        return ((1, 0, 0), (0, c, -s), (0, s, c))
+    if axis == "y":
+        return ((c, 0, s), (0, 1, 0), (-s, 0, c))
+    return ((c, -s, 0), (s, c, 0), (0, 0, 1))
+
+
+def _matmul(A, B):
+    return tuple(tuple(sum(A[i][k] * B[k][j] for k in range(3)) for j in range(3)) for i in range(3))
+
+
+def align_matrix(name):
+    """R for an eSensorAlign_t name, where body = R @ die.
+
+    Same construction as the table in Firmware/common/align.c: the base rotation
+    is applied to the sample first, then the yaw. Names read in that order.
+    """
+    if name.startswith("CW"):
+        base_key, yaw = "", int(name[2:])
+    else:
+        base_key, _, yaw_str = name.partition("_CW")
+        yaw = int(yaw_str)
+    if base_key not in _ALIGN_BASES or yaw not in _COS:
+        raise ValueError(f"unknown sensor alignment {name!r}")
+    return _matmul(_rot("z", yaw), _rot(*_ALIGN_BASES[base_key]))
+
+
+def _transpose(M):
+    return tuple(zip(*M))
+
+
+def _apply(M, v):
+    return [sum(M[i][k] * v[k] for k in range(3)) for i in range(3)]
+
+
+# body -> die is the inverse of the mount. These are orthonormal, so the
+# transpose IS the inverse, exactly and without arithmetic.
+_IMU_BODY_TO_DIE = _transpose(align_matrix(IMU_ALIGN))
+_MAG_BODY_TO_DIE = _transpose(align_matrix(MAG_ALIGN))
+
 # --- flight GUI feed (--gui-port) -------------------------------------------
 # The GUI cannot read the FC itself during a SIL run - the bridge owns that
 # wire - so it takes both the FDM's truth and the FC's own telemetry from here,
@@ -208,22 +285,36 @@ def dcm_body_from_ned(phi, theta, psi):
 
 
 def synthesize_sensors(phi, theta, psi, p, q, r, udot, vdot, wdot):
-    """Return (accel[3] m/s^2, gyro[3] deg/s, mag[3] unit) in body FRD.
+    """Return (accel[3] m/s^2, gyro[3] deg/s, mag[3] unit) in each part's DIE frame.
 
-    Accelerometer = specific force in the FC's 'up-positive' convention, so
-    LEVEL & STILL -> (0, 0, +9.81). If your FDM's signs differ, this is the one
-    place to flip.
+    Two conversions separate what a part reports from what the FC wants, and
+    both are undone in Firmware/devices/imu.c:
+
+    1. Sign. Accelerometer = specific force as a real part measures it (a - g).
+       Gravity points down, which is +z in FRD, so LEVEL & STILL is (0, 0, -9.81)
+       in BODY frame - a part reads +1g along whichever axis points up, and FRD z
+       points down. This is also the sign JSBSim's own accelerometer model uses
+       (SensorSilResearch 2.4 measured -9.800 against this function's former
+       +9.789), so the two now agree instead of differing by a sign on Z. If your
+       FDM's signs differ, this is the one place to flip.
+
+    2. Frame. A sensor knows nothing about the body frame, so the body-frame
+       values computed here are rotated into each die's own frame on the way
+       out - see _IMU_BODY_TO_DIE above.
     """
     R = dcm_body_from_ned(phi, theta, psi)
-    # Gravity projected into body, minus body linear acceleration.
+    # Body linear acceleration, minus gravity projected into body.
     g_body = (-G * math.sin(theta), G * math.sin(phi) * math.cos(theta), G * math.cos(phi) * math.cos(theta))
     a_lin = (udot * FT2M, vdot * FT2M, wdot * FT2M)
-    accel = [g_body[k] - a_lin[k] for k in range(3)]
+    accel = [a_lin[k] - g_body[k] for k in range(3)]
     gyro = [p * RAD2DEG, q * RAD2DEG, r * RAD2DEG]
     mag = [sum(R[k][j] * B_NED[j] for j in range(3)) for k in range(3)]
     norm = math.sqrt(sum(c * c for c in mag)) or 1.0
     mag = [c / norm for c in mag]
-    return accel, gyro, mag
+    # Body -> die. Last step, so everything above stays readable as body frame.
+    return (_apply(_IMU_BODY_TO_DIE, accel),
+            _apply(_IMU_BODY_TO_DIE, gyro),
+            _apply(_MAG_BODY_TO_DIE, mag))
 
 
 def as_f32(x: float) -> float:
@@ -952,10 +1043,9 @@ def main(argv=None):
             if held:
                 # A model that has never been stepped has not resolved its gear
                 # reaction yet, so it reports the only force it knows about:
-                # gravity. wdot comes back as a full -32.2 ft/s^2, and
-                # synthesize_sensors' (g_body - a_lin) then cancels to EXACTLY
-                # (0, 0, 0) - a free-falling accelerometer, on a vehicle that is
-                # parked. Nothing physical reads 0 g sitting on its gear.
+                # gravity. wdot comes back as a full -32.2 ft/s^2, which is the
+                # model saying the vehicle is in free fall while it sits parked
+                # on its gear. Nothing physical reads that.
                 #
                 # A held vehicle is not accelerating, by definition, so the
                 # honest linear acceleration during the hold is zero and the

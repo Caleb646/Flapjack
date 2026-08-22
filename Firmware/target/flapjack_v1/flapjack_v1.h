@@ -72,6 +72,19 @@
 #define IMU_SPI_BUS_ID         eSPI_1_BUS_ID
 #define IMU_SPI_NSS_GPIO_PORT  GPIOC
 #define IMU_SPI_NSS_GPIO_PIN   GPIO_PIN_4
+/*
+ * BMI323 die placement (common/align.h). Recovered from the BMI323's own axis
+ * remap register config - YXZ with all three sign bits negative, i.e.
+ * out = (-y, -x, -z) - which is the only record of this part's placement that
+ * has ever existed; it was written in the first IMU commit (4ac42ab) with no
+ * comment and carried unchanged since. test_align.c asserts the equivalence.
+ *
+ * UNVERIFIED against hardware. That register write goes to the feature engine,
+ * so it may never have taken effect on the data registers at all, which means
+ * nobody has confirmed this describes the real board. Treat it as the starting
+ * hypothesis for the six-face static test, not as a measurement.
+ */
+#define IMU_ALIGN              eALIGN_FLIP_CW270
 
 #define EXT_FLASH_ENABLED           1U
 #define EXT_FLASH_SPI_BUS_ID        eSPI_3_BUS_ID
@@ -82,6 +95,17 @@
 #define MAG_SPI_BUS_ID              eSPI_5_BUS_ID
 #define MAG_SPI_NSS_GPIO_PORT       GPIOF
 #define MAG_SPI_NSS_GPIO_PIN        GPIO_PIN_4
+/*
+ * TODO: the MMC5983 placement has never been established - unlike the IMU there
+ * is no register config to recover it from, because MagDriverConf_t has never
+ * carried an orientation at all. Identity is a placeholder, not a measurement.
+ *
+ * This matters more than an unknown usually would: mag and IMU feed the same
+ * 9-DOF Madgwick, so a correct IMU_ALIGN against a wrong MAG_ALIGN puts the two
+ * in disagreeing frames and corrupts heading. Establish it with the same
+ * six-face test before trusting yaw.
+ */
+#define MAG_ALIGN                   eALIGN_CW0
 
 #define BARO_ENABLED                1U
 #define BARO_SPI_BUS_ID             eSPI_5_BUS_ID

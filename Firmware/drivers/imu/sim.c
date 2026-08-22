@@ -16,11 +16,11 @@
 #include <string.h>
 #include <stdbool.h>
 
-STATIC eSTATUS_t Sim_Read (void* ctx, bool forcePolling, Vec3f* pAccel, Vec3f* pGyro) {
+STATIC eSTATUS_t Sim_Read (void* ctx, bool forcePolling, ImuData_t* pOutData) {
 
     FJ_UNUSED (forcePolling);
     FJ_UNUSED (ctx);
-    if (!pAccel || !pGyro) {
+    if (!pOutData) {
         return eSTATUS_FAILURE;
     }
 
@@ -31,12 +31,12 @@ STATIC eSTATUS_t Sim_Read (void* ctx, bool forcePolling, Vec3f* pAccel, Vec3f* p
         return eSTATUS_FAILURE;
     }
 
-    pAccel->x = accel[0];
-    pAccel->y = accel[1];
-    pAccel->z = accel[2];
-    pGyro->x  = gyro[0];
-    pGyro->y  = gyro[1];
-    pGyro->z  = gyro[2];
+    pOutData->accel.x = accel[0];
+    pOutData->accel.y = accel[1];
+    pOutData->accel.z = accel[2];
+    pOutData->gyro.x  = gyro[0];
+    pOutData->gyro.y  = gyro[1];
+    pOutData->gyro.z  = gyro[2];
     return eSTATUS_SUCCESS;
 }
 

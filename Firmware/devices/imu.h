@@ -1,14 +1,17 @@
 #ifndef SENSORS_IMU_H
 #define SENSORS_IMU_H
 
+#include "common/align.h"
+
 #include "core/core.h"
 
 #include "drivers/imu/imudrv.h"
 
 typedef struct {
     ImuDriver_t drv;
-    Vec3f accel;
-    Vec3f gyro;
+    // Die-to-body rotation: IMU_ALIGN composed with CFG_BOARD_ALIGN, fixed at init.
+    eSensorAlign_t align;
+    ImuData_t data;
     Vec3f accelFiltered;
     Vec3f gyroFiltered;
     uint32_t usLastUpdate;

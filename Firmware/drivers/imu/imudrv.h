@@ -9,9 +9,12 @@
  * interchangeable at runtime. A backend implements `init`/`read` and exposes a
  * `*_GetDriver()` accessor returning an ImuDriver_t bound to its private state.
  *
- * `read` returns samples already converted to engineering units (accel m/s2,
- * gyro deg/s) in the configured orientation - range-dependent scaling and axis
- * remap are backend concerns.
+ * `read` returns samples converted to engineering units (accel m/s2, gyro
+ * deg/s) in the SENSOR's own frame and sign convention - a backend applies only
+ * what the part itself dictates, i.e. range-dependent scaling. Mounting
+ * rotation and this project's accelerometer sign convention are NOT backend
+ * concerns: devices/imu.c owns both, so every backend reports the same thing
+ * and the conversion is written once (common/align.h).
  *
  * This header is the boundary: it must not depend on any backend header
  * (bmi323.h / bmixxx.h).
@@ -52,44 +55,20 @@ enum {
     eIMU_ODR_1600 = 0x0C
 };
 
-/*
- *   XYZ --> x=x; y=y; z=z;
- *   YXZ --> x=y; y=x; z=z;
- *   ZXY --> x=x; y=z; z=y;
- *   XZY --> x=z; y=x; z=y;
- *   YZX --> x=y; y=z; z=x;
- *   ZYX --> x=z; y=y; z=x;
- */
-typedef uint8_t eImuAxesRemap_t;
-enum {
-    eIMU_AXES_REMAP_XYZ = 0x00,
-    eIMU_AXES_REMAP_YXZ = 0x01,
-    eIMU_AXES_REMAP_ZXY = 0x02,
-    eIMU_AXES_REMAP_XZY = 0x03,
-    eIMU_AXES_REMAP_YZX = 0x04,
-    eIMU_AXES_REMAP_ZYX = 0x05
-};
-
-typedef uint8_t eImuAxesDir_t;
-enum { eIMU_AXES_DIR_DEFAULT = 0x00, eIMU_AXES_DIR_INVERTED = 0x01 };
-
 typedef struct {
-    eImuAxesRemap_t remap;
-    eImuAxesDir_t xDir;
-    eImuAxesDir_t yDir;
-    eImuAxesDir_t zDir;
-} ImuAxesRemap_t;
-
-typedef struct {
-    ImuAxesRemap_t orientation;
     eImuAccRange_t accRange;
     eImuGyroRange_t gyroRange;
     eImuOdr_t odr;
 } ImuDriverConf_t;
 
+typedef struct {
+    Vec3f accel; // m/s^2
+    Vec3f gyro;  // deg/s
+} ImuData_t;
+
 typedef struct ImuDriver_s {
     void* ctx;
-    eSTATUS_t (*Read) (void* ctx, bool forcePolling, Vec3f* pAccel, Vec3f* pGyro);
+    eSTATUS_t (*Read) (void* ctx, bool forcePolling, ImuData_t* pOutData);
     bool (*IsDataReady) (void* ctx);
 } ImuDriver_t;
 

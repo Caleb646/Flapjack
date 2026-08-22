@@ -70,6 +70,13 @@ add_library(drone_gps_obj OBJECT
     ${COMMON_SRC_DIR}/drivers/gps/parser/minmea.c
 )
 
+# align.c only. Pure integer rotation tables with no FreeRTOS, umsg or driver
+# dependency, for the same reason filter.c is reachable here: a typo in the
+# table is invisible on a bench, so the host is where it has to be pinned down.
+add_library(drone_align_obj OBJECT
+    ${COMMON_SRC_DIR}/common/align.c
+)
+
 # filter.c only. The altitude estimator is deliberately pure maths with no
 # FreeRTOS, umsg or driver dependency, precisely so it can be exercised here -
 # Nav_Update cannot be, so the filter is where the vertical maths has to be
@@ -85,6 +92,7 @@ foreach(lib
     drone_rx_obj
     drone_gps_obj
     drone_filter_obj
+    drone_align_obj
 )
     target_include_directories(${lib} PRIVATE
         ${COMMON_INC_DIR}
@@ -116,3 +124,4 @@ endfunction()
 add_test_exe(test_crsf OBJECTS drone_common_obj drone_peripherals_obj drone_rx_obj)
 add_test_exe(test_gps  OBJECTS drone_common_obj drone_peripherals_obj drone_gps_obj)
 add_test_exe(test_altitude OBJECTS drone_common_obj drone_filter_obj)
+add_test_exe(test_align OBJECTS drone_common_obj drone_align_obj)
