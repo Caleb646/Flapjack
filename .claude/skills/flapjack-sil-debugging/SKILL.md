@@ -31,9 +31,13 @@ This is the highest-value technique here and it is not obvious. Temporarily repu
 /* TEMPORARY DIAGNOSTIC - remove. euler[] carries dt stats instead of attitude. */
 extern volatile float    g_DiagMaxDt;
 extern volatile uint32_t g_DiagDtSpikes;
-float diag[3] = { g_DiagMaxDt, (float)g_DiagDtSpikes, 0.0f };
-SimLink_SendTelemetry (diag, mission.armed != 0U, SimLink_GetSensorCount ());
+tlm.eulerDeg[0] = g_DiagMaxDt;
+tlm.eulerDeg[1] = (float)g_DiagDtSpikes;
+tlm.eulerDeg[2] = 0.0f;
 ```
+
+Overwrite the fields on the `SimLinkTelemetry_t` the task already builds, just before
+`SimLink_SendTelemetry (&tlm)` - it takes one struct, not positional args.
 
 The bridge prints them as `[FC] euler(deg)= ...`, so no host-side change is needed. Found this
 way, in one session: a `dt` of **4295 s** (`2^32/1e6`, an unsigned underflow), free-heap bytes,

@@ -9,6 +9,12 @@
       ]
     },
     {
+      "name": "imu_status",
+      "fields": [
+        {"name": "sample_count", "type": "uint32"}
+      ]
+    },
+    {
       "name": "mag",
       "fields": [
         {"name": "field", "type": "float", "length": 3}

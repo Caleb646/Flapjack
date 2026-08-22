@@ -3,55 +3,29 @@ syntax = "proto3";
 /*
  * HIL simulator link contract (shared by FC nanopb + PC python).
  *
- * Direction is noted per message.
+ * This file is now ONE DIRECTION ONLY: FC -> PC. Every inbound message has been
+ * retired, because each of them injected a decoded value past the code that was
+ * supposed to produce it:
  *
- * SensorData stands in for the parts on the board, so it carries what those
- * parts report, NOT what the FC ultimately consumes. Two things follow, and
- * devices/imu.c undoes both for hardware and sim alike:
+ *   - SensorData (accel, gyro, mag) and BaroData (Pa, degC) fed sim driver
+ *     backends directly. All three parts are emulated in Renode now
+ *     (Scripts/renode/{BMI323,MMC5983,BMP390}.cs); the bridge pushes physical
+ *     values into those models over their own sockets, and the firmware reads
+ *     them back through the real drivers over emulated SPI. That puts the
+ *     register maps, the chip selects, common/align.c and the barometer's
+ *     21-byte calibration decode and compensation polynomial on the critical
+ *     path instead of stepping over all of it.
+ *   - RcInput wrote g_Rx.channels directly, bypassing the CRSF driver. RC is
+ *     real CRSF on the RX UART now.
+ *   - GPS was never given a frame here, for the same reason: it arrives as real
+ *     NMEA on the GPS UART, so the byte assembler, minmea and Gps_Update_ all
+ *     run for real.
  *
- *   - Frame: each vector is in its own sensor's DIE frame, not the body frame.
- *     A part has no knowledge of FRD. The FC rotates by IMU_ALIGN / MAG_ALIGN
- *     (target header) to reach body FRD, which is what puts common/align.c on
- *     the SIL's critical path rather than leaving it untested in the loop.
- *   - Sign: the accelerometer carries specific force as measured, a - g, so
- *     level & still is (0, 0, -9.81) in BODY frame - gravity points down, and
- *     down is +z in FRD. The FC's own up-positive convention (+9.81) is applied
- *     on top of that.
- *
- * Telemetry below is the other direction and is unaffected: it is estimator
- * output, already in NED.
- *
- * This block used to say vectors were body FRD, and to say (a - g) while giving
- * +9.81 - opposite signs. The formula was right; the example was the FC-side
- * convention.
- * 
- * Frame msg_id bytes: SensorData=1, ServoCmd=3, MotorCmd=4, Telemetry=5,
- * BaroData=7 (see drivers/sim_link/sim_link.h). 2 is retired - it carried
- * RcInput, which wrote g_Rx.channels directly and bypassed the receiver driver;
- * RC now reaches the FC as real CRSF frames on the RX UART. Do not reuse the id.
- *
- * GPS is deliberately absent from this file. It arrives as real NMEA on the
- * GPS UART for the same reason RC arrives as real CRSF: a frame here would
- * bypass the byte assembler, minmea and Gps_Update_ entirely.
+ * Frame msg_id bytes: ServoCmd=3, MotorCmd=4, Telemetry=5 (see
+ * drivers/sim_link/sim_link.h). 1 (SensorData), 2 (RcInput) and 7 (BaroData)
+ * are retired - do not reuse them. An older bridge on the other end of the wire
+ * would still be sending them, and they would decode as whatever took the id.
  */
-
-// PC -> FC: synthesized sensor sample.
-message SensorData {
-    repeated float accel = 1;  // m/s^2, specific force (a - g), IMU die frame
-    repeated float gyro  = 2;  // deg/s, IMU die frame
-    repeated float mag   = 3;  // normalized field, MAG die frame
-}
-
-/*
- * PC -> FC: barometer sample, on its OWN frame rather than folded into
- * SensorData. A baro is a 10-50 Hz part; riding the 400 Hz IMU frame would
- * either pace Baro_Task at 400 Hz or force an artificial decimation on the FC,
- * and it removes the very rate mismatch a nav filter has to cope with.
- */
-message BaroData {
-    float pressure_pa    = 1;  // static pressure, Pa
-    float temperature_c  = 2;  // degrees C
-}
 
 // FC -> PC: servo (tilt) command, one angle per servo.
 message ServoCmd {
@@ -67,24 +41,32 @@ message MotorCmd {
  * FC -> PC: telemetry for open-loop validation.
  *
  * The baro_* and gps_* fields are a deliberate LOOPBACK, not an estimate: the
- * FC echoes back the sensor value it decoded, so the bridge can assert that
+ * FC echoes back the sensor value it recovered, so the bridge can assert that
  * what it sent is what the firmware understood. That round trip is the whole
- * acceptance test for the sensor path - it covers the frame/UART, the driver,
- * the device and the umsg publish in one comparison, and it is exactly the
- * check that catches a parser which succeeds while discarding its result.
+ * acceptance test for the sensor path - it covers the wire, the driver, the
+ * device and the umsg publish in one comparison, and it is exactly the check
+ * that catches a parser which succeeds while discarding its result.
+ *
+ * baro_pa is no longer bit-exact against what was sent, and must not be
+ * compared as though it were. It is a physical value that went into an emulated
+ * BMP390 as a 24-bit ADC count and came back through the driver's float32
+ * compensation polynomial, so the bridge compares it within a tolerance.
+ * Measured round-trip error over -20..60 C and 50..115 kPa is 0.016 Pa, which
+ * is float32 rounding rather than quantisation - so the tolerance stays far
+ * tighter than any real decode error would be.
  *
  * The *_count fields are the pacing metric, same role as imu_count: they should
- * track frames/sentences sent 1:1, and a shortfall means samples are being
+ * track what the bridge pushed 1:1, and a shortfall means samples are being
  * dropped rather than mis-decoded.
  */
 message Telemetry {
     repeated float euler = 1;       // deg [roll, pitch, yaw] from nav
     bool   armed         = 2;
-    uint32 imu_count     = 3;       // increments per consumed IMU sample (pacing check)
+    uint32 imu_count     = 3;       // IMU samples read off the part and published (pacing check)
     bool   rc_link_up    = 4;       // CRSF frames still arriving (Rx_IsLinkUp)
 
-    float  baro_pa       = 5;       // last pressure decoded from BaroData, Pa
-    uint32 baro_count    = 6;       // BaroData frames consumed by the baro driver
+    float  baro_pa       = 5;       // last pressure the baro driver compensated, Pa
+    uint32 baro_count    = 6;       // samples consumed by the baro driver
 
     double gps_lat       = 7;       // last fix decoded from NMEA, degrees
     double gps_lon       = 8;

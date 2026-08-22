@@ -607,7 +607,9 @@ RENODE_SCRIPT = SCRIPTS_ROOT / "renode" / "flapjack_sil.resc"
 # The emulated BMI323 listens here for pushed samples. It is set in the platform
 # overlay (Scripts/renode/flapjack_h7_cm7.repl) rather than on Renode's command
 # line, so it is not a --flag here - it is quoted into the bridge hint below.
-IMU_SAMPLE_PORT = 4010
+IMU_SAMPLE_PORT  = 4010
+MAG_SAMPLE_PORT  = 4011
+BARO_SAMPLE_PORT = 4012
 
 
 def _renode_binary() -> str:
@@ -643,9 +645,11 @@ def cmd_renode(args: argparse.Namespace) -> None:
         sys.exit(1)
 
     # $bin is declared with '?=' in the .resc, so setting it first wins.
-    # usart1 carries the sim link (sensors/actuators/telemetry/logs); usart3 is
+    # usart1 carries the sim link (actuators/telemetry/logs/shell); usart3 is
     # the RX UART, so the bridge can feed real CRSF frames to Rx_Task there; and
-    # usart2 is the GPS UART, carrying real NMEA sentences to Gps_Task.
+    # usart2 is the GPS UART, carrying real NMEA sentences to Gps_Task. The three
+    # sensor sockets are not wired here - they belong to the emulated parts, and
+    # flapjack_h7_cm7.repl opens them with their `port:` properties.
     monitor_cmds = "; ".join([
         f"$bin=@{elf.resolve().as_posix()}",
         f"i @{RENODE_SCRIPT.resolve().as_posix()}",
@@ -670,11 +674,18 @@ def cmd_renode(args: argparse.Namespace) -> None:
     print(f"  rc link  : socket://localhost:{args.rc_port}")
     print(f"  gps link : socket://localhost:{args.gps_port}")
     print(f"  monitor  : localhost:{args.monitor_port}")
-    print(f"  imu      : socket://localhost:{IMU_SAMPLE_PORT}  (emulated BMI323, Scripts/renode/BMI323.cs)")
-    print(f"  bridge   : python Scripts/board.py sim --port socket://localhost:{args.port} "
-          f"--rc-port socket://localhost:{args.rc_port} "
-          f"--gps-port socket://localhost:{args.gps_port} "
-          f"--imu-port socket://localhost:{IMU_SAMPLE_PORT} --rate 400")
+    print(f"  imu      : socket://localhost:{IMU_SAMPLE_PORT}  (emulated BMI323,  Scripts/renode/BMI323.cs)")
+    print(f"  mag      : socket://localhost:{MAG_SAMPLE_PORT}  (emulated MMC5983, Scripts/renode/MMC5983.cs)")
+    print(f"  baro     : socket://localhost:{BARO_SAMPLE_PORT}  (emulated BMP390,  Scripts/renode/BMP390.cs)")
+    # bridge.py defaults every one of these six wires, so the usual invocation
+    # names none of them. Spell them out only when this run is NOT on the
+    # defaults, or the printed command would target the wrong ports.
+    if (args.port, args.rc_port, args.gps_port) == (4000, 4001, 4002):
+        print("  bridge   : python Scripts/board.py sim")
+    else:
+        print(f"  bridge   : python Scripts/board.py sim --port socket://localhost:{args.port} "
+              f"--rc-port socket://localhost:{args.rc_port} "
+              f"--gps-port socket://localhost:{args.gps_port}")
     print("  Ctrl-C to stop.\n")
     try:
         subprocess.run(cmd, cwd=PROJECT_ROOT, check=False)

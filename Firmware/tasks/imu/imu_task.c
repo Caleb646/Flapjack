@@ -14,22 +14,23 @@ static Imu_t s_imu;
 void Imu_Task (void* args) {
 
     (void)args;
-
-    /*
-     * Keep trying rather than giving up: the part does not have to be ready the
-     * first time this runs. Under Renode the sample source may not be connected
-     * yet, and on hardware the part may still be coming out of reset.
-     *
-     * 20 ms between attempts, but the attempt itself sets the cadence: a failing
-     * IMUSoftReset spends ~2.5 s in Delay() waiting on the feature engine, so
-     * retries land about every 2.7 s. Delay() blocks rather than spins once the
-     * scheduler is up, so that wait no longer costs anything but time.
-     */
-    while (STATUS_FAIL (Imu_Init (&s_imu))) {
-        vTaskDelay (pdMS_TO_TICKS (20));
+    if (STATUS_FAIL (Imu_Init (&s_imu))) {
+        LOG_ERROR ("Imu unavailable; task exiting");
+        /* Not vTaskDelete: this build uses heap_1, whose vPortFree asserts -
+         * and configASSERT spins with interrupts disabled, wedging the FC. */
+        vTaskSuspend (NULL);
+        return;
     }
 
     LOG_INFO ("Imu initialized successfully");
+    /*
+     * Running total, not a per-sample tick: a subscriber that reads slower than
+     * this task publishes still recovers the true count from whichever message
+     * it happens to see, so the pacing metric does not depend on anyone's queue
+     * being deep enough.
+     */
+    umsg_sensors_imu_status_t status = { 0 };
+
     while (true) {
         if (STATUS_OK (Imu_Update (&s_imu))) {
             umsg_sensors_imu_t msg = {
@@ -38,6 +39,9 @@ void Imu_Task (void* args) {
                 .temperature = 0.0f,
             };
             umsg_sensors_imu_publish (&msg);
+
+            status.sample_count++;
+            umsg_sensors_imu_status_publish (&status);
         }
 
         /*

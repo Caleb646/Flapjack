@@ -29,6 +29,10 @@ void SimTelemetry_Task (void* args) {
 
     (void)args;
 
+    /* Depth 1 is right here, unlike the sensor queues below: imu_status carries
+     * a running total, so the newest message is the whole answer and a missed
+     * one costs nothing. */
+    umsg_sub_handle_t imu_sub     = umsg_sensors_imu_status_subscribe (1, 1);
     umsg_sub_handle_t nav_sub     = umsg_nav_state_subscribe (1, 1);
     umsg_sub_handle_t mission_sub = umsg_mission_state_subscribe (1, 1);
     umsg_sub_handle_t baro_sub    = umsg_sensors_baro_subscribe (1, SIMTLM_SENSOR_QUEUE_DEPTH);
@@ -36,6 +40,7 @@ void SimTelemetry_Task (void* args) {
 
     // Latest-value caches: receive() consumes, so hold the last value for
     // iterations where nothing new arrived.
+    umsg_sensors_imu_status_t imuStatus = { 0 };
     umsg_nav_state_t     nav     = { 0 };
     umsg_mission_state_t mission = { 0 };
     umsg_sensors_baro_t  baro    = { 0 };
@@ -52,6 +57,7 @@ void SimTelemetry_Task (void* args) {
     uint32_t gpsCount  = 0;
 
     for (;;) {
+        umsg_sensors_imu_status_receive (imu_sub, &imuStatus, 0);
         umsg_nav_state_receive (nav_sub, &nav, 0);
         umsg_mission_state_receive (mission_sub, &mission, 0);
 
@@ -75,7 +81,7 @@ void SimTelemetry_Task (void* args) {
         SimLinkTelemetry_t tlm = {
             .eulerDeg  = { nav.euler[0], nav.euler[1], nav.euler[2] },
             .armed     = mission.armed != 0U,
-            .imuCount  = SimLink_GetSensorCount (),
+            .imuCount  = imuStatus.sample_count,
             .rcLinkUp  = Rx_IsLinkUp (),
             .baroPa    = baro.pressure,
             .baroCount = baroCount,

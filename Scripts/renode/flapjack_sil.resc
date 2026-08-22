@@ -4,7 +4,7 @@
 # Machine setup only - no `start`, no UART backend. Callers decide how to run it
 # and where the two UARTs go:
 #
-#   usart1  sim link   - sensors (IMU/mag/baro), actuators, telemetry, logs, shell
+#   usart1  sim link   - actuators, telemetry, logs, shell
 #   usart3  RX UART    - real CRSF frames from the bridge. This is the FC's only
 #                        RC input; with nothing attached it never arms.
 #   usart2  GPS UART   - real NMEA sentences from the bridge. Optional: with
@@ -17,6 +17,8 @@
 #       sysbus.usart1 CreateFileBackend @boot.log; emulation RunFor \"3\"; quit"
 #
 #   # sim link on TCP 4000 + CRSF RC on 4001 + NMEA GPS on 4002, for bridge.py
+#   # (the three sensor parts listen on 4010/4011/4012 by themselves - see the
+#   # port: properties in flapjack_h7_cm7.repl)
 #   renode --console -e "i @Scripts/renode/flapjack_sil.resc; \
 #       emulation CreateServerSocketTerminal 4000 \"simlink\" false; \
 #       connector Connect sysbus.usart1 simlink; \
@@ -32,15 +34,50 @@ $bin ?= @Build/flapjack-v1/Debug/cm7.elf
 using sysbus
 mach create "flapjack"
 
-# Compiled at load time by Renode's built-in C# compiler. Must come before
-# the platform description, which instantiates Sensors.BMI323 on spi1.
+# Compiled at load time by Renode's built-in C# compiler. Must come before the
+# platform description, which instantiates all three. Renode loads each ad-hoc
+# assembly as it compiles it, so the models can reference SamplePushListener -
+# but only if it is compiled first, hence the order here.
+include $ORIGIN/SamplePushListener.cs
 include $ORIGIN/BMI323.cs
+include $ORIGIN/MMC5983.cs
+include $ORIGIN/BMP390.cs
 
 machine LoadPlatformDescription $ORIGIN/flapjack_h7_cm7.repl
 
+# Renode's STM32H7_SPI leaves COMM and TXTFC as unimplemented tags, and
+# drivers/bus/spi.c writes both on EVERY transaction - so a one-minute run buries
+# the log under ~450k identical warnings (57 MB) and the interesting lines with
+# it. Error level here, not silence: a real bus fault still shows.
+#
+# The multiplexer keeps its own level deliberately. Its "multiple devices are
+# currently selected" warning is the one that catches a chip select left
+# asserted, which is a fault the firmware cannot report itself.
+#
+# rcc spams unhandled D1/D2/D3 prescaler reads for the reason SilResearch 2
+# explains - the model does not implement them, which is why the .repl pins the
+# peripheral frequencies by hand.
+#
+# Put any of them back with e.g. `logLevel 2 sysbus.spi1` in the monitor.
+logLevel 3 sysbus.spi1
+logLevel 3 sysbus.spi3
+logLevel 3 sysbus.spi5
+logLevel 3 sysbus.rcc
+
+# The two OnGPIO lines park the SPI5 chip selects DEASSERTED. Renode drives an
+# unconfigured GPIO output low, so without them the mux starts with both parts
+# selected and refuses every transfer with "multiple devices are currently
+# selected" - and it never recovers, because each driver only ever raises its
+# OWN NSS: the mag comes up first and is blocked by the baro's line, which
+# nothing has driven yet. On the board those pins are high-Z at reset with the
+# parts idle, which is what this reproduces. In the macro so it re-applies on
+# `machine Reset` - SPIMultiplexer.Reset() clears its input state but not its
+# selected set.
 macro reset
 """
     cpu VectorTableOffset 0x08000000
     sysbus LoadELF $bin
+    spi5.spi5Mux OnGPIO 0 true
+    spi5.spi5Mux OnGPIO 1 true
 """
 runMacro $reset

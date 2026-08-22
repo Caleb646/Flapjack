@@ -8,30 +8,22 @@
 // driver's config read-back compare passes trivially.
 //
 // Load with `include @Scripts/renode/BMI323.cs` before the platform
-// description that instantiates it.
+// description that instantiates it, and after SamplePushListener.cs.
 //
-// With `port:` set the model listens for one client (bridge.py) and takes
-// samples pushed at whatever rate the sender likes. The push is one-way and
-// never blocks the emulation thread - Transmit() only ever reads a snapshot -
-// so an SPI transaction costs the same whether the socket is busy or idle.
+// With `port:` set the model takes samples pushed by bridge.py over a socket -
+// see SamplePushListener.cs for the framing and the threading.
 //
-// Frame, 26 bytes, little endian:
+// Payload, 24 bytes, little endian:
 //
-//     0     0xAA
-//     1     0x55
-//     2-13  accel x,y,z  float32  m/s^2, specific force as the part measures
+//     0-11  accel x,y,z  float32  m/s^2, specific force as the part measures
 //                                 it (a - g), body FRD
-//     14-25 gyro  x,y,z  float32  deg/s, body FRD
+//     12-23 gyro  x,y,z  float32  deg/s, body FRD
 //
-// Same units and frame as the sim link's SensorData, so the bridge has nothing
-// new to compute - the difference is that these go through the real register
-// path in bmi323.c instead of past it.
+// The same die-frame physical values the retired SensorData frame used to
+// carry, so the bridge has nothing new to compute - the difference is that
+// these go through the real register path in bmi323.c instead of past it.
 //
 using System;
-using System.IO;
-using System.Net;
-using System.Net.Sockets;
-using System.Threading;
 using Antmicro.Renode.Core;
 using Antmicro.Renode.Logging;
 using Antmicro.Renode.Peripherals.SPI;
@@ -40,55 +32,18 @@ namespace Antmicro.Renode.Peripherals.Sensors
 {
     public class BMI323 : ISPIPeripheral, IGPIOReceiver, IDisposable
     {
-        private sealed class Sample
-        {
-            public Sample(short[] words, long sequence)
-            {
-                Words = words;
-                Sequence = sequence;
-            }
-
-            public readonly short[] Words;
-            public readonly long Sequence;
-        }
-
         // port 0 leaves the socket off: the register file is then whatever the
         // firmware last wrote, which is all a boot smoke test needs.
         public BMI323(int port = 0)
         {
             registers = new ushort[RegisterCount];
             Reset();
-
-            if(port == 0)
-            {
-                return;
-            }
-
-            try
-            {
-                listener = new TcpListener(IPAddress.Loopback, port);
-                listener.Start();
-            }
-            catch(SocketException e)
-            {
-                // A stale Renode still holding the port must not stop the
-                // machine from being created - without a source the model is
-                // still a working register file.
-                listener = null;
-                this.Log(LogLevel.Warning, "Could not listen on port {0}: {1}", port, e.Message);
-                return;
-            }
-
-            receiver = new Thread(ReceiveLoop) { IsBackground = true, Name = "bmi323-rx" };
-            receiver.Start();
-            this.Log(LogLevel.Info, "Listening for sample pushes on port {0}", port);
+            source = new SamplePushListener(this, port, PayloadLength);
         }
 
         public void Dispose()
         {
-            disposed = true;
-            listener?.Stop();
-            client?.Close();
+            source.Dispose();
         }
 
         public void Reset()
@@ -116,8 +71,11 @@ namespace Antmicro.Renode.Peripherals.Sensors
             if(selected)
             {
                 // One snapshot per transaction, so a burst read can never mix
-                // accel from one sample with gyro from the next.
-                activeSample = Volatile.Read(ref latestSample);
+                // accel from one sample with gyro from the next. Scaling happens
+                // here rather than on the receive thread because it reads the
+                // range registers, which only the emulation thread may write.
+                activeSample = source.Latest;
+                activeWords = (activeSample == null) ? null : Scale(activeSample.Payload);
                 expectAddress = true;
                 Transactions++;
             }
@@ -232,7 +190,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
                 // data rather than serving zeros: a -D sim build now depends on
                 // this path, and a zero gravity vector would reach the attitude
                 // filter as NaN instead of as "the bridge is not connected".
-                if(listener != null && register == StatusRegister)
+                if(source.Active && register == StatusRegister)
                 {
                     return 0;
                 }
@@ -252,7 +210,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
                 // bmi323.c reads STATUS once and then whichever blocks it named,
                 // so consuming on the first data register of the pass is enough.
                 consumedSequence = sample.Sequence;
-                return (ushort)sample.Words[register - AccDataXRegister];
+                return (ushort)activeWords[register - AccDataXRegister];
             }
 
             return registers[register];
@@ -296,72 +254,6 @@ namespace Antmicro.Renode.Peripherals.Sensors
             registers[StatusRegister] = DataReadyBits;
         }
 
-        private void ReceiveLoop()
-        {
-            var frame = new byte[FrameLength];
-            while(!disposed)
-            {
-                try
-                {
-                    client = listener.AcceptTcpClient();
-                    client.NoDelay = true;
-                    this.Log(LogLevel.Info, "Sample source connected");
-
-                    var stream = client.GetStream();
-                    while(!disposed)
-                    {
-                        SyncToFrameStart(stream);
-                        ReadExactly(stream, frame, 0, PayloadLength);
-                        Volatile.Write(ref latestSample, new Sample(Scale(frame), ++pushed));
-                    }
-                }
-                catch(Exception e) when(e is IOException || e is SocketException || e is ObjectDisposedException)
-                {
-                    if(!disposed)
-                    {
-                        this.Log(LogLevel.Info, "Sample source disconnected: {0}", e.Message);
-                    }
-                }
-                finally
-                {
-                    client?.Close();
-                    client = null;
-                    // Stop serving a sample nobody is refreshing any more; reads
-                    // fall back to the register file rather than freezing on the
-                    // last one the bridge happened to send.
-                    Volatile.Write(ref latestSample, null);
-                }
-            }
-        }
-
-        private static void SyncToFrameStart(Stream stream)
-        {
-            var state = 0;
-            while(state < 2)
-            {
-                var b = stream.ReadByte();
-                if(b < 0)
-                {
-                    throw new IOException("Stream closed while looking for a frame header");
-                }
-                state = (b == FrameMagic0) ? 1 : ((state == 1 && b == FrameMagic1) ? 2 : 0);
-            }
-        }
-
-        private static void ReadExactly(Stream stream, byte[] buffer, int offset, int count)
-        {
-            while(count > 0)
-            {
-                var read = stream.Read(buffer, offset, count);
-                if(read <= 0)
-                {
-                    throw new IOException("Stream closed mid-frame");
-                }
-                offset += read;
-                count -= read;
-            }
-        }
-
         // SI in, LSB counts out, using the ranges the firmware actually
         // programmed - so a range change in bmi323.c really does change what
         // the part reports, instead of being a write nobody reads back.
@@ -391,14 +283,9 @@ namespace Antmicro.Renode.Peripherals.Sensors
             return (short)Math.Max(short.MinValue, Math.Min(short.MaxValue, counts));
         }
 
-        private volatile bool disposed;
-        private TcpListener listener;
-        private TcpClient client;
-        private Thread receiver;
-        private long pushed;
         private long consumedSequence;
-        private Sample latestSample;
-        private Sample activeSample;
+        private PushedSample activeSample;
+        private short[] activeWords;
 
         private bool selected;
         private bool expectAddress;
@@ -409,6 +296,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private byte pendingLowByte;
 
         private readonly ushort[] registers;
+        private readonly SamplePushListener source;
 
         private const int RegisterCount = 0x80;
         private const byte AddressMask = 0x7F;
@@ -422,9 +310,6 @@ namespace Antmicro.Renode.Peripherals.Sensors
 
         private const int SampleWords = 6;
         private const int PayloadLength = SampleWords * 4;
-        private const int FrameLength = PayloadLength;
-        private const byte FrameMagic0 = 0xAA;
-        private const byte FrameMagic1 = 0x55;
         private const float StandardGravity = 9.81f;
 
         // ACC_CONF and GYR_CONF both carry the range in bits 6:4.

@@ -55,8 +55,8 @@ spi5: SPI.STM32H7_SPI @ sysbus 0x40015000
 // Scripts/renode/BMI323.cs, which flapjack_sil.resc includes before this file.
 //
 // STM32H7_SPI is a NullRegistrationPointPeripheralContainer, so it takes
-// exactly one child - fine here, SPI1 has only the IMU. SPI5 carries two
-// devices and will need an SPI.SPIMultiplexer when mag and baro land.
+// exactly one child - fine here, SPI1 has only the IMU. SPI5 carries two, and
+// hangs them off an SPI.SPIMultiplexer below.
 
 bmi323: Sensors.BMI323 @ spi1
     port: 4010
@@ -65,3 +65,41 @@ bmi323: Sensors.BMI323 @ spi1
 // select; the driver drives it with HAL_GPIO_WritePin (SPI_NSS_SOFT).
 gpioPortC:
     4 -> syscfg#2@4 | bmi323@0
+
+// --- Mag + baro -------------------------------------------------------------
+// MMC5983MA and BMP390 share SPI5 on separate chip selects (mag PF4, baro PF6 -
+// MAG_/BARO_SPI_NSS_GPIO_* in target/flapjack_v1/flapjack_v1.h). STM32H7_SPI
+// holds exactly one child, so the mux is what turns two CS lines into a device
+// select. Its registration address is the GPIO index it answers to.
+//
+// The mux also solves for these two the framing problem BMI323.cs has to solve
+// for itself. It is constructed with suppressExplicitFinishTransmission, so the
+// FinishTransmission STM32H7_SPI raises at the end of every TSIZE burst - i.e.
+// between a register address and its data, since drivers/bus/spi.c puts both
+// inside one CS assertion - is swallowed, and the child sees exactly one, on CS
+// release. So those two models delimit transactions on FinishTransmission and
+// take no chip-select GPIO of their own.
+//
+// Compiled at load time from Scripts/renode/MMC5983.cs and BMP390.cs, which
+// flapjack_sil.resc includes before this file.
+
+spi5Mux: SPI.SPIMultiplexer @ spi5
+    init:
+        SetActiveLow 0
+        SetActiveLow 1
+
+mmc5983: Sensors.MMC5983 @ spi5Mux 0x0
+    port: 4011
+
+bmp390: Sensors.BMP390 @ spi5Mux 0x1
+    port: 4012
+
+// PF4 and PF6 are plain GPIO chip selects on this board, driven by hand
+// (SPI_NSS_SOFT). Overriding pin 6 drops the upstream `6 -> timer16@00` AF
+// mapping from stm32h7.repl, which is deliberate: nothing here uses TIM16_CH1
+// input capture, and timer16 is the HAL timebase, so a chip select toggling
+// into it is noise the timebase does not need. syscfg keeps the EXTI path, as
+// for the IMU's PC4 above.
+gpioPortF:
+    4 -> syscfg#5@4 | spi5Mux@0
+    6 -> syscfg#5@6 | spi5Mux@1

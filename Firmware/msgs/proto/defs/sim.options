@@ -1,8 +1,5 @@
 # nanopb field options: fixed-capacity arrays so structs are static (no heap).
 # 3-vectors are always exactly 3 elements (no count field).
-SensorData.accel    max_count:3  fixed_count:true
-SensorData.gyro     max_count:3  fixed_count:true
-SensorData.mag      max_count:3  fixed_count:true
 Telemetry.euler     max_count:3  fixed_count:true
 Telemetry.nav_pos_ned max_count:3  fixed_count:true
 Telemetry.nav_vel_ned max_count:3  fixed_count:true

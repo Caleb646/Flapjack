@@ -6,12 +6,6 @@
 #error Regenerate this file with the current version of nanopb generator.
 #endif
 
-PB_BIND(SensorData, SensorData, AUTO)
-
-
-PB_BIND(BaroData, BaroData, AUTO)
-
-
 PB_BIND(ServoCmd, ServoCmd, AUTO)
 
 

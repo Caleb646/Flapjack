@@ -17,6 +17,11 @@ typedef struct
 
 typedef struct
 {
+    uint32_t sample_count;
+} umsg_sensors_imu_status_t;
+
+typedef struct
+{
     float field[3];
 } umsg_sensors_mag_t;
 
@@ -43,6 +48,12 @@ umsg_sub_handle_t umsg_sensors_imu_subscribe_ch(uint32_t prescaler, uint8_t leng
 void umsg_sensors_imu_publish(umsg_sensors_imu_t* data);
 void umsg_sensors_imu_publish_ch(umsg_sensors_imu_t* data, uint8_t channel);
 uint8_t umsg_sensors_imu_receive(umsg_sub_handle_t queue, umsg_sensors_imu_t* data, uint32_t timeout);
+
+umsg_sub_handle_t umsg_sensors_imu_status_subscribe(uint32_t prescaler, uint8_t length);
+umsg_sub_handle_t umsg_sensors_imu_status_subscribe_ch(uint32_t prescaler, uint8_t length, uint8_t channel);
+void umsg_sensors_imu_status_publish(umsg_sensors_imu_status_t* data);
+void umsg_sensors_imu_status_publish_ch(umsg_sensors_imu_status_t* data, uint8_t channel);
+uint8_t umsg_sensors_imu_status_receive(umsg_sub_handle_t queue, umsg_sensors_imu_status_t* data, uint32_t timeout);
 
 umsg_sub_handle_t umsg_sensors_mag_subscribe(uint32_t prescaler, uint8_t length);
 umsg_sub_handle_t umsg_sensors_mag_subscribe_ch(uint32_t prescaler, uint8_t length, uint8_t channel);

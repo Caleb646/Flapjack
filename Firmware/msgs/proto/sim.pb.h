@@ -10,22 +10,6 @@
 #endif
 
 /* Struct definitions */
-/* PC -> FC: synthesized sensor sample. */
-typedef struct _SensorData {
-    float accel[3]; /* m/s^2, specific force (a - g), IMU die frame */
-    float gyro[3]; /* deg/s, IMU die frame */
-    float mag[3]; /* normalized field, MAG die frame */
-} SensorData;
-
-/* PC -> FC: barometer sample, on its OWN frame rather than folded into
- SensorData. A baro is a 10-50 Hz part; riding the 400 Hz IMU frame would
- either pace Baro_Task at 400 Hz or force an artificial decimation on the FC,
- and it removes the very rate mismatch a nav filter has to cope with. */
-typedef struct _BaroData {
-    float pressure_pa; /* static pressure, Pa */
-    float temperature_c; /* degrees C */
-} BaroData;
-
 /* FC -> PC: servo (tilt) command, one angle per servo. */
 typedef struct _ServoCmd {
     pb_size_t angle_count;
@@ -41,22 +25,30 @@ typedef struct _MotorCmd {
 /* FC -> PC: telemetry for open-loop validation.
 
  The baro_* and gps_* fields are a deliberate LOOPBACK, not an estimate: the
- FC echoes back the sensor value it decoded, so the bridge can assert that
+ FC echoes back the sensor value it recovered, so the bridge can assert that
  what it sent is what the firmware understood. That round trip is the whole
- acceptance test for the sensor path - it covers the frame/UART, the driver,
- the device and the umsg publish in one comparison, and it is exactly the
- check that catches a parser which succeeds while discarding its result.
+ acceptance test for the sensor path - it covers the wire, the driver, the
+ device and the umsg publish in one comparison, and it is exactly the check
+ that catches a parser which succeeds while discarding its result.
+
+ baro_pa is no longer bit-exact against what was sent, and must not be
+ compared as though it were. It is a physical value that went into an emulated
+ BMP390 as a 24-bit ADC count and came back through the driver's float32
+ compensation polynomial, so the bridge compares it within a tolerance.
+ Measured round-trip error over -20..60 C and 50..115 kPa is 0.016 Pa, which
+ is float32 rounding rather than quantisation - so the tolerance stays far
+ tighter than any real decode error would be.
 
  The *_count fields are the pacing metric, same role as imu_count: they should
- track frames/sentences sent 1:1, and a shortfall means samples are being
+ track what the bridge pushed 1:1, and a shortfall means samples are being
  dropped rather than mis-decoded. */
 typedef struct _Telemetry {
     float euler[3]; /* deg [roll, pitch, yaw] from nav */
     bool armed;
-    uint32_t imu_count; /* increments per consumed IMU sample (pacing check) */
+    uint32_t imu_count; /* IMU samples read off the part and published (pacing check) */
     bool rc_link_up; /* CRSF frames still arriving (Rx_IsLinkUp) */
-    float baro_pa; /* last pressure decoded from BaroData, Pa */
-    uint32_t baro_count; /* BaroData frames consumed by the baro driver */
+    float baro_pa; /* last pressure the baro driver compensated, Pa */
+    uint32_t baro_count; /* samples consumed by the baro driver */
     double gps_lat; /* last fix decoded from NMEA, degrees */
     double gps_lon;
     float gps_alt; /* metres MSL */
@@ -87,23 +79,14 @@ extern "C" {
 #endif
 
 /* Initializer values for message structs */
-#define SensorData_init_default                  {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}}
-#define BaroData_init_default                    {0, 0}
 #define ServoCmd_init_default                    {0, {0, 0, 0, 0, 0, 0, 0, 0}}
 #define MotorCmd_init_default                    {0, {0, 0, 0, 0, 0, 0, 0, 0}}
 #define Telemetry_init_default                   {{0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, {0, 0, 0}, {0, 0, 0}, 0}
-#define SensorData_init_zero                     {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}}
-#define BaroData_init_zero                       {0, 0}
 #define ServoCmd_init_zero                       {0, {0, 0, 0, 0, 0, 0, 0, 0}}
 #define MotorCmd_init_zero                       {0, {0, 0, 0, 0, 0, 0, 0, 0}}
 #define Telemetry_init_zero                      {{0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, {0, 0, 0}, {0, 0, 0}, 0}
 
 /* Field tags (for use in manual encoding/decoding) */
-#define SensorData_accel_tag                     1
-#define SensorData_gyro_tag                      2
-#define SensorData_mag_tag                       3
-#define BaroData_pressure_pa_tag                 1
-#define BaroData_temperature_c_tag               2
 #define ServoCmd_angle_tag                       1
 #define MotorCmd_throttle_tag                    1
 #define Telemetry_euler_tag                      1
@@ -122,19 +105,6 @@ extern "C" {
 #define Telemetry_nav_valid_tag                  14
 
 /* Struct field encoding specification for nanopb */
-#define SensorData_FIELDLIST(X, a) \
-X(a, STATIC,   FIXARRAY, FLOAT,    accel,             1) \
-X(a, STATIC,   FIXARRAY, FLOAT,    gyro,              2) \
-X(a, STATIC,   FIXARRAY, FLOAT,    mag,               3)
-#define SensorData_CALLBACK NULL
-#define SensorData_DEFAULT NULL
-
-#define BaroData_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, FLOAT,    pressure_pa,       1) \
-X(a, STATIC,   SINGULAR, FLOAT,    temperature_c,     2)
-#define BaroData_CALLBACK NULL
-#define BaroData_DEFAULT NULL
-
 #define ServoCmd_FIELDLIST(X, a) \
 X(a, STATIC,   REPEATED, FLOAT,    angle,             1)
 #define ServoCmd_CALLBACK NULL
@@ -163,24 +133,18 @@ X(a, STATIC,   SINGULAR, UINT32,   nav_valid,        14)
 #define Telemetry_CALLBACK NULL
 #define Telemetry_DEFAULT NULL
 
-extern const pb_msgdesc_t SensorData_msg;
-extern const pb_msgdesc_t BaroData_msg;
 extern const pb_msgdesc_t ServoCmd_msg;
 extern const pb_msgdesc_t MotorCmd_msg;
 extern const pb_msgdesc_t Telemetry_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
-#define SensorData_fields &SensorData_msg
-#define BaroData_fields &BaroData_msg
 #define ServoCmd_fields &ServoCmd_msg
 #define MotorCmd_fields &MotorCmd_msg
 #define Telemetry_fields &Telemetry_msg
 
 /* Maximum encoded size of messages (where known) */
-#define BaroData_size                            10
 #define MotorCmd_size                            40
 #define SIM_PB_H_MAX_SIZE                        Telemetry_size
-#define SensorData_size                          45
 #define ServoCmd_size                            40
 #define Telemetry_size                           107
 

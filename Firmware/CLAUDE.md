@@ -29,7 +29,7 @@ the device and driver layers it uses sit in `devices/` and `drivers/`.
 |---|---|---|---|---|---|---|
 | **Sensor: IMU** | `tasks/imu/imu_task.c` (device `devices/imu.c`) | `Imu_Init()` | `Imu_Update()` | hardware (sim link / ISR) | - | `umsg_sensors_imu_t` |
 | **Sensor: Mag** | `tasks/mag/mag_task.c` (device `devices/mag.c`) | `Mag_Init()` | `Mag_Update()` | hardware | - | `umsg_sensors_mag_t` |
-| **Sensor: Baro** | `tasks/baro/baro_task.c` (device `devices/baro.c`) | `Baro_Init()` | `Baro_Update()` | hardware (sim link `BaroData`) | - | `umsg_sensors_baro_t` |
+| **Sensor: Baro** | `tasks/baro/baro_task.c` (device `devices/baro.c`) | `Baro_Init()` | `Baro_Update()` | hardware (emulated BMP390 under the SIL) | - | `umsg_sensors_baro_t` |
 | **Sensor: GPS** | `tasks/gps/gps_task.c` (device `devices/gps.c`) | `Gps_Init()` | `Gps_Update()` | nothing - 100 Hz `vTaskDelay` | - | `umsg_sensors_gps_t` |
 | **Sensor: RC** | `tasks/rc/rc.c` (driver `drivers/rx/rx.c` + `crsf.c`) | `Rc_Init()` | `Rc_Update()` | nothing - 50 Hz `vTaskDelay` | - | `umsg_rc_input_t` |
 | **Navigation** | `tasks/nav/nav.c` | `Nav_Init()` | `Nav_Update()` | `umsg_sensors_imu_t` | `umsg_sensors_mag_t`, `umsg_sensors_baro_t`, `umsg_sensors_gps_t` | `umsg_nav_state_t` |

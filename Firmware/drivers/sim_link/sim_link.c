@@ -6,108 +6,19 @@
 
 #include "drivers/serial/serial_link.h"
 
-#include "FreeRTOS.h"
-#include "task.h"
-#include "semphr.h"
-
 #include "sim.pb.h"
 #include "pb_encode.h"
-#include "pb_decode.h"
 
 #include <string.h>
 
 #define SIM_MAX_PAYLOAD SERIAL_LINK_MAX_PAYLOAD
 
-typedef struct {
-    float accel[3];
-    float gyro[3];
-    float mag[3];
-} SensorSlot_t;
-
-static SemaphoreHandle_t s_magSem;      // given on each fresh SensorData (mag consumer)
-static SemaphoreHandle_t s_baroSem;     // given on each fresh BaroData (its own frame, own rate)
-
-static SensorSlot_t s_sensor;           // latest sample (critical-section guarded)
-static volatile bool s_haveSensor;
-static volatile uint32_t s_sensorCount;
-
-static float s_baroPa;                  // latest BaroData (critical-section guarded)
-static float s_baroTempC;
-
-/* --- frame handlers (called from the SerialLink RX task) ------------------- */
-
-static void SimLink_OnSensor (uint8_t const* pPayload, uint8_t len) {
-    SensorData msg = SensorData_init_zero;
-    pb_istream_t is = pb_istream_from_buffer (pPayload, len);
-    if (!pb_decode (&is, SensorData_fields, &msg)) {
-        return;
-    }
-    taskENTER_CRITICAL ();
-    memcpy (s_sensor.accel, msg.accel, sizeof (s_sensor.accel));
-    memcpy (s_sensor.gyro, msg.gyro, sizeof (s_sensor.gyro));
-    memcpy (s_sensor.mag, msg.mag, sizeof (s_sensor.mag));
-    s_haveSensor = true;
-    s_sensorCount++;
-    taskEXIT_CRITICAL ();
-    (void)xSemaphoreGive (s_magSem);
-}
-
-static void SimLink_OnBaro (uint8_t const* pPayload, uint8_t len) {
-    BaroData msg = BaroData_init_zero;
-    pb_istream_t is = pb_istream_from_buffer (pPayload, len);
-    if (!pb_decode (&is, BaroData_fields, &msg)) {
-        return;
-    }
-    taskENTER_CRITICAL ();
-    s_baroPa    = msg.pressure_pa;
-    s_baroTempC = msg.temperature_c;
-    taskEXIT_CRITICAL ();
-    (void)xSemaphoreGive (s_baroSem);
-}
-
 eSTATUS_t SimLink_Init (void) {
 
-    s_magSem  = xSemaphoreCreateBinary ();
-    s_baroSem = xSemaphoreCreateBinary ();
-    if (!s_magSem || !s_baroSem) {
-        return eSTATUS_FAILURE;
-    }
-
-    /* FC->PC ids (3-5) are never expected inbound, so they get no handler. */
-    if (STATUS_FAIL (SerialLink_RegisterHandler (SIM_MSG_SENSOR, SimLink_OnSensor))) {
-        return eSTATUS_FAILURE;
-    }
-    if (STATUS_FAIL (SerialLink_RegisterHandler (SIM_MSG_BARO, SimLink_OnBaro))) {
-        return eSTATUS_FAILURE;
-    }
+    /* Nothing to register: every PC->FC frame is retired, and the FC->PC ids
+     * (3-5) are never expected inbound. Kept as the module's entry point
+     * because main.c calls it under SIM_HIL and a frame may come back. */
     return eSTATUS_SUCCESS;
-}
-
-/* --- sensor consumer API --------------------------------------------------- */
-
-bool SimLink_WaitMag (float mag[3], uint32_t timeoutTicks) {
-    if (xSemaphoreTake (s_magSem, timeoutTicks) != pdTRUE) {
-        return false;
-    }
-    taskENTER_CRITICAL ();
-    memcpy (mag, s_sensor.mag, sizeof (s_sensor.mag));
-    taskEXIT_CRITICAL ();
-    return true;
-}
-
-bool SimLink_WaitBaro (float* pPressurePa, float* pTemperatureC, uint32_t timeoutTicks) {
-    if (xSemaphoreTake (s_baroSem, timeoutTicks) != pdTRUE) {
-        return false;
-    }
-    taskENTER_CRITICAL ();
-    *pPressurePa   = s_baroPa;
-    *pTemperatureC = s_baroTempC;
-    taskEXIT_CRITICAL ();
-    return true;
-}
-
-uint32_t SimLink_GetSensorCount (void) {
-    return s_sensorCount;
 }
 
 /* --- TX helpers ------------------------------------------------------------ */

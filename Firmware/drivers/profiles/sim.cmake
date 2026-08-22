@@ -1,11 +1,12 @@
-# Simulation (HIL) loadout: sensors and actuators are exchanged with the JSBSim
-# bridge over the sim link instead of touching real hardware.
+# Simulation (HIL) loadout: the actuators are exchanged with the JSBSim bridge
+# over the sim link instead of driving real hardware.
 #
-# The IMU is the exception - it stays on the real bmi323 driver. Under Renode
-# the part itself is emulated (Scripts/renode/BMI323.cs) and the bridge pushes
-# samples into that model, so a SIL run exercises the register map, the SPI
-# framing and the chip-select timing instead of stepping over them. There is no
-# sim IMU backend any more.
+# The SENSORS are not. All three run their real drivers: under Renode the parts
+# themselves are emulated (Scripts/renode/{BMI323,MMC5983,BMP390}.cs) and the
+# bridge pushes samples into those models, so a SIL run exercises the register
+# maps, the SPI framing, the chip-select timing and - for the baro - the
+# calibration decode and compensation polynomial, instead of stepping over all
+# of it. There are no sim sensor backends any more.
 #
 # The remaining sim backends call into drivers/sim_link. That module always compiles;
 # SIM_HIL (added below) only gates its activation in main.c - starting the RX
@@ -14,8 +15,8 @@
 # RC is injected over the same link: sim_link writes g_Rx.channels directly, so
 # rx stays on the (unused-in-sim) CRSF driver and needs no backend swap.
 select_driver(imu   bmi323)
-select_driver(mag   sim)
-select_driver(baro  sim)
+select_driver(mag   mmc5983)
+select_driver(baro  bmp390)
 select_driver(servo sim)
 select_driver(motor sim)
 

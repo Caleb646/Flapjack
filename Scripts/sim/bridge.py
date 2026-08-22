@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """JSBSim <-> Flapjack HIL bridge.
 
-Streams synthesized IMU+mag to the flight controller over the (binary) debug
-UART, plays a pilot's arm-and-hover stick sequence as real CRSF frames on the
-FC's separate RX UART, and applies the servo/motor commands the FC sends back to
-a JSBSim tilt-rotor model.
+Pushes synthesized IMU, magnetometer and barometer samples into the emulated
+parts on their own sockets, plays a pilot's arm-and-hover stick sequence as real
+CRSF frames on the FC's separate RX UART, feeds real NMEA to its GPS UART, and
+applies the servo/motor commands the FC sends back to a JSBSim tilt-rotor model.
+
+No sensor value is handed to the firmware pre-decoded any more: the debug UART
+carries only the FC's own output (actuators, telemetry, logs, shell).
 
 Timing is free-running real-time: sensors are streamed at a fixed rate and the
 FDM is stepped to wall-clock; the FC consumes the latest sample and replies
@@ -41,13 +44,60 @@ from sim import nmea
 from sim import plan as planlib
 
 # --- frame ids (keep in sync with sim_link.h / serial_link.h) ----------------
-MSG_SENSOR = 1
-# 2 is retired (was RcInput). RC reaches the FC as real CRSF on its own wire.
+# 1 (SensorData), 2 (RcInput) and 7 (BaroData) are retired and must not be
+# reused: every sensor now reaches the FC on a wire it has to parse or a part it
+# has to read. The sim link carries only what the FC sends back, plus the shell.
 MSG_SERVO = 3
 MSG_MOTOR = 4
 MSG_TELEMETRY = 5
 MSG_SHELL_CMD = 6
-MSG_BARO = 7
+
+# --- SIL port map ------------------------------------------------------------
+# The SIL wiring never varies, so it is the default rather than six flags on
+# every invocation. `board.py renode` puts USART1/3/2 on 4000/4001/4002, and the
+# three emulated parts open 4010/4011/4012 themselves from the `port:` properties
+# in Scripts/renode/flapjack_h7_cm7.repl. Keep this block in step with that file.
+SIL_HOST = "localhost"
+SIL_LINK_PORT = 4000
+SIL_RC_PORT = 4001
+SIL_GPS_PORT = 4002
+SIL_IMU_PORT = 4010
+SIL_MAG_PORT = 4011
+SIL_BARO_PORT = 4012
+
+# Spellings that turn a defaulted wire back OFF, so "run without GPS" and "run
+# without RC" stay reachable - they are real test cases (a receiver that never
+# appears, a board with no fix), and defaulting them on would have quietly
+# removed them.
+PORT_OFF = {"none", "off", "no", "false", "-", ""}
+
+
+def sil_url(port: int) -> str:
+    return f"socket://{SIL_HOST}:{port}"
+
+
+def resolve_ports(args):
+    """Fill in the SIL sockets for every wire the caller did not name.
+
+    Only when the FC's own link is a socket, i.e. when this is a SIL run. Against
+    a real board the companion wires are separate physical ports that nobody can
+    guess, so they stay off unless named - which is also what keeps an existing
+    hardware command line behaving exactly as it did.
+    """
+    if args.port is None:
+        args.port = sil_url(SIL_LINK_PORT)
+    is_sil = args.port.startswith("socket://")
+
+    for attr, port in (("rc_port", SIL_RC_PORT), ("gps_port", SIL_GPS_PORT),
+                       ("imu_port", SIL_IMU_PORT), ("mag_port", SIL_MAG_PORT),
+                       ("baro_port", SIL_BARO_PORT)):
+        value = getattr(args, attr)
+        if value is not None and value.strip().lower() in PORT_OFF:
+            setattr(args, attr, None)
+        elif value is None and is_sil:
+            setattr(args, attr, sil_url(port))
+    return args
+
 
 # --- RC channel layout (matches drivers/rx/rx.h) -----------------------------
 RC_MIN, RC_MID, RC_MAX = 1000, 1500, 2000
@@ -268,9 +318,24 @@ ATTITUDE_SETTLE_PKPK_DEG = 3.0
 # the gear and far below any hover this sim reaches.
 ATTITUDE_AIRBORNE_FT = 1.5
 
-# Reference Earth field in NED (unit), ~60 deg inclination, 0 declination.
+# Loopback tolerance for the baro round trip, in Pa. The chain is bridge float32
+# -> emulated BMP390 inverse compensation -> 24-bit ADC counts -> bmp390.c's
+# float32 compensation, whose worst error over -20..60 C and 50..115 kPa
+# measures 0.016 Pa. This is ~30x that, and still three orders of magnitude
+# below what any real decode fault would cost.
+BARO_PA_EPS = 0.5
+
+# Reference Earth field in NED, ~60 deg inclination, 0 declination, in GAUSS.
+# A magnitude rather than a unit vector because the field now goes into an
+# emulated MMC5983 with a real +/-8 G full scale: a unit vector would assert
+# that Earth saturates the part, and mmc5983.c's normalise-to-full-scale would
+# hand the estimator a vector 16x too long. 0.50 G (50 uT) is a representative
+# mid-latitude total field. Nothing downstream depends on the magnitude -
+# MadgwickFilter_Update_9DOF_ renormalises - but the SCALE is now a real,
+# testable property of the path rather than an assumption.
 _INCL = math.radians(60.0)
-B_NED = (math.cos(_INCL), 0.0, math.sin(_INCL))
+_B_GAUSS = 0.50
+B_NED = tuple(_B_GAUSS * c for c in (math.cos(_INCL), 0.0, math.sin(_INCL)))
 
 
 def dcm_body_from_ned(phi, theta, psi):
@@ -285,7 +350,7 @@ def dcm_body_from_ned(phi, theta, psi):
 
 
 def synthesize_sensors(phi, theta, psi, p, q, r, udot, vdot, wdot):
-    """Return (accel[3] m/s^2, gyro[3] deg/s, mag[3] unit) in each part's DIE frame.
+    """Return (accel[3] m/s^2, gyro[3] deg/s, mag[3] gauss) in each part's DIE frame.
 
     Two conversions separate what a part reports from what the FC wants, and
     both are undone in Firmware/devices/imu.c:
@@ -309,8 +374,6 @@ def synthesize_sensors(phi, theta, psi, p, q, r, udot, vdot, wdot):
     accel = [a_lin[k] - g_body[k] for k in range(3)]
     gyro = [p * RAD2DEG, q * RAD2DEG, r * RAD2DEG]
     mag = [sum(R[k][j] * B_NED[j] for j in range(3)) for k in range(3)]
-    norm = math.sqrt(sum(c * c for c in mag)) or 1.0
-    mag = [c / norm for c in mag]
     # Body -> die. Last step, so everything above stays readable as body frame.
     return (_apply(_IMU_BODY_TO_DIE, accel),
             _apply(_IMU_BODY_TO_DIE, gyro),
@@ -327,29 +390,34 @@ def as_f32(x: float) -> float:
     return struct.unpack("f", struct.pack("f", x))[0]
 
 
-def make_sensor_frame(accel, gyro, mag) -> bytes:
-    msg = sim_pb2.SensorData(accel=accel, gyro=gyro, mag=mag)
-    return frame(MSG_SENSOR, msg.SerializeToString())
+# --- sensor pushes ----------------------------------------------------------
+# None of these are sim-link frames. They go to the Renode peripheral models
+# (Scripts/renode/*.cs), not to the FC, and the FC reads the values back over
+# emulated SPI through its real drivers. Each is 0xAA 0x55 then a little-endian
+# float32 payload; SamplePushListener.cs resynchronises on the header, so a
+# bridge that starts mid-stream is fine.
+#
+# The values are the same die-frame physical quantities the sim link used to
+# carry - devices/imu.c and devices/mag.c undo the die rotation exactly as they
+# do on hardware - so there is nothing extra to compute here.
 
 
 def make_imu_push(accel, gyro) -> bytes:
-    """Pack one sample for the emulated BMI323 (Scripts/renode/BMI323.cs).
-
-    Not a sim-link frame: this goes to the Renode peripheral model, not to the
-    FC, and the FC then reads it back over emulated SPI through the real bmi323
-    driver. Same die-frame values SensorData carries - devices/imu.c undoes the
-    die rotation identically on both paths - so there is nothing extra to
-    compute here.
-
-    26 bytes: 0xAA 0x55, then accel xyz (float32 m/s^2) and gyro xyz (float32
-    deg/s), little endian.
-    """
+    """accel xyz (m/s^2, specific force) then gyro xyz (deg/s), IMU die frame."""
     return struct.pack("<BB6f", 0xAA, 0x55, *accel, *gyro)
 
 
-def make_baro_frame(pressure_pa, temperature_c) -> bytes:
-    msg = sim_pb2.BaroData(pressure_pa=pressure_pa, temperature_c=temperature_c)
-    return frame(MSG_BARO, msg.SerializeToString())
+def make_mag_push(mag) -> bytes:
+    """Field xyz in GAUSS, MAG die frame. The model scales to the part's
+    +/-8 G full scale and packs the 18-bit unsigned counts."""
+    return struct.pack("<BB3f", 0xAA, 0x55, *mag)
+
+
+def make_baro_push(pressure_pa, temperature_c) -> bytes:
+    """Static pressure (Pa) and temperature (degC). The model inverts the
+    BMP390 compensation polynomial to find the raw counts bmp390.c will turn
+    back into these."""
+    return struct.pack("<BB2f", 0xAA, 0x55, pressure_pa, temperature_c)
 
 
 def make_gui_packet(sim_t, euler_rad, truth_alt_m, telemetry, servo_rad, motor,
@@ -470,11 +538,14 @@ class _Checks:
         self.att_window = collections.deque()
 
         # --- sensor loopback (see sim.proto's Telemetry comment) -------------
-        # Recent values as actually put on the wire, i.e. rounded to float32 by
-        # protobuf. The FC echoes what it decoded, and both directions are IEEE
-        # 754 binary32, so a correct chain reproduces one of these BIT-EXACTLY -
-        # no tolerance required, and any mangling (wrong field, lost precision,
-        # stale slot, discarded parse) shows up as a miss.
+        # Recent pressures as actually pushed, rounded to float32.
+        #
+        # This used to be a BIT-EXACT comparison, and can no longer be: the
+        # value now goes into an emulated BMP390 as a 24-bit ADC count and comes
+        # back through the driver's float32 compensation polynomial. What is
+        # left is still a strong check - BARO_PA_EPS is ~30x the measured
+        # round-trip error, and a decode fault (a mis-scaled coefficient, a
+        # swapped byte, a stale slot) is out by kilopascals, not millipascals.
         self.baro_sent = collections.deque(maxlen=64)
         self.baro_frames = 0
         self.baro_echoed = 0
@@ -551,7 +622,7 @@ class _Checks:
             self.servo_max = max(self.servo_max, v)
 
     def baro_tx(self, pressure_pa):
-        """Record a BaroData frame as float32, the way the wire carries it."""
+        """Record a pushed pressure as float32, the way the push carries it."""
         self.baro_frames += 1
         self.baro_sent.append(as_f32(pressure_pa))
 
@@ -563,7 +634,7 @@ class _Checks:
             return                      # same sample re-reported; only count fresh ones
         self.baro_last_count = telemetry.baro_count
         self.baro_echoed += 1
-        if telemetry.baro_pa not in self.baro_sent:
+        if not any(abs(telemetry.baro_pa - sent) <= BARO_PA_EPS for sent in self.baro_sent):
             self.baro_miss += 1
 
     def gps_tx(self, lat, lon, sats):
@@ -728,8 +799,8 @@ class _Checks:
         # a --dry-run or a plan that predates baro support still passes.
         if self.baro_frames:
             if self.baro_echoed == 0:
-                fails.append(f"baro: {self.baro_frames} frames sent, FC decoded none "
-                             f"(check the baro task / SIM_MSG_BARO handler)")
+                fails.append(f"baro: {self.baro_frames} samples pushed, FC read none "
+                             f"(check Baro_Task, the BMP390 model and the SPI5 mux)")
             elif self.baro_miss:
                 fails.append(f"baro loopback mismatch on {self.baro_miss}/{self.baro_echoed} "
                              f"echoes - the FC reported a pressure that was never sent")
@@ -828,12 +899,19 @@ class _Checks:
 
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="board.py sim", description="JSBSim <-> Flapjack HIL bridge")
-    ap.add_argument("--port", required=True, help="serial port, e.g. COM7 or /dev/ttyUSB0")
+    ap.add_argument("--port", default=None,
+                    help=f"the FC's sim link. Defaults to {sil_url(SIL_LINK_PORT)}, i.e. a "
+                         "SIL run against `board.py renode`; give a real device (COM7, "
+                         "/dev/ttyUSB0) to drive a board. When this is a socket every "
+                         "other wire below defaults to its SIL port too, so a plain "
+                         "`board.py sim` wires the whole rig. Pass `none` to any of them "
+                         "to leave that wire off.")
     ap.add_argument("--baud", type=int, default=460800)
     ap.add_argument("--rc-port", default=None,
-                    help="port carrying CRSF frames to the FC's RX UART (USART3), e.g. "
-                         "socket://localhost:4001. This is the only RC path - without "
-                         "it the FC gets no sticks and will never arm.")
+                    help=f"port carrying CRSF frames to the FC's RX UART (USART3). "
+                         f"Defaults to {sil_url(SIL_RC_PORT)} on a SIL run. This is the "
+                         "only RC path - with `none` the FC gets no sticks and will "
+                         "never arm.")
     ap.add_argument("--rc-baud", type=int, default=416666,
                     help="CRSF baud (spec default for dual-wire full duplex); ignored "
                          "for a socket:// URL, and Renode does not pace bytes anyway")
@@ -846,22 +924,33 @@ def main(argv=None):
                          "about a second later.")
     ap.add_argument("--rate", type=float, default=400.0, help="sensor stream rate (Hz)")
     ap.add_argument("--imu-port", default=None,
-                    help="port carrying samples to the emulated BMI323, e.g. "
-                         "socket://localhost:4010. Under Renode the IMU is the real "
-                         "bmi323 driver talking to an emulated part, so this is the "
-                         "only accel/gyro path - SensorData still carries mag, but "
-                         "nothing reads its accel and gyro any more. Without it the "
-                         "FC logs 'IMU stopped producing data' and never gets an "
-                         "attitude.")
+                    help=f"port carrying samples to the emulated BMI323. Defaults to "
+                         f"{sil_url(SIL_IMU_PORT)} on a SIL run. Under Renode every "
+                         "sensor is its real driver talking to an emulated part, so "
+                         "this is the only accel/gyro path; with `none` the FC logs "
+                         "'IMU stopped producing data' and never gets an attitude.")
+    ap.add_argument("--mag-port", default=None,
+                    help=f"port carrying field samples to the emulated MMC5983. Defaults "
+                         f"to {sil_url(SIL_MAG_PORT)} on a SIL run. Only mag path; with "
+                         "`none` the attitude estimate runs 6DOF and the heading is free "
+                         "to drift.")
+    ap.add_argument("--baro-port", default=None,
+                    help=f"port carrying pressure/temperature to the emulated BMP390. "
+                         f"Defaults to {sil_url(SIL_BARO_PORT)} on a SIL run. Only baro "
+                         "path; with `none` NAV_VALID_BARO_ALT never sets and there is "
+                         "no altitude.")
     ap.add_argument("--baro-rate", type=float, default=50.0,
-                    help="BaroData frame rate (Hz). Its own frame at its own rate "
-                         "rather than riding the 400 Hz sensor stream - a real "
-                         "barometer is a 10-50 Hz part. 0 disables baro entirely.")
+                    help="barometer push rate (Hz). Its own rate rather than the "
+                         "400 Hz sensor stream - a real barometer is a 10-50 Hz part, "
+                         "and the emulated one only raises drdy_press when a fresh "
+                         "sample lands, so this really does pace Baro_Task. 0 "
+                         "disables baro entirely.")
     ap.add_argument("--gps-port", default=None,
-                    help="port carrying NMEA sentences to the FC's GPS UART (USART2), "
-                         "e.g. socket://localhost:4002. Like --rc-port this is the "
-                         "only GPS path: the sim link carries no GPS frame, so that "
-                         "the SIL exercises the real byte assembler and minmea.")
+                    help=f"port carrying NMEA sentences to the FC's GPS UART (USART2). "
+                         f"Defaults to {sil_url(SIL_GPS_PORT)} on a SIL run. Like "
+                         "--rc-port this is the only GPS path: the sim link carries no "
+                         "GPS frame, so the SIL exercises the real byte assembler and "
+                         "minmea.")
     ap.add_argument("--gps-baud", type=int, default=115200,
                     help="GPS baud (matches GPS_BAUD_RATE); ignored for a socket:// URL")
     ap.add_argument("--gps-stop", type=float, default=None, metavar="SECONDS",
@@ -902,6 +991,7 @@ def main(argv=None):
     ap.add_argument("--pid-delay", type=float, default=3.0,
                     help="seconds to wait before sending --send-pid")
     args = ap.parse_args(argv)
+    resolve_ports(args)
 
     flight_plan = planlib.load(args.plan) if args.plan else None
 
@@ -924,10 +1014,14 @@ def main(argv=None):
     rc_period = 1.0 / args.rc_rate if args.rc_rate > 0 else 0.0
     next_rc = 0.0
 
-    # Samples are pushed into the emulated part rather than handed to the FC, so
-    # a SIL run exercises the BMI323 register map, the SPI framing and the
-    # chip-select timing instead of stepping over all three.
+    # Samples are pushed into the emulated parts rather than handed to the FC,
+    # so a SIL run exercises the register maps, the SPI framing and the
+    # chip-select timing instead of stepping over all three. Mag and baro share
+    # SPI5 behind a multiplexer, so this also exercises bus arbitration between
+    # two devices on separate chip selects.
     imu_ser = open_port(args.imu_port, args.baud, timeout=0) if args.imu_port else None
+    mag_ser = open_port(args.mag_port, args.baud, timeout=0) if args.mag_port else None
+    baro_ser = open_port(args.baro_port, args.baud, timeout=0) if args.baro_port else None
 
     baro_period = 1.0 / args.baro_rate if args.baro_rate > 0 else 0.0
     next_baro = 0.0
@@ -989,6 +1083,16 @@ def main(argv=None):
     else:
         print("[bridge] WARNING: no --imu-port, so the emulated BMI323 gets no samples "
               "and the FC never gets an attitude")
+    if mag_ser is not None:
+        print(f"[bridge] mag samples on {args.mag_port}, {args.rate:.0f} Hz")
+    else:
+        print("[bridge] WARNING: no --mag-port, so the emulated MMC5983 gets no samples "
+              "and the heading is unreferenced")
+    if baro_ser is not None and baro_period:
+        print(f"[bridge] baro samples on {args.baro_port}, {args.baro_rate:.0f} Hz")
+    else:
+        print("[bridge] WARNING: no --baro-port, so the emulated BMP390 gets no samples "
+              "and the FC has no altitude")
     if rc_ser is not None:
         print(f"[bridge] CRSF RC on {args.rc_port}@{args.rc_baud}, {args.rc_rate:.0f} Hz")
     else:
@@ -1091,11 +1195,15 @@ def main(argv=None):
                 udot = fdm[PROP_UDOT]; vdot = fdm[PROP_VDOT]; wdot = fdm[PROP_WDOT]
 
         accel, gyro, mag = synthesize_sensors(phi, theta, psi, p, q, r, udot, vdot, wdot)
-        ser.write(make_sensor_frame(accel, gyro, mag))
         if imu_ser is not None:
             imu_ser.write(make_imu_push(accel, gyro))
+        # Mag rides the sensor tick, but the part is what paces Mag_Task: it only
+        # raises MEAS_M_DONE for a sample the driver has not already read, and
+        # Mag_Task polls at 100 Hz, so pushing at 400 Hz costs the FC nothing.
+        if mag_ser is not None:
+            mag_ser.write(make_mag_push(mag))
 
-        # --- barometer, on its own frame at its own rate ---
+        # --- barometer, at its own rate ---
         # Under --dry-run the pressure is swept rather than held: a constant
         # would satisfy the loopback check even if the FC latched one sample and
         # stopped updating, so a moving value is what makes the bring-up test
@@ -1108,8 +1216,9 @@ def main(argv=None):
             else:
                 baro_pa = fdm[PROP_BARO_PA]
                 baro_temp_c = fdm[PROP_BARO_TEMP_C]
-            ser.write(make_baro_frame(baro_pa, baro_temp_c))
-            checks.baro_tx(baro_pa)
+            if baro_ser is not None:
+                baro_ser.write(make_baro_push(baro_pa, baro_temp_c))
+                checks.baro_tx(baro_pa)
 
         # --- GPS: real NMEA on its own wire ---
         # GGA and RMC go out half a fix period apart rather than back to back.

@@ -6,35 +6,48 @@ below); this PC tool runs **JSBSim** and exchanges data with it over the (now
 binary) debug UART:
 
 ```
- PC: JSBSim + bridge.py  ──SensorData───────────►  FC (sim driver profile)
-                         ──BaroData─────────────►
-                         ◄──ServoCmd/MotorCmd────  Control loop
+ PC: JSBSim + bridge.py  ◄──ServoCmd/MotorCmd────  FC (sim driver profile)
                          ◄──Telemetry────────────  (validation + sensor loopback)
 
                          ──CRSF 0x16────────────►  FC RX UART  (USART3)
                          ──NMEA GGA/RMC─────────►  FC GPS UART (USART2)
+
+                         ──accel, gyro──────────►  emulated BMI323  (tcp 4010) ─► SPI1
+                         ──field────────────────►  emulated MMC5983 (tcp 4011) ─┐
+                         ──Pa, degC─────────────►  emulated BMP390  (tcp 4012) ─┴► SPI5
 ```
 
-**Three wires, deliberately.** Sensors, actuators, telemetry and logs share the
-debug UART. RC and GPS go down *separate* wires as real CRSF and real NMEA,
-exactly as the parts would drive them, so a SIL run exercises the UART ISRs, the
-deframing, the checksums and the parsers. There used to be an `RcInput` sim-link
-message that wrote `g_Rx.channels` directly; it bypassed all of that and has been
-removed. **Frame id 2 is retired — do not reuse it.** GPS was never given a
-sim-link frame for the same reason.
+**Nothing reaches the FC pre-decoded.** RC and GPS go down separate wires as real
+CRSF and real NMEA, exactly as the parts would drive them, so a SIL run exercises
+the UART ISRs, the deframing, the checksums and the parsers. There used to be an
+`RcInput` sim-link message that wrote `g_Rx.channels` directly; it bypassed all
+of that and has been removed.
 
-Baro is the exception that proves the rule: it is a register read on real
-hardware, not a byte protocol, so there is no wire path worth exercising and it
-rides the sim link — but on **its own frame at its own rate**, not folded into
-the 400 Hz `SensorData`. A 10–50 Hz part arriving 400 times a second would pace
-`Baro_Task` wrongly and erase the rate mismatch a nav filter has to cope with.
+The three **sensors** follow the same principle one level down. A register read
+is not a byte protocol, but it is still a path with a chip select, a dummy byte,
+an address auto-increment and a data-ready bit to get wrong — so rather than
+inject decoded values at the driver, the bridge pushes physical quantities into
+emulated parts and the firmware reads them back through its real `bmi323`,
+`mmc5983` and `bmp390` drivers over emulated SPI. That put five firmware defects
+on the record for the IMU alone (KnownIssues §2.29–§2.33), and for the baro it
+puts the 21-byte calibration decode and the compensation polynomial on the
+critical path.
 
-- **PC → FC:** synthesized IMU (accel m/s², gyro deg/s) + mag (normalized) on the
-  sim link at 400 Hz; `BaroData` (Pa, °C) on the sim link at 50 Hz; RC channels as
-  CRSF `0x16` frames on the RX UART; GPS as NMEA `GGA`/`RMC` on the GPS UART.
+**Frame ids 1 (`SensorData`), 2 (`RcInput`) and 7 (`BaroData`) are retired — do
+not reuse them.** The sim link is FC→PC only now, apart from the shell.
+
+- **PC → FC:** IMU (accel m/s², gyro deg/s) and mag (**gauss**) pushed at 400 Hz,
+  baro (Pa, °C) at 50 Hz, each into its own emulated part; RC channels as CRSF
+  `0x16` frames on the RX UART; GPS as NMEA `GGA`/`RMC` on the GPS UART.
 - **FC → PC:** per-servo tilt **angle** (rad) and per-motor **throttle** (0–1),
   plus a `Telemetry` frame (nav euler, armed, IMU sample count, RC link state,
   and the baro/GPS **loopback** described below).
+
+Mag is pushed in gauss, not as a unit vector, because the MMC5983 has a real
+±8 G full scale that `mmc5983.c` divides by — a unit vector would assert that
+Earth's field saturates the part. Nothing downstream depends on the magnitude
+(Madgwick renormalises), but the scale is now a testable property rather than an
+assumption.
 
 ### The sensor loopback
 
@@ -118,20 +131,29 @@ python Scripts/board.py sim --port COM7
 The bridge loads `Scripts/sim/jsbsim/aircraft/tiltrotor/tiltrotor.xml`, raises the
 arm switch after `--arm-delay`, waits for the FC to report armed, then goes to
 hover throttle, applies the FC's servo/motor commands to the model, and streams
-synthesized sensors back. Useful flags:
+synthesized sensors back.
+
+**Every wire defaults to its SIL socket**, so a SIL run is just `board.py sim` with no flags.
+The defaults apply only while `--port` is a socket, i.e. while this is a SIL run — naming a real
+device turns them all off, because on a board the companion wires are physical ports nobody can
+guess. Pass `none` to any one of them (`--gps-port none`) to leave that wire off, which is how
+the "no receiver" and "no fix" paths stay testable. Useful flags:
 
 | flag | default | meaning |
 |---|---|---|
-| `--port` | (required) | serial port, e.g. `COM7`, `/dev/ttyUSB0` |
+| `--port` | `socket://localhost:4000` | the FC's sim link. The default is a SIL run; give a real device (`COM7`, `/dev/ttyUSB0`) to drive a board |
 | `--baud` | 460800 | must match the board's `SERIAL_LINK_BAUD_RATE` |
 | `--rate` | 400 | sensor stream rate (Hz) |
 | `--model` | tiltrotor | JSBSim aircraft name under `--root/aircraft/` |
 | `--hover-throttle` | 0.5 | throttle held once armed, when no `--plan` is given |
-| `--rc-port` | (none) | port carrying CRSF to the FC's RX UART. **The only RC path** — without it the FC never arms |
+| `--rc-port` | `socket://localhost:4001` | port carrying CRSF to the FC's RX UART. **The only RC path** — with `none` the FC never arms |
 | `--rc-baud` | 416666 | CRSF spec default; ignored for a `socket://` URL |
 | `--rc-rate` | 50 | CRSF frame rate (Hz); a real link runs 50–150 |
-| `--baro-rate` | 50 | `BaroData` frame rate (Hz); 0 disables baro |
-| `--gps-port` | (none) | port carrying NMEA to the FC's GPS UART. **The only GPS path** |
+| `--imu-port` | `socket://localhost:4010` | socket carrying accel/gyro to the emulated BMI323. **The only IMU path** — with `none` there is no attitude |
+| `--mag-port` | `socket://localhost:4011` | socket carrying the field in gauss to the emulated MMC5983. **The only mag path** |
+| `--baro-port` | `socket://localhost:4012` | socket carrying Pa/°C to the emulated BMP390. **The only baro path** |
+| `--baro-rate` | 50 | barometer push rate (Hz); 0 disables baro |
+| `--gps-port` | `socket://localhost:4002` | port carrying NMEA to the FC's GPS UART. **The only GPS path** |
 | `--gps-baud` | 115200 | matches `GPS_BAUD_RATE`; ignored for a `socket://` URL |
 | `--gps-rate` | 10 | fix rate (Hz). GGA and RMC go out half a period apart — the driver holds one sentence, so a burst would lose the first |
 | `--plan` | (none) | YAML flight plan to fly once armed |
@@ -231,8 +253,7 @@ protobuf messages, same `bridge.py`.
 ```bash
 python Scripts/board.py build -b flapjack-v1 -D sim --single-core
 python Scripts/board.py renode -b flapjack-v1                          # terminal 1
-python Scripts/board.py sim --port socket://localhost:4000 --rc-port socket://localhost:4001 \
-    --gps-port socket://localhost:4002 --rate 400                      # terminal 2
+python Scripts/board.py sim                                            # terminal 2
 ```
 
 USART2 (the GPS UART) is exposed on **4002** alongside the other two. Like

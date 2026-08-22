@@ -4,6 +4,7 @@
 
 // msg instances
 static umsg_msg_metadata_t msg_sensors_imu = {.name = "sensors_imu"};
+static umsg_msg_metadata_t msg_sensors_imu_status = {.name = "sensors_imu_status"};
 static umsg_msg_metadata_t msg_sensors_mag = {.name = "sensors_mag"};
 static umsg_msg_metadata_t msg_sensors_baro = {.name = "sensors_baro"};
 static umsg_msg_metadata_t msg_sensors_gps = {.name = "sensors_gps"};
@@ -27,6 +28,27 @@ void umsg_sensors_imu_publish_ch(umsg_sensors_imu_t* data, uint8_t channel)
     umsg_publish(&msg_sensors_imu, data, channel);
 }
 uint8_t umsg_sensors_imu_receive(umsg_sub_handle_t queue, umsg_sensors_imu_t* data, uint32_t timeout)
+{
+    return umsg_receive(queue, data, timeout);
+}
+// sensors_imu_status
+umsg_sub_handle_t umsg_sensors_imu_status_subscribe(uint32_t prescaler, uint8_t length)
+{
+    return umsg_subscribe(&msg_sensors_imu_status, prescaler, sizeof(umsg_sensors_imu_status_t), length, 0);
+}
+umsg_sub_handle_t umsg_sensors_imu_status_subscribe_ch(uint32_t prescaler, uint8_t length, uint8_t channel)
+{
+    return umsg_subscribe(&msg_sensors_imu_status, prescaler, sizeof(umsg_sensors_imu_status_t), length, channel);
+}
+void umsg_sensors_imu_status_publish(umsg_sensors_imu_status_t* data)
+{
+    umsg_publish(&msg_sensors_imu_status, data, 0);
+}
+void umsg_sensors_imu_status_publish_ch(umsg_sensors_imu_status_t* data, uint8_t channel)
+{
+    umsg_publish(&msg_sensors_imu_status, data, channel);
+}
+uint8_t umsg_sensors_imu_status_receive(umsg_sub_handle_t queue, umsg_sensors_imu_status_t* data, uint32_t timeout)
 {
     return umsg_receive(queue, data, timeout);
 }

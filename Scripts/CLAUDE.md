@@ -27,21 +27,23 @@ pip install -e ".[sim,gui,gen]"
 # Regenerate protobuf + umsg sources (no toolchain/build)
 python3 Scripts/board.py gen
 
-# Host side of the sim link — JSBSim HIL bridge
+# Host side of the sim link — JSBSim HIL bridge. Naming a real device turns the
+# SIL defaults off, so a board run wires only what you ask for.
 python3 Scripts/board.py sim --port /dev/ttyUSB0 --dry-run
 
 # SIL: emulate the CM7 in Renode instead of using a board (two terminals).
-# `renode` takes the place of `flash`. USART1 -> port 4000 (sim link, incl. baro),
-# USART3 -> port 4001 (CRSF RC; without it the FC never arms),
-# USART2 -> port 4002 (NMEA GPS; optional - without it the FC just never sees a fix).
+# `renode` takes the place of `flash`. USART1 -> port 4000 (sim link: actuators,
+# telemetry, logs, shell), USART3 -> port 4001 (CRSF RC; without it the FC never
+# arms), USART2 -> port 4002 (NMEA GPS; optional - without it the FC just never
+# sees a fix), and 4010/4011/4012 carry samples into the emulated IMU, mag and
+# baro, which the FC reads through its real drivers over emulated SPI.
+# All six wires default to the SIL sockets, so the bridge needs no flags at all.
 python3 Scripts/board.py build -b flapjack-v1 -D sim --single-core
 python3 Scripts/board.py renode -b flapjack-v1
-python3 Scripts/board.py sim --port socket://localhost:4000 --rc-port socket://localhost:4001 \
-    --gps-port socket://localhost:4002 --rate 400
+python3 Scripts/board.py sim
 
 # Fly a scripted flight plan (exits 0 on pass, 1 on failed checks)
-python3 Scripts/board.py sim --port socket://localhost:4000 --rc-port socket://localhost:4001 \
-    --gps-port socket://localhost:4002 --plan Scripts/sim/plans/hover.yaml
+python3 Scripts/board.py sim --plan Scripts/sim/plans/hover.yaml
 
 # Host unit tests
 cmake -S Tests -B Build/UnitTest -G "MinGW Makefiles" && ctest --test-dir Build/UnitTest
@@ -76,17 +78,23 @@ Build artifacts land in `Build/<board>/<config>/` as `cm7.elf` and `cm4.elf`. CM
 `Scripts/` is the home for all of the project's Python tooling. `board.py` is the single CLI entry point (`python Scripts/board.py <cmd>`); it runs with `Scripts/` on `sys.path`, so the subpackages import as top-level (`proto`, `link`, `sim`, `gui`). Dependencies are pinned in the repo-root `pyproject.toml` (base + `[sim]`/`[gui]`/`[gen]` extras).
 
 - **`board.py`** — single CLI entry point. Subcommands: `install`, `build`, `flash` (firmware); `gen` (regenerate proto + umsg, no toolchain/build); `renode` (boot the firmware under the Renode CM7 emulator); `sim` (JSBSim HIL bridge — remaining args are forwarded to it); `gui` (PyQt flight GUI). `sim`/`gui` imports are lazy so `build`/`flash` never require their heavy deps. `build` calls `install` automatically if the toolchain is missing.
-- **`renode/`** — Renode platform overlay (`flapjack_h7_cm7.repl`) and machine script (`flapjack_sil.resc`) for the single-core CM7 SIL. Driven by `board.py renode`, which exposes USART1 as the sim link on port 4000, USART3 as the CRSF RC link on 4001, and USART2 as the NMEA GPS link on 4002; see `SilResearch.md` §2 for why each overlay entry exists.
+- **`renode/`** — Renode platform overlay (`flapjack_h7_cm7.repl`), machine script (`flapjack_sil.resc`) and the emulated sensor parts (`BMI323.cs`, `MMC5983.cs`, `BMP390.cs`, sharing `SamplePushListener.cs`) for the single-core CM7 SIL. Driven by `board.py renode`, which exposes USART1 as the sim link on port 4000, USART3 as the CRSF RC link on 4001, and USART2 as the NMEA GPS link on 4002. The three sensor models open their own sockets (4010/4011/4012) from their `port:` properties in the `.repl`; mag and baro share SPI5 behind an `SPIMultiplexer`. See `SilResearch.md` §2 for why each overlay entry exists.
 - **`proto/`** — the single home for generated protobuf Python stubs (`flapjack_pb2.py`, `sim_pb2.py`), emitted here by `build -f g`; all tools import `from proto import …`.
 - **`link/`** — shared host-side link plumbing: `framing.py` (crc8/frame/deframe, mirrors `sim_link.c`) and `serial_io.py` (pyserial helpers).
 - **`sim/`** — the JSBSim HIL bridge (`bridge.py`), the CRSF encoder (`crsf.py`), the NMEA encoder
   (`nmea.py`), the flight-plan loader (`plan.py`) with its plans in `sim/plans/*.yaml`, plus the
   `jsbsim/` models and the sensor systems vendored into `jsbsim/systems/`. See `sim/README.md`.
-  **Two sensors deliberately bypass the sim link and use their own wire**, so the SIL exercises the
-  real UART/parse path instead of injecting decoded values: RC as CRSF on the RX UART
-  (`--rc-port`, the only RC path — without it the FC never arms) and GPS as NMEA on the GPS UART
-  (`--gps-port`, optional). Baro rides the sim link but on its own `BaroData` frame at its own
-  rate, not folded into the 400 Hz `SensorData`.
+  **Nothing reaches the FC pre-decoded any more**, so the SIL exercises the real parse and
+  driver paths instead of injecting values. RC arrives as CRSF on the RX UART (`--rc-port`, the
+  only RC path — without it the FC never arms) and GPS as NMEA on the GPS UART (`--gps-port`,
+  optional). IMU, mag and baro are pushed into emulated parts (`--imu-port`/`--mag-port`/
+  `--baro-port`) and read back through the real `bmi323`, `mmc5983` and `bmp390` drivers over
+  emulated SPI. The sim link itself is now FC→PC only, apart from the shell.
+  **All six wires default to their SIL sockets** (4000/4001/4002 and 4010/4011/4012, see
+  `resolve_ports()`), so a SIL run is a bare `board.py sim`. Naming a real device for `--port`
+  turns the defaults off, because the companion wires on a board are physical ports nobody can
+  guess. Pass `none` to any one of them — `--gps-port none` — to leave that wire off, which is
+  how the "no fix" and "no receiver" paths stay testable.
 - **`gui/`** — the PyQt flight GUI (`app.py`, `conf.py`, `data/`). Two independent
   input interfaces: the serial link to a real FC (`<json>` telemetry over
   `QSerialPort`), and the sim link (`SimLink`, a UDP feed from the bridge's
