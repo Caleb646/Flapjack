@@ -69,7 +69,12 @@ extern uint32_t SystemCoreClock;
 #define configCHECK_FOR_STACK_OVERFLOW           2
 #define configUSE_TICK_HOOK                      0
 #define configCPU_CLOCK_HZ                       ( SystemCoreClock )
-#define configTICK_RATE_HZ                       ((TickType_t)1000)
+/* 2 kHz, not the conventional 1 kHz: the control loop runs at 400 Hz (2.5 ms)
+ * and a tick-based delay can only express whole ticks, so a 1 ms tick cannot
+ * represent that period at all - it rounds to 2 ms (500 Hz). Every delay in
+ * this tree goes through pdMS_TO_TICKS, so raising the tick rescales them all
+ * automatically; the cost is that the tick ISR fires twice as often. */
+#define configTICK_RATE_HZ                       ((TickType_t)2000)
 #define configMAX_PRIORITIES                     ( 56 )
 #define configUSE_SB_COMPLETED_CALLBACK          0
 #define configUSE_MINI_LIST_ITEM                 1

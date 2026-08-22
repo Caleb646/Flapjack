@@ -3,7 +3,6 @@
     {
       "name": "mode",
       "enumerators": [
-        "EMISSION_MODE_MANUAL",
         "EMISSION_MODE_ALTITUDE_HOLD",
         "EMISSION_MODE_POSITION_HOLD",
         "EMISSION_MODE_WAYPOINT",

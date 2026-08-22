@@ -31,6 +31,18 @@ SIM_LINK_PORT = 5005
 SIM_REDRAW_MS = 50
 SIM_PLOT_KEYS = ("alt", "roll", "pitch", "yaw")
 
+# NAV_VALID_* bits from Firmware/msgs/umsg/defs/nav.json, reaching the GUI as
+# the sim feed's nav.valid. Duplicated here for the same reason bridge.py
+# duplicates them - umsg generates C, not Python; keep the three in step.
+#
+# Attitude and altitude carry separate bits, so an estimate can be half
+# trustworthy and the viewer has to honour them one axis at a time.
+NAV_VALID_ATTITUDE = 1 << 0
+NAV_VALID_POSITION = 1 << 1
+NAV_VALID_BARO_ALT = 1 << 3
+
+VIEWER_TAB_TITLE = "3D Orientation"
+
 # Viewer units per metre of altitude. The grid spans ~40 units and the camera
 # sits 5 away, so a unit-per-metre mapping would fly the model out of frame
 # during an ordinary hover; the readout carries the true value.
@@ -111,6 +123,47 @@ def make_axis_line(direction, color):
     color_array = np.array([color, color]) # * 255
     return GLLinePlotItem(pos=pos, color=color_array, width=3.0, antialias=True)
 
+def nav_pose(nav):
+    """The FC's estimate cut down to the fields nav_valid actually vouches for.
+
+    Dropping a field rather than passing it through is what leaves the viewer
+    holding its last good value for that axis. The bits move independently, so
+    attitude is routinely trustworthy while altitude is not yet.
+    """
+    valid = (nav or {}).get("valid", 0)
+    pose = {}
+    if valid & NAV_VALID_ATTITUDE:
+        pose.update({key: nav[key] for key in ("roll", "pitch", "yaw")})
+    if valid & (NAV_VALID_POSITION | NAV_VALID_BARO_ALT):
+        pose["alt"] = nav["alt"]
+    return pose
+
+class PopOutWindow(QtWidgets.QWidget):
+    """Top-level host for a widget lifted out of the tab bar.
+
+    Exists for closeEvent alone: a popped-out tab has to be put back before its
+    window goes, or the widget is destroyed along with it and re-docking returns
+    an empty tab.
+    """
+
+    closed = QtCore.pyqtSignal()
+
+    def __init__(self, widget, title):
+        super().__init__()
+        self.setWindowTitle(title)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(widget)
+        # Explicit, and not redundant with this window's own show(): removeTab
+        # hides the page on its way out, and a widget hidden that deliberately
+        # is not un-hidden by showing its new parent. Without this the window
+        # comes up empty.
+        widget.show()
+
+    def closeEvent(self, event):
+        self.closed.emit()
+        super().closeEvent(event)
+
 class FlightViewer(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
@@ -121,9 +174,10 @@ class FlightViewer(QtWidgets.QWidget):
 
         self.tab_widget = QTabWidget()
         
+        self.viewer_window = None
         self.viewer_tab = QtWidgets.QWidget()
         self.setup_3d_viewer(self.viewer_tab)
-        self.tab_widget.addTab(self.viewer_tab, "3D Orientation")
+        self.tab_widget.addTab(self.viewer_tab, VIEWER_TAB_TITLE)
         
         self.plotter_tab = AttitudePlotter()
         self.tab_widget.addTab(self.plotter_tab, "Attitude Graphs")
@@ -175,7 +229,22 @@ class FlightViewer(QtWidgets.QWidget):
         
     def setup_3d_viewer(self, parent_widget):
         layout = QVBoxLayout(parent_widget)
-        
+
+        # Which of the sim feed's two poses drives the model. Consulted only for
+        # sim samples: a serial-connected FC has no truth to offer, so that path
+        # still feeds the model directly.
+        source_row = QHBoxLayout()
+        self.estimate_radio = QtWidgets.QRadioButton("Estimate (FC)")
+        self.estimate_radio.setChecked(True)
+        self.truth_radio = QtWidgets.QRadioButton("Truth (JSBSim)")
+        self.popout_btn = QPushButton("Pop Out", clicked=self.toggle_viewer_popout)
+        source_row.addWidget(QtWidgets.QLabel("Source:"))
+        source_row.addWidget(self.estimate_radio)
+        source_row.addWidget(self.truth_radio)
+        source_row.addStretch(1)
+        source_row.addWidget(self.popout_btn)
+        layout.addLayout(source_row)
+
         self.view = GLViewWidget()
         self.view.setMinimumHeight(400)
         self.view.opts['distance'] = 5
@@ -204,10 +273,23 @@ class FlightViewer(QtWidgets.QWidget):
         self.airplane_scale = 1.0 / self.airplane_scale # normalize scale
         self.view.addItem(self.airplane)
 
+        # Sticky pose, so an axis the current sample cannot vouch for holds its
+        # last good value rather than snapping to zero - which on this grid is
+        # indistinguishable from a real estimate of level-and-landed. alt starts
+        # as None for the same reason: "no altitude" is not "on the ground", and
+        # the FC's serial attitude log never carries one at all.
+        self.orientation = {"roll": 0.0, "pitch": 0.0, "yaw": 0.0, "alt": None}
+
         self.altitude_label = QtWidgets.QLabel("Altitude: --")
-        
+        self.hold_label = QtWidgets.QLabel("")
+
+        status_row = QHBoxLayout()
+        status_row.addWidget(self.altitude_label)
+        status_row.addWidget(self.hold_label)
+        status_row.addStretch(1)
+
         layout.addWidget(self.view, 1)
-        layout.addWidget(self.altitude_label)
+        layout.addLayout(status_row)
         
     def setup_serial_controls(self, main_layout):
         """Setup serial communication controls"""
@@ -361,13 +443,21 @@ class FlightViewer(QtWidgets.QWidget):
             self.append_debug_console("Disconnected from flight controller", "[INFO]")
 
     def update_orientation(self, orientation):
-        roll_deg = orientation.get("roll", 0)
-        pitch_deg = orientation.get("pitch", 0)
-        yaw_deg = orientation.get("yaw", 0)
-        # Only the sim link carries altitude; the FC's attitude log has no
-        # "alt" key, so that path keeps the model on the grid as it always has.
-        alt_m = orientation.get("alt")
- 
+        """Point the model at a new pose.
+
+        Every field is optional, and an omitted one holds rather than zeroes:
+        the FC's serial attitude log has no "alt" key, and an estimate carries
+        only what nav_valid vouches for.
+        """
+        held = [key for key in self.orientation if key not in orientation]
+        self.orientation.update(
+            {key: value for key, value in orientation.items() if key in self.orientation})
+
+        roll_deg = self.orientation["roll"]
+        pitch_deg = self.orientation["pitch"]
+        yaw_deg = self.orientation["yaw"]
+        alt_m = self.orientation["alt"]
+
         self.airplane.resetTransform()
         self.airplane.scale(self.airplane_scale, self.airplane_scale, self.airplane_scale)
         self.airplane.rotate(yaw_deg, 0, 0, 1)    # Yaw (Z axis)
@@ -380,6 +470,41 @@ class FlightViewer(QtWidgets.QWidget):
             # is then lifted in the world frame, not along its own body axis.
             self.airplane.translate(0, 0, alt_m * ALT_SCENE_SCALE)
             self.altitude_label.setText(f"Altitude: {alt_m:+.2f} m")
+        else:
+            self.altitude_label.setText("Altitude: --")
+
+        # Spelled out rather than left to the model: a held axis and a genuinely
+        # motionless vehicle look the same on the grid. An altitude that has
+        # never arrived is not "held" - the readout already says "--".
+        held = [key for key in held if key != "alt" or alt_m is not None]
+        self.hold_label.setText(
+            f"holding {', '.join(held)} - no valid estimate" if held else "")
+
+    def toggle_viewer_popout(self):
+        if self.viewer_window is None:
+            self.tab_widget.removeTab(self.tab_widget.indexOf(self.viewer_tab))
+            self.viewer_window = PopOutWindow(self.viewer_tab, VIEWER_TAB_TITLE)
+            self.viewer_window.closed.connect(self.dock_viewer)
+            self.viewer_window.resize(800, 600)
+            self.viewer_window.show()
+            self.popout_btn.setText("Dock")
+        else:
+            # Closing rather than docking directly, so the button and the
+            # window's own close box take the same path.
+            self.viewer_window.close()
+
+    @QtCore.pyqtSlot()
+    def dock_viewer(self):
+        if self.viewer_window is None:
+            return
+        window, self.viewer_window = self.viewer_window, None
+        # insertTab, not addTab: the viewer belongs at the front of the bar,
+        # which is where it was before the pop-out.
+        self.tab_widget.insertTab(0, self.viewer_tab, VIEWER_TAB_TITLE)
+        self.tab_widget.setCurrentWidget(self.viewer_tab)
+        self.popout_btn.setText("Pop Out")
+        # Deferred, not immediate: this runs inside the window's own closeEvent.
+        window.deleteLater()
 
     def start_sim_link(self, port) -> bool:
         ok = self.sim_link.listen(port)
@@ -398,12 +523,22 @@ class FlightViewer(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(dict)
     def on_sim_sample(self, state):
-        truth = state.get("truth")
-        if truth:
-            self.update_orientation(truth)
+        if self.truth_radio.isChecked():
+            pose = state.get("truth") or {}
+        else:
+            # An empty pose rather than a skipped call: nav is null until the
+            # FC's first Telemetry frame, and that is a hold worth reporting,
+            # not a non-event.
+            pose = nav_pose(state.get("nav"))
+        self.update_orientation(pose)
         self.sim_tab.add_sample(state)
 
     def closeEvent(self, event):
+        # A popped-out viewer is a top-level window in its own right, so it
+        # keeps the application alive after the main window goes unless it is
+        # closed too.
+        if self.viewer_window is not None:
+            self.viewer_window.close()
         self.close_session_files()
         super().closeEvent(event)
 
@@ -1766,12 +1901,10 @@ class SimRcControls(QtWidgets.QGroupBox):
         buttons = QVBoxLayout()
         self.enable_checkbox = QCheckBox("Send Sticks")
         self.enable_checkbox.toggled.connect(self.on_enable_toggled)
-        self.alt_hold_checkbox = QCheckBox("Altitude Hold")
         self.center_btn = QPushButton("Center", clicked=self.center_sticks)
         self.status_label = QtWidgets.QLabel("Off")
 
         buttons.addWidget(self.enable_checkbox)
-        buttons.addWidget(self.alt_hold_checkbox)
         buttons.addWidget(self.center_btn)
         buttons.addWidget(self.status_label)
         layout.addLayout(buttons)
@@ -1816,12 +1949,6 @@ class SimRcControls(QtWidgets.QGroupBox):
 
     def send(self):
         sticks = {name: slider.value() for name, slider in self.sliders.items()}
-        # AUX2 is what the FC reads for its mode (MODE_AUX_THRESHOLD, 1750us, in
-        # tasks/mission/mission.c). Sent either way rather than only when on, so
-        # the switch works in both directions - and mission.c tracks it even
-        # while disarmed, so whatever is set here is the mode the vehicle arms
-        # into.
-        sticks["aux2"] = RC_MAX if self.alt_hold_checkbox.isChecked() else RC_MID
         if self.parent_viewer.send_sim_rc(sticks):
             self.status_label.setText("Sending")
         else:
@@ -2085,6 +2212,12 @@ class SimPlotter(QtWidgets.QWidget):
 
 
 def main():
+    # Popping the viewer out reparents its GLViewWidget into a new top-level
+    # window, which destroys and recreates the QOpenGLWidget's context. Without
+    # sharing, the mesh's VBOs and shaders die with the old context and
+    # pyqtgraph does not re-upload them - the model comes back invisible. Must
+    # be set before the QApplication exists.
+    QApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts, True)
     app = QApplication(sys.argv)
     viewer = FlightViewer()
     viewer.show()

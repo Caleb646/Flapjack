@@ -258,17 +258,24 @@ Generated into `msgs/umsg/umsg_nav.h` from the `valid` enum in
 
 Guidance and Control must check `NAV_VALID_ATTITUDE` before using attitude data.
 
-### Mission modes (`eMissionMode_t`)
+### Mission modes (`umsg_mission_mode_t`)
 
-Defined in `tasks/mission/mission.h`:
+Defined in `msgs/umsg/defs/mission.json`:
 
 ```c
-eMISSION_MODE_MANUAL        = 0   // RC sticks → rate setpoints (implemented)
-eMISSION_MODE_ALTITUDE_HOLD = 1   // stub
-eMISSION_MODE_POSITION_HOLD = 2   // stub
-eMISSION_MODE_WAYPOINT      = 3   // stub
-eMISSION_MODE_RTL           = 4   // stub
+EMISSION_MODE_ALTITUDE_HOLD = 0   // the flight mode (implemented)
+EMISSION_MODE_POSITION_HOLD = 1   // stub
+EMISSION_MODE_WAYPOINT      = 2   // stub
+EMISSION_MODE_RTL           = 3   // stub
 ```
+
+There is **one** flight mode and `mission.c` selects it unconditionally - there is
+no mode switch and no manual alternative. It holds altitude on the throttle stick
+(which commands a climb rate) and attitude on roll and pitch. `EMISSION_MODE_MANUAL`
+was removed with the second mode; the degraded-sensor paths that used to look like
+it are still there, in `guidance.c`: throttle passthrough without
+`NAV_VALID_BARO_ALT`, and a rate command without `NAV_VALID_ATTITUDE`. Those are
+sensor failures, not modes.
 
 ---
 
@@ -306,7 +313,7 @@ eMISSION_MODE_RTL           = 4   // stub
   decoded, published and echoed, but nothing blends it in, so there is no absolute MSL reference
   and no cross-check on a failed baro. Deciding how the two blend when they disagree by metres at
   different rates is still open
-- **Autonomous guidance modes** — only `eMISSION_MODE_MANUAL` is implemented in `guidance.c`
+- **Autonomous guidance modes** — `guidance.c` implements the single altitude-hold/attitude mode only; `POSITION_HOLD`, `WAYPOINT` and `RTL` are enumerated but unwired
 - **PID gain tuning** — gains come from `CFG_PID_*` macros in the target config; the rate loop is wired but untested
 
 ---

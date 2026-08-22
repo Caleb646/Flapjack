@@ -103,10 +103,10 @@ GUI_PORT = 5005
 # closed or wedged GUI hands control back instead of leaving the last throttle
 # latched forever.
 GUI_RC_TIMEOUT = 0.5
-# AUX2 is here because it is a transmitter switch like any other - it selects
-# the flight mode (MODE_AUX_THRESHOLD in tasks/mission/mission.c). AUX1 is not:
-# see apply_gui_rc.
-GUI_RC_CHANNELS = ("roll", "pitch", "yaw", "throttle", "aux2")
+# The four sticks only. AUX2 used to be here as the flight-mode switch; there is
+# one mode now (tasks/mission/mission.c) and nothing reads it. AUX1 is excluded
+# for a different reason - see apply_gui_rc.
+GUI_RC_CHANNELS = ("roll", "pitch", "yaw", "throttle")
 
 # Loopback tolerance on an echoed GPS coordinate, in degrees. ~1.1 cm: well
 # below NMEA's own ~1.9 cm quantisation step (so it cannot mask a wrong field)
@@ -164,6 +164,33 @@ NAV_VZ_EPS_MPS = 1.0
 # somewhere, which none of the current three really do.
 NAV_POS_EPS_M = 0.5
 
+# Attitude gates. Both are on FDM TRUTH, not on the estimate: the failure these
+# exist for is one where the estimate reads level while the vehicle is not, so
+# checking the estimate against itself would pass it (KnownIssues 1.16).
+#
+# Departure bound. CFG_ANGLE_MAX_DEG is 30 and no shipped plan commands more than
+# half stick, so anything past 45 deg is the vehicle leaving, not the pilot. Kept
+# well clear of the commanded range deliberately - KnownIssues 1.13 warns against
+# plan-specific attitude assertions, and this is a physics bound, not a tracking
+# one.
+ATTITUDE_MAX_DEG = 45.0
+
+# Ring-down bound: peak-to-peak over the last ATTITUDE_SETTLE_S of the run. Every
+# shipped plan ends with the sticks centred for at least 5 s, so a vehicle that is
+# still moving here is one that will not settle - which is the whole signature of
+# closing the angle loop on an accel-referenced estimate. Measured separation is
+# wide: 0.03-0.13 deg on runs that settle, 0.9-24.9 deg on runs that do not.
+ATTITUDE_SETTLE_S = 5.0
+ATTITUDE_SETTLE_PKPK_DEG = 3.0
+
+# ...and only while AIRBORNE. Three of the four shipped plans (hover, yaw_step,
+# roll_pitch) only ramp to 1500 us, which is EXACTLY this airframe's hover
+# throttle, so they never break ground - they sit on their gear for the whole
+# run. Attitude there is gear interaction, not the control loop, and gating on it
+# fails plans for a reason that has nothing to do with flight. 1.5 ft is clear of
+# the gear and far below any hover this sim reaches.
+ATTITUDE_AIRBORNE_FT = 1.5
+
 # Reference Earth field in NED (unit), ~60 deg inclination, 0 declination.
 _INCL = math.radians(60.0)
 B_NED = (math.cos(_INCL), 0.0, math.sin(_INCL))
@@ -219,7 +246,8 @@ def make_baro_frame(pressure_pa, temperature_c) -> bytes:
     return frame(MSG_BARO, msg.SerializeToString())
 
 
-def make_gui_packet(sim_t, euler_rad, truth_alt_m, telemetry, servo_rad, motor) -> bytes:
+def make_gui_packet(sim_t, euler_rad, truth_alt_m, telemetry, servo_rad, motor,
+                    truth_vel_ned=None) -> bytes:
     """One JSON datagram of sim state for the flight GUI.
 
     This feeds a display, not the firmware, so it carries display units rather
@@ -241,6 +269,9 @@ def make_gui_packet(sim_t, euler_rad, truth_alt_m, telemetry, servo_rad, motor) 
             "alt": truth_alt_m,
         },
         "nav": None,
+        # Horizontal velocity, m/s NED. The guidance loop commands this
+        # directly now, so a run cannot be judged without seeing it.
+        "vel": list(truth_vel_ned) if truth_vel_ned else None,
         "servo": [a * RAD2DEG for a in servo_rad],
         "motor": list(motor),
     }
@@ -305,12 +336,12 @@ def rc_channels(throttle_norm: float, armed: bool) -> list:
 class _Checks:
     """Physics-level invariants, gathered as the run goes.
 
-    Deliberately not a golden trajectory. KnownIssues 1.13 records that the
-    manual mode is a *rate* loop, so the attitude a run settles at is not
-    repeatable - asserting on it produces false regressions. These are the
-    things that are true of any correct flight, and they are exactly the class
-    of fault the SIL has actually caught (motors pinned at 1.000, servo commands
-    20x out of range).
+    Deliberately not a golden trajectory. KnownIssues 1.13 recorded that the
+    then-current *rate* loop settled at an unrepeatable attitude, so asserting on
+    it produced false regressions. The loop holds an angle now and the reasoning
+    has not been re-derived for it - so these stay what is true of any correct
+    flight, and they are the class of fault the SIL has actually caught (motors
+    pinned at 1.000, servo commands 20x out of range).
     """
 
     def __init__(self):
@@ -320,6 +351,17 @@ class _Checks:
         self.alt_min, self.alt_max = 1e9, -1e9
         self.motor_pinned = 0
         self.samples = 0
+        # Truth attitude while ARMED, in degrees. The window holds the tail of the
+        # run so report() can measure whether it ever stopped moving.
+        # Actuator frames, for deriving the CONTROL loop's real rate. It paces
+        # itself now (CONTROL_RATE_HZ in control.c) rather than running once per
+        # guidance setpoint, so "is it keeping up" is a question worth answering
+        # from the wire instead of assuming the configured period.
+        self.motor_frames = 0
+        self.t_first = None
+        self.t_last = None
+        self.att_peak = [0.0, 0.0]
+        self.att_window = collections.deque()
 
         # --- sensor loopback (see sim.proto's Telemetry comment) -------------
         # Recent values as actually put on the wire, i.e. rounded to float32 by
@@ -384,6 +426,7 @@ class _Checks:
         self.nav_valid_seen = 0      # union of every bitmask observed
 
     def motors(self, values):
+        self.motor_frames += 1
         for v in values:
             if v != v:
                 self.nan += 1
@@ -527,13 +570,36 @@ class _Checks:
             self.nav_pos_samples += 1
             self.nav_pos_err_max = max(self.nav_pos_err_max, best)
 
-    def state(self, alt, euler):
+    def state(self, alt, euler, armed=False, sim_t=0.0):
         self.samples += 1
+        if self.t_first is None:
+            self.t_first = sim_t
+        self.t_last = sim_t
         if alt != alt or any(e != e for e in euler):
             self.nan += 1
             return
         self.alt_min = min(self.alt_min, alt)
         self.alt_max = max(self.alt_max, alt)
+
+        # Disarmed, or still on the gear, the attitude says nothing about the
+        # loop - see ATTITUDE_AIRBORNE_FT. A plan that never flies simply
+        # produces no window, and report() then has nothing to assert.
+        if not armed or alt < ATTITUDE_AIRBORNE_FT:
+            return
+        roll, pitch = math.degrees(euler[0]), math.degrees(euler[1])
+        self.att_peak[0] = max(self.att_peak[0], abs(roll))
+        self.att_peak[1] = max(self.att_peak[1], abs(pitch))
+        self.att_window.append((sim_t, roll, pitch))
+        while self.att_window and (sim_t - self.att_window[0][0]) > ATTITUDE_SETTLE_S:
+            self.att_window.popleft()
+
+    def _settle_pkpk(self):
+        """Peak-to-peak roll and pitch over the tail of the run, or None."""
+        if len(self.att_window) < 2:
+            return None
+        rolls = [w[1] for w in self.att_window]
+        pitches = [w[2] for w in self.att_window]
+        return (max(rolls) - min(rolls), max(pitches) - min(pitches))
 
     def report(self, armed_ever: bool) -> int:
         """Print a pass/fail summary; return a process exit code."""
@@ -573,6 +639,16 @@ class _Checks:
             if self.gps_stopped and self.gps_lost_reports == 0:
                 fails.append("gps: NMEA was cut but the FC never reported the fix lost "
                              "(check GPS_FIX_TIMEOUT_US / Gps_HasFix)")
+
+        # Attitude gates - see ATTITUDE_MAX_DEG / ATTITUDE_SETTLE_PKPK_DEG.
+        if self.att_peak[0] > ATTITUDE_MAX_DEG or self.att_peak[1] > ATTITUDE_MAX_DEG:
+            fails.append(f"attitude departed: peak roll {self.att_peak[0]:.1f} deg, "
+                         f"pitch {self.att_peak[1]:.1f} deg (limit {ATTITUDE_MAX_DEG:.0f})")
+        pkpk = self._settle_pkpk()
+        if pkpk is not None and max(pkpk) > ATTITUDE_SETTLE_PKPK_DEG:
+            fails.append(f"attitude never settled: last {ATTITUDE_SETTLE_S:.0f}s peak-to-peak "
+                         f"roll {pkpk[0]:.1f} deg, pitch {pkpk[1]:.1f} deg "
+                         f"(limit {ATTITUDE_SETTLE_PKPK_DEG:.1f})")
 
         # Estimator gates. Each is silent unless its INPUT was actually streamed,
         # so a --dry-run or an older plan still passes - but once the sensor was
@@ -626,6 +702,15 @@ class _Checks:
                   f"baro_alt={bool(self.nav_valid_seen & NAV_VALID_BARO_ALT)} "
                   f"position={bool(self.nav_valid_seen & NAV_VALID_POSITION)} "
                   f"velocity={bool(self.nav_valid_seen & NAV_VALID_VELOCITY)})")
+        if self.motor_frames and self.t_first is not None and self.t_last > self.t_first:
+            print(f"[checks] control     {self.motor_frames} actuator frames over "
+                  f"{self.t_last - self.t_first:.1f}s sim = "
+                  f"{self.motor_frames / (self.t_last - self.t_first):.0f} Hz")
+        pkpk = self._settle_pkpk()
+        if pkpk is not None:
+            print(f"[checks] attitude     peak roll {self.att_peak[0]:.1f} / pitch "
+                  f"{self.att_peak[1]:.1f} deg; last {ATTITUDE_SETTLE_S:.0f}s pk-pk "
+                  f"{pkpk[0]:.2f} / {pkpk[1]:.2f} deg")
         print(f"[checks] NaN samples  {self.nan}")
         if self.gps_nonfinite:
             print(f"[checks] FDM diverged {self.gps_nonfinite} non-finite ticks")
@@ -1016,7 +1101,7 @@ def main(argv=None):
             rc_ser.write(crsf.rc_frame(channels))
 
         if fdm is not None:
-            checks.state(fdm["position/h-agl-ft"], (phi, theta, psi))
+            checks.state(fdm["position/h-agl-ft"], (phi, theta, psi), fc_armed, sim_t)
 
         # --- publish state to the flight GUI, on its own wire ---
         if gui_sock is not None and now >= next_gui:
@@ -1035,7 +1120,10 @@ def main(argv=None):
             try:
                 gui_sock.sendto(
                     make_gui_packet(sim_t, (phi, theta, psi), truth_alt,
-                                    last_tm, last_servo, last_motor),
+                                    last_tm, last_servo, last_motor,
+                                    (fdm["velocities/v-north-fps"] * FT2M,
+                                     fdm["velocities/v-east-fps"] * FT2M)
+                                    if fdm is not None else None),
                     (GUI_HOST, args.gui_port))
             except OSError:
                 pass

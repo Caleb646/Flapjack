@@ -41,7 +41,31 @@
 // main control loop update rate in Hz
 #define CFG_LOOP_UPDATE_RATE_HZ              200U
 
-#define CFG_GYRO_MEASURE_ERROR_DEGS          5.0F
+/*
+ * Madgwick beta, as the gyro measurement error it is derived from:
+ * beta = sqrt(3/4) * DEG2RAD(this), i.e. the rate at which the ACCELEROMETER is
+ * allowed to drag the estimate. It is not a noise figure - it is how much this
+ * filter trusts gravity over the gyro.
+ *
+ * That trust is the problem, because for a rotorcraft in free flight the
+ * accelerometer is not a gravity reference. Specific force points along the
+ * thrust axis whatever the attitude, so the accel-implied bank works out as
+ * (b/mg)*v - a drag-scaled VELOCITY reading, correct only once drag has
+ * balanced and the vehicle has stopped accelerating. Angle mode closes on that
+ * estimate (guidance.c), so the faster beta drags it, the harder the loop is
+ * driven by a signal carrying no attitude information.
+ *
+ * 5.0 was 4.33 deg/s of slew regardless of error size. Betaflight's Mahony
+ * equivalent (imu_dcm_kp 0.25, imu.c) corrects at Kp*error - 1.25 deg/s at a
+ * 5 deg error, 0.25 deg/s at 1 deg - so this was 3.5-17x more accel-trusting
+ * than a reference implementation flying the same cascade. 1.4 matches it at
+ * typical in-flight error.
+ *
+ * The cost is convergence time, which the arming interlock pays for
+ * (ARM_ATTITUDE_SETTLE_US wants 3 s of stillness after the estimate settles).
+ * Measure time-to-arm if this is lowered further.
+ */
+#define CFG_GYRO_MEASURE_ERROR_DEGS          1.4F
 #define CFG_GYRO_MEASURE_DRIFT_DEGS          0.2F
 
 /*
@@ -122,6 +146,48 @@
 #define CFG_PID_YAW_P                        0.00166667F
 #define CFG_PID_YAW_I                        0.00027778F
 #define CFG_PID_YAW_D                        0.00000083F
+/*
+ * Angle mode. The roll and pitch sticks command a BANK ANGLE, not a rate: an
+ * outer P loop turns the angle error into the rate setpoint the rate PIDs above
+ * already close on (guidance.c). Centre stick therefore means LEVEL rather than
+ * "stop rotating", and the bank a pilot can reach - and so the vertical thrust
+ * it costs - is bounded. Yaw stays a rate command; there is no attitude to
+ * level to.
+ *
+ * Units: deg/s of rate demand per deg of angle error. Error is in DEGREES
+ * because nav euler is (filter.c converts on the way out).
+ *
+ * Swept on the host against the JSBSim tiltrotor at 100/200/400 Hz (the loop is
+ * IMU-paced, so one rate proves nothing), driving the real pid.c and mixer.c
+ * including the tilt servos' rate limit and lag. These are the fastest values
+ * that still overshoot ZERO on a full-scale 30 deg step:
+ *
+ *              step to 30 deg   recover 45 deg   overshoot
+ *   roll         0.57 s           0.62 s          0.00 deg
+ *   pitch        2.24 s           2.48 s          0.00 deg
+ *
+ * The two differ because the plants do, and the gap is not cosmetic: pitch acts
+ * through the tilt servos - rate-limited and lagged - and its plant gain is
+ * ~2.8x lower, so roll's 4.0 costs pitch 5-7 deg of overshoot. Do not raise
+ * pitch to match roll without measuring the rotor height first; pitch authority
+ * scales linearly with it and it is still an estimate (see tiltrotor.xml).
+ *
+ * Also unmodelled: motor/ESC lag. Roll is differential THRUST and the FDM
+ * applies it instantly, so roll's margin here is optimistic in a way pitch's
+ * is not. Re-check roll against a real airframe before raising it.
+ */
+#define CFG_ANGLE_ROLL_P                     4.0F
+#define CFG_ANGLE_PITCH_P                    2.0F
+
+/*
+ * Bank/pitch ceiling in angle mode, in degrees. Full stick commands exactly
+ * this. Lift scales with cos(angle), so 30 deg costs 13% of vertical thrust -
+ * comfortably inside this airframe's 2:1 margin, and the bound is the point:
+ * in the rate loop this replaced, any stick input left a permanent bank whose
+ * lift cost nothing put a limit on.
+ */
+#define CFG_ANGLE_MAX_DEG                    30.0F
+
 /*
  * Altitude-hold gains. Error is in METRES and the output is normalised throttle
  * trim about CFG_HOVER_THROTTLE - not the units the previous values (~1/1800)

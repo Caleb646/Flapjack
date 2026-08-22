@@ -12,6 +12,33 @@
 #include <string.h>
 
 /*
+ * Accelerometer trust band, as a fraction of 1 g.
+ *
+ * The accel is only a gravity reference when the vehicle is NOT accelerating.
+ * For a rotorcraft in free flight specific force points along the thrust axis
+ * whatever the attitude, so the reading stays plausible while carrying no
+ * attitude information at all - which is why this is a band and not a validity
+ * test. What it does catch is the case where the vehicle is banked far enough
+ * that holding altitude needs g/cos(phi) of thrust: at the 1.1 bound that is
+ * 24.6 deg, and past there the reading is provably not gravity.
+ *
+ * The band is Betaflight's (imuIsAccelerometerHealthy, imu.c) and is a physical
+ * property of "is this reading gravity", not an airframe tune - hence a define
+ * here rather than a cfg.h knob.
+ */
+#define FILTER_ACCEL_TRUST_MIN_G 0.9F
+#define FILTER_ACCEL_TRUST_MAX_G 1.1F
+#define FILTER_GRAVITY_MPS2      9.80665F
+
+/* False when the accel magnitude says the reading cannot be gravity. Also false
+ * for NaN, which is the point: both comparisons fail and the sample is dropped
+ * rather than integrated. */
+STATIC bool MadgwickFilter_AccelUsable (float magMps2) {
+    float g = magMps2 / FILTER_GRAVITY_MPS2;
+    return (g > FILTER_ACCEL_TRUST_MIN_G) && (g < FILTER_ACCEL_TRUST_MAX_G);
+}
+
+/*
  * The filter expects the accel and gyro data to be in the FRD coordinate
  * system. For example, an accel reading of (0, 0, +1g) means the sensor is
  * stationary and level. So the returned attitude will move towards (0, 0,
@@ -62,11 +89,19 @@ void MadgwickFilter_Update_6DOF_ (MadgwickFilter_t* pFilter, Vec3f const* pAccel
     float twoSEq_2       = 2.0F * SEq_2;
     float twoSEq_3       = 2.0F * SEq_3;
 
-    norm = sqrtf (a_x * a_x + a_y * a_y + a_z * a_z) + 0.0001F;
+    float accelMag = sqrtf (a_x * a_x + a_y * a_y + a_z * a_z);
+    norm = accelMag + 0.0001F;
     norm = 1.0F / norm;
     a_x *= norm;
     a_y *= norm;
     a_z *= norm;
+
+    /* With no magnetometer the accel is the only correction there is, so an
+     * untrustworthy one leaves nothing to apply - coast on the gyro. The 9DOF
+     * path drops just the accel rows instead, because its mag rows survive. */
+    if (!MadgwickFilter_AccelUsable (accelMag)) {
+        beta = 0.0F;
+    }
 
     // Compute the objective function and Jacobian
     f_1 = twoSEq_2 * SEq_4 - twoSEq_1 * SEq_3 - a_x;
@@ -185,7 +220,8 @@ void MadgwickFilter_Update_9DOF_ (MadgwickFilter_t* pFilter, Vec3f const* pAccel
     float twom_y      = 2.0F * m_y;
     float twom_z      = 2.0F * m_z;
     // normalise the accelerometer measurement
-    norm = sqrtf (a_x * a_x + a_y * a_y + a_z * a_z) + 0.0001F;
+    float accelMag = sqrtf (a_x * a_x + a_y * a_y + a_z * a_z);
+    norm = accelMag + 0.0001F;
     norm = 1.0F / norm;
     a_x *= norm;
     a_y *= norm;
@@ -203,6 +239,16 @@ void MadgwickFilter_Update_9DOF_ (MadgwickFilter_t* pFilter, Vec3f const* pAccel
     f_4 = twob_x * (0.5F - SEq_3 * SEq_3 - SEq_4 * SEq_4) + twob_z * (SEq_2SEq_4 - SEq_1SEq_3) - m_x;
     f_5 = twob_x * (SEq_2 * SEq_3 - SEq_1 * SEq_4) + twob_z * (SEq_1 * SEq_2 + SEq_3 * SEq_4) - m_y;
     f_6 = twob_x * (SEq_1SEq_3 + SEq_2SEq_4) + twob_z * (0.5F - SEq_2 * SEq_2 - SEq_3 * SEq_3) - m_z;
+    /* f_1..f_3 are the accel rows of the objective function and f_4..f_6 the mag
+     * rows; the gradient below is linear in both, so zeroing the first three
+     * removes the accel's contribution and leaves the heading correction intact.
+     * That is the same split Betaflight makes - it gates the accel term out of
+     * the Mahony error while the mag/COG term still reaches the same gain. */
+    if (!MadgwickFilter_AccelUsable (accelMag)) {
+        f_1 = 0.0F;
+        f_2 = 0.0F;
+        f_3 = 0.0F;
+    }
     J_11or24 = twoSEq_3; // J_11 negated in matrix multiplication
     J_12or23 = 2.0F * SEq_4;
     J_13or22 = twoSEq_1; // J_12 negated in matrix multiplication

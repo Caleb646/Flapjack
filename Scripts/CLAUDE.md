@@ -53,12 +53,15 @@ python3 Scripts/board.py gui
 # read the board during a sim; it publishes FDM truth, the FC's estimate and the
 # FC's servo/motor commands as JSON over UDP instead. On by default (--gui-port,
 # 5005; 0 disables), so the sim command above needs no extra flag - just hit
-# Listen in the GUI's "Sim Graphs" tab. JSBSim's attitude and altitude then
-# drive the 3D viewer too. The same link runs the other way: tick "Send Sticks"
-# in that tab's RC Sticks panel to fly throttle/roll/pitch/yaw by hand, and
-# "Altitude Hold" for the AUX2 mode switch the FC reads. The
-# bridge overrides whatever it would otherwise send with those sticks, and takes
-# its own back 0.5 s after the GUI goes quiet.
+# Listen in the GUI's "Sim Graphs" tab. The 3D viewer follows the same feed,
+# flying on the FC's own estimated attitude and altitude - flip its Source to
+# Truth to watch JSBSim's instead, or Pop Out for a window of its own. The same
+# link runs the other way: tick "Send Sticks"
+# in that tab's RC Sticks panel to fly throttle/roll/pitch/yaw by hand. There is
+# no mode switch - the FC has one flight mode, always active, holding altitude on
+# the throttle stick and attitude on roll/pitch. The bridge overrides whatever it
+# would otherwise send with those sticks, and takes its own back 0.5 s after the
+# GUI goes quiet.
 python3 Scripts/board.py gui
 ```
 
@@ -89,8 +92,13 @@ Build artifacts land in `Build/<board>/<config>/` as `cm7.elf` and `cm4.elf`. CM
   `QSerialPort`), and the sim link (`SimLink`, a UDP feed from the bridge's
   `--gui-port`) which supplies the "Sim Graphs" tab and the 3D viewer during a
   SIL run. They are never live at once - the bridge holds the FC's wire. The
-  sim link is bidirectional: the GUI answers the feed with stick positions,
-  which the bridge folds into the CRSF it is already sending. Arming is not
+  3D viewer picks between the feed's two poses, defaulting to the FC's estimate,
+  and honours `nav_valid` one axis at a time: an axis the FC does not yet vouch
+  for holds its last good value instead of being drawn as zero. It also pops out
+  into a window of its own, which is why `main()` sets `AA_ShareOpenGLContexts` -
+  reparenting a `QOpenGLWidget` recreates its context, and unshared VBOs die with
+  the old one. The sim link is bidirectional: the GUI answers the feed with
+  stick positions, which the bridge folds into the CRSF it is already sending. Arming is not
   among them - that stays with the bridge's own gesture.
 - **`utils.py`** — two helpers used by other scripts: `is_installed(binary)` (shutil.which) and `run_command(cmd, ...)` (subprocess, exits on failure).
 - **`stm32h747_dual_core.cfg`** — OpenOCD config for the dual-core STM32H747. Used directly by `flash`. Enables `DUAL_BANK` and `DUAL_CORE`, resets via `connect_assert_srst`, flashes both CM7 and CM4 banks.

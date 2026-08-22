@@ -12,12 +12,39 @@
 #include "umsg_tune.h"
 
 #include "FreeRTOS.h"
+#include "task.h"
 
 #include <string.h>
 
-// Plausible bounds on one control interval: the loop is IMU-paced, so anything
-// faster than 2 kHz is a duplicated iteration and anything slower than 50 Hz is
-// a stall.
+/*
+ * This loop paces ITSELF, rather than running once per guidance setpoint.
+ *
+ * Blocking on guidance made guidance's publish rate the control task's clock -
+ * an undocumented coupling that put the actuator loop at the mercy of anything
+ * upstream of it in the nav -> guidance chain. All three inputs are latest-value
+ * reads now, so a stalled producer costs a stale input rather than a stopped
+ * controller.
+ *
+ * xTaskDelayUntil rather than vTaskDelay: the latter delays for the period
+ * AFTER the work, so the real rate is (work + delay) and drifts with load.
+ *
+ * The period is ticks-per-second divided by the rate, NOT pdMS_TO_TICKS of a
+ * millisecond period - 1000/400 truncates to 2 ms in integer arithmetic, so
+ * that spelling would silently deliver 500 Hz while the constant claimed 400.
+ * The assert keeps the two honest: if either value changes so the rate no
+ * longer divides the tick exactly, this fails to build rather than quietly
+ * running at something else. configTICK_RATE_HZ was raised to 2000 for exactly
+ * this reason - see the platform FreeRTOSConfig.h.
+ */
+#define CONTROL_RATE_HZ      400U
+#define CONTROL_PERIOD_TICKS (configTICK_RATE_HZ / CONTROL_RATE_HZ)
+
+_Static_assert ((configTICK_RATE_HZ % CONTROL_RATE_HZ) == 0U,
+                "CONTROL_RATE_HZ must divide configTICK_RATE_HZ exactly");
+
+// Plausible bounds on one control interval. dt is still MEASURED rather than
+// assumed from the period above - an overrun should scale the integral and
+// derivative by the time that actually passed, not by the time intended.
 #define CONTROL_DT_MIN_S 0.0005f
 #define CONTROL_DT_MAX_S 0.02f
 
@@ -29,6 +56,7 @@ typedef struct {
     uint32_t             usLastUpdateTime;
     umsg_nav_state_t     nav;
     umsg_mission_state_t mission;
+    umsg_guidance_setpoints_t sp;
 } Control_t;
 
 static Control_t s_Control;
@@ -86,13 +114,11 @@ eSTATUS_t Control_Init(void) {
 
 eSTATUS_t Control_Update(void) {
 
-    umsg_guidance_setpoints_t sp;
-    if (!umsg_guidance_setpoints_receive(s_Control.guidance_sub, &sp, portMAX_DELAY)) {
-        return eSTATUS_FAILURE;
-    }
-
-    // Latest-value caches: these queues are length 1 (overwrite), and receive()
-    // consumes, so keep the last value for iterations with no new message.
+    /* Latest-value caches, all three: the queues are length 1 (overwrite) and
+     * receive() consumes, so keep the last value for iterations with no new
+     * message. The setpoint is now cached like the other two - this loop runs
+     * on its own clock and must not stall waiting for one. */
+    umsg_guidance_setpoints_receive(s_Control.guidance_sub, &s_Control.sp, 0);
     umsg_nav_state_receive(s_Control.nav_sub, &s_Control.nav, 0);
     umsg_mission_state_receive(s_Control.mission_sub, &s_Control.mission, 0);
 
@@ -126,13 +152,46 @@ eSTATUS_t Control_Update(void) {
     // than let it scale the integral and derivative terms.
     dt = clipf32(dt, CONTROL_DT_MIN_S, CONTROL_DT_MAX_S);
 
+    /*
+     * Disarmed, the loop does no work and every axis is held reset.
+     *
+     * It used to run in full and gate only the two actuator WRITES at the
+     * bottom, which meant the rate PIDs spent the whole pre-arm hold
+     * integrating a stick deflection the vehicle cannot answer - nothing moves,
+     * so the error never reduces and the integral is pure stored lag. It landed
+     * as a full-differential twitch in the first frames of flight: two opposite
+     * 1.000/0.050 motor commands about 15 ms after the props spun.
+     *
+     * Holding the state reset here rather than clearing it on the arm edge is
+     * the difference between the loop never winding up and unwinding it once
+     * afterwards. It also keeps the mixer from leaving live actuator commands
+     * in g_Mixer that nothing is executing.
+     *
+     * Placement is deliberate. The message reads, the arm edge and the TUNE
+     * handler are all upstream: a bench `set_pid` over the shell has to work
+     * while disarmed, which is precisely when it would be used. dt is taken
+     * above too, so the first armed interval is one period rather than however
+     * long the vehicle sat on the ground.
+     */
+    if (!armed) {
+        for (uint32_t i = 0; i < AXIS_IDX_COUNT; ++i) {
+            s_pid.axes[i].prevIntegral       = 0.0f;
+            s_pid.axes[i].hasPrevMeasurement = false;
+        }
+        /* So the altitude-hold entry below sees a genuine entry on arming,
+         * rather than carrying s_prevAltHold across a disarm from the last
+         * flight and skipping its own reset. */
+        s_prevAltHold = false;
+        return eSTATUS_SUCCESS;
+    }
+
     // Rate PID: guidance w[] is in rad/s, nav gyro[] is in deg/s from the IMU.
     // Convert targets to deg/s to match the sensor units.
     float pid_data[AXIS_IDX_COUNT];
     float targets[3] = {
-        RAD2DEG(sp.w[0]),
-        RAD2DEG(sp.w[1]),
-        RAD2DEG(sp.w[2]),
+        RAD2DEG(s_Control.sp.w[0]),
+        RAD2DEG(s_Control.sp.w[1]),
+        RAD2DEG(s_Control.sp.w[2]),
     };
 
     // Pid_UpdateAxis already returns the normalised mixer command, clipped to
@@ -153,13 +212,12 @@ eSTATUS_t Control_Update(void) {
      * three close on gyro, and there is no gyro for the vertical axis. It
      * closes on the nav altitude estimate instead.
      *
-     * NAV_VALID_BARO_ALT is re-checked here rather than trusted from guidance:
+     * NAV_VALID_BARO_ALT is checked here rather than trusted from guidance:
      * the estimate can drop out between the two tasks, and closing a loop on
      * an altitude that no longer exists commands full throttle at whatever the
      * stale error was.
      */
-    bool altHold = (s_Control.mission.mode == EMISSION_MODE_ALTITUDE_HOLD) &&
-                   ((s_Control.nav.valid & NAV_VALID_BARO_ALT) != 0U);
+    bool altHold = (s_Control.nav.valid & NAV_VALID_BARO_ALT) != 0U;
 
     /* Entering the mode - or arming into it - starts from a clean integrator.
      * A stale one carries in the wind-up from the last engagement and spends
@@ -173,23 +231,49 @@ eSTATUS_t Control_Update(void) {
     if (altHold) {
         float alt = -s_Control.nav.pos_ned[2];   // NED, down positive
         float vz  = -s_Control.nav.vel_ned[2];   // climb rate, up positive
-        float trim = Pid_UpdateAxis(&pPid->axes[AXIS_IDX_THROTTLE], alt, sp.vel_b[2], dt);
+        float trim = Pid_UpdateAxis(&pPid->axes[AXIS_IDX_THROTTLE], alt, s_Control.sp.vel_b[2], dt);
         /* Damping term, applied outside the PID because it is derived from a
          * different (and far cleaner) estimate than the one the PID closes on
          * - see CFG_ALT_HOLD_VZ_DAMPING. */
         trim -= CFG_ALT_HOLD_VZ_DAMPING * vz;
-        pid_data[AXIS_IDX_THROTTLE] = clipf32(CFG_HOVER_THROTTLE + trim, 0.0f, 1.0f);
+
+        /*
+         * Tilt compensation. Lift is the VERTICAL component of thrust, so a
+         * banked or pitched airframe loses it as cos(tilt) - 13% at the 30 deg
+         * angle limit (see CFG_ANGLE_MAX_DEG). Without this the integrator has
+         * to discover that deficit and cancel it, and it has only
+         * CFG_PID_INTEGRAL_LIMIT (0.3) of authority to do it with.
+         *
+         * cosTilt is the bottom-right element of the body->NED rotation, the
+         * same one Nav_VerticalAccelUp forms its row from. Multiplying the WHOLE
+         * command - feedforward included, not just the trim - is the point: it
+         * is the hover thrust that is being projected away.
+         *
+         * Floored at 0.5 (60 deg, 2x boost) so an extreme attitude cannot ask
+         * for unbounded throttle. Written as !(x > 0.5) rather than (x < 0.5) so
+         * a NaN quaternion floors instead of propagating - same idiom as the dt
+         * guard in pid.c.
+         *
+         * NOT the same thing as the mixer's ABS(pitch) collective term, which
+         * gives back lift lost to ROTOR tilt relative to the airframe. Bank of
+         * the airframe itself is what this covers.
+         */
+        float q2      = s_Control.nav.quat[1];
+        float q3      = s_Control.nav.quat[2];
+        float cosTilt = 1.0f - (2.0f * ((q2 * q2) + (q3 * q3)));
+        if (!(cosTilt > 0.5f)) {
+            cosTilt = 0.5f;
+        }
+
+        pid_data[AXIS_IDX_THROTTLE] =
+            clipf32((CFG_HOVER_THROTTLE + trim) / cosTilt, 0.0f, 1.0f);
     } else {
-        pid_data[AXIS_IDX_THROTTLE] = sp.vel_b[2];
+        pid_data[AXIS_IDX_THROTTLE] = s_Control.sp.vel_b[2];
     }
 
     Mixer_MixMotors(&g_Mixer, pid_data, g_Mixer.motorOutputs);
     memset(g_Mixer.servoOutputs, 0, sizeof(g_Mixer.servoOutputs));
     Mixer_MixServos(&g_Mixer, pid_data, g_Mixer.servoOutputs);
-
-    if (!armed) {
-        return eSTATUS_SUCCESS;
-    }
 
     eSTATUS_t status = Servos_Write(g_Mixer.servoOutputs);
     if (STATUS_FAIL(status)) {
@@ -209,7 +293,9 @@ eSTATUS_t Control_Update(void) {
 void Control_Task(void* args) {
     (void)args;
     Control_Init();
+    TickType_t lastWake = xTaskGetTickCount();
     while (1) {
         Control_Update();
+        xTaskDelayUntil (&lastWake, CONTROL_PERIOD_TICKS);
     }
 }

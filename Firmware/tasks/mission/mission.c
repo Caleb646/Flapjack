@@ -14,7 +14,6 @@
 /* Single threshold, not the two-sided hysteresis the arm switch uses: a
  * mode change is not an edge-triggered latch, so there is no state to get
  * stuck in if the stick sits near the boundary. */
-#define MODE_AUX_THRESHOLD    1750U
 #define ARM_THROTTLE_MAX      1100U
 #define MISSION_RC_TIMEOUT_MS 20U
 
@@ -128,7 +127,7 @@ eSTATUS_t Mission_Init(void) {
     s_Mission.rc_sub        = umsg_rc_input_subscribe(1, 4);
     s_Mission.arm_req_sub   = umsg_arming_request_subscribe(1, 4);
     s_Mission.nav_sub       = umsg_nav_state_subscribe(1, 1);
-    s_Mission.mode          = EMISSION_MODE_MANUAL;
+    s_Mission.mode          = EMISSION_MODE_ALTITUDE_HOLD;
     s_Mission.isArmed       = false;
     s_Mission.haveRc        = false;
     s_Mission.haveNav       = false;
@@ -173,14 +172,16 @@ eSTATUS_t Mission_Update(void) {
     }
     Mission_TrackAttitudeSettle();
 
-    /* Flight mode from AUX2. Tracked continuously rather than only while
-     * armed, so the mode the pilot selected before takeoff is the one that
-     * is active the moment the vehicle arms. */
-    if (s_Mission.haveRc) {
-        s_Mission.mode = (s_Mission.lastRc.channels[RC_CHANNEL_IDX_AUX_2] > MODE_AUX_THRESHOLD)
-                             ? EMISSION_MODE_ALTITUDE_HOLD
-                             : EMISSION_MODE_MANUAL;
-    }
+    /* One flight mode: hold altitude on the throttle stick, hold attitude on
+     * roll and pitch. There is no AUX2 mode switch and no manual alternative -
+     * a pilot should not have to pick, and every mode boundary is a transient
+     * to get wrong.
+     *
+     * This is not the same as having no fallback. Both loops degrade on their
+     * own inputs: guidance drops to throttle passthrough without
+     * NAV_VALID_BARO_ALT, and to a rate command without NAV_VALID_ATTITUDE.
+     * Those are sensor failures, not modes. */
+    s_Mission.mode = EMISSION_MODE_ALTITUDE_HOLD;
 
     // RC arm-switch intent (edge-detected with hysteresis).
     ArmIntent_t rcIntent = ARM_INTENT_NONE;

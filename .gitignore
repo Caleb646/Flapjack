@@ -4,6 +4,8 @@ CM4/Release/**
 CM7/Release/**
 *.cyclo
 
+Research
+
 Scripts/build
 
 **/build/**
