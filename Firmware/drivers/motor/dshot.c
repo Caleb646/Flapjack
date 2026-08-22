@@ -195,7 +195,9 @@ static eSTATUS_t Dshot_Arm (void* ctx) {
         if (DShotBB_Write (armThrottles) != eSTATUS_SUCCESS) {
             return eSTATUS_FAILURE;
         }
-        Delay (msDelay);
+        /* Busy-wait: the ESC is timing this frame cadence, so the arm stream
+         * must not be stretched by whatever else wants to run. */
+        DelayBusyWait (msDelay);
     }
     return eSTATUS_SUCCESS;
 }

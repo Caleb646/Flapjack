@@ -254,11 +254,18 @@ eSTATUS_t SpiDev_ReadRegister (SpiDev_t* pDev, uint8_t reg, uint8_t* pOutData, u
     HAL_GPIO_WritePin (pDev->cfg.pNssPort, pDev->cfg.nssPin, GPIO_PIN_RESET);
     reg |= 0x80U; // set read bit
     HAL_StatusTypeDef status = HAL_SPI_Transmit (&pDev->pBus->handle, &reg, 1U, HAL_MAX_DELAY);
-    HAL_StatusTypeDef status2 = HAL_SPI_Receive (&pDev->pBus->handle, pOutData, size, HAL_MAX_DELAY);
-    // eSTATUS_t status  = SpiDev_WriteRead_ (pDev, &reg, NULL, 1U);
-    // eSTATUS_t status2 = SpiDev_WriteRead_ (pDev, NULL, pOutData, size);
+
+    /*
+     * Full duplex rather than HAL_SPI_Receive, which drives CFG2.COMM to
+     * simplex-receiver (SPI_2LINES_RX). Renode's STM32H7_SPI leaves COMM as an
+     * unimplemented tag and only clocks the slave from a TXDR write, so the
+     * simplex path hangs forever under the SIL - and with HAL_MAX_DELAY the
+     * timeout never fires. Sending pOutData back out is harmless: every part on
+     * these buses ignores MOSI once the address byte is in.
+     */
+    HAL_StatusTypeDef status2 =
+    HAL_SPI_TransmitReceive (&pDev->pBus->handle, pOutData, pOutData, size, HAL_MAX_DELAY);
     HAL_GPIO_WritePin (pDev->cfg.pNssPort, pDev->cfg.nssPin, GPIO_PIN_SET);
-    // return (status == eSTATUS_SUCCESS && status2 == eSTATUS_SUCCESS) ? eSTATUS_SUCCESS : eSTATUS_FAILURE;
 
     return (status == HAL_OK && status2 == HAL_OK) ? eSTATUS_SUCCESS : eSTATUS_FAILURE;
 }

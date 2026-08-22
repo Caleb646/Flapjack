@@ -32,7 +32,9 @@ void Gps_Task (void* args) {
 
     if (STATUS_FAIL (Gps_Init (&s_Gps))) {
         LOG_ERROR ("GPS unavailable; task exiting");
-        vTaskDelete (NULL);
+        /* Not vTaskDelete: this build uses heap_1, whose vPortFree asserts -
+         * and configASSERT spins with interrupts disabled, wedging the FC. */
+        vTaskSuspend (NULL);
         return;
     }
 

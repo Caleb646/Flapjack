@@ -604,6 +604,10 @@ def cmd_gen(_: argparse.Namespace) -> None:
 
 RENODE_DIR    = TOOLS_ROOT / "renode"
 RENODE_SCRIPT = SCRIPTS_ROOT / "renode" / "flapjack_sil.resc"
+# The emulated BMI323 listens here for pushed samples. It is set in the platform
+# overlay (Scripts/renode/flapjack_h7_cm7.repl) rather than on Renode's command
+# line, so it is not a --flag here - it is quoted into the bridge hint below.
+IMU_SAMPLE_PORT = 4010
 
 
 def _renode_binary() -> str:
@@ -666,9 +670,11 @@ def cmd_renode(args: argparse.Namespace) -> None:
     print(f"  rc link  : socket://localhost:{args.rc_port}")
     print(f"  gps link : socket://localhost:{args.gps_port}")
     print(f"  monitor  : localhost:{args.monitor_port}")
+    print(f"  imu      : socket://localhost:{IMU_SAMPLE_PORT}  (emulated BMI323, Scripts/renode/BMI323.cs)")
     print(f"  bridge   : python Scripts/board.py sim --port socket://localhost:{args.port} "
           f"--rc-port socket://localhost:{args.rc_port} "
-          f"--gps-port socket://localhost:{args.gps_port} --rate 400")
+          f"--gps-port socket://localhost:{args.gps_port} "
+          f"--imu-port socket://localhost:{IMU_SAMPLE_PORT} --rate 400")
     print("  Ctrl-C to stop.\n")
     try:
         subprocess.run(cmd, cwd=PROJECT_ROOT, check=False)

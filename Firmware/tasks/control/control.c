@@ -29,14 +29,19 @@
  * AFTER the work, so the real rate is (work + delay) and drifts with load.
  *
  * The period is ticks-per-second divided by the rate, NOT pdMS_TO_TICKS of a
- * millisecond period - 1000/400 truncates to 2 ms in integer arithmetic, so
- * that spelling would silently deliver 500 Hz while the constant claimed 400.
- * The assert keeps the two honest: if either value changes so the rate no
- * longer divides the tick exactly, this fails to build rather than quietly
- * running at something else. configTICK_RATE_HZ was raised to 2000 for exactly
- * this reason - see the platform FreeRTOSConfig.h.
+ * millisecond period. At 500 Hz on a 1000 Hz tick both spell 2 ms, but the
+ * moment the rate stops being a whole number of milliseconds the pdMS_TO_TICKS
+ * form truncates and silently runs fast. The assert keeps the two honest: if
+ * either value changes so the rate no longer divides the tick exactly, this
+ * fails to build rather than quietly running at something else.
+ *
+ * 500 Hz rather than 400 because configTICK_RATE_HZ is 1000 and 1000/400 is
+ * 2.5 ticks, which cannot be expressed. The pair was 400 Hz on a 2000 Hz tick
+ * until the tick was halved to cut the timer ISR load; the PID takes dt per
+ * call and the PT1 filters are parameterised by cutoff rather than by a fixed
+ * coefficient, so neither needed retuning for the new rate.
  */
-#define CONTROL_RATE_HZ      400U
+#define CONTROL_RATE_HZ      500U
 #define CONTROL_PERIOD_TICKS (configTICK_RATE_HZ / CONTROL_RATE_HZ)
 
 _Static_assert ((configTICK_RATE_HZ % CONTROL_RATE_HZ) == 0U,

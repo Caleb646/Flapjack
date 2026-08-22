@@ -332,6 +332,21 @@ def make_sensor_frame(accel, gyro, mag) -> bytes:
     return frame(MSG_SENSOR, msg.SerializeToString())
 
 
+def make_imu_push(accel, gyro) -> bytes:
+    """Pack one sample for the emulated BMI323 (Scripts/renode/BMI323.cs).
+
+    Not a sim-link frame: this goes to the Renode peripheral model, not to the
+    FC, and the FC then reads it back over emulated SPI through the real bmi323
+    driver. Same die-frame values SensorData carries - devices/imu.c undoes the
+    die rotation identically on both paths - so there is nothing extra to
+    compute here.
+
+    26 bytes: 0xAA 0x55, then accel xyz (float32 m/s^2) and gyro xyz (float32
+    deg/s), little endian.
+    """
+    return struct.pack("<BB6f", 0xAA, 0x55, *accel, *gyro)
+
+
 def make_baro_frame(pressure_pa, temperature_c) -> bytes:
     msg = sim_pb2.BaroData(pressure_pa=pressure_pa, temperature_c=temperature_c)
     return frame(MSG_BARO, msg.SerializeToString())
@@ -830,6 +845,14 @@ def main(argv=None):
                          "dropping into failsafe. The FC should report rc_link_up=False "
                          "about a second later.")
     ap.add_argument("--rate", type=float, default=400.0, help="sensor stream rate (Hz)")
+    ap.add_argument("--imu-port", default=None,
+                    help="port carrying samples to the emulated BMI323, e.g. "
+                         "socket://localhost:4010. Under Renode the IMU is the real "
+                         "bmi323 driver talking to an emulated part, so this is the "
+                         "only accel/gyro path - SensorData still carries mag, but "
+                         "nothing reads its accel and gyro any more. Without it the "
+                         "FC logs 'IMU stopped producing data' and never gets an "
+                         "attitude.")
     ap.add_argument("--baro-rate", type=float, default=50.0,
                     help="BaroData frame rate (Hz). Its own frame at its own rate "
                          "rather than riding the 400 Hz sensor stream - a real "
@@ -901,6 +924,11 @@ def main(argv=None):
     rc_period = 1.0 / args.rc_rate if args.rc_rate > 0 else 0.0
     next_rc = 0.0
 
+    # Samples are pushed into the emulated part rather than handed to the FC, so
+    # a SIL run exercises the BMI323 register map, the SPI framing and the
+    # chip-select timing instead of stepping over all three.
+    imu_ser = open_port(args.imu_port, args.baud, timeout=0) if args.imu_port else None
+
     baro_period = 1.0 / args.baro_rate if args.baro_rate > 0 else 0.0
     next_baro = 0.0
 
@@ -956,6 +984,11 @@ def main(argv=None):
     last_print = t0
 
     print(f"[bridge] {'DRY-RUN' if args.dry_run else 'JSBSim'} on {args.port}@{args.baud}, {args.rate:.0f} Hz")
+    if imu_ser is not None:
+        print(f"[bridge] IMU samples on {args.imu_port}, {args.rate:.0f} Hz")
+    else:
+        print("[bridge] WARNING: no --imu-port, so the emulated BMI323 gets no samples "
+              "and the FC never gets an attitude")
     if rc_ser is not None:
         print(f"[bridge] CRSF RC on {args.rc_port}@{args.rc_baud}, {args.rc_rate:.0f} Hz")
     else:
@@ -1059,6 +1092,8 @@ def main(argv=None):
 
         accel, gyro, mag = synthesize_sensors(phi, theta, psi, p, q, r, udot, vdot, wdot)
         ser.write(make_sensor_frame(accel, gyro, mag))
+        if imu_ser is not None:
+            imu_ser.write(make_imu_push(accel, gyro))
 
         # --- barometer, on its own frame at its own rate ---
         # Under --dry-run the pressure is swept rather than held: a constant

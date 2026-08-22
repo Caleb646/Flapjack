@@ -39,7 +39,7 @@ the tool modules directly** (e.g. `python Scripts/sim/bridge.py`); go through `b
 | Build for the Renode SIL | `python Scripts/board.py build -b flapjack-v1 -D sim --single-core` |
 | Build with logs compiled out | `python Scripts/board.py build -b flapjack-v1 --log-level warn` |
 | Boot the firmware in Renode | `python Scripts/board.py renode -b flapjack-v1` |
-| Drive the SIL from the bridge | `python Scripts/board.py sim --port socket://localhost:4000 --rc-port socket://localhost:4001 --rate 400` |
+| Drive the SIL from the bridge | `python Scripts/board.py sim --port socket://localhost:4000 --rc-port socket://localhost:4001 --imu-port socket://localhost:4010 --rate 400` |
 | Fly a scripted flight plan | `... sim --port socket://localhost:4000 --rc-port socket://localhost:4001 --plan Scripts/sim/plans/hover.yaml` |
 
 Boards: `flapjack-v1`, `nucleo-h747zi`.
@@ -49,7 +49,10 @@ Boards: `flapjack-v1`, `nucleo-h747zi`.
 `renode` stands in for `flash`: it boots `cm7.elf` on an emulated Cortex-M7 and exposes **two**
 UARTs as TCP servers, so `sim` connects to sockets instead of COM ports:
 
-* **USART1 -> port 4000** — the sim link: sensors, actuators, telemetry, logs and the shell.
+* **USART1 -> port 4000** — the sim link: baro, actuators, telemetry, logs and the shell.
+* **TCP 4010** — the emulated BMI323. `-D sim` runs the *real* bmi323 driver, so accel and gyro
+  reach the FC by being pushed into the emulated part and read back over emulated SPI. Without
+  `--imu-port` the FC logs "IMU stopped producing data" and never gets an attitude.
 * **USART3 -> port 4001** — the **RX UART**, carrying real CRSF frames. This is the FC's only RC
   input; without `--rc-port` on the bridge the FC gets no sticks and **will never arm**.
 

@@ -24,9 +24,7 @@ typedef struct {
     float mag[3];
 } SensorSlot_t;
 
-static SemaphoreHandle_t s_sensorSem;   // given on each fresh SensorData (IMU consumer)
-static SemaphoreHandle_t s_magSem;      // ditto for the mag consumer - separate because a
-                                        // binary semaphore only ever wakes one waiter
+static SemaphoreHandle_t s_magSem;      // given on each fresh SensorData (mag consumer)
 static SemaphoreHandle_t s_baroSem;     // given on each fresh BaroData (its own frame, own rate)
 
 static SensorSlot_t s_sensor;           // latest sample (critical-section guarded)
@@ -49,8 +47,8 @@ static void SimLink_OnSensor (uint8_t const* pPayload, uint8_t len) {
     memcpy (s_sensor.gyro, msg.gyro, sizeof (s_sensor.gyro));
     memcpy (s_sensor.mag, msg.mag, sizeof (s_sensor.mag));
     s_haveSensor = true;
+    s_sensorCount++;
     taskEXIT_CRITICAL ();
-    (void)xSemaphoreGive (s_sensorSem);
     (void)xSemaphoreGive (s_magSem);
 }
 
@@ -69,10 +67,9 @@ static void SimLink_OnBaro (uint8_t const* pPayload, uint8_t len) {
 
 eSTATUS_t SimLink_Init (void) {
 
-    s_sensorSem = xSemaphoreCreateBinary ();
-    s_magSem    = xSemaphoreCreateBinary ();
-    s_baroSem   = xSemaphoreCreateBinary ();
-    if (!s_sensorSem || !s_magSem || !s_baroSem) {
+    s_magSem  = xSemaphoreCreateBinary ();
+    s_baroSem = xSemaphoreCreateBinary ();
+    if (!s_magSem || !s_baroSem) {
         return eSTATUS_FAILURE;
     }
 
@@ -87,19 +84,6 @@ eSTATUS_t SimLink_Init (void) {
 }
 
 /* --- sensor consumer API --------------------------------------------------- */
-
-bool SimLink_WaitImu (float accel[3], float gyro[3], float mag[3], uint32_t timeoutTicks) {
-    if (xSemaphoreTake (s_sensorSem, timeoutTicks) != pdTRUE) {
-        return false;
-    }
-    taskENTER_CRITICAL ();
-    memcpy (accel, s_sensor.accel, sizeof (s_sensor.accel));
-    memcpy (gyro, s_sensor.gyro, sizeof (s_sensor.gyro));
-    memcpy (mag, s_sensor.mag, sizeof (s_sensor.mag));
-    s_sensorCount++;   /* count samples actually consumed by the IMU driver */
-    taskEXIT_CRITICAL ();
-    return true;
-}
 
 bool SimLink_WaitMag (float mag[3], uint32_t timeoutTicks) {
     if (xSemaphoreTake (s_magSem, timeoutTicks) != pdTRUE) {

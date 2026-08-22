@@ -25,7 +25,9 @@ void Mag_Task (void* args) {
 
     if (STATUS_FAIL (Mag_Init (&s_mag))) {
         LOG_ERROR ("MAG unavailable; task exiting");
-        vTaskDelete (NULL);
+        /* Not vTaskDelete: this build uses heap_1, whose vPortFree asserts -
+         * and configASSERT spins with interrupts disabled, wedging the FC. */
+        vTaskSuspend (NULL);
         return;
     }
 

@@ -74,7 +74,7 @@ extern uint32_t SystemD2Clock;
  * represent that period at all - it rounds to 2 ms (500 Hz). Every delay in
  * this tree goes through pdMS_TO_TICKS, so raising the tick rescales them all
  * automatically; the cost is that the tick ISR fires twice as often. */
-#define configTICK_RATE_HZ                       ((TickType_t)2000)
+#define configTICK_RATE_HZ                       ((TickType_t)1000)
 #define configMAX_PRIORITIES                     ( 56 )
 #define configUSE_SB_COMPLETED_CALLBACK          0
 #define configUSE_MINI_LIST_ITEM                 1

@@ -15,6 +15,10 @@
 
 #define IMU_CHIP_ID            ((uint8_t)0x0043U)
 #define RW_BUFFER_SZ           16U
+/* Consecutive passes with no new sample before the part is treated as stuck
+ * rather than just slower than the task. 50 at the 500 Hz task rate is 100 ms,
+ * far longer than any legitimate gap at the ODRs this driver configures. */
+#define DATA_MISS_LIMIT        50U
 #define SPI_DEFAULT_TIMEOUT_MS 100U
 #define IMU_VALID(pIMU)        ((pIMU) != NULL && (pIMU)->isInitialized == true)
 
@@ -183,6 +187,7 @@ typedef struct {
     uint32_t msLastAccUpdateTime;
     uint32_t msLastGyroUpdateTime;
     uint8_t nBusDummyBytes;
+    uint16_t nDataMisses;
     bool usingEXTIInterrupt;
     bool isInitialized;
     bool volatile gyroDataUpdated;
@@ -687,7 +692,7 @@ STATIC eSTATUS_t IMUCalibrate (vIMU_t* pIMU, uint8_t calibSelection, uint8_t app
     IMUGyroConf gconf;
     eSTATUS_t status = IMUGetConf (pIMU, &aconf, &gconf);
     RETURN_IF (STATUS_FAIL (status), status, "Failed to get IMU configuration to save before calibration");
-    Delay (100);
+    Delay (1);
 
     /* Set the ACC config to be what the self calibration expects */
     IMUAccConf calibAConf = { 0 };
@@ -698,7 +703,7 @@ STATIC eSTATUS_t IMUCalibrate (vIMU_t* pIMU, uint8_t calibSelection, uint8_t app
     calibAConf.bw         = aconf.bw;
     status                = IMUSetConf (pIMU, &calibAConf, NULL);
     RETURN_IF (STATUS_FAIL (status), status, "Failed to set IMU accelerometer configuration for calibration");
-    Delay (100);
+    Delay (1);
 
     /* Store alt configs and then disable them */
     IMUAccConf altAConf;
@@ -710,12 +715,12 @@ STATIC eSTATUS_t IMUCalibrate (vIMU_t* pIMU, uint8_t calibSelection, uint8_t app
     altGConf.mode = eIMU_GYRO_MODE_DISABLE;
     status        = IMUSetAltConf (pIMU, &altAConf, &altGConf);
     GOTO_IF (STATUS_FAIL (status), error, "Failed to disable IMU alternate configuration before calibration");
-    Delay (100);
+    Delay (1);
 
     /* Trigger the self calibration */
     status = IMUSendCmd (pIMU, BMI3_CMD_SELF_CALIB_TRIGGER);
     GOTO_IF (STATUS_FAIL (status), error, "Failed to send IMU self-calibration trigger command");
-    Delay (100);
+    Delay (1);
 
     /* Check that the self calibration has started */
     {
@@ -753,12 +758,12 @@ STATIC eSTATUS_t IMUCalibrate (vIMU_t* pIMU, uint8_t calibSelection, uint8_t app
             IMU_LogError (pIMU);
         }
     }
-    Delay (20);
+    Delay (1);
 /* Restore configs */
 error:
     status = IMUSetConf (pIMU, &aconf, &gconf);
     status = IMUSetAltConf (pIMU, &altAConf, &altGConf);
-    Delay (100);
+    Delay (1);
     return status;
 }
 
@@ -1017,49 +1022,38 @@ STATIC UNUSED_FN_DECL bool IMUUpdatefromINT (vIMU_t* pIMU) {
     return eSTATUS_SUCCESS;
 }
 
+/*
+ * One STATUS read, then whichever of accel and gyro it reports ready. Returns
+ * false only on a bus error - "no new sample yet" is normal whenever the task
+ * runs faster than the configured ODR, so it is the caller's business, not an
+ * error, and it is not logged here.
+ *
+ * This used to spin for up to 1000 iterations with DelayMicroseconds (10)
+ * between them. That is a busy-wait on DWT CYCCNT with no yield point, so a
+ * miss held the CPU for >10 ms at TASK_PRIORITY_SENSOR_IMU and starved every
+ * priority-1 task under it - the log drain, mag and baro.
+ *
+ * The *DataUpdated flags live in the struct and are cleared only once a sample
+ * has been converted, so accel arriving on one pass and gyro on the next is
+ * handled without holding the CPU across both.
+ */
 STATIC bool IMUUpdatefromPolling (vIMU_t* pIMU) {
 
-    bool accelRdy    = false;
-    bool gyroRdy     = false;
-    int32_t timeout  = 1000;
-    eSTATUS_t status = eSTATUS_SUCCESS;
-    while (timeout-- > 0) {
+    IMU_SysStatusReg_t SYSStatus = { 0 };
+    eSTATUS_t status             = IMUGetSysStatus (pIMU, &SYSStatus);
+    RETURN_IF (STATUS_FAIL (status), false, "Failed to read vIMU_t status register");
 
-        // IMU_INTStatusReg_t INTStatus = { 0 };
-        // status             = IMUGetINTStatus (pIMU, &INTStatus);
-        // RETURN_IF (STATUS_FAIL (status), false, "Failed to read vIMU_t interrupt status register");
-
-        IMU_SysStatusReg_t SYSStatus = { 0 };
-        status                       = IMUGetSysStatus (pIMU, &SYSStatus);
-        RETURN_IF (STATUS_FAIL (status), false, "Failed to read vIMU_t status register");
-
-        if (SYS_STATUS_ACCEL_DATA_READY (SYSStatus) && accelRdy == false) {
-            status = IMUUpdateRawAccel (pIMU);
-            RETURN_IF (STATUS_FAIL (status), false, "Failed to update accelerometer data");
-            accelRdy = true;
-        }
-
-        if (SYS_STATUS_GYRO_DATA_READY (SYSStatus) && gyroRdy == false) {
-            status = IMUUpdateRawGyro (pIMU);
-            RETURN_IF (STATUS_FAIL (status), false, "Failed to update gyroscope data");
-            gyroRdy = true;
-        }
-        if (accelRdy && gyroRdy) {
-            break;
-        }
-        DelayMicroseconds (10);
-        // Delay (1);
+    if (SYS_STATUS_ACCEL_DATA_READY (SYSStatus) && pIMU->accelDataUpdated == false) {
+        status = IMUUpdateRawAccel (pIMU);
+        RETURN_IF (STATUS_FAIL (status), false, "Failed to update accelerometer data");
     }
 
-    if (accelRdy == false) {
-        LOG_ERROR ("IMU accelerometer data not ready after polling");
+    if (SYS_STATUS_GYRO_DATA_READY (SYSStatus) && pIMU->gyroDataUpdated == false) {
+        status = IMUUpdateRawGyro (pIMU);
+        RETURN_IF (STATUS_FAIL (status), false, "Failed to update gyroscope data");
     }
 
-    if (gyroRdy == false) {
-        LOG_ERROR ("IMU gyroscope data not ready after polling");
-    }
-
-    return accelRdy && gyroRdy;
+    return true;
 }
 
 static eSTATUS_t IMUUpdate_ (vIMU_t* pIMU, bool forcePolling, Vec3f* pOutputAccel, Vec3f* pOutputGyro) {
@@ -1069,36 +1063,44 @@ static eSTATUS_t IMUUpdate_ (vIMU_t* pIMU, bool forcePolling, Vec3f* pOutputAcce
     RETURN_IF_NULL (pOutputGyro, (eSTATUS_t)eIMU_NULL_PTR, "output gyro pointer is NULL");
 
     eSTATUS_t status = eSTATUS_SUCCESS;
-    bool success     = true;
     bool usePolling  = pIMU->usingEXTIInterrupt == false || forcePolling == true;
-    if (usePolling == true) {
-        success = IMUUpdatefromPolling (pIMU);
+    if (usePolling == true && IMUUpdatefromPolling (pIMU) == false) {
+        return eSTATUS_FAILURE;
     }
 
-    success &= pIMU->gyroDataUpdated & pIMU->accelDataUpdated;
-    if (success == true) {
+    if (pIMU->gyroDataUpdated && pIMU->accelDataUpdated) {
         status =
         IMUConvertRaw (pIMU->aconf.range, pIMU->rawAccel, pIMU->gconf.range, pIMU->rawGyro, pOutputAccel, pOutputGyro);
         RETURN_IF (STATUS_FAIL (status), eSTATUS_FAILURE, "Failed to convert vIMU_t raw data");
         pIMU->gyroDataUpdated  = false;
         pIMU->accelDataUpdated = false;
-    } else {
-
-        /*
-         * NOTE: for some reason the IMU will lose the ACCEL configuration after a few data reads.
-         * Re-applying the configuration seems to fix the issue. Should only happen once.
-         */
-        status = IMUSetConf (pIMU, &pIMU->aconf, &pIMU->gconf);
-        if (STATUS_OK (status)) {
-            LOG_WARN ("IMU failed to update data so re-applying IMU configuration and retrying");
-            return eSTATUS_RETRY;
-        }
-
-        LOG_ERROR ("IMU failed to update sensor data");
-        IMU_LogError (pIMU);
-        return eSTATUS_FAILURE;
+        pIMU->nDataMisses      = 0;
+        return status;
     }
-    return status;
+
+    /*
+     * No new sample this pass. Expected whenever the task runs faster than the
+     * ODR, so it is reported as BUSY and the caller simply publishes nothing.
+     *
+     * NOTE: for some reason the IMU will lose the ACCEL configuration after a
+     * few data reads. Re-applying the configuration seems to fix the issue.
+     * A run of misses is how that shows up, so it takes DATA_MISS_LIMIT of them
+     * to tell it apart from an ordinary rate mismatch.
+     */
+    if (++pIMU->nDataMisses < DATA_MISS_LIMIT) {
+        return eSTATUS_BUSY;
+    }
+
+    pIMU->nDataMisses = 0;
+    status            = IMUSetConf (pIMU, &pIMU->aconf, &pIMU->gconf);
+    if (STATUS_OK (status)) {
+        LOG_WARN ("IMU stopped producing data so re-applying IMU configuration and retrying");
+        return eSTATUS_RETRY;
+    }
+
+    LOG_ERROR ("IMU failed to update sensor data");
+    IMU_LogError (pIMU);
+    return eSTATUS_FAILURE;
 }
 
 eSTATUS_t IMU_Update (vIMU_t* pIMU, bool forcePolling, Vec3f* pOutputAccel, Vec3f* pOutputGyro) {
@@ -1217,11 +1219,16 @@ eSTATUS_t ImuDrv_Init (ImuDriverConf_t const* pConf, ImuDriver_t* pOutDriver) {
         return eSTATUS_NULL_ARG;
     }
 
+    /*
+     * There is one IMU, and Allocate() is a bump allocator with no free - so a
+     * static instance rather than a fresh block per call. Imu_Task retries init
+     * until it succeeds, which against Allocate() would consume the shared pool
+     * one Bmi323_t at a time until nothing was left to hand out.
+     */
+    static Bmi323_t s_bmi323;
+
     memset(pOutDriver, 0, sizeof(ImuDriver_t));
-    pOutDriver->ctx = Allocate(sizeof(Bmi323_t));
-    if (!pOutDriver->ctx) {
-        return eSTATUS_FAILURE;
-    }
+    pOutDriver->ctx         = &s_bmi323;
     pOutDriver->IsDataReady = Bmi323_IsDataReady;
     pOutDriver->Read = Bmi323_Read;
 

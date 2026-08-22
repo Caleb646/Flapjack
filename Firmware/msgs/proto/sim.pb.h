@@ -12,9 +12,9 @@
 /* Struct definitions */
 /* PC -> FC: synthesized sensor sample. */
 typedef struct _SensorData {
-    float accel[3]; /* m/s^2, specific force, body FRD */
-    float gyro[3]; /* deg/s, body FRD */
-    float mag[3]; /* normalized field, body frame */
+    float accel[3]; /* m/s^2, specific force (a - g), IMU die frame */
+    float gyro[3]; /* deg/s, IMU die frame */
+    float mag[3]; /* normalized field, MAG die frame */
 } SensorData;
 
 /* PC -> FC: barometer sample, on its OWN frame rather than folded into

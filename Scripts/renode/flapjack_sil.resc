@@ -32,6 +32,10 @@ $bin ?= @Build/flapjack-v1/Debug/cm7.elf
 using sysbus
 mach create "flapjack"
 
+# Compiled at load time by Renode's built-in C# compiler. Must come before
+# the platform description, which instantiates Sensors.BMI323 on spi1.
+include $ORIGIN/BMI323.cs
+
 machine LoadPlatformDescription $ORIGIN/flapjack_h7_cm7.repl
 
 macro reset

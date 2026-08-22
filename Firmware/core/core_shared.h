@@ -192,7 +192,17 @@ float clipf32 (float v, float lower, float upper);
 float mapf32 (float v, float fromMin, float fromMax, float toMin, float toMax);
 uint32_t GetMilliseconds (void);
 uint32_t GetMicroseconds (void);
+/*
+ * Delay yields to the scheduler once it is running, so the wait can stretch
+ * under load and lower-priority work gets the CPU meanwhile. Use it for part
+ * settling times, which are minimums.
+ *
+ * DelayBusyWait always spins. Use it only where the scheduler must not stretch
+ * the wait - a protocol whose frame cadence the far end is timing, say - and
+ * keep it short: it holds the core at the caller's priority throughout.
+ */
 void Delay (uint32_t ms);
+void DelayBusyWait (uint32_t ms);
 void DelayMicroseconds (uint32_t us);
 // void fDelayMicroseconds (float us);
 /* Source --> Betaflight: https://github.com/betaflight/betaflight/blob/master/src/main/build/atomic.h */

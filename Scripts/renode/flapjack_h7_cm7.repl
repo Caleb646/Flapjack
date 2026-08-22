@@ -48,3 +48,20 @@ dwt: Miscellaneous.DWT @ sysbus 0xE0001000
 spi1: SPI.STM32H7_SPI @ sysbus 0x40013000
 spi3: SPI.STM32H7_SPI @ sysbus 0x40003C00
 spi5: SPI.STM32H7_SPI @ sysbus 0x40015000
+
+// --- IMU --------------------------------------------------------------------
+// BMI323 on SPI1, chip select on PC4 (IMU_SPI_NSS_GPIO_* in
+// target/flapjack_v1/flapjack_v1.h). The model is compiled at load time from
+// Scripts/renode/BMI323.cs, which flapjack_sil.resc includes before this file.
+//
+// STM32H7_SPI is a NullRegistrationPointPeripheralContainer, so it takes
+// exactly one child - fine here, SPI1 has only the IMU. SPI5 carries two
+// devices and will need an SPI.SPIMultiplexer when mag and baro land.
+
+bmi323: Sensors.BMI323 @ spi1
+    port: 4010
+
+// Keep the syscfg/EXTI path for PC4 and fan the same pin out to the IMU's chip
+// select; the driver drives it with HAL_GPIO_WritePin (SPI_NSS_SOFT).
+gpioPortC:
+    4 -> syscfg#2@4 | bmi323@0

@@ -1,5 +1,10 @@
 #include "core/core.h"
 #include "hal.h"
+
+#ifndef UNIT_TEST
+#include "FreeRTOS.h"
+#include "task.h"
+#endif // UNIT_TEST
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -188,6 +193,34 @@ uint32_t GetMicroseconds (void) {
 }
 
 void Delay (uint32_t ms) {
+
+#ifndef UNIT_TEST
+
+    /*
+     * Block rather than spin once there is a scheduler to yield to. A busy-wait
+     * holds the core at the caller's priority for the whole delay and starves
+     * everything below it - Imu_Task's init retry spends ~2.5 s per attempt
+     * inside IMUSoftReset, all of it here.
+     *
+     * Before vTaskStartScheduler, inside an ISR, or with the scheduler
+     * suspended there is nothing to yield to, so spin as before.
+     *
+     * The +1 tick is not slop. vTaskDelay counts whole ticks from the next tick
+     * boundary, so pdMS_TO_TICKS alone can return up to one tick early; every
+     * caller uses this to satisfy a part's settling time, which is a minimum.
+     * At configTICK_RATE_HZ 1000 that costs 1 ms per call.
+     */
+    if (xTaskGetSchedulerState () == taskSCHEDULER_RUNNING && xPortIsInsideInterrupt () == pdFALSE) {
+        vTaskDelay (pdMS_TO_TICKS (ms) + 1U);
+        return;
+    }
+
+#endif // UNIT_TEST
+
+    DelayBusyWait (ms);
+}
+
+void DelayBusyWait (uint32_t ms) {
 
     DelayMicroseconds (ms * 1000U);
 }
