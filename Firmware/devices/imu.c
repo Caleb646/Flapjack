@@ -6,7 +6,7 @@
 
 #include <string.h>
 
-eSTATUS_t Imu_Init (Imu_t* pOutSensor) {
+eSTATUS_t Imu_Init (Imu_t* pOutSensor, DataReadySignal_t const* pSignal) {
 
     if (!pOutSensor) {
         return eSTATUS_NULL_ARG;
@@ -16,16 +16,17 @@ eSTATUS_t Imu_Init (Imu_t* pOutSensor) {
 
     pOutSensor->align = Align_Compose (IMU_ALIGN, CFG_BOARD_ALIGN);
 
-    ImuDriverConf_t conf = {
-        .accRange  = eIMU_ACC_RANGE_2G,
-        .gyroRange = eIMU_GYRO_RANGE_250,
-        .odr       = eIMU_ODR_400,
-    };
+    pOutSensor->drv.cfg.accRange  = eIMU_ACC_RANGE_2G;
+    pOutSensor->drv.cfg.gyroRange = eIMU_GYRO_RANGE_250;
+    pOutSensor->drv.cfg.odr       = eIMU_ODR_400;
+    if (pSignal) {
+        pOutSensor->drv.cfg.signal = *pSignal;
+    }
 
     eSTATUS_t status = eSTATUS_SUCCESS;
     do {
 
-        status = ImuDrv_Init(&conf, &pOutSensor->drv);
+        status = ImuDrv_Init (&pOutSensor->drv);
 
     } while(0);
     // TODO

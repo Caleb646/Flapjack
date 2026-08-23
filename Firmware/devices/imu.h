@@ -5,6 +5,7 @@
 
 #include "core/core.h"
 
+#include "drivers/device.h"
 #include "drivers/imu/imudrv.h"
 
 typedef struct {
@@ -17,7 +18,8 @@ typedef struct {
     uint32_t usLastUpdate;
 } Imu_t;
 
-eSTATUS_t Imu_Init (Imu_t* pOutSensor);
+/* pSignal may be NULL, in which case Imu_Update polls the part on its own. */
+eSTATUS_t Imu_Init (Imu_t* pOutSensor, DataReadySignal_t const* pSignal);
 eSTATUS_t Imu_Update (Imu_t* pOutSensor);
 
 #endif // SENSORS_IMU_H

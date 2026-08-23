@@ -161,31 +161,6 @@ enum {
 
 // clang-format on
 
-typedef uint8_t eEXTI_ID_t;
-enum {
-    eEXTI_ID_NULL = 0U,
-    eEXTI_0_ID,
-    eEXTI_1_ID,
-    eEXTI_2_ID,
-    eEXTI_3_ID,
-    eEXTI_4_ID,
-    eEXTI_5_ID,
-    eEXTI_6_ID,
-    eEXTI_7_ID,
-    eEXTI_8_ID,
-    eEXTI_9_ID,
-    eEXTI_10_ID,
-    eEXTI_11_ID,
-    eEXTI_12_ID,
-    eEXTI_13_ID,
-    eEXTI_14_ID,
-    eEXTI_15_ID,
-    eEXTI_ID_MAX
-};
-
-#define EXTI_ID_VALID(ID)  ((ID) < eEXTI_ID_MAX)
-#define EXTI_ID_TO_IDX(ID) (ID)
-
 typedef uint8_t eDSHOT_TYPE_t;
 enum { eDSHOT_TYPE_150 = 0, eDSHOT_TYPE_300 = 1, eDSHOT_TYPE_600 = 2 };
 

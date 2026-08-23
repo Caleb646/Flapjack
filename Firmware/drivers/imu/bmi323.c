@@ -5,6 +5,7 @@
 
 #include "drivers/bus/spi.h"
 
+#include "drivers/io/exti.h"
 #include "drivers/io/gpio.h"
 
 #include "target.h"
@@ -175,6 +176,7 @@ typedef struct {
 typedef struct {
     IMUAccConf aconf;
     IMUGyroConf gconf;
+    DataReadySignal_t signal;
 } IMUInitConf_t;
 
 typedef struct {
@@ -811,18 +813,18 @@ STATIC eSTATUS_t IMUSetupInterrupts (vIMU_t* pIMU) {
     return status;
 }
 
-// STATIC eSTATUS_t IMUEnableInterrupts (vIMU_t const* pIMU) {
+STATIC eSTATUS_t IMUEnableInterrupts (vIMU_t* pIMU) {
 
-//     if (pIMU == NULL) {
-//         return (eSTATUS_t)eIMU_NULL_PTR;
-//     }
+    if (pIMU == NULL) {
+        return (eSTATUS_t)eIMU_NULL_PTR;
+    }
 
-//     // Enable INT1 and INT2 with active high
-//     uint8_t pEnableInterrupts[2] = { (1U << 2U | 1U << 0U), (1U << 2U | 1U << 0U) };
-//     eSTATUS_t status             = IMUWriteReg (pIMU, BMI3_REG_IO_INT_CTRL, pEnableInterrupts, 2);
-
-//     return status;
-// }
+    /* INT1 only: output enable (bit 2) and active high (bit 0), push-pull.
+     * INT2 stays off - nothing is wired to it on this board, and driving an
+     * unconnected pin just burns current. */
+    uint8_t pEnableInterrupts[2] = { (1U << 2U | 1U << 0U), 0U };
+    return IMUWriteReg (pIMU, BMI3_REG_IO_INT_CTRL, pEnableInterrupts, 2);
+}
 
 STATIC eSTATUS_t IMUDisableInterrupts (vIMU_t* pIMU) {
 
@@ -966,21 +968,43 @@ eSTATUS_t IMU_Init_ (IMUInitConf_t conf, vIMU_t* pOutIMU) {
         }
     }
 
-    // TODO: what alternate function do I need for EXTI.
-    // Also the NVIC exti interrupt needs to be enabled.
-    // EXTI interface also needs to be enabled.
-    // GPIO_INIT_EXTI (&status, extiConf.extiId, extiConf.gpioId);
-    // /* Enable EXTI interrupt for vIMU_t data ready interrupt */
-    // HAL_NVIC_SetPriority (IMU_INT_EXTI_IRQn, 8, 8);
-    // HAL_NVIC_EnableIRQ (IMU_INT_EXTI_IRQn);
+    /*
+     * Data-ready interrupt, only if the caller gave us a way to signal it.
+     * Without one the part's INT1 pin is left alone and IMUUpdate_ polls, which
+     * is what every caller did before this existed.
+     *
+     * Deliberately does NOT set usingEXTIInterrupt: that flag makes IMUUpdate_
+     * skip the register read entirely, which belongs to a different (unfinished)
+     * design where an ISR fills the sample buffers. The interrupt here decides
+     * WHEN the caller reads, not where the data comes from, so the read path is
+     * unchanged and the BUSY contract still covers "no new sample".
+     */
+#if BRD_IS_ENABLED (IMU_INT)
+    if (conf.signal.Notify) {
 
-    // if (pExti != NULL) {
-    //     /* Enable acc, gyro, and temperature - data ready interrupts for pin INT1 */
-    //     status = IMUSetupInterrupts (pIMU);
-    //     GOTO_IF (STATUS_FAIL (status), error, "Failed to setup imu interrupts");
+        status = IMUSetupInterrupts (pIMU);
+        GOTO_IF (STATUS_FAIL (status), error, "Failed to map imu data ready onto INT1");
 
-    //     pIMU->usingEXTIInterrupt = true;
-    // }
+        status = IMUEnableInterrupts (pIMU);
+        GOTO_IF (STATUS_FAIL (status), error, "Failed to enable imu INT1 output");
+
+        ExtiConf_t extiConf = {
+            .pPort       = BRD_GET_GPIO_PORT (IMU, INT),
+            .pin         = BRD_GET_GPIO_PIN (IMU, INT),
+            .trigger     = GPIO_MODE_IT_RISING,   // INT1 is push-pull active high above
+            .pull        = GPIO_NOPULL,
+            .irqPriority = conf.signal.irqPriority,
+            .callback    = conf.signal.Notify,
+            .ctx         = conf.signal.ctx,
+        };
+        status = Exti_Register (&extiConf);
+        GOTO_IF (STATUS_FAIL (status), error, "Failed to claim imu data ready EXTI line");
+    }
+#else
+    if (conf.signal.Notify) {
+        LOG_WARN ("Board declares no IMU_INT pin; imu data ready stays polled");
+    }
+#endif
 
     pIMU->isInitialized = true;
     return eSTATUS_SUCCESS;
@@ -1213,9 +1237,9 @@ STATIC eSTATUS_t Bmi323_Read (void* ctx, bool forcePolling, ImuData_t* pOutData)
     return IMU_Update ((Bmi323_t*)ctx, forcePolling, &pOutData->accel, &pOutData->gyro);
 }
 
-eSTATUS_t ImuDrv_Init (ImuDriverConf_t const* pConf, ImuDriver_t* pOutDriver) {
+eSTATUS_t ImuDrv_Init (ImuDriver_t* pOutDriver) {
 
-    if (!pConf || !pOutDriver) {
+    if (!pOutDriver) {
         return eSTATUS_NULL_ARG;
     }
 
@@ -1227,22 +1251,24 @@ eSTATUS_t ImuDrv_Init (ImuDriverConf_t const* pConf, ImuDriver_t* pOutDriver) {
      */
     static Bmi323_t s_bmi323;
 
-    memset(pOutDriver, 0, sizeof(ImuDriver_t));
+    /* No memset of pOutDriver: cfg is the caller's input and lives in the same
+     * struct, so clearing it here would erase what this function is reading. */
     pOutDriver->ctx         = &s_bmi323;
     pOutDriver->IsDataReady = Bmi323_IsDataReady;
     pOutDriver->Read = Bmi323_Read;
 
     IMUInitConf_t conf = { 0 };
-    conf.aconf.range   = pConf->accRange;
-    conf.aconf.odr     = pConf->odr;
+    conf.aconf.range   = pOutDriver->cfg.accRange;
+    conf.aconf.odr     = pOutDriver->cfg.odr;
     conf.aconf.bw      = eIMU_ACC_BW_HALF;
     conf.aconf.avg     = eIMU_ACC_AVG_16;
     conf.aconf.mode    = eIMU_ACC_MODE_HIGH_PERF;
-    conf.gconf.range   = pConf->gyroRange;
-    conf.gconf.odr     = pConf->odr;
+    conf.gconf.range   = pOutDriver->cfg.gyroRange;
+    conf.gconf.odr     = pOutDriver->cfg.odr;
     conf.gconf.bw      = eIMU_GYRO_BW_HALF;
     conf.gconf.avg     = eIMU_GYRO_AVG_16;
     conf.gconf.mode    = eIMU_GYRO_MODE_HIGH_PERF;
+    conf.signal        = pOutDriver->cfg.signal;
 
     return IMU_Init_ (conf, (Bmi323_t*)pOutDriver->ctx);
 }

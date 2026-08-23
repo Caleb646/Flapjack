@@ -22,6 +22,8 @@
 
 #include "core/core.h"
 
+#include "drivers/device.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -56,12 +58,6 @@ enum {
 };
 
 typedef struct {
-    eImuAccRange_t accRange;
-    eImuGyroRange_t gyroRange;
-    eImuOdr_t odr;
-} ImuDriverConf_t;
-
-typedef struct {
     Vec3f accel; // m/s^2
     Vec3f gyro;  // deg/s
 } ImuData_t;
@@ -70,8 +66,22 @@ typedef struct ImuDriver_s {
     void* ctx;
     eSTATUS_t (*Read) (void* ctx, bool forcePolling, ImuData_t* pOutData);
     bool (*IsDataReady) (void* ctx);
+    struct {
+        eImuAccRange_t accRange;
+        eImuGyroRange_t gyroRange;
+        eImuOdr_t odr;
+        /* Optional. With a Notify set the backend routes the part's data-ready
+         * output to its INT pin and wires the EXTI line; leave it zeroed to
+         * poll. Kept here rather than consumed at init so a caller can still
+         * see whether the interrupt path was asked for. */
+        DataReadySignal_t signal;
+    } cfg;
 } ImuDriver_t;
 
-eSTATUS_t ImuDrv_Init(ImuDriverConf_t const* pConf, ImuDriver_t* pOutDriver);
+/*
+ * Fill pOutDriver->cfg first; this reads it and does NOT clear the struct, the
+ * same contract UartPort_Init and SpiDev_Init keep.
+ */
+eSTATUS_t ImuDrv_Init (ImuDriver_t* pOutDriver);
 
 #endif // DRIVERS_IMU_IMU_DRIVER_H
