@@ -1,0 +1,271 @@
+# The regression run: one long flight, gated phase by phase.
+#
+# The short plans next to this one each probe a single axis and are kept as
+# reproducers for debugging. This is the one that has to pass before a change
+# ships, and it exists to answer two questions the short plans cannot:
+#
+#   1. Does the vehicle hold TWO commands at once? Every compound phase below
+#      banks and climbs simultaneously and gates both, plus the axes nobody
+#      asked for. That last part is the cross-coupling check - a roll input that
+#      drags pitch with it fails `pitch_deg` even while tracking roll perfectly.
+#   2. Does it stay stable over minutes rather than seconds? `long_trim_hold`
+#      is 150 s of nothing at all, gated on DRIFT. Nothing a 20 s plan does can
+#      express that gate.
+#
+# STICK -> COMMAND (tasks/guidance/guidance.c, Firmware/target/cfgs/cfg.h):
+#   roll/pitch  ANGLE, (us-1500)/500 * 30 deg     1700 = +12 deg, 1350 = -9 deg
+#   yaw         RATE,  (us-1500)/500 * 180 deg/s  1650 = +54 deg/s
+#   throttle    CLIMB RATE, (us-1500)/500 * 1 m/s, +/-0.05 deadband
+#               1500 = hold, 1800 = +0.6 m/s, 1200 = -0.6 m/s
+#
+# WHY THE BANKED PHASES ARE SHORT. There is no position loop, so a held bank is
+# a held lateral acceleration and speed builds for as long as the stick is over.
+# A 30 s bank would leave the vehicle fast enough to be flying the unvalidated
+# part of tiltrotor.xml's envelope (SilResearch 6), and a departure there is a
+# flight-model artifact, not a firmware regression - exactly the false failure
+# that teaches people to ignore red. 12 s holds, alternating direction, keep the
+# speed bounded. Duration comes from `long_trim_hold`, where the vehicle is
+# level and going nowhere.
+#
+# WHY THE PAIRS ARE MIRRORED. right/left and nose-up/nose-down are flown with
+# the same tolerances, so a sign error or a one-sided mixer fault shows up as
+# one half of a pair failing while the other passes.
+#
+# THE est_* GATES ARE THE ONLY CALIBRATED ONES. They compare the FC's own
+# attitude estimate against FDM truth - the one comparison nothing else in the
+# rig makes, and the reason KnownIssues 1.16's failure class was invisible until
+# now. 3.0 deg comes from five runs of the settle probe:
+#
+#   not translating   liftoff / hover      roll err 0.00 deg in 5 of 5 runs,
+#                                          pitch max 1.16 deg
+#   translating       roll_right_12        roll  11.72 deg mean of per-run maxima,
+#                                          CV 0.06 over 5 runs
+#                     pitch_down_9         pitch 10.93 deg, CV 0.03
+#                     recentre_roll        roll   9.66 deg, CV 0.02  (sticks CENTRED)
+#                     recentre_pitch       pitch  9.32 deg, CV 0.03  (sticks CENTRED)
+#
+# 3.0 sits in the 1.2-9.3 deg gap between those two populations, with margin on
+# both sides, and every run falls the same side of it - so the gate is decisive
+# rather than marginal. Yaw gets 5.0: it never exceeded 1.95 deg, but telemetry
+# is up to 20 ms stale, which is ~1.1 deg while yawing at the 54 deg/s that
+# `yaw_in_climb` commands.
+#
+# THESE GATES CURRENTLY FAIL, and that is the intended state. The estimate
+# follows the accelerometer's apparent vertical whenever the vehicle is
+# translating, which cfg.h's own CFG_ANGLE_MAX_DEG comment predicts: specific
+# force carries a drag-scaled VELOCITY reading, not attitude. The accel-trust
+# band in filter.c (0.9-1.1 g) cannot catch it, because it tests MAGNITUDE and
+# the error is in DIRECTION - the band trips at 24.6 deg of bank while the
+# commandable limit is 30, so it is inactive across almost the whole envelope.
+# Leave these red until that is resolved rather than widening them; a gate at
+# 12 deg on a 12 deg command asserts nothing.
+#
+# Confirmed on THIS plan, not just the probe. Flying it with the est_* gates in
+# place reproduced the split exactly:
+#
+#   pass   liftoff 0.000 / 0.669   hover_trim 0.000 / 0.884   descend 0.454 / 1.544
+#   fail   every translating phase, roll 8.85-12.13, pitch 6.24-12.26
+#
+# Widest passing value 1.54, tightest failing value 4.97 - so 3.0 sits in a clear
+# gap on this plan as well as on the probe.
+#
+# est_yaw_deg IS A DIFFERENT FAULT. It reads under 1.3 deg everywhere until
+# `yaw_in_climb`, then 74.7 deg, decaying through 72.2 in `long_trim_hold` to
+# 29.1 by `descend` as the magnetometer drags the heading back. The error grows
+# LINEARLY during the turn rather than sitting at an offset: over 13.0 s the FDM
+# rotated 698.7 deg (53.75 deg/s against 54 commanded) while the estimate turned
+# 624.6 deg (48.06 deg/s) - a ratio of 0.894, i.e. the estimate under-integrates
+# yaw by ~10.6%. That is a SCALE error tied to rotation, where the roll/pitch
+# fault above is a DIRECTION error tied to translation. Not the same bug.
+# nav.c:248 measures dt from GetMicroseconds rather than assuming a rate, so the
+# usual suspect is ruled out; the gyro Z scaling and the mag's 100 Hz correction
+# against a 400 Hz gyro are not.
+#
+# EVERY OTHER TOLERANCE BELOW IS A STARTING GUESS.
+# Before this plan is trusted as a gate it needs the treatment
+# ATTITUDE_SETTLE_PKPK_DEG got in bridge.py: fly it several times on a known-good
+# build, take the worst error each gate actually reaches, set the limit near 3x
+# that, and record the measured spread here. Guessed tolerances produce flaky
+# gates, and a flaky gate is worse than no gate.
+name: acceptance
+
+phases:
+  # Off the ground first. ATTITUDE_AIRBORNE_FT exists because three of the older
+  # plans never broke ground and were measuring gear interaction; this one gets
+  # clear of it before anything is asserted about attitude.
+  - name: liftoff
+    set:    {throttle: 2000}          # 1.0 m/s, full scale
+    settle: 5.0
+    hold:   20.0
+    gates:
+      climb_mps:  {target: cmd, tol: 0.20}
+      roll_deg:   {target: 0.0, tol: 4.0}
+      pitch_deg:  {target: 0.0, tol: 4.0}
+      est_roll_deg:  {tol: 3.0}
+      est_pitch_deg: {tol: 3.0}
+      est_yaw_deg:   {tol: 5.0}
+
+  - name: hover_trim
+    set:    {throttle: 1500}          # centre is inside the deadband: hold
+    settle: 5.0
+    hold:   25.0
+    gates:
+      alt_drift_m: {tol: 0.6}
+      roll_deg:    {target: 0.0, tol: 2.0}
+      pitch_deg:   {target: 0.0, tol: 2.0}
+      est_roll_deg:  {tol: 3.0}
+      est_pitch_deg: {tol: 3.0}
+      est_yaw_deg:   {tol: 5.0}
+
+  # The phase this whole file was written for: bank and climb at the same time,
+  # and assert that neither one gives way to the other.
+  - name: climb_in_roll_right
+    set:    {roll: 1700, throttle: 1800}     # +12 deg, +0.6 m/s
+    settle: 4.0
+    hold:   12.0
+    gates:
+      roll_deg:     {target: cmd, tol: 2.0}
+      climb_mps:    {target: cmd, tol: 0.20}
+      pitch_deg:    {target: 0.0, tol: 3.0}   # uncommanded - coupling gate
+      yaw_rate_dps: {target: 0.0, tol: 8.0}   # uncommanded - coupling gate
+      est_roll_deg:  {tol: 3.0}
+      est_pitch_deg: {tol: 3.0}
+      est_yaw_deg:   {tol: 5.0}
+
+  - name: level_1
+    set:    {roll: 1500, throttle: 1500}
+    settle: 4.0
+    hold:   10.0
+    gates:
+      roll_deg:   {target: 0.0, tol: 2.0}
+      pitch_deg:  {target: 0.0, tol: 2.0}
+      est_roll_deg:  {tol: 3.0}
+      est_pitch_deg: {tol: 3.0}
+      est_yaw_deg:   {tol: 5.0}
+
+  - name: climb_in_roll_left
+    set:    {roll: 1300, throttle: 1800}     # -12 deg, mirror of the above
+    settle: 4.0
+    hold:   12.0
+    gates:
+      roll_deg:     {target: cmd, tol: 2.0}
+      climb_mps:    {target: cmd, tol: 0.20}
+      pitch_deg:    {target: 0.0, tol: 3.0}
+      yaw_rate_dps: {target: 0.0, tol: 8.0}
+      est_roll_deg:  {tol: 3.0}
+      est_pitch_deg: {tol: 3.0}
+      est_yaw_deg:   {tol: 5.0}
+
+  - name: level_2
+    set:    {roll: 1500, throttle: 1500}
+    settle: 4.0
+    hold:   10.0
+    gates:
+      roll_deg:   {target: 0.0, tol: 2.0}
+      pitch_deg:  {target: 0.0, tol: 2.0}
+      est_roll_deg:  {tol: 3.0}
+      est_pitch_deg: {tol: 3.0}
+      est_yaw_deg:   {tol: 5.0}
+
+  # Pitch gets looser tolerances than roll on purpose: CFG_ANGLE_PITCH_P is 2.0
+  # against roll's 4.0 because KnownIssues 1.9 measures pitch as the slow axis at
+  # ~2.8x lower plant gain. Holding pitch to roll's tolerance would fail the tune
+  # rather than a regression in it. Tighten these once the airframe is measured.
+  - name: descend_in_pitch_down
+    set:    {pitch: 1350, throttle: 1200}    # -9 deg nose down, -0.6 m/s
+    settle: 4.0
+    hold:   12.0
+    gates:
+      pitch_deg:    {target: cmd, tol: 3.0}
+      climb_mps:    {target: cmd, tol: 0.20}
+      roll_deg:     {target: 0.0, tol: 3.0}
+      yaw_rate_dps: {target: 0.0, tol: 8.0}
+      est_roll_deg:  {tol: 3.0}
+      est_pitch_deg: {tol: 3.0}
+      est_yaw_deg:   {tol: 5.0}
+
+  - name: level_3
+    set:    {pitch: 1500, throttle: 1500}
+    settle: 4.0
+    hold:   10.0
+    gates:
+      roll_deg:   {target: 0.0, tol: 2.0}
+      pitch_deg:  {target: 0.0, tol: 2.0}
+      est_roll_deg:  {tol: 3.0}
+      est_pitch_deg: {tol: 3.0}
+      est_yaw_deg:   {tol: 5.0}
+
+  - name: climb_in_pitch_up
+    set:    {pitch: 1650, throttle: 1800}    # +9 deg nose up, mirror
+    settle: 4.0
+    hold:   12.0
+    gates:
+      pitch_deg:    {target: cmd, tol: 3.0}
+      climb_mps:    {target: cmd, tol: 0.20}
+      roll_deg:     {target: 0.0, tol: 3.0}
+      yaw_rate_dps: {target: 0.0, tol: 8.0}
+      est_roll_deg:  {tol: 3.0}
+      est_pitch_deg: {tol: 3.0}
+      est_yaw_deg:   {tol: 5.0}
+
+  - name: level_4
+    set:    {pitch: 1500, throttle: 1500}
+    settle: 4.0
+    hold:   10.0
+    gates:
+      roll_deg:   {target: 0.0, tol: 2.0}
+      pitch_deg:  {target: 0.0, tol: 2.0}
+      est_roll_deg:  {tol: 3.0}
+      est_pitch_deg: {tol: 3.0}
+      est_yaw_deg:   {tol: 5.0}
+
+  # Yaw is still a RATE command, so this gates the rate itself rather than a
+  # heading. Flown while climbing because the differential-tilt yaw mechanism
+  # borrows from the same actuators the climb is using.
+  - name: yaw_in_climb
+    set:    {yaw: 1650, throttle: 1800}      # +54 deg/s, +0.6 m/s
+    settle: 3.0
+    hold:   10.0
+    gates:
+      yaw_rate_dps: {target: cmd, tol: 10.0}
+      climb_mps:    {target: cmd, tol: 0.20}
+      roll_deg:     {target: 0.0, tol: 4.0}
+      pitch_deg:    {target: 0.0, tol: 4.0}
+      est_roll_deg:  {tol: 3.0}
+      est_pitch_deg: {tol: 3.0}
+      est_yaw_deg:   {tol: 5.0}
+
+  # The long-duration check. Sticks centred, nothing commanded, for 150 s - the
+  # only phase whose gates a short plan structurally cannot express. Drift here
+  # is the signature of a slow accumulation: a leaking integrator, a datum that
+  # walks, a filter fed the wrong dt (KnownIssues 1.18).
+  #
+  # heading_drift_dps is deliberately present even though nothing holds heading:
+  # yaw is a rate loop, so a centred yaw stick commands zero rate and a heading
+  # that walks means the rate loop is not actually holding zero.
+  - name: long_trim_hold
+    set:    {roll: 1500, pitch: 1500, yaw: 1500, throttle: 1500}
+    settle: 10.0
+    hold:   150.0
+    gates:
+      alt_drift_m:       {tol: 1.0}
+      heading_drift_dps: {tol: 0.15}
+      roll_deg:          {target: 0.0, tol: 2.0}
+      pitch_deg:         {target: 0.0, tol: 2.0}
+      est_roll_deg:  {tol: 3.0}
+      est_pitch_deg: {tol: 3.0}
+      est_yaw_deg:   {tol: 5.0}
+
+  # Ends airborne on purpose. Touchdown is gear interaction, which is the FDM's
+  # weakest area (KnownIssues 3.4) and says nothing about the control loop.
+  - name: descend
+    set:    {throttle: 1200}                 # -0.6 m/s
+    settle: 3.0
+    hold:   20.0
+    gates:
+      climb_mps:  {target: cmd, tol: 0.20}
+      roll_deg:   {target: 0.0, tol: 3.0}
+      pitch_deg:  {target: 0.0, tol: 3.0}
+      est_roll_deg:  {tol: 3.0}
+      est_pitch_deg: {tol: 3.0}
+      est_yaw_deg:   {tol: 5.0}

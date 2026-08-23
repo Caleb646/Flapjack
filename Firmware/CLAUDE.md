@@ -27,9 +27,9 @@ the device and driver layers it uses sit in `devices/` and `drivers/`.
 
 | Layer | Task source | Init fn | Update fn | Blocks on | Also subscribes (non-blocking, cached) | Publishes |
 |---|---|---|---|---|---|---|
-| **Sensor: IMU** | `tasks/imu/imu_task.c` (device `devices/imu.c`) | `Imu_Init()` | `Imu_Update()` | hardware (sim link / ISR) | - | `umsg_sensors_imu_t` |
-| **Sensor: Mag** | `tasks/mag/mag_task.c` (device `devices/mag.c`) | `Mag_Init()` | `Mag_Update()` | hardware | - | `umsg_sensors_mag_t` |
-| **Sensor: Baro** | `tasks/baro/baro_task.c` (device `devices/baro.c`) | `Baro_Init()` | `Baro_Update()` | hardware (emulated BMP390 under the SIL) | - | `umsg_sensors_baro_t` |
+| **Sensor: IMU** | `tasks/imu/imu_task.c` (device `devices/imu.c`) | `Imu_Init()` | `Imu_Update()` | BMI323 INT1 drdy (PC5), 2 ms timeout | - | `umsg_sensors_imu_t` |
+| **Sensor: Mag** | `tasks/mag/mag_task.c` (device `devices/mag.c`) | `Mag_Init()` | `Mag_Update()` | MMC5983 INT drdy (PF3), 10 ms timeout | - | `umsg_sensors_mag_t` |
+| **Sensor: Baro** | `tasks/baro/baro_task.c` (device `devices/baro.c`) | `Baro_Init()` | `Baro_Update()` | BMP390 INT drdy (PF10), 10 ms timeout | - | `umsg_sensors_baro_t` |
 | **Sensor: GPS** | `tasks/gps/gps_task.c` (device `devices/gps.c`) | `Gps_Init()` | `Gps_Update()` | nothing - 100 Hz `vTaskDelay` | - | `umsg_sensors_gps_t` |
 | **Sensor: RC** | `tasks/rc/rc.c` (driver `drivers/rx/rx.c` + `crsf.c`) | `Rc_Init()` | `Rc_Update()` | nothing - 50 Hz `vTaskDelay` | - | `umsg_rc_input_t` |
 | **Navigation** | `tasks/nav/nav.c` | `Nav_Init()` | `Nav_Update()` | `umsg_sensors_imu_t` | `umsg_sensors_mag_t`, `umsg_sensors_baro_t`, `umsg_sensors_gps_t` | `umsg_nav_state_t` |
@@ -218,9 +218,34 @@ The natural task rates emerge from the blocking receive:
 - **Guidance task** → drives Control at nav rate
 - **Mission task** → driven by RC link rate (~150 Hz)
 
-Sensor tasks for Mag, GPS, Baro run at their own hardware rates independently — mag off the sim
-link's `SensorData`, baro off its own `BaroData` frame (~50 Hz), GPS off the NMEA UART (100 Hz
-poll of a ~10 Hz receiver).
+### Data-ready interrupts
+
+The IMU, mag and baro tasks all wait on their part's data-ready pin rather than polling, so each
+runs at the rate the part actually produces samples: BMI323 400 Hz, MMC5983 100 Hz, BMP390 50 Hz.
+GPS still polls the NMEA UART at 100 Hz for a ~10 Hz receiver, and RC polls at 50 Hz.
+
+The wait is `ulTaskNotifyTake (pdTRUE, <timeout>)`, **never `portMAX_DELAY`**. The timeout is the
+old poll period, so a board or an emulator that never toggles the pin degrades to exactly the
+previous polling behaviour instead of stalling with no fault. Keep it that way — a missed edge on
+an interrupt-only sensor task is silent.
+
+Nothing below `tasks/` knows about FreeRTOS. A task passes a `DataReadySignal_t`
+(`drivers/device.h`) into `<Sensor>_Init()`; the backend calls `Exti_Register()`
+(`drivers/io/exti.h`) and the ISR calls back through `Notify`. A NULL signal means "poll", and the
+backend then leaves the part's interrupt output alone. The signal also carries `irqPriority`,
+because the constraint it exists for belongs to `Notify`: an ISR calling a FreeRTOS `...FromISR`
+API must sit numerically at or above `configMAX_SYSCALL_INTERRUPT_PRIORITY` (5 here), which the
+task layer static-asserts.
+
+The three interrupt pins must differ in PIN NUMBER, not just port: EXTI multiplexes one port per
+line. 5, 3 and 10 are distinct, and lines 5 and 10 share the `EXTI9_5` / `EXTI15_10` vectors, which
+is why `drivers/io/exti.c` is a shared dispatcher rather than a handler per driver.
+
+**SPI5 carries both the mag and the baro**, so every transfer takes that bus's mutex for the whole
+chip-select assertion (`drivers/bus/spi.c`). Interrupt-driven tasks are no longer aligned to a
+common tick, and without the lock a task preempted mid-transaction leaves both parts selected and
+the transfers interleave. A corrupted mag read is checked by nothing, reaches Madgwick as attitude,
+and lands in the altitude estimate as hundreds of metres.
 
 ---
 

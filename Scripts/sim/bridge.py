@@ -507,6 +507,232 @@ def rc_channels(throttle_norm: float, armed: bool) -> list:
     return ch
 
 
+class _Gates:
+    """Per-phase PASS/FAIL criteria, evaluated against FDM TRUTH as the run goes.
+
+    _Checks below asserts what is true of any correct flight. This asserts what
+    is true of THIS plan: that while the sticks were held still, the vehicle
+    tracked what they were asking for and did not drift.
+
+    Three properties are deliberate:
+
+    **The reference comes from the plan, not from the FC.** `plan.commanded()`
+    turns stick microseconds into the angle/rate/climb the firmware should be
+    closing on. Comparing the FC's own setpoint echo against the FC's own
+    estimate would pass a vehicle that is confidently wrong - the same argument
+    KnownIssues 1.16 makes for gating on truth.
+
+    **Every sample counts, not just the last one.** A gate is checked on each
+    tick of the hold window, so a bank that holds on average but breaks briefly
+    still fails. That is what "maintains the climb AND the roll" has to mean.
+
+    **A gate with no samples is a failure, not a pass.** A phase shorter than a
+    tick, or a plan that aborted before reaching it, must not report green.
+    """
+
+    def __init__(self, flight_plan, keep_going=False, report_path=None,
+                 trace_path=None):
+        self.plan = flight_plan
+        self.keep_going = keep_going
+        self.report_path = report_path
+        # Per-sample commanded-vs-truth trace. Off by default; it is a
+        # CALIBRATION tool, not part of the verdict. `worst` and the time it
+        # happened cannot tell a slow settle from an overshoot that recovers,
+        # and those two want opposite fixes - a longer settle, or a gain.
+        self.trace = None
+        if trace_path:
+            self.trace = open(trace_path, "w", buffering=1)
+            self.trace.write("t,phase,window,roll_cmd,roll,pitch_cmd,pitch,"
+                             "yawrate_cmd,yawrate,climb_cmd,climb,alt,est_roll,est_pitch,est_yaw,vdot,wdot,heading\n")
+        self.enabled = bool(flight_plan is not None and flight_plan.phases)
+        self.abort = False
+        self.first = None            # first violation, as a dict
+        self.cur = None              # phase being flown
+        self.entry = None            # (alt_m, heading_deg, plan_t) at hold entry
+        self.last = None             # most recent truth sample within the hold
+        # phase name -> gate name -> accumulator
+        self.acc = {}
+        if self.enabled:
+            for ph in flight_plan.phases:
+                self.acc[ph.name] = {
+                    g: {"worst": 0.0, "limit": gate.tol, "n": 0, "t": None,
+                        "target": None, "actual": None, "summary": gate.is_summary}
+                    for g, gate in ph.gates.items()
+                }
+
+    def _violate(self, phase, gate, plan_t, target, actual, err, tol):
+        rec = self.acc[phase][gate]
+        if err > rec["worst"]:
+            rec.update(worst=err, t=plan_t, target=target, actual=actual)
+        if err <= tol:
+            return
+        if self.first is None:
+            self.first = {"phase": phase, "gate": gate, "t": plan_t,
+                          "target": target, "actual": actual, "err": err, "tol": tol}
+            # Loud, and at the moment it happens - not folded into a summary
+            # minutes of log-spam later. The run stops here unless told not to,
+            # so this line is the last thing on the terminal.
+            # flush because stdout block-buffers the moment it is redirected
+            # to a file - which is every CI run and every backgrounded run.
+            # Unbuffered, this line lands minutes later beside the summary,
+            # which is the exact failure it exists to avoid.
+            print(f"\n[gate] VIOLATION {phase}/{gate} at plan t={plan_t:.2f}s: "
+                  f"expected {target:+.3f}, measured {actual:+.3f}, "
+                  f"error {err:.3f} > tol {tol:.3f}", flush=True)
+            if not self.keep_going:
+                print("[gate] aborting the run - pass --keep-going to survey the "
+                      "remaining phases instead", flush=True)
+                self.abort = True
+
+    # est_* gate -> which euler component, in both the FC's array and the
+    # truth dict below.
+    _EST_IDX = {"est_roll_deg": 0, "est_pitch_deg": 1, "est_yaw_deg": 2}
+    _EST_TRUTH = ("roll_deg", "pitch_deg", "heading_deg")
+
+    def update(self, plan_t, channels, truth, est=None):
+        """Evaluate the active phase's gates against one truth sample.
+
+        `est` is the FC's own euler estimate in degrees, or None when no
+        telemetry has arrived yet or NAV_VALID_ATTITUDE is clear. None
+        leaves the est_* gates with no samples, which reports NOT RUN and
+        fails - an estimate gate that quietly skipped would be worthless.
+        """
+        if not self.enabled:
+            return
+        ph = self.plan.phase_at(plan_t)
+        if ph is not self.cur:
+            self._close()
+            self.cur, self.entry, self.last = ph, None, None
+
+        if self.trace is not None and ph is not None:
+            c = planlib.commanded(channels)
+            e = tuple(f"{v:.3f}" for v in est) if est is not None else ("", "", "")
+            self.trace.write(
+                f"{plan_t:.3f},{ph.name},{'hold' if ph.holding(plan_t) else 'settle'},"
+                f"{c['roll_deg']:.3f},{truth['roll_deg']:.3f},"
+                f"{c['pitch_deg']:.3f},{truth['pitch_deg']:.3f},"
+                f"{c['yaw_rate_dps']:.3f},{truth['yaw_rate_dps']:.3f},"
+                f"{c['climb_mps']:.3f},{truth['climb_mps']:.3f},{truth['alt_m']:.3f},{e[0]},{e[1]},{e[2]},{truth['vdot_mps2']:.4f},{truth['wdot_mps2']:.4f},{truth['heading_deg']:.3f}\n")
+
+        if ph is None or not ph.holding(plan_t):
+            return
+
+        if self.entry is None:
+            self.entry = (truth["alt_m"], truth["heading_deg"], plan_t)
+        self.last = (truth["alt_m"], truth["heading_deg"], plan_t)
+
+        cmd = planlib.commanded(channels)
+        for name, gate in ph.gates.items():
+            if gate.is_summary:
+                continue
+            if gate.is_estimate:
+                if est is None:
+                    continue
+                i = self._EST_IDX[name]
+                target = truth[self._EST_TRUTH[i]]
+                actual = est[i]
+                # Wrapped: heading is 0..360 on one side and may be -180..180 on
+                # the other, so a raw difference reads ~360 for two values that
+                # agree. Roll wraps at +/-180 for the same reason. Pitch cannot
+                # wrap in practice, but taking the same path keeps one rule.
+                err = abs(_wrap180(actual - target))
+            else:
+                target = cmd[name] if gate.target == "cmd" else gate.target
+                actual = truth[name]
+                err = abs(actual - target)
+            self.acc[ph.name][name]["n"] += 1
+            self._violate(ph.name, name, plan_t, target, actual, err, gate.tol)
+
+    def _close(self):
+        """Evaluate the finished phase's drift gates across its whole hold."""
+        if self.cur is None or self.entry is None or self.last is None:
+            return
+        a_alt, a_hdg, a_t = self.entry
+        b_alt, b_hdg, b_t = self.last
+        span = max(b_t - a_t, 1e-6)
+        for name, gate in self.cur.gates.items():
+            if not gate.is_summary:
+                continue
+            if name == "alt_drift_m":
+                actual = b_alt - a_alt
+            else:   # heading_drift_dps - wrapped, so 359 -> 1 is 2 deg, not 358
+                actual = _wrap180(b_hdg - a_hdg) / span
+            self.acc[self.cur.name][name]["n"] += 1
+            self._violate(self.cur.name, name, b_t, 0.0, actual,
+                          abs(actual), gate.tol)
+
+    def report(self) -> int:
+        """Print the phase x gate table, write the JSON artifact, return an exit code."""
+        if not self.enabled:
+            return 0
+        self._close()
+
+        rows, failed, no_data, unreached = [], 0, 0, []
+        for ph in self.plan.phases:
+            gates = self.acc[ph.name]
+            if not gates:
+                continue
+            if all(rec["n"] == 0 for rec in gates.values()):
+                unreached.append(ph.name)
+            for name, rec in gates.items():
+                if rec["n"] == 0:
+                    state = "NOT RUN"
+                    no_data += 1
+                elif rec["worst"] > rec["limit"]:
+                    state = "FAIL"
+                    failed += 1
+                else:
+                    state = "PASS"
+                rows.append((ph.name, name, rec["worst"], rec["limit"], rec["n"], state))
+
+        print()
+        print("[gate] ------------------------------------------------------------")
+        print(f"[gate] {'phase':<22}{'gate':<16}{'worst':>8}{'limit':>8}{'n':>7}")
+        for phase, name, worst, limit, n, state in rows:
+            print(f"[gate] {phase:<22}{name:<16}{worst:>8.3f}{limit:>8.3f}{n:>7}  {state}")
+        if unreached:
+            print(f"[gate] not reached: {', '.join(unreached)}")
+        if self.first is not None:
+            f = self.first
+            print(f"[gate] FIRST FAILURE  {f['phase']}/{f['gate']} at plan t={f['t']:.2f}s")
+            print(f"[gate]   expected {f['target']:+.3f}, measured {f['actual']:+.3f}, "
+                  f"error {f['err']:.3f} > tol {f['tol']:.3f}")
+
+        # A gate that never ran is a failure. A plan can only get quieter by
+        # accident - a phase shorter than a tick, an abort upstream - and a
+        # green line for a criterion nobody evaluated is the exact way a
+        # regression suite stops meaning anything.
+        bad = failed + no_data
+        verdict = "PASS" if bad == 0 else f"FAIL ({failed} failed, {no_data} never ran)"
+        print(f"[gate] {verdict}")
+
+        if self.report_path:
+            doc = {
+                "plan": self.plan.name,
+                "verdict": "pass" if bad == 0 else "fail",
+                "first_failure": self.first,
+                "phases": [
+                    {"name": ph.name, "settle": ph.settle, "hold": ph.hold,
+                     "gates": {n: {k: v for k, v in rec.items() if k != "summary"}
+                               for n, rec in self.acc[ph.name].items()}}
+                    for ph in self.plan.phases
+                ],
+            }
+            path = Path(self.report_path)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(doc, indent=2))
+            print(f"[gate] wrote {path}")
+        if self.trace is not None:
+            self.trace.close()
+            print(f"[gate] wrote {self.trace.name}")
+        return 1 if bad else 0
+
+
+def _wrap180(deg: float) -> float:
+    """Signed angle difference in (-180, 180]."""
+    return (deg + 180.0) % 360.0 - 180.0
+
+
 class _Checks:
     """Physics-level invariants, gathered as the run goes.
 
@@ -976,6 +1202,19 @@ def main(argv=None):
                     help="flight plan (YAML) to fly once the FC arms, e.g. "
                          "Scripts/sim/plans/yaw_step.yaml. The bridge exits with the "
                          "check summary when the plan finishes.")
+    ap.add_argument("--keep-going", action="store_true",
+                    help="on a gate violation, carry on flying instead of stopping. "
+                         "Off by default: a departed vehicle makes every later phase "
+                         "meaningless, and stopping puts the failure at the END of the "
+                         "log instead of burying it under the rest of the run.")
+    ap.add_argument("--gate-report", default="Build/sil_report.json", metavar="PATH",
+                    help="write the per-phase gate results here as JSON, for diffing "
+                         "one build against another. Empty string disables.")
+    ap.add_argument("--gate-trace", default=None, metavar="PATH",
+                    help="write a per-sample commanded-vs-truth CSV for every phase, "
+                         "settle windows included. For CALIBRATION: it is what "
+                         "separates a settle that is too short from an overshoot, "
+                         "which the pass/fail summary cannot do.")
     ap.add_argument("--hold-until-armed", action=argparse.BooleanOptionalAction, default=True,
                     help="freeze the FDM at its initial condition until the FC arms, so "
                          "the model is not integrating ground contact for the ~20 s the "
@@ -999,6 +1238,12 @@ def main(argv=None):
     resolve_ports(args)
 
     flight_plan = planlib.load(args.plan) if args.plan else None
+    # A phases plan is a flight test, and --dry-run has no flight model to test
+    # against. Refusing up front beats the alternative: every gate reporting
+    # NOT RUN forty minutes later, which reads like a firmware failure.
+    if flight_plan is not None and flight_plan.phases and args.dry_run:
+        raise SystemExit(f"--dry-run cannot fly '{flight_plan.name}': its gates need "
+                         f"FDM truth. Use a plain 'plan:' file to exercise the link.")
 
     pending_pid = None
     if args.send_pid:
@@ -1047,6 +1292,8 @@ def main(argv=None):
     sim_t = 0.0
     arm_sim_t = None          # sim time at which the FC armed; plan t=0
     checks = _Checks()
+    gates = _Gates(flight_plan, keep_going=args.keep_going,
+                   report_path=args.gate_report, trace_path=args.gate_trace)
 
     fdm = None
     if not args.dry_run:
@@ -1312,8 +1559,33 @@ def main(argv=None):
             if flight_plan is not None:
                 if plan_t > flight_plan.total_time:
                     print(f"[bridge] plan '{flight_plan.name}' complete at t={plan_t:.1f}s")
-                    return checks.report(armed_ever=True)
+                    return checks.report(armed_ever=True) | gates.report()
                 channels = flight_plan.channels_at(plan_t)
+                # Gated against TRUTH, and against the plan's own commanded
+                # value - never against the FC's echo of either. The FC's own
+                # estimate rides along as `est` for the est_* gates, which are
+                # the one place the two are compared head to head.
+                est_euler = None
+                if last_tm is not None and (last_tm.nav_valid & NAV_VALID_ATTITUDE):
+                    est_euler = (last_tm.euler[0], last_tm.euler[1], last_tm.euler[2])
+                if fdm is not None:
+                    gates.update(plan_t, channels, {
+                        "roll_deg": phi * RAD2DEG,
+                        "pitch_deg": theta * RAD2DEG,
+                        "yaw_rate_dps": r * RAD2DEG,
+                        "climb_mps": fdm["velocities/h-dot-fps"] * FT2M,
+                        "alt_m": fdm["position/h-sl-meters"],
+                        "heading_deg": psi * RAD2DEG,
+                        # Body lateral/vertical acceleration, for reconstructing
+                        # what the accelerometer sees. An accel-referenced filter
+                        # can only ever measure the APPARENT vertical, so this is
+                        # what separates "the estimate is broken" from "the accel
+                        # cannot see bank while the vehicle is translating".
+                        "vdot_mps2": vdot * FT2M,
+                        "wdot_mps2": wdot * FT2M,
+                    }, est=est_euler)
+                    if gates.abort:
+                        return checks.report(armed_ever=True) | gates.report()
             else:
                 channels = rc_channels(args.hover_throttle, armed=True)
 

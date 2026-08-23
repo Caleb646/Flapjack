@@ -151,8 +151,9 @@ the "no receiver" and "no fix" paths stay testable. Useful flags:
 | `--rc-rate` | 50 | CRSF frame rate (Hz); a real link runs 50–150 |
 | `--imu-port` | `socket://localhost:4010` | socket carrying accel/gyro to the emulated BMI323. **The only IMU path** — with `none` there is no attitude |
 | `--mag-port` | `socket://localhost:4011` | socket carrying the field in gauss to the emulated MMC5983. **The only mag path** |
+| `--mag-rate` | 100 | magnetometer push rate (Hz). The emulated part raises drdy on every push, so this **is** the FC's mag interrupt rate — it matches the 100 Hz `mmc5983.c` programs, and pushing faster models a part the board does not have |
 | `--baro-port` | `socket://localhost:4012` | socket carrying Pa/°C to the emulated BMP390. **The only baro path** |
-| `--baro-rate` | 50 | barometer push rate (Hz); 0 disables baro |
+| `--baro-rate` | 50 | barometer push rate (Hz), matching the ODR `bmp390.c` programs; also the FC's baro interrupt rate. 0 disables baro |
 | `--gps-port` | `socket://localhost:4002` | port carrying NMEA to the FC's GPS UART. **The only GPS path** |
 | `--gps-baud` | 115200 | matches `GPS_BAUD_RATE`; ignored for a `socket://` URL |
 | `--gps-rate` | 10 | fix rate (Hz). GGA and RMC go out half a period apart — the driver holds one sentence, so a burst would lose the first |
@@ -183,9 +184,16 @@ is exact, where wall-clock pacing would move the sticks around under host load.
 
 When the plan ends the bridge prints a check summary and exits **0 (pass) or
 1 (fail)**. The checks are physics invariants — no NaN, motors inside [0,1] and
-not pinned at 1.000, servos inside ±π/2, FC actually armed — deliberately *not* a
-golden trajectory, because manual mode is a rate loop and the attitude a run
-settles at is not repeatable (`KnownIssues.md` §1.13).
+not pinned at 1.000, servos inside ±π/2, FC actually armed — which hold of any
+correct flight whatever the plan. Per-plan criteria live in the plan itself; see
+**Phase-gated plans** below.
+
+> §1.13 records that the attitude a run settles at is not repeatable and is a
+> weak regression signal. That was a property of the **rate** loop it was
+> measured on: centred sticks commanded zero rate, so the vehicle kept whatever
+> bank the transient left. `guidance.c` holds an **angle** now — centred means
+> level — so there is a commanded reference to track, which is what phase gates
+> compare against.
 
 The **sensor loopback** lines are the exception: they *are* exact assertions, and
 they can be, because they compare the firmware against what the bridge itself
@@ -199,6 +207,88 @@ sent rather than against an unvalidated flight model. A healthy run reads:
 Both lines are silent when the sensor was not streamed, so an older plan or a
 `--baro-rate 0` run still passes. `0 echoed` against a non-zero `sent` is a
 failure, not a skip — that is the "FC decoded none" case.
+
+### Phase-gated plans
+
+A plain `plan:` is stick input: it flies, but the only thing asserted afterwards
+is that the vehicle did not depart or go NaN. A **`phases:`** plan carries its
+own PASS/FAIL criteria, and is what `acceptance.yaml` — the regression run — is
+built from:
+
+```yaml
+name: acceptance
+phases:
+  - name: climb_in_roll_right
+    set:    {roll: 1700, throttle: 1800}   # +12 deg of bank, +0.6 m/s climb
+    settle: 4.0                            # transient — NOT gated
+    hold:   12.0                           # gates checked on EVERY tick here
+    gates:
+      roll_deg:     {target: cmd, tol: 2.0}
+      climb_mps:    {target: cmd, tol: 0.20}
+      pitch_deg:    {target: 0.0, tol: 3.0}   # uncommanded → coupling gate
+      yaw_rate_dps: {target: 0.0, tol: 8.0}
+```
+
+`set`/`ramp` are applied over `settle`, then the sticks are held still for
+`hold`. Splitting them is the point: *did it get there* and *did it stay there*
+are different questions, and only the second is a stability check.
+
+**Gate targets.** `target: cmd` compares against what the sticks were asking
+for, derived from the plan by `plan.commanded()` — roll and pitch are **angle**
+commands (`(µs-1500)/500 × CFG_ANGLE_MAX_DEG`), yaw is a **rate**, throttle is a
+**climb rate**. `target: <number>` compares against a constant, which is how an
+axis nobody commanded gets asserted — and that is the cross-coupling check: a
+roll input that drags pitch with it fails `pitch_deg` even while tracking roll
+perfectly.
+
+| gate | measured | kind |
+|---|---|---|
+| `roll_deg`, `pitch_deg` | FDM truth euler | per-sample |
+| `yaw_rate_dps` | FDM truth body rate | per-sample |
+| `climb_mps` | FDM `h-dot` | per-sample |
+| `alt_drift_m` | altitude change across the hold | per-phase |
+| `heading_drift_dps` | heading change ÷ hold length | per-phase |
+
+The drift gates are the reason a long phase is worth flying: `acceptance.yaml`'s
+`long_trim_hold` is 150 s of centred sticks, and nothing a 20 s plan does can
+express what it asserts.
+
+**The reference comes from the plan, not from the FC.** Comparing the firmware's
+own setpoint echo against its own estimate would pass a vehicle that is
+confidently wrong — the same argument `KnownIssues.md` §1.16 makes for gating on
+FDM truth rather than on `Telemetry.euler`.
+
+**Failures are loud and early.** The first violation prints the instant it
+happens with its phase, plan time, expected and measured values, and the run
+**stops** — so the failure is the last thing on the terminal instead of buried
+under the remaining minutes of log. `--keep-going` surveys the rest instead.
+Everything gate-related is prefixed `[gate]`, so `grep '^\[gate\]'` is the whole
+report; logs, telemetry and the shell all share USART1, which is what makes that
+matter. A machine-readable copy lands in `Build/sil_report.json`
+(`--gate-report`), for diffing one build against another.
+
+```
+[gate] ------------------------------------------------------------
+[gate] phase                 gate               worst   limit      n
+[gate] climb_in_roll_right   roll_deg           0.812   2.000    4800  PASS
+[gate] climb_in_roll_right   pitch_deg          3.441   3.000    4800  FAIL
+[gate] not reached: level_1, climb_in_roll_left, ...
+[gate] FIRST FAILURE  climb_in_roll_right/pitch_deg at plan t=63.20s
+[gate]   expected +0.000, measured -3.441, error 3.441 > tol 3.000
+[gate] FAIL (1 failed, 22 never ran)
+```
+
+**A gate that never ran fails.** A phase shorter than a tick, or one the run
+aborted before reaching, reports `NOT RUN` and counts against the verdict — a
+green line for a criterion nobody evaluated is exactly how a regression suite
+stops meaning anything. Gate and channel names are validated at load, so a typo
+is an error rather than a gate that silently never fires.
+
+**Tolerances must be measured, not guessed.** `acceptance.yaml`'s are starting
+values and are marked as such. Fly it several times on a known-good build, take
+the worst error each gate actually reaches, set the limit near 3× that, and
+record the spread in a comment — the treatment `ATTITUDE_SETTLE_PKPK_DEG` in
+`bridge.py` already documents. A flaky gate is worse than no gate.
 
 ## Wire protocol
 
