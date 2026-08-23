@@ -47,10 +47,15 @@ namespace Antmicro.Renode.Peripherals.Sensors
     {
         // port 0 leaves the socket off: the model is then just its register
         // file, which is all a boot smoke test needs.
-        public SamplePushListener(IEmulationElement owner, int port, int payloadLength)
+        //
+        // onSample, when given, runs on the RECEIVE THREAD after each frame
+        // lands. A model driving an interrupt line from it must marshal into the
+        // time domain first - see BMI323.OnSamplePushed.
+        public SamplePushListener(IEmulationElement owner, int port, int payloadLength, Action onSample = null)
         {
             this.owner = owner;
             this.payloadLength = payloadLength;
+            this.onSample = onSample;
 
             if(port == 0)
             {
@@ -115,6 +120,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
                         SyncToFrameStart(stream);
                         ReadExactly(stream, payload, 0, payloadLength);
                         Volatile.Write(ref latest, new PushedSample((byte[])payload.Clone(), ++pushed));
+                        onSample?.Invoke();
                     }
                 }
                 catch(Exception e) when(e is IOException || e is SocketException || e is ObjectDisposedException)
@@ -173,6 +179,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
 
         private readonly IEmulationElement owner;
         private readonly int payloadLength;
+        private readonly Action onSample;
 
         private const byte FrameMagic0 = 0xAA;
         private const byte FrameMagic1 = 0x55;

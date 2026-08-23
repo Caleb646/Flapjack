@@ -60,6 +60,10 @@ spi5: SPI.STM32H7_SPI @ sysbus 0x40015000
 
 bmi323: Sensors.BMI323 @ spi1
     port: 4010
+    IRQ -> gpioPortC@5
+    // INT1 -> PC5 (IMU_INT_GPIO_* in target/flapjack_v1/flapjack_v1.h). The
+    // port forwards pin 5 to syscfg#2@5 upstream, so this reaches EXTI line 5
+    // and EXTI9_5_IRQn without anything further here.
 
 // Keep the syscfg/EXTI path for PC4 and fan the same pin out to the IMU's chip
 // select; the driver drives it with HAL_GPIO_WritePin (SPI_NSS_SOFT).

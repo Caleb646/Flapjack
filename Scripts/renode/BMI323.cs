@@ -3,9 +3,15 @@
 // file, and the two registers whose *values* bmi323.c actually checks. Enough
 // for Imu_Init_ to complete and for Imu_Update to stream samples.
 //
-// Not modelled: the feature engine, ODR pacing, self-test/self-calibration,
-// the data-ready interrupt. Reads return whatever was last written, so the
-// driver's config read-back compare passes trivially.
+// Not modelled: the feature engine, ODR pacing, self-test/self-calibration.
+// Reads return whatever was last written, so the driver's config read-back
+// compare passes trivially.
+//
+// The data-ready interrupt IS modelled: INT1 is raised when a pushed sample
+// arrives and dropped when the firmware reads the data registers, but only if
+// the firmware actually enabled the INT1 output and mapped acc drdy onto it.
+// A driver that forgets either write sees no interrupts here, which is the
+// point - it must not pass because the model is permissive.
 //
 // Load with `include @Scripts/renode/BMI323.cs` before the platform
 // description that instantiates it, and after SamplePushListener.cs.
@@ -27,6 +33,7 @@ using System;
 using Antmicro.Renode.Core;
 using Antmicro.Renode.Logging;
 using Antmicro.Renode.Peripherals.SPI;
+using Antmicro.Renode.Time;
 
 namespace Antmicro.Renode.Peripherals.Sensors
 {
@@ -34,12 +41,18 @@ namespace Antmicro.Renode.Peripherals.Sensors
     {
         // port 0 leaves the socket off: the register file is then whatever the
         // firmware last wrote, which is all a boot smoke test needs.
-        public BMI323(int port = 0)
+        public BMI323(IMachine machine, int port = 0)
         {
+            this.machine = machine;
+            IRQ = new GPIO();
             registers = new ushort[RegisterCount];
             Reset();
-            source = new SamplePushListener(this, port, PayloadLength);
+            source = new SamplePushListener(this, port, PayloadLength, OnSamplePushed);
         }
+
+        // INT1. Connect it to the pin the board wires it to - PC5 on flapjack_v1
+        // (IMU_INT_GPIO_* in target/flapjack_v1/flapjack_v1.h).
+        public GPIO IRQ { get; private set; }
 
         public void Dispose()
         {
@@ -49,6 +62,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         public void Reset()
         {
             ResetRegisters();
+            IRQ.Unset();
             selected = false;
             expectAddress = true;
             Transactions = 0;
@@ -209,7 +223,10 @@ namespace Antmicro.Renode.Peripherals.Sensors
             {
                 // bmi323.c reads STATUS once and then whichever blocks it named,
                 // so consuming on the first data register of the pass is enough.
+                // Same moment the interrupt is answered: this runs on the
+                // emulation thread, so the pin can be touched directly.
                 consumedSequence = sample.Sequence;
+                IRQ.Unset();
                 return (ushort)activeWords[register - AccDataXRegister];
             }
 
@@ -254,6 +271,41 @@ namespace Antmicro.Renode.Peripherals.Sensors
             registers[StatusRegister] = DataReadyBits;
         }
 
+        // Receive thread. A GPIO may only be driven from the time domain, so the
+        // edge is marshalled rather than raised here; ExternalWorld is the
+        // timestamp Renode uses for events originating outside the emulation.
+        private void OnSamplePushed()
+        {
+            machine.HandleTimeDomainEvent<bool>(RaiseDataReady, true,
+                new TimeStamp(default(TimeInterval), EmulationManager.ExternalWorld));
+        }
+
+        private void RaiseDataReady(bool unused)
+        {
+            if(!DataReadyRoutedToInt1)
+            {
+                return;
+            }
+
+            // Set, not pulse. A second sample landing before the firmware reads
+            // finds the line already high and produces no new edge, which is
+            // exactly what a real latched drdy does when a sample is missed.
+            IRQ.Set();
+        }
+
+        // True only when the firmware both enabled the INT1 output driver and
+        // mapped acc drdy onto INT1 - the two writes IMUEnableInterrupts and
+        // IMUSetupInterrupts make in bmi323.c.
+        private bool DataReadyRoutedToInt1
+        {
+            get
+            {
+                var outputEnabled = (registers[IoIntCtrlRegister] & Int1OutputEnable) != 0;
+                var mapping = (registers[IntMap1Register + 1] & AccDrdyMask) >> AccDrdyShift;
+                return outputEnabled && mapping == Int1;
+            }
+        }
+
         // SI in, LSB counts out, using the ranges the firmware actually
         // programmed - so a range change in bmi323.c really does change what
         // the part reports, instead of being a write nobody reads back.
@@ -295,6 +347,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private int byteIndex;
         private byte pendingLowByte;
 
+        private readonly IMachine machine;
         private readonly ushort[] registers;
         private readonly SamplePushListener source;
 
@@ -323,7 +376,16 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private const uint FeatureIo1Register = 0x11;
         private const uint AccConfRegister = 0x20;
         private const uint GyrConfRegister = 0x21;
+        private const uint IoIntCtrlRegister = 0x38;
+        private const uint IntMap1Register = 0x3A;
         private const uint CmdRegister = 0x7E;
+
+        // IO_INT_CTRL bit 2 = int1_output_en. INT_MAP1+1 (0x3B) carries
+        // acc_drdy_int in bits 11:10, where 1 selects INT1.
+        private const ushort Int1OutputEnable = 1 << 2;
+        private const ushort AccDrdyMask = 0x0C00;
+        private const int AccDrdyShift = 10;
+        private const int Int1 = 1;
 
         private const ushort ChipId = 0x0043;
         private const ushort SoftResetCommand = 0xDEAF;
