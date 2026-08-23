@@ -939,6 +939,11 @@ def main(argv=None):
                          f"Defaults to {sil_url(SIL_BARO_PORT)} on a SIL run. Only baro "
                          "path; with `none` NAV_VALID_BARO_ALT never sets and there is "
                          "no altitude.")
+    ap.add_argument("--mag-rate", type=float, default=100.0,
+                    help="magnetometer push rate in Hz (default 100, the MMC5983 "
+                         "continuous rate mmc5983.c programs). The emulated part raises "
+                         "drdy on every push, so this IS the FC's mag interrupt rate - "
+                         "pushing faster models a part the board does not have.")
     ap.add_argument("--baro-rate", type=float, default=50.0,
                     help="barometer push rate (Hz). Its own rate rather than the "
                          "400 Hz sensor stream - a real barometer is a 10-50 Hz part, "
@@ -1024,7 +1029,9 @@ def main(argv=None):
     baro_ser = open_port(args.baro_port, args.baud, timeout=0) if args.baro_port else None
 
     baro_period = 1.0 / args.baro_rate if args.baro_rate > 0 else 0.0
+    mag_period = 1.0 / args.mag_rate if args.mag_rate > 0 else 0.0
     next_baro = 0.0
+    next_mag = 0.0
 
     # NMEA on its own wire drives Gps_DataReceivedHandler -> minmea ->
     # Gps_Update_, i.e. the path a real receiver drives. No sim-link shortcut.
@@ -1084,7 +1091,7 @@ def main(argv=None):
         print("[bridge] WARNING: no --imu-port, so the emulated BMI323 gets no samples "
               "and the FC never gets an attitude")
     if mag_ser is not None:
-        print(f"[bridge] mag samples on {args.mag_port}, {args.rate:.0f} Hz")
+        print(f"[bridge] mag samples on {args.mag_port}, {args.mag_rate:.0f} Hz")
     else:
         print("[bridge] WARNING: no --mag-port, so the emulated MMC5983 gets no samples "
               "and the heading is unreferenced")
@@ -1200,7 +1207,8 @@ def main(argv=None):
         # Mag rides the sensor tick, but the part is what paces Mag_Task: it only
         # raises MEAS_M_DONE for a sample the driver has not already read, and
         # Mag_Task polls at 100 Hz, so pushing at 400 Hz costs the FC nothing.
-        if mag_ser is not None:
+        if mag_ser is not None and mag_period and now >= next_mag:
+            next_mag = now + mag_period
             mag_ser.write(make_mag_push(mag))
 
         # --- barometer, at its own rate ---

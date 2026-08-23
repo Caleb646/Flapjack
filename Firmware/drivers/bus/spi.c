@@ -7,7 +7,9 @@
 
 #include "drivers/io/gpio.h"
 
-#include <stdbool.h>
+#include "FreeRTOS.h"
+#include "semphr.h"
+
 #include <stdint.h>
 #include <string.h>
 
@@ -44,6 +46,35 @@ FJ_DEFINE_SHARED (SpiBus_t, g_SpiBuses[]) = {
 };
 
 FJ_DEFINE_SHARED (uint32_t, g_NumSpiBuses) = sizeof (g_SpiBuses) / sizeof (g_SpiBuses[0]);
+
+/* Static rather than xSemaphoreCreateMutex(): this build is heap_1, whose
+ * allocation is never reclaimed, and every other long-lived object here is
+ * static already. */
+static StaticSemaphore_t s_BusLockBuffers[sizeof (g_SpiBuses) / sizeof (g_SpiBuses[0])];
+
+/*
+ * One lock per bus, held across a whole chip-select assertion.
+ *
+ * SPI5 carries the magnetometer and the barometer on separate chip selects and
+ * their tasks are independent, so without this a task preempted between
+ * dropping its NSS and raising it leaves BOTH parts selected and the two
+ * transactions interleave on the wire. Polling hid it - the tasks woke on the
+ * same tick and each finished inside it - but any change that decouples them
+ * from the tick makes it routine.
+ *
+ * The corruption is near-invisible from above: a mangled magnetometer read is
+ * checked by nothing, goes into Madgwick, comes out as attitude, and reaches
+ * the altitude estimate as hundreds of metres of error.
+ */
+static inline void SpiBus_Lock (SpiDev_t* pDev) {
+
+    (void)xSemaphoreTake ((SemaphoreHandle_t)pDev->pBus->lock, portMAX_DELAY);
+}
+
+static inline void SpiBus_Unlock (SpiDev_t* pDev) {
+
+    (void)xSemaphoreGive ((SemaphoreHandle_t)pDev->pBus->lock);
+}
 
 void Spi_IrqHandler (eBUS_ID_t busId) {
     SpiBus_t* pBus = Spi_GetBusById (busId);
@@ -155,6 +186,26 @@ eSTATUS_t Spi_InitSystem (void) {
             return eSTATUS_FAILURE;
         }
     }
+
+    for (uint32_t i = 0; i < g_NumSpiBuses; ++i) {
+        g_SpiBuses[i].lock = xSemaphoreCreateMutexStatic (&s_BusLockBuffers[i]);
+        if (!g_SpiBuses[i].lock) {
+            return eSTATUS_FAILURE;
+        }
+    }
+
+    /*
+     * Creating a FreeRTOS object takes a critical section, and this port starts
+     * uxCriticalNesting at 0xaaaaaaaa - only xPortStartScheduler() zeroes it. So
+     * before the scheduler the enter masks interrupts through BASEPRI and the
+     * matching exit never decrements the count to zero to restore them, which
+     * kills the TIM16 tick and hangs the HAL_Delay(10) in Core_Init(). Unmask by
+     * hand; vTaskStartScheduler() does exactly this when it starts the first
+     * task. Any pre-scheduler function that creates a FreeRTOS object owes the
+     * same call on the way out.
+     */
+    portENABLE_INTERRUPTS ();
+
     return eSTATUS_SUCCESS;
 }
 
@@ -231,26 +282,31 @@ eSTATUS_t SpiDev_WriteRead_ (SpiDev_t* pDev, uint8_t const* pTx, uint8_t* pRx, u
 
 eSTATUS_t SpiDev_Write (SpiDev_t* pDev, uint8_t const* pData, uint16_t size) {
 
+    SpiBus_Lock (pDev);
     HAL_GPIO_WritePin (pDev->cfg.pNssPort, pDev->cfg.nssPin, GPIO_PIN_RESET);
     HAL_StatusTypeDef status = HAL_SPI_Transmit (&pDev->pBus->handle, pData, size, HAL_MAX_DELAY);
     HAL_GPIO_WritePin (pDev->cfg.pNssPort, pDev->cfg.nssPin, GPIO_PIN_SET);
+    SpiBus_Unlock (pDev);
 
     return (status == HAL_OK) ? eSTATUS_SUCCESS : eSTATUS_FAILURE;
 }
 
 eSTATUS_t SpiDev_WriteRegister (SpiDev_t* pDev, uint8_t reg, uint8_t const* pData, uint16_t size) {
 
+    SpiBus_Lock (pDev);
     HAL_GPIO_WritePin (pDev->cfg.pNssPort, pDev->cfg.nssPin, GPIO_PIN_RESET);
     reg &= 0x7FU; // clear read bit
     HAL_StatusTypeDef status  = HAL_SPI_Transmit (&pDev->pBus->handle, &reg, 1U, HAL_MAX_DELAY);
     HAL_StatusTypeDef status2 = HAL_SPI_Transmit (&pDev->pBus->handle, pData, size, HAL_MAX_DELAY);
     HAL_GPIO_WritePin (pDev->cfg.pNssPort, pDev->cfg.nssPin, GPIO_PIN_SET);
+    SpiBus_Unlock (pDev);
 
     return (status == HAL_OK && status2 == HAL_OK) ? eSTATUS_SUCCESS : eSTATUS_FAILURE;
 }
 
 eSTATUS_t SpiDev_ReadRegister (SpiDev_t* pDev, uint8_t reg, uint8_t* pOutData, uint16_t size) {
 
+    SpiBus_Lock (pDev);
     HAL_GPIO_WritePin (pDev->cfg.pNssPort, pDev->cfg.nssPin, GPIO_PIN_RESET);
     reg |= 0x80U; // set read bit
     HAL_StatusTypeDef status = HAL_SPI_Transmit (&pDev->pBus->handle, &reg, 1U, HAL_MAX_DELAY);
@@ -266,21 +322,25 @@ eSTATUS_t SpiDev_ReadRegister (SpiDev_t* pDev, uint8_t reg, uint8_t* pOutData, u
     HAL_StatusTypeDef status2 =
     HAL_SPI_TransmitReceive (&pDev->pBus->handle, pOutData, pOutData, size, HAL_MAX_DELAY);
     HAL_GPIO_WritePin (pDev->cfg.pNssPort, pDev->cfg.nssPin, GPIO_PIN_SET);
+    SpiBus_Unlock (pDev);
 
     return (status == HAL_OK && status2 == HAL_OK) ? eSTATUS_SUCCESS : eSTATUS_FAILURE;
 }
 
 eSTATUS_t SpiDev_WriteRead (SpiDev_t* pDev, uint8_t const* pTxData, uint8_t* pRxData, uint16_t size) {
 
+    SpiBus_Lock (pDev);
     HAL_GPIO_WritePin (pDev->cfg.pNssPort, pDev->cfg.nssPin, GPIO_PIN_RESET);
     HAL_StatusTypeDef status =
     HAL_SPI_TransmitReceive (&pDev->pBus->handle, pTxData, pRxData, size, HAL_MAX_DELAY);
     HAL_GPIO_WritePin (pDev->cfg.pNssPort, pDev->cfg.nssPin, GPIO_PIN_SET);
+    SpiBus_Unlock (pDev);
     return (status == HAL_OK) ? eSTATUS_SUCCESS : eSTATUS_FAILURE;
 }
 
 eSTATUS_t SpiDev_Transactions (SpiDev_t* pDev, SpiDevTransaction_t* pTransactions, uint32_t nTransactions) {
 
+    SpiBus_Lock (pDev);
     HAL_GPIO_WritePin (pDev->cfg.pNssPort, pDev->cfg.nssPin, GPIO_PIN_RESET);
     for (uint32_t i = 0; i < nTransactions; ++i) {
         SpiDevTransaction_t* pTransaction = &pTransactions[i];
@@ -293,5 +353,6 @@ eSTATUS_t SpiDev_Transactions (SpiDev_t* pDev, SpiDevTransaction_t* pTransaction
         );
     }
     HAL_GPIO_WritePin (pDev->cfg.pNssPort, pDev->cfg.nssPin, GPIO_PIN_SET);
+    SpiBus_Unlock (pDev);
     return eSTATUS_SUCCESS;
 }

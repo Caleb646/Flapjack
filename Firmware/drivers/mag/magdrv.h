@@ -18,12 +18,10 @@
 
 #include "core/core.h"
 
+#include "drivers/device.h"
+
 #include <stdbool.h>
 #include <stdint.h>
-
-typedef struct {
-    bool normalize;   // normalise field to full-scale [-1, 1]
-} MagDriverConf_t;
 
 typedef struct {
     Vec3f field;
@@ -33,8 +31,18 @@ typedef struct MagDriver_s {
     void* ctx;
     eSTATUS_t (*Read) (void* ctx, bool forcePolling, MagData_t* pOutData);
     bool (*IsDataReady) (void* ctx);
+    struct {
+        bool normalize;   // normalise field to full-scale [-1, 1]
+        /* Optional. With a Notify set the backend enables the part's
+         * measurement-done output and wires the EXTI line; zeroed means poll. */
+        DataReadySignal_t signal;
+    } cfg;
 } MagDriver_t;
 
-eSTATUS_t MagDrv_Init (MagDriverConf_t const* pConf, MagDriver_t* pOutDriver);
+/*
+ * Fill pOutDriver->cfg first; this reads it and does NOT clear the struct, the
+ * same contract UartPort_Init and SpiDev_Init keep.
+ */
+eSTATUS_t MagDrv_Init (MagDriver_t* pOutDriver);
 
 #endif // DRIVERS_MAG_MAG_DRIVER_H

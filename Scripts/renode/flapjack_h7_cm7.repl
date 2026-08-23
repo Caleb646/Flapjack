@@ -94,9 +94,17 @@ spi5Mux: SPI.SPIMultiplexer @ spi5
 
 mmc5983: Sensors.MMC5983 @ spi5Mux 0x0
     port: 4011
+    // INT -> PF3 (MAG_INT_GPIO_* in target/flapjack_v1/flapjack_v1.h). Pin 3 is
+    // untouched by the gpioPortF overrides below, so it keeps upstream's
+    // `[0-15] -> syscfg#5@[0-15]` and reaches EXTI line 3 / EXTI3_IRQn.
+    IRQ -> gpioPortF@3
 
 bmp390: Sensors.BMP390 @ spi5Mux 0x1
     port: 4012
+    // INT -> PF10 (BARO_INT_GPIO_* in target/flapjack_v1/flapjack_v1.h). Only
+    // pins 4 and 6 are overridden below, so pin 10 keeps upstream's
+    // `[0-15] -> syscfg#5@[0-15]` and reaches EXTI line 10 / EXTI15_10_IRQn.
+    IRQ -> gpioPortF@10
 
 // PF4 and PF6 are plain GPIO chip selects on this board, driven by hand
 // (SPI_NSS_SOFT). Overriding pin 6 drops the upstream `6 -> timer16@00` AF

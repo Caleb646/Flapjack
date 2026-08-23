@@ -644,7 +644,7 @@ def cmd_renode(args: argparse.Namespace) -> None:
         print(f"       Rebuild: python Scripts/board.py build -b {args.board} -D sim --single-core")
         sys.exit(1)
 
-    # $bin is declared with '?=' in the .resc, so setting it first wins.
+    # The .resc requires $bin and defaults it to nothing, so it must be set here.
     # usart1 carries the sim link (actuators/telemetry/logs/shell); usart3 is
     # the RX UART, so the bridge can feed real CRSF frames to Rx_Task there; and
     # usart2 is the GPS UART, carrying real NMEA sentences to Gps_Task. The three

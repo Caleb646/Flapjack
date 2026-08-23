@@ -28,6 +28,7 @@ using System;
 using Antmicro.Renode.Core;
 using Antmicro.Renode.Logging;
 using Antmicro.Renode.Peripherals.SPI;
+using Antmicro.Renode.Time;
 
 namespace Antmicro.Renode.Peripherals.Sensors
 {
@@ -35,12 +36,17 @@ namespace Antmicro.Renode.Peripherals.Sensors
     {
         // port 0 leaves the socket off: the register file is then whatever the
         // firmware last wrote, which is all a boot smoke test needs.
-        public MMC5983(int port = 0)
+        public MMC5983(IMachine machine, int port = 0)
         {
+            this.machine = machine;
+            IRQ = new GPIO();
             registers = new byte[RegisterCount];
             Reset();
-            source = new SamplePushListener(this, port, PayloadLength);
+            source = new SamplePushListener(this, port, PayloadLength, OnSamplePushed);
         }
+
+        // INT pin -> PF3 on flapjack_v1 (MAG_INT_GPIO_* in the board header).
+        public GPIO IRQ { get; private set; }
 
         public void Dispose()
         {
@@ -50,6 +56,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         public void Reset()
         {
             ResetRegisters();
+            IRQ.Unset();
             expectAddress = true;
             Transactions = 0;
             Bytes = 0;
@@ -126,10 +133,12 @@ namespace Antmicro.Renode.Peripherals.Sensors
 
             if(register < DataLength)
             {
-                // The driver reads STATUS and then the whole 7-byte block, so
-                // consuming on the first data byte of the pass is enough. A real
-                // part clears Meas_M_Done when the output registers are read.
-                consumedSequence = sample.Sequence;
+                // NOT consumed here. Unlike the BMI323 and BMP390, this part does
+                // not clear Meas_M_Done when the output registers are read - the
+                // datasheet says the bit "will remain 1 till next measurement"
+                // and that writing 1 into it clears the interrupt. A driver that
+                // never writes it sees drdy stuck high, which is the real
+                // failure and worth reproducing rather than papering over.
                 return activeCounts[register];
             }
 
@@ -147,6 +156,16 @@ namespace Antmicro.Renode.Peripherals.Sensors
             if(register == IntCtrl1Register && (value & SwReset) != 0)
             {
                 ResetRegisters();
+                return;
+            }
+
+            // Write-1-to-clear Meas_M_Done: this acknowledges the sample and
+            // drops the INT pin, re-arming it for the next one.
+            if(register == StatusRegister && (value & MeasMDone) != 0)
+            {
+                var latest = source.Latest;
+                consumedSequence = (latest == null) ? consumedSequence : latest.Sequence;
+                IRQ.Unset();
                 return;
             }
 
@@ -190,6 +209,26 @@ namespace Antmicro.Renode.Peripherals.Sensors
             return Math.Max(0, Math.Min(MaxCount, counts));
         }
 
+        // Receive thread. A GPIO may only be driven from the time domain, so the
+        // edge is marshalled; ExternalWorld is the timestamp Renode uses for
+        // events originating outside the emulation.
+        private void OnSamplePushed()
+        {
+            machine.HandleTimeDomainEvent<bool>(RaiseDataReady, true,
+                new TimeStamp(default(TimeInterval), EmulationManager.ExternalWorld));
+        }
+
+        private void RaiseDataReady(bool unused)
+        {
+            // Only when the firmware set INT_meas_done_en - the write
+            // Mmc5983_HwInit makes to INT_CTRL_0.
+            if((registers[IntCtrl0Register] & IntMeasDoneEnable) == 0)
+            {
+                return;
+            }
+            IRQ.Set();
+        }
+
         private long consumedSequence;
         private PushedSample activeSample;
         private byte[] activeCounts;
@@ -200,6 +239,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private int byteIndex;
 
         private readonly byte[] registers;
+        private readonly IMachine machine;
         private readonly SamplePushListener source;
 
         private const int RegisterCount = 0x30;
@@ -214,10 +254,13 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private const float FullScaleGauss = 8f;
 
         private const uint StatusRegister = 0x08;
+        private const uint IntCtrl0Register = 0x09;
         private const uint IntCtrl1Register = 0x0A;
         private const uint ProductIdRegister = 0x2F;
 
         private const byte MeasMDone = 1 << 0;
+        // INT_CTRL_0 bit 2 = INT_meas_done_en.
+        private const byte IntMeasDoneEnable = 1 << 2;
         private const byte SwReset = 1 << 7;
         private const byte ProductId = 0x30;
     }

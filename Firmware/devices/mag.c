@@ -6,7 +6,7 @@
 
 #include <string.h>
 
-eSTATUS_t Mag_Init (Mag_t* pOutSensor) {
+eSTATUS_t Mag_Init (Mag_t* pOutSensor, DataReadySignal_t const* pSignal) {
 
     if (!pOutSensor) {
         return eSTATUS_NULL_ARG;
@@ -16,11 +16,12 @@ eSTATUS_t Mag_Init (Mag_t* pOutSensor) {
 
     pOutSensor->align = Align_Compose (MAG_ALIGN, CFG_BOARD_ALIGN);
 
-    MagDriverConf_t conf = {
-        .normalize = true,
-    };
+    pOutSensor->drv.cfg.normalize = true;
+    if (pSignal) {
+        pOutSensor->drv.cfg.signal = *pSignal;
+    }
 
-    return MagDrv_Init (&conf, &pOutSensor->drv);
+    return MagDrv_Init (&pOutSensor->drv);
 }
 
 eSTATUS_t Mag_Update (Mag_t* pSensor) {

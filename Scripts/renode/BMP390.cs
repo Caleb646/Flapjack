@@ -42,6 +42,7 @@ using System;
 using Antmicro.Renode.Core;
 using Antmicro.Renode.Logging;
 using Antmicro.Renode.Peripherals.SPI;
+using Antmicro.Renode.Time;
 
 namespace Antmicro.Renode.Peripherals.Sensors
 {
@@ -49,12 +50,18 @@ namespace Antmicro.Renode.Peripherals.Sensors
     {
         // port 0 leaves the socket off: the register file is then whatever the
         // firmware last wrote, which is all a boot smoke test needs.
-        public BMP390(int port = 0)
+        public BMP390(IMachine machine, int port = 0)
         {
+            this.machine = machine;
+            IRQ = new GPIO();
             registers = new byte[RegisterCount];
             Reset();
-            source = new SamplePushListener(this, port, PayloadLength);
+            source = new SamplePushListener(this, port, PayloadLength, OnSamplePushed);
         }
+
+        // INT pin. Connect it to the pin the board wires it to - PF10 on
+        // flapjack_v1 (BARO_INT_GPIO_* in target/flapjack_v1/flapjack_v1.h).
+        public GPIO IRQ { get; private set; }
 
         public void Dispose()
         {
@@ -64,6 +71,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         public void Reset()
         {
             ResetRegisters();
+            IRQ.Unset();
             expectAddress = true;
             Transactions = 0;
             Bytes = 0;
@@ -149,7 +157,10 @@ namespace Antmicro.Renode.Peripherals.Sensors
                 // The driver reads STATUS and then the whole 6-byte block, so
                 // consuming on the first data byte of the pass is enough. A real
                 // part clears drdy_press when the data registers are read.
+                // Same moment the interrupt is answered; this runs on the
+                // emulation thread, so the pin can be touched directly.
                 consumedSequence = sample.Sequence;
+                IRQ.Unset();
                 return activeCounts[register - Data0Register];
             }
 
@@ -270,6 +281,31 @@ namespace Antmicro.Renode.Peripherals.Sensors
             return (int)Math.Max(0.0, Math.Min(MaxCount, Math.Round(value)));
         }
 
+        // Receive thread. A GPIO may only be driven from the time domain, so the
+        // edge is marshalled rather than raised here; ExternalWorld is the
+        // timestamp Renode uses for events originating outside the emulation.
+        private void OnSamplePushed()
+        {
+            machine.HandleTimeDomainEvent<bool>(RaiseDataReady, true,
+                new TimeStamp(default(TimeInterval), EmulationManager.ExternalWorld));
+        }
+
+        private void RaiseDataReady(bool unused)
+        {
+            // Only when the firmware actually enabled drdy on the INT pin - the
+            // write Bmp390_HwInit makes to INT_CTRL. A driver that skips it sees
+            // no interrupts here, which is the point.
+            if((registers[IntCtrlRegister] & IntDrdyEnable) == 0)
+            {
+                return;
+            }
+
+            // Set, not pulse. A second sample landing before the driver reads
+            // finds the line already high and produces no new edge, which is
+            // what a real part does for a sample that was missed.
+            IRQ.Set();
+        }
+
         private long consumedSequence;
         private PushedSample activeSample;
         private byte[] activeCounts;
@@ -280,6 +316,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private uint address;
         private int byteIndex;
 
+        private readonly IMachine machine;
         private readonly byte[] registers;
         private readonly SamplePushListener source;
 
@@ -296,7 +333,11 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private const uint StatusRegister = 0x03;
         private const uint Data0Register = 0x04;
         private const uint NvmParT1Register = 0x31;
+        private const uint IntCtrlRegister = 0x19;
         private const uint CmdRegister = 0x7E;
+
+        // INT_CTRL bit 6 = drdy_en.
+        private const byte IntDrdyEnable = 1 << 6;
 
         private const byte DrdyPress = 1 << 5;
         private const byte ChipId = 0x60;

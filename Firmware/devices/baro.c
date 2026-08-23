@@ -4,7 +4,7 @@
 
 #include <string.h>
 
-eSTATUS_t Baro_Init (Baro_t* pOutSensor) {
+eSTATUS_t Baro_Init (Baro_t* pOutSensor, DataReadySignal_t const* pSignal) {
 
     if (!pOutSensor) {
         return eSTATUS_NULL_ARG;
@@ -12,9 +12,11 @@ eSTATUS_t Baro_Init (Baro_t* pOutSensor) {
 
     memset (pOutSensor, 0, sizeof (Baro_t));
 
-    BaroDriverConf_t conf = { 0 };
+    if (pSignal) {
+        pOutSensor->drv.cfg.signal = *pSignal;
+    }
 
-    return BaroDrv_Init (&conf, &pOutSensor->drv);
+    return BaroDrv_Init (&pOutSensor->drv);
 }
 
 eSTATUS_t Baro_Update (Baro_t* pSensor) {

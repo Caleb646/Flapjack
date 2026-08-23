@@ -27,6 +27,9 @@ typedef struct {
     eBUS_ID_t id;
     SPI_HandleTypeDef handle;
     SpiHardware_t hardware;
+    /* Serialises whole chip-select assertions. Opaque here on purpose: it is a
+     * FreeRTOS mutex, and spi.c is the only file that needs to know that. */
+    void* lock;
 } SpiBus_t;
 
 typedef struct {

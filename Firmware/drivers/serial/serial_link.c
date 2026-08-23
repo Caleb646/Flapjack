@@ -94,6 +94,16 @@ eSTATUS_t SerialLink_Init (void) {
     s_rxStream  = xStreamBufferCreate (SERIAL_RX_STREAM, 1U);
     s_textMutex = xSemaphoreCreateMutex ();
     s_txMutex   = xSemaphoreCreateMutex ();
+
+    /* Undo the BASEPRI mask the three creates above leave behind - see the
+     * comment in Spi_InitSystem() for why a pre-scheduler critical section
+     * never unmasks on exit. This function only survived without it by running
+     * after the last pre-scheduler HAL_Delay; that is not a property worth
+     * depending on, since the next thing added to main() can silently break it.
+     * Before the check below, so a failed create still returns with interrupts
+     * on and CriticalErrorHandler() can use the tick. */
+    portENABLE_INTERRUPTS ();
+
     if (!s_rxStream || !s_textMutex || !s_txMutex) {
         return eSTATUS_FAILURE;
     }

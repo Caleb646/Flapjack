@@ -16,7 +16,8 @@ typedef struct {
     uint32_t usLastUpdate;
 } Mag_t;
 
-eSTATUS_t Mag_Init (Mag_t* pOutSensor);
+/* pSignal may be NULL, in which case Mag_Update polls the part on its own. */
+eSTATUS_t Mag_Init (Mag_t* pOutSensor, DataReadySignal_t const* pSignal);
 eSTATUS_t Mag_Update (Mag_t* pOutSensor);
 
 #endif // SENSORS_MAG_H

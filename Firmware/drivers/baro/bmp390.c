@@ -24,6 +24,8 @@
 
 #include "drivers/baro/barodrv.h"
 
+#include "drivers/io/exti.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -36,6 +38,7 @@
 #define BMP390_REG_CHIP_ID    0x00U
 #define BMP390_REG_STATUS     0x03U
 #define BMP390_REG_DATA_0     0x04U
+#define BMP390_REG_INT_CTRL   0x19U
 #define BMP390_REG_PWR_CTRL   0x1BU
 #define BMP390_REG_OSR        0x1CU
 #define BMP390_REG_ODR        0x1DU
@@ -44,6 +47,12 @@
 #define BMP390_REG_CMD        0x7EU
 
 #define BMP390_DRDY_PRESS     (1U << 5U)
+
+/* INT_CTRL. int_latch (bit 2) deliberately left clear: a pulsed interrupt
+ * self-clears, so nothing has to read INT_STATUS to re-arm the line. int_od
+ * (bit 0) clear selects push-pull. */
+#define BMP390_INT_LEVEL_HIGH (1U << 1U)
+#define BMP390_INT_DRDY_EN    (1U << 6U)
 
 #define BMP390_PRESS_EN       (1U << 0U)
 #define BMP390_TEMP_EN        (1U << 1U)
@@ -203,7 +212,9 @@ STATIC bool Bmp390_IsDataReady (void* ctx) {
     return (status & BMP390_DRDY_PRESS) > 0U;
 }
 
-STATIC eSTATUS_t Bmp390_HwInit (Bmp390_t* pBaro) {
+STATIC eSTATUS_t Bmp390_HwInit (Bmp390_t* pBaro, DataReadySignal_t const* pSignal) {
+
+    bool useInterrupt = (pSignal != NULL) && (pSignal->Notify != NULL);
 
     pBaro->spiDev.cfg.busId    = BARO_SPI_BUS_ID;
     pBaro->spiDev.cfg.pNssPort = BARO_SPI_NSS_GPIO_PORT;
@@ -228,10 +239,34 @@ STATIC eSTATUS_t Bmp390_HwInit (Bmp390_t* pBaro) {
     GOTO_IF (BaroWrite (pBaro, BMP390_REG_ODR, BMP390_ODR_50_HZ) != eSTATUS_SUCCESS, error, "Failed to configure BARO output data rate");
     GOTO_IF (BaroWrite (pBaro, BMP390_REG_CONFIG, BMP390_IIR_COEF_3) != eSTATUS_SUCCESS, error, "Failed to configure BARO IIR filter");
 
+    if (useInterrupt) {
+        uint8_t intCtrl = BMP390_INT_DRDY_EN | BMP390_INT_LEVEL_HIGH;
+        GOTO_IF (BaroWrite (pBaro, BMP390_REG_INT_CTRL, intCtrl) != eSTATUS_SUCCESS, error, "Failed to configure BARO interrupt output");
+    }
+
     // Last: leaving sleep starts conversions, so the rate settings above have to
     // already be in place or the part runs at its reset defaults.
     uint8_t pwrCtrl = BMP390_PRESS_EN | BMP390_TEMP_EN | BMP390_MODE_NORMAL;
     GOTO_IF (BaroWrite (pBaro, BMP390_REG_PWR_CTRL, pwrCtrl) != eSTATUS_SUCCESS, error, "Failed to enable BARO measurement");
+
+#if BRD_IS_ENABLED (BARO_INT)
+    if (useInterrupt) {
+        ExtiConf_t extiConf = {
+            .pPort       = BRD_GET_GPIO_PORT (BARO, INT),
+            .pin         = BRD_GET_GPIO_PIN (BARO, INT),
+            .trigger     = GPIO_MODE_IT_RISING,   // int_level high, pulsed - see BMP390_INT_LEVEL_HIGH
+            .pull        = GPIO_NOPULL,
+            .irqPriority = pSignal->irqPriority,
+            .callback    = pSignal->Notify,
+            .ctx         = pSignal->ctx,
+        };
+        GOTO_IF (Exti_Register (&extiConf) != eSTATUS_SUCCESS, error, "Failed to claim BARO data ready EXTI line");
+    }
+#else
+    if (useInterrupt) {
+        LOG_WARN ("Board declares no BARO_INT pin; baro data ready stays polled");
+    }
+#endif
 
     LOG_INFO ("Successfully initialized BARO");
     return eSTATUS_SUCCESS;
@@ -274,13 +309,14 @@ STATIC eSTATUS_t Bmp390_Read (void* ctx, bool forcePolling, BaroData_t* pOutData
     return eSTATUS_SUCCESS;
 }
 
-eSTATUS_t BaroDrv_Init (BaroDriverConf_t const* pConf, BaroDriver_t* pOutDriver) {
+eSTATUS_t BaroDrv_Init (BaroDriver_t* pOutDriver) {
 
-    if (!pConf || !pOutDriver) {
+    if (!pOutDriver) {
         return eSTATUS_NULL_ARG;
     }
 
-    memset (pOutDriver, 0, sizeof (BaroDriver_t));
+    /* No memset of pOutDriver: cfg is the caller's input and lives in the same
+     * struct, so clearing it here would erase what this function is reading. */
     pOutDriver->ctx = Allocate (sizeof (Bmp390_t));
     if (!pOutDriver->ctx) {
         return eSTATUS_FAILURE;
@@ -291,14 +327,13 @@ eSTATUS_t BaroDrv_Init (BaroDriverConf_t const* pConf, BaroDriver_t* pOutDriver)
     Bmp390_t* pBaro = (Bmp390_t*)pOutDriver->ctx;
     memset (pBaro, 0, sizeof (Bmp390_t));
 
-    return Bmp390_HwInit (pBaro);
+    return Bmp390_HwInit (pBaro, &pOutDriver->cfg.signal);
 }
 
 #else // board declares no barometer wiring
 
-eSTATUS_t BaroDrv_Init (BaroDriverConf_t const* pConf, BaroDriver_t* pOutDriver) {
+eSTATUS_t BaroDrv_Init (BaroDriver_t* pOutDriver) {
 
-    FJ_UNUSED (pConf);
     FJ_UNUSED (pOutDriver);
     return eSTATUS_UNSUPPORTED;
 }

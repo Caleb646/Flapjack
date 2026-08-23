@@ -18,14 +18,10 @@
 
 #include "core/core.h"
 
+#include "drivers/device.h"
+
 #include <stdbool.h>
 #include <stdint.h>
-
-typedef struct {
-    uint8_t unused;   // no configurable behaviour yet; keeps the shape of the
-                      // other driver interfaces so a real part can add ODR /
-                      // oversampling without changing every call site
-} BaroDriverConf_t;
 
 typedef struct {
     float pressurePa;
@@ -36,8 +32,18 @@ typedef struct BaroDriver_s {
     void* ctx;
     eSTATUS_t (*Read) (void* ctx, bool forcePolling, BaroData_t* pOutData);
     bool (*IsDataReady) (void* ctx);
+    struct {
+        /* Optional. With a Notify set the backend enables the part's data-ready
+         * output and wires the EXTI line; zeroed means poll. ODR and
+         * oversampling can join it here without changing any call site. */
+        DataReadySignal_t signal;
+    } cfg;
 } BaroDriver_t;
 
-eSTATUS_t BaroDrv_Init (BaroDriverConf_t const* pConf, BaroDriver_t* pOutDriver);
+/*
+ * Fill pOutDriver->cfg first; this reads it and does NOT clear the struct, the
+ * same contract UartPort_Init and SpiDev_Init keep.
+ */
+eSTATUS_t BaroDrv_Init (BaroDriver_t* pOutDriver);
 
 #endif // DRIVERS_BARO_BARO_DRIVER_H
