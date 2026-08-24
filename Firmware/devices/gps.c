@@ -6,13 +6,18 @@
 
 #include <string.h>
 
-eSTATUS_t Gps_Init(Gps_t* pOutGps) {
+eSTATUS_t Gps_Init(Gps_t* pOutGps, DataReadySignal_t const* pSignal) {
 
     if (!pOutGps) {
         return eSTATUS_NULL_ARG;
     }
 
     memset(pOutGps, 0, sizeof(Gps_t));
+
+    if (pSignal) {
+        pOutGps->driver.cfg.signal = *pSignal;
+    }
+
     eSTATUS_t status = GpsDrv_Init(&pOutGps->driver);
     if (STATUS_FAIL(status)) {
         LOG_ERROR ("Failed to initialize GPS driver");

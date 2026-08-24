@@ -1,6 +1,8 @@
 #include "tasks/gps/gps_task.h"
 
 #include "devices/gps.h"
+
+#include "drivers/device.h"
 #include "drivers/gps/gpsdrv.h"
 
 #include "umsg_sensors.h"
@@ -11,26 +13,64 @@
 #include <stdbool.h>
 
 /*
- * Polled, not blocking - the same shape as Rc_Task, and for the same reason:
- * sentences arrive on a UART ISR with no notification path to wait on, so most
- * polls find nothing ready and that is the ordinary case rather than an error.
+ * Fallback timeout, not the clock: the UART RX ISR signals every completed
+ * sentence, so the notification normally lands first. It stays at the old poll
+ * period so a receiver that is silent, or a build that passes no signal,
+ * degrades to exactly the previous polling behaviour.
  *
- * 100 Hz rather than the RC path's 50 Hz because the driver holds exactly ONE
- * assembled sentence (s_SentenceBuffer + s_IsSentenceReady in drivers/gps/gps.c).
- * A second sentence landing before this task consumes the first overwrites it,
- * so the poll has to outpace the sentence rate rather than merely match the fix
- * rate: a 10 Hz receiver emitting GGA + RMC is 20 sentences/s. The SIL bridge
- * spaces the two halves of a fix by half a period for the same reason.
+ * It must not become portMAX_DELAY, and the reason is stronger here than on the
+ * mag and baro tasks. The fix-loss branch below exists for a receiver that has
+ * stopped talking - and one that has stopped talking raises no interrupt, so
+ * only this timeout can wake the task to notice. Blocking forever would leave a
+ * dead antenna looking like a good fix indefinitely.
+ *
+ * Waking per sentence also closes the window the old 100 Hz poll left open: the
+ * driver holds exactly ONE assembled sentence (s_SentenceBuffer in
+ * drivers/gps/gps.c), and a second landing before this task consumes the first
+ * overwrites it. That window is now this task's scheduling latency instead of a
+ * full poll period.
  */
 #define GPS_POLL_PERIOD_MS 10U
 
+/*
+ * NVIC priority for the GPS UART. Gps_DataReady runs at it and calls
+ * vTaskNotifyGiveFromISR, so it must sit at or below the kernel's syscall
+ * ceiling - numerically >=, since lower numbers preempt. Asserted here because
+ * this is the layer that knows: drivers/ takes the number on faith to avoid
+ * pulling FreeRTOSConfig.h down there.
+ */
+#define GPS_RX_IRQ_PRIORITY 5U
+
+STATIC_ASSERT (GPS_RX_IRQ_PRIORITY >= configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY,
+               "GPS RX ISR must not preempt the FreeRTOS kernel");
+
 static Gps_t s_Gps;
+
+/* ISR context, once per assembled sentence. Signal only - the parse happens
+ * back in the task. */
+static void Gps_DataReady (void* ctx) {
+
+    BaseType_t higherPriorityTaskWoken = pdFALSE;
+    vTaskNotifyGiveFromISR ((TaskHandle_t)ctx, &higherPriorityTaskWoken);
+    portYIELD_FROM_ISR (higherPriorityTaskWoken);
+}
 
 void Gps_Task (void* args) {
 
     (void)args;
 
-    if (STATUS_FAIL (Gps_Init (&s_Gps))) {
+    /*
+     * The notification target is this task, so Gps_Init has to run here rather
+     * than from whoever created it - a task notification has no existence apart
+     * from the task that receives it.
+     */
+    DataReadySignal_t signal = {
+        .Notify      = Gps_DataReady,
+        .ctx         = xTaskGetCurrentTaskHandle (),
+        .irqPriority = GPS_RX_IRQ_PRIORITY,
+    };
+
+    if (STATUS_FAIL (Gps_Init (&s_Gps, &signal))) {
         LOG_ERROR ("GPS unavailable; task exiting");
         /* Not vTaskDelete: this build uses heap_1, whose vPortFree asserts -
          * and configASSERT spins with interrupts disabled, wedging the FC. */
@@ -44,15 +84,19 @@ void Gps_Task (void* args) {
     bool hadFix = false;
 
     while (true) {
+
+        (void)ulTaskNotifyTake (pdTRUE, pdMS_TO_TICKS (GPS_POLL_PERIOD_MS));
+
         /*
          * Publish only on SUCCESS, which the driver returns only for a sentence
          * that actually carried a position. Everything else is ordinary traffic,
-         * NOT an error, and must not be logged: at a 100 Hz poll against a 10 Hz
-         * receiver, ~98% of iterations are eSTATUS_BUSY (no sentence assembled
-         * yet), and the non-positional sentence types plus a receiver reporting
-         * no lock account for most of the rest. Logging any of those would put
-         * ~100 lines/second onto the shared debug UART - the log-flood failure
-         * KnownIssues 2.6 records as starving the low-priority tasks.
+         * NOT an error, and must not be logged: the 10 ms fallback timeout wakes
+         * this task far more often than a 10 Hz receiver emits sentences, so most
+         * iterations are still eSTATUS_BUSY (nothing assembled yet), and the
+         * non-positional sentence types plus a receiver reporting no lock account
+         * for most of the rest. Logging any of those would put ~100 lines/second
+         * onto the shared debug UART - the log-flood failure KnownIssues 2.6
+         * records as starving the low-priority tasks.
          *
          * Rc_Task documents the same reasoning for the same reason.
          */
@@ -93,6 +137,5 @@ void Gps_Task (void* args) {
             hadFix = false;
             LOG_WARN ("GPS fix lost");
         }
-        vTaskDelay (pdMS_TO_TICKS (GPS_POLL_PERIOD_MS));
     }
 }

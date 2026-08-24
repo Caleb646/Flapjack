@@ -8,7 +8,6 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <string.h>
 
 #define GPS_SENTENCE_MAX_LENGTH MINMEA_MAX_SENTENCE_LENGTH
 #define GPS_START_BYTE          '$'
@@ -23,6 +22,10 @@ typedef struct GpsUart_s {
 FJ_DEFINE_SHARED (uint8_t, s_SentenceBuffer[GPS_SENTENCE_MAX_LENGTH + 1U]) = { 0 };
 FJ_DEFINE_SHARED (uint32_t, s_SentenceIndex)                              = 0;
 FJ_DEFINE_SHARED (bool, s_IsSentenceReady)                                = false;
+
+/* File scope, not on GpsUart_t, because UartRxCallback_t carries no ctx - the
+ * RX handler can only reach state that lives beside the assembler it feeds. */
+FJ_DEFINE_SHARED (STATIC DataReadySignal_t, s_Signal) = { 0 };
 
 STATIC void Gps_DataReceivedHandler (uint8_t const* pData, uint32_t size) {
 
@@ -46,6 +49,12 @@ STATIC void Gps_DataReceivedHandler (uint8_t const* pData, uint32_t size) {
             s_SentenceBuffer[s_SentenceIndex] = '\0';
             s_SentenceIndex                   = 0;
             s_IsSentenceReady                 = true;
+            /* A whole sentence is this receiver's "a sample landed" - signalling
+             * per byte would wake the task ~80 times for one fix, and 79 of
+             * those would find Gps_IsDataReady false. */
+            if (s_Signal.Notify) {
+                s_Signal.Notify (s_Signal.ctx);
+            }
         }
     }
 }
@@ -170,17 +179,26 @@ eSTATUS_t GpsDrv_Init (GpsDriver_t* pOutDriver) {
 #if !BRD_IS_ENABLED (GPS)
     return eSTATUS_UNSUPPORTED;
 #else
-    memset(pOutDriver, 0, sizeof(GpsDriver_t));
+    /* No memset of pOutDriver: cfg is the caller's input and lives in the same
+     * struct, so clearing it here would erase what this function is reading. */
     pOutDriver->ctx = Allocate(sizeof(GpsUart_t));
     if (!pOutDriver->ctx) {
         return eSTATUS_FAILURE;
     }
 
+    /* Before UartPort_Init, which enables the RX interrupt: assigning after it
+     * races the first byte, and a sentence that completes in that window is
+     * assembled but never signalled. */
+    s_Signal = pOutDriver->cfg.signal;
+
     GpsUart_t* pGpsUart = (GpsUart_t*)pOutDriver->ctx;
-    pGpsUart->port.cfg.id          = BRD_GET_UART_ID (GPS);
-    pGpsUart->port.cfg.baudRate    = BRD_GET_BAUD_RATE (GPS);
-    pGpsUart->port.cfg.irqPriority = 5;
-    pGpsUart->port.cfg.rxCallback = Gps_DataReceivedHandler;
+    pGpsUart->port.cfg.id       = BRD_GET_UART_ID (GPS);
+    pGpsUart->port.cfg.baudRate = BRD_GET_BAUD_RATE (GPS);
+    /* The signal owns this: its Notify is what runs at this priority and what
+     * has to stay at or below the kernel's syscall ceiling. 5 with no signal
+     * only keeps the polling build where it already was. */
+    pGpsUart->port.cfg.irqPriority = s_Signal.Notify ? s_Signal.irqPriority : 5;
+    pGpsUart->port.cfg.rxCallback  = Gps_DataReceivedHandler;
     if (UartPort_Init (&pGpsUart->port) != eSTATUS_SUCCESS) {
         LOG_ERROR ("Failed to initialize UART port for GPS");
         return eSTATUS_FAILURE;

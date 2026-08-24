@@ -19,6 +19,7 @@
 
 #include "core/core.h"
 
+#include "drivers/device.h"
 #include "drivers/serial/uart.h"
 
 #include <stdbool.h>
@@ -48,8 +49,19 @@ typedef struct GpsDriver_s {
     void* ctx;
     eSTATUS_t (*Read) (void* ctx, bool forcePolling, GpsData_t* pOutData);
     bool (*IsDataReady) (void* ctx);
+    struct {
+        /* Optional; zeroed means poll. Unlike the IMU, mag and baro there is no
+         * pin and nothing to enable on a part: the receiver's UART interrupt is
+         * already running, so a Notify here is raised from the RX ISR once an
+         * assembled sentence terminates. */
+        DataReadySignal_t signal;
+    } cfg;
 } GpsDriver_t;
 
+/*
+ * Fill pOutDriver->cfg first; this reads it and does NOT clear the struct, the
+ * same contract UartPort_Init and SpiDev_Init keep.
+ */
 eSTATUS_t GpsDrv_Init (GpsDriver_t* pOutDriver);
 
 

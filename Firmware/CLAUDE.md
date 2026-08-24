@@ -30,7 +30,7 @@ the device and driver layers it uses sit in `devices/` and `drivers/`.
 | **Sensor: IMU** | `tasks/imu/imu_task.c` (device `devices/imu.c`) | `Imu_Init()` | `Imu_Update()` | BMI323 INT1 drdy (PC5), 2 ms timeout | - | `umsg_sensors_imu_t` |
 | **Sensor: Mag** | `tasks/mag/mag_task.c` (device `devices/mag.c`) | `Mag_Init()` | `Mag_Update()` | MMC5983 INT drdy (PF3), 10 ms timeout | - | `umsg_sensors_mag_t` |
 | **Sensor: Baro** | `tasks/baro/baro_task.c` (device `devices/baro.c`) | `Baro_Init()` | `Baro_Update()` | BMP390 INT drdy (PF10), 10 ms timeout | - | `umsg_sensors_baro_t` |
-| **Sensor: GPS** | `tasks/gps/gps_task.c` (device `devices/gps.c`) | `Gps_Init()` | `Gps_Update()` | nothing - 100 Hz `vTaskDelay` | - | `umsg_sensors_gps_t` |
+| **Sensor: GPS** | `tasks/gps/gps_task.c` (device `devices/gps.c`) | `Gps_Init()` | `Gps_Update()` | GPS UART RX ISR, one signal per NMEA sentence, 10 ms timeout | - | `umsg_sensors_gps_t` |
 | **Sensor: RC** | `tasks/rc/rc.c` (driver `drivers/rx/rx.c` + `crsf.c`) | `Rc_Init()` | `Rc_Update()` | nothing - 50 Hz `vTaskDelay` | - | `umsg_rc_input_t` |
 | **Navigation** | `tasks/nav/nav.c` | `Nav_Init()` | `Nav_Update()` | `umsg_sensors_imu_t` | `umsg_sensors_mag_t`, `umsg_sensors_baro_t`, `umsg_sensors_gps_t` | `umsg_nav_state_t` |
 | **Mission** | `tasks/mission/mission.c` | `Mission_Init()` | `Mission_Update()` | `umsg_rc_input_t` (20 ms timeout) | `umsg_arming_request_t`, `umsg_nav_state_t` | `umsg_mission_state_t` |
@@ -79,10 +79,11 @@ bridge, which asserts that what it sent is what the firmware decoded — see "Th
 
 ### The GPS path
 
-Mirrors the RC path exactly. A receiver drives the GPS UART (`GPS_UART`, 115200 baud 8N1) with
-NMEA; the byte-wise ISR in `drivers/gps/gps.c` assembles sentences, and `Gps_Task` polls
-`Gps_Update()` at 100 Hz to parse them with `minmea`, and publishes `umsg_sensors_gps_t` on
-any sentence that carried a position.
+A receiver drives the GPS UART (`GPS_UART`, 115200 baud 8N1) with NMEA; the byte-wise ISR in
+`drivers/gps/gps.c` assembles sentences and raises a `DataReadySignal_t` as each one terminates.
+`Gps_Task` wakes on that, parses with `minmea`, and publishes `umsg_sensors_gps_t` on any sentence
+that carried a position. Same wait as the IMU, mag and baro tasks — the source is a UART interrupt
+rather than a data-ready pin, so there is no `Exti_Register()` on this path.
 
 **Only a sentence carrying an actual fix publishes.** A void RMC (status `V`), a GGA with
 `fix_quality` 0, and the non-positional types (GSV/GST) all return non-`SUCCESS`, so a receiver
@@ -90,11 +91,11 @@ with no lock cannot be mistaken for one sitting at 0,0. This matters more than i
 parser used to run and then discard every field while returning `SUCCESS`, so a fix and no fix
 were indistinguishable forever.
 
-**The driver holds exactly one assembled sentence.** A second landing before `Gps_Task` polls
-overwrites the first, so the poll rate has to outpace the *sentence* rate (a 10 Hz receiver
-emitting GGA + RMC is 20 sentences/s), and the SIL bridge spaces the two halves of a fix half a
-period apart. Renode does not pace bytes at the baud rate, so a back-to-back pair would otherwise
-land together.
+**The driver holds exactly one assembled sentence.** A second landing before `Gps_Task` consumes
+the first overwrites it. Waking on the signal shrinks that window to the task's scheduling latency,
+but it does not close it, so the SIL bridge still spaces the two halves of a fix half a period
+apart. Renode does not pace bytes at the baud rate, so a back-to-back pair would otherwise land
+together.
 
 As with RC, the SIL feeds **real NMEA on the real UART** rather than injecting a decoded fix, so
 the emulated run exercises the assembler, the checksum and minmea. `Tests/UnitTest/test_gps.c`
@@ -222,7 +223,8 @@ The natural task rates emerge from the blocking receive:
 
 The IMU, mag and baro tasks all wait on their part's data-ready pin rather than polling, so each
 runs at the rate the part actually produces samples: BMI323 400 Hz, MMC5983 100 Hz, BMP390 50 Hz.
-GPS still polls the NMEA UART at 100 Hz for a ~10 Hz receiver, and RC polls at 50 Hz.
+GPS waits the same way but on its UART RX ISR, one signal per completed NMEA sentence (~20/s from a
+10 Hz receiver). RC still polls at 50 Hz.
 
 The wait is `ulTaskNotifyTake (pdTRUE, <timeout>)`, **never `portMAX_DELAY`**. The timeout is the
 old poll period, so a board or an emulator that never toggles the pin degrades to exactly the
@@ -232,10 +234,12 @@ an interrupt-only sensor task is silent.
 Nothing below `tasks/` knows about FreeRTOS. A task passes a `DataReadySignal_t`
 (`drivers/device.h`) into `<Sensor>_Init()`; the backend calls `Exti_Register()`
 (`drivers/io/exti.h`) and the ISR calls back through `Notify`. A NULL signal means "poll", and the
-backend then leaves the part's interrupt output alone. The signal also carries `irqPriority`,
-because the constraint it exists for belongs to `Notify`: an ISR calling a FreeRTOS `...FromISR`
-API must sit numerically at or above `configMAX_SYSCALL_INTERRUPT_PRIORITY` (5 here), which the
-task layer static-asserts.
+backend then leaves the part's interrupt output alone. **The signal is not tied to EXTI** — the GPS
+raises the same type from its UART RX ISR, with no pin and nothing to enable on a part.
+
+The signal also carries `irqPriority`, because the constraint it exists for belongs to `Notify`: an
+ISR calling a FreeRTOS `...FromISR` API must sit numerically at or above
+`configMAX_SYSCALL_INTERRUPT_PRIORITY` (5 here), which the task layer static-asserts.
 
 The three interrupt pins must differ in PIN NUMBER, not just port: EXTI multiplexes one port per
 line. 5, 3 and 10 are distinct, and lines 5 and 10 share the `EXTI9_5` / `EXTI15_10` vectors, which

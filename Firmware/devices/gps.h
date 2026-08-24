@@ -27,7 +27,12 @@ typedef struct {
     GpsData_t data;
 } Gps_t;
 
-eSTATUS_t Gps_Init(Gps_t* pOutGps);
+/*
+ * pSignal may be NULL, in which case Gps_Update polls the assembler on its own.
+ * A non-NULL Notify is raised from the receiver's UART RX ISR, once per
+ * complete sentence - there is no data-ready pin on this path.
+ */
+eSTATUS_t Gps_Init(Gps_t* pOutGps, DataReadySignal_t const* pSignal);
 eSTATUS_t Gps_Update(Gps_t* pGps);
 
 /*

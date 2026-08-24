@@ -55,6 +55,11 @@ void Gps_DataReceivedHandler (uint8_t const* pData, uint32_t size);
 eSTATUS_t Gps_Read (void* ctx, bool forcePolling, GpsData_t* pOutData);
 bool Gps_IsDataReady (void* ctx);
 
+/* The data-ready signal the RX handler raises. GpsDrv_Init copies cfg.signal
+ * into it on the board; here it is written directly, for the same reason the
+ * assembler is fed directly rather than through a UART. */
+extern DataReadySignal_t s_Signal;
+
 /* --- golden sentences, from `python -m sim.nmea` --------------------------- */
 
 /* 37.6189 N, 122.3750 W, 100.0 m, 9 satellites, quality 1. */
@@ -74,6 +79,9 @@ void setUp (void) {
     Gps_DataReceivedHandler (&nl, 1U);
     GpsData_t scratch;
     (void)Gps_Read (NULL, false, &scratch);
+    /* No signal by default: that is the polling configuration, which every
+     * other test in this file exercises. */
+    memset (&s_Signal, 0, sizeof (s_Signal));
 }
 
 void tearDown (void) {
@@ -191,6 +199,59 @@ static void test_BadChecksum_IsRejected (void) {
     TEST_ASSERT_NOT_EQUAL (eSTATUS_SUCCESS, Gps_Read (NULL, false, &out));
 }
 
+/* --- the data-ready signal -------------------------------------------------- */
+
+static uint32_t s_NotifyCount = 0;
+static void* s_NotifyCtx      = NULL;
+
+static void CountingNotify (void* ctx) {
+    ++s_NotifyCount;
+    s_NotifyCtx = ctx;
+}
+
+static void InstallSignal (void) {
+    s_NotifyCount = 0;
+    s_NotifyCtx   = NULL;
+    s_Signal.Notify = CountingNotify;
+    s_Signal.ctx    = &s_NotifyCount;
+}
+
+static void test_CompleteSentence_RaisesSignalOnce (void) {
+    InstallSignal ();
+    Feed (GOLDEN_GGA);
+    TEST_ASSERT_EQUAL_UINT32_MESSAGE (1U, s_NotifyCount, "one sentence, one notification");
+    TEST_ASSERT_EQUAL_PTR_MESSAGE (&s_NotifyCount, s_NotifyCtx, "ctx must reach Notify unchanged");
+}
+
+static void test_PartialSentence_RaisesNoSignal (void) {
+    /* The task must not be woken for a sentence Gps_Read would reject: it is the
+     * terminator that makes one readable, not the arrival of bytes. */
+    InstallSignal ();
+    Feed ("$GPGGA,123519.00,3737.13400,N,12222.50000,W,1,09,0.9,100.0,M,0.0,M,,*40");
+    TEST_ASSERT_EQUAL_UINT32 (0U, s_NotifyCount);
+    Feed ("\r\n");
+    TEST_ASSERT_EQUAL_UINT32 (1U, s_NotifyCount);
+}
+
+static void test_ByteAtATime_RaisesOneSignalPerSentence (void) {
+    /* uart.c delivers one byte per RXNE interrupt, so this is the real path - a
+     * notification per byte would wake the task ~80 times for one sentence. */
+    InstallSignal ();
+    for (uint32_t i = 0; i < strlen (GOLDEN_GGA); ++i) {
+        uint8_t byte = (uint8_t)GOLDEN_GGA[i];
+        Gps_DataReceivedHandler (&byte, 1U);
+    }
+    TEST_ASSERT_EQUAL_UINT32 (1U, s_NotifyCount);
+}
+
+static void test_NoSignal_StillAssembles (void) {
+    /* A NULL Notify means "the caller polls" and must not change the assembler. */
+    GpsData_t out = { 0 };
+    Feed (GOLDEN_GGA);
+    TEST_ASSERT_TRUE (Gps_IsDataReady (NULL));
+    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, Gps_Read (NULL, false, &out));
+}
+
 static void test_NullArgs_AreRejected (void) {
     GpsData_t out = { 0 };
     TEST_ASSERT_EQUAL (eSTATUS_NULL_ARG, Gps_Read (NULL, false, NULL));
@@ -209,6 +270,10 @@ int main (void) {
     RUN_TEST (test_GgaNoFix_IsNotReportedAsAFix);
     RUN_TEST (test_NonPositionalSentence_DoesNotRepublish);
     RUN_TEST (test_BadChecksum_IsRejected);
+    RUN_TEST (test_CompleteSentence_RaisesSignalOnce);
+    RUN_TEST (test_PartialSentence_RaisesNoSignal);
+    RUN_TEST (test_ByteAtATime_RaisesOneSignalPerSentence);
+    RUN_TEST (test_NoSignal_StillAssembles);
     RUN_TEST (test_NullArgs_AreRejected);
     return UNITY_END ();
 }

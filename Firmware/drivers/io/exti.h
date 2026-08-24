@@ -21,7 +21,9 @@
  * PRIORITY (5 on this build, configPRIO_BITS 4). A numerically lower priority
  * preempts the kernel's critical sections and corrupts it intermittently.
  * Not asserted here because that would pull FreeRTOSConfig.h into drivers/;
- * the GPS UART sets the same constraint by hand (gps.c).
+ * the task supplying the callback asserts it instead. The GPS UART carries the
+ * same constraint without going through this file - its signal is raised from
+ * the RX ISR (gps.c), so gps_task.c asserts its own priority the same way.
  */
 
 #include "hal.h"
