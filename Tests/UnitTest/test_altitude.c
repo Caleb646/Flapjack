@@ -17,6 +17,7 @@
 #include "unity/unity.h"
 
 #include "common/filter.h"
+#include "devices/baro.h"
 
 #include <math.h>
 
@@ -25,6 +26,15 @@
 // ISA sea-level temperature. Paired with ISA_SEA_LEVEL_PA it reproduces the
 // textbook 44330 coefficient exactly, since 288.15 / 0.0065 == 44330.
 #define ISA_SEA_LEVEL_C  15.0F
+
+/* Baro_PressureToAltitude lives in devices/baro.c, which also carries
+ * Baro_Init's binding to a backend. Nothing here drives a real part, so the one
+ * external symbol that reaches is stubbed rather than linking a driver and the
+ * HAL underneath it. */
+eSTATUS_t BaroDrv_Init (BaroDriver_t* pOutDriver) {
+    (void)pOutDriver;
+    return eSTATUS_SUCCESS;
+}
 
 void setUp (void) {
 }

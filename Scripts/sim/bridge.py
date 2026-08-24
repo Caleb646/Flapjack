@@ -126,6 +126,12 @@ PROP_GPS_LON_RAD = "sensor/gps/long_rad"
 PROP_GPS_ALT_M = "sensor/gps/alt_m"
 PROP_GPS_VN = "sensor/gps/vNorth_mps"
 PROP_GPS_VE = "sensor/gps/vEast_mps"
+# The un-corrupted channels SensorGps.xml publishes alongside each noisy one,
+# so the FC's ESTIMATE can be gated against truth from the same run.
+PROP_GPS_LAT_TRUE = "sensor/gps/lat_true_rad"
+PROP_GPS_LON_TRUE = "sensor/gps/long_true_rad"
+PROP_GPS_VN_TRUE = "sensor/gps/vNorth_true_mps"
+PROP_GPS_VE_TRUE = "sensor/gps/vEast_true_mps"
 # Inputs we drive: throttle [0..1] and thrust-vector (tilt) gimbal pitch [rad].
 PROP_THROTTLE = ["fcs/throttle-cmd-norm[0]", "fcs/throttle-cmd-norm[1]"]
 # Tilt is passed through unmodified: the FDM defines 0 rad as rotors-up, which
@@ -289,7 +295,8 @@ NAV_VZ_EPS_MPS = 1.0
 # trajectory. A plan that barely translates cannot catch north and east being
 # swapped, because both are near zero - that needs a plan that actually flies
 # somewhere, which none of the current three really do.
-NAV_POS_EPS_M = 0.5
+NAV_POS_EPS_M = 3.0
+NAV_VEL_EPS_MPS = 1.0
 
 # Attitude gates. Both are on FDM TRUTH, not on the estimate: the failure these
 # exist for is one where the estimate reads level while the vehicle is not, so
@@ -317,6 +324,34 @@ ATTITUDE_SETTLE_PKPK_DEG = 3.0
 # fails plans for a reason that has nothing to do with flight. 1.5 ft is clear of
 # the gear and far below any hover this sim reaches.
 ATTITUDE_AIRBORNE_FT = 1.5
+
+# Fraction of the nominal tick rate the FC's actuator loop must actually
+# achieve for the run to count as a measurement at all.
+#
+# KnownIssues 1.17 records the SIL delivering a steady ~92% of nominal and
+# argues it is not Renode falling behind. That is not what a loaded host does.
+# Measured on one machine with a game and a browser running, the SAME binary
+# flying the SAME plan three times in a row achieved 431, 95 and 331 Hz against
+# a 400 Hz nominal - a 4.5x spread with no firmware change between runs.
+#
+# It matters because the est_* gates are not rate-independent: a control loop
+# running at a quarter speed banks much further before it corrects, so a
+# starved run reports estimator errors that belong to the rig. Below this floor
+# the run is reported as having measured nothing, rather than as a verdict.
+#
+# 0.85, raised from an initial 0.70 that was measurably too lenient. On the
+# settle probe, two runs at 489 Hz (122%) came in clean and agreeing - every
+# est_* gate under 3.1 deg, CV 0.05-0.24 between them - while a run at 292 Hz
+# (73%) DEPARTED, 24 deg peak-to-peak with the sticks centred, and passed the
+# 0.70 floor on its way to being read as a result. 0.85 still admits 1.17's
+# recorded 0.92 normal delivery.
+#
+# A run rejected here is not necessarily noise. A departure at reduced rate is a
+# real dynamic result about how little margin the tune has (KnownIssues 1.9,
+# 1.14) - it just cannot be read as a measurement of the ESTIMATOR, because the
+# vehicle is no longer flying the manoeuvre the phase asked for. Look at what a
+# rejected run did before discarding it.
+CONTROL_RATE_FLOOR = 0.85
 
 # Loopback tolerance for the baro round trip, in Pa. The chain is bridge float32
 # -> emulated BMP390 inverse compensation -> 24-bit ADC counts -> bmp390.c's
@@ -400,6 +435,23 @@ def as_f32(x: float) -> float:
 # The values are the same die-frame physical quantities the sim link used to
 # carry - devices/imu.c and devices/mag.c undo the die rotation exactly as they
 # do on hardware - so there is nothing extra to compute here.
+
+
+# Largest finite IEEE 754 binary32. struct.pack("<f") raises OverflowError above
+# it, and a diverging FDM reaches that long before it reaches inf.
+FLOAT32_MAX = 3.4028234663852886e38
+
+
+def packs_as_f32(values) -> bool:
+    """True when every value survives struct.pack("<f") without raising.
+
+    isfinite() alone is NOT enough, and that is the whole reason this exists: a
+    diverged FDM hands back finite doubles far outside binary32's range - 1e40
+    is perfectly finite - which pass an isfinite() guard and then raise inside
+    the encoder anyway. That crash takes Checks.report() with it and hides the
+    run's verdict behind a traceback in a sensor pusher.
+    """
+    return all(math.isfinite(v) and abs(v) <= FLOAT32_MAX for v in values)
 
 
 def make_imu_push(accel, gyro) -> bytes:
@@ -543,7 +595,7 @@ class _Gates:
         if trace_path:
             self.trace = open(trace_path, "w", buffering=1)
             self.trace.write("t,phase,window,roll_cmd,roll,pitch_cmd,pitch,"
-                             "yawrate_cmd,yawrate,climb_cmd,climb,alt,est_roll,est_pitch,est_yaw,vdot,wdot,heading\n")
+                             "yawrate_cmd,yawrate,climb_cmd,climb,alt,est_roll,est_pitch,est_yaw,vdot,wdot,heading,residual\n")
         self.enabled = bool(flight_plan is not None and flight_plan.phases)
         self.abort = False
         self.first = None            # first violation, as a dict
@@ -552,6 +604,11 @@ class _Gates:
         self.last = None             # most recent truth sample within the hold
         # phase name -> gate name -> accumulator
         self.acc = {}
+        # Per-phase max of the FC's own innovation (Telemetry.nav_accel_residual_deg).
+        # Reported, never gated: it is the hardware-side counterpart of the est_*
+        # gates, and the point of carrying it here is to calibrate it AGAINST them
+        # on the one rig where both are visible at once.
+        self.residual = {}
         if self.enabled:
             for ph in flight_plan.phases:
                 self.acc[ph.name] = {
@@ -589,7 +646,7 @@ class _Gates:
     _EST_IDX = {"est_roll_deg": 0, "est_pitch_deg": 1, "est_yaw_deg": 2}
     _EST_TRUTH = ("roll_deg", "pitch_deg", "heading_deg")
 
-    def update(self, plan_t, channels, truth, est=None):
+    def update(self, plan_t, channels, truth, est=None, residual=None):
         """Evaluate the active phase's gates against one truth sample.
 
         `est` is the FC's own euler estimate in degrees, or None when no
@@ -607,15 +664,22 @@ class _Gates:
         if self.trace is not None and ph is not None:
             c = planlib.commanded(channels)
             e = tuple(f"{v:.3f}" for v in est) if est is not None else ("", "", "")
+            res = "" if residual is None else f"{residual:.3f}"
             self.trace.write(
                 f"{plan_t:.3f},{ph.name},{'hold' if ph.holding(plan_t) else 'settle'},"
                 f"{c['roll_deg']:.3f},{truth['roll_deg']:.3f},"
                 f"{c['pitch_deg']:.3f},{truth['pitch_deg']:.3f},"
                 f"{c['yaw_rate_dps']:.3f},{truth['yaw_rate_dps']:.3f},"
-                f"{c['climb_mps']:.3f},{truth['climb_mps']:.3f},{truth['alt_m']:.3f},{e[0]},{e[1]},{e[2]},{truth['vdot_mps2']:.4f},{truth['wdot_mps2']:.4f},{truth['heading_deg']:.3f}\n")
+                f"{c['climb_mps']:.3f},{truth['climb_mps']:.3f},{truth['alt_m']:.3f},{e[0]},{e[1]},{e[2]},{truth['vdot_mps2']:.4f},{truth['wdot_mps2']:.4f},{truth['heading_deg']:.3f},{res}\n")
 
         if ph is None or not ph.holding(plan_t):
             return
+
+        if residual is not None:
+            r = self.residual.setdefault(ph.name, {"max": 0.0, "sum": 0.0, "n": 0})
+            r["max"] = max(r["max"], residual)
+            r["sum"] += residual
+            r["n"] += 1
 
         if self.entry is None:
             self.entry = (truth["alt_m"], truth["heading_deg"], plan_t)
@@ -661,6 +725,24 @@ class _Gates:
             self._violate(self.cur.name, name, b_t, 0.0, actual,
                           abs(actual), gate.tol)
 
+    def _report_residual(self):
+        """Print the FC's own innovation next to the est_* gates it stands in for.
+
+        Not a verdict. This is the calibration KnownIssues 1.16 asks for: the
+        est_* gates need FDM truth and so exist only here, while this number is
+        computed on board and survives to hardware. Reading the two side by side
+        over a run where the fault is known to fire is the only way to learn what
+        value of it means "the estimate is being dragged".
+        """
+        if not self.residual:
+            return
+        print(f"[gate] {'phase':<22}{'residual max':>14}{'mean':>9}{'n':>7}")
+        for ph in self.plan.phases:
+            r = self.residual.get(ph.name)
+            if r is None or r["n"] == 0:
+                continue
+            print(f"[gate] {ph.name:<22}{r['max']:>14.3f}{r['sum'] / r['n']:>9.3f}{r['n']:>7}")
+
     def report(self) -> int:
         """Print the phase x gate table, write the JSON artifact, return an exit code."""
         if not self.enabled:
@@ -692,6 +774,7 @@ class _Gates:
             print(f"[gate] {phase:<22}{name:<16}{worst:>8.3f}{limit:>8.3f}{n:>7}  {state}")
         if unreached:
             print(f"[gate] not reached: {', '.join(unreached)}")
+        self._report_residual()
         if self.first is not None:
             f = self.first
             print(f"[gate] FIRST FAILURE  {f['phase']}/{f['gate']} at plan t={f['t']:.2f}s")
@@ -744,7 +827,9 @@ class _Checks:
     pinned at 1.000, servo commands 20x out of range).
     """
 
-    def __init__(self):
+    def __init__(self, nominal_rate_hz=0.0):
+        # Nominal tick rate, for the CONTROL_RATE_FLOOR check. 0 disables it.
+        self.nominal_rate_hz = nominal_rate_hz
         self.nan = 0
         self.motor_min, self.motor_max = 1e9, -1e9
         self.servo_min, self.servo_max = 1e9, -1e9
@@ -800,6 +885,7 @@ class _Checks:
         # reported as its own line rather than folded into the NaN count, which
         # counts FC-side NaN.
         self.gps_nonfinite = 0
+        self.imu_nonfinite = 0
         # First (echoed fix, reported position) pair seen with NAV_VALID_POSITION
         # set. The projection gate is differential against this, so the FC's own
         # origin cancels instead of having to be reconstructed.
@@ -825,6 +911,8 @@ class _Checks:
         self.nav_origin = None       # (lat_deg, lon_deg)
         self.nav_pos_samples = 0
         self.nav_pos_err_max = 0.0
+        self.nav_vel_samples = 0
+        self.nav_vel_err_max = 0.0
 
         self.nav_valid_seen = 0      # union of every bitmask observed
 
@@ -929,49 +1017,57 @@ class _Checks:
             self.nav_vz_err_max = max(self.nav_vz_err_max, abs(est_vz - true_vz))
 
         if (valid & NAV_VALID_POSITION) and telemetry.gps_sats:
-            # Checked against the FC's OWN echoed fix, from the SAME telemetry
-            # frame - not against a fresh FDM read, and not against the bridge's
-            # last transmission.
+            # Against the FDM's TRUTH channels, not against the FC's echoed fix.
             #
-            # Both of those alternatives were tried and both measure noise rather
-            # than firmware. sensor/gps/lat_rad is a fresh random draw every tick
-            # once the error models are on, and the FC's telemetry necessarily
-            # lags the bridge's most recent send by a poll and a decode - so
-            # either comparison differences two independent ~1.6 m draws and
-            # reports 6-9 m of "estimator error" on a vehicle that is hovering.
-            # Same frame means zero skew by construction.
+            # It used to be the latter, and the comment here used to say this
+            # gate tested "did the FC apply the flat-earth projection to the
+            # right fields, with the right signs, at the right scale". That was
+            # only ever meaningful while nav_pos_ned was a PASSTHROUGH of the
+            # projected fix. It is an estimate now - HorizontalFilter fuses the
+            # fix with integrated accel - so comparing it against the raw fix
+            # measures the receiver noise the filter exists to remove, and
+            # reported a steady 5-6 m on a vehicle tracking truth. That is the
+            # 6-9 m this comment used to warn about, arriving from the other
+            # direction.
             #
-            # It is also DIFFERENTIAL, against the first sample rather than an
-            # absolute origin, so the FC's own choice of origin cancels out
-            # instead of having to be guessed at from outside.
+            # Truth costs nothing here: SensorGps.xml publishes lat_true_rad
+            # beside lat_rad precisely so the corrupted value can be sent and
+            # the estimate asserted against the clean one.
             #
-            # What survives is exactly what this gate always claimed to test: did
-            # the FC apply the flat-earth projection to the right fields, with
-            # the right signs, at the right scale.
-            if self.nav_pos_ref is None:
-                self.nav_pos_ref = (telemetry.gps_lat, telemetry.gps_lon,
-                                    telemetry.nav_pos_ned[0], telemetry.nav_pos_ned[1])
-            lat0, lon0, n0, e0 = self.nav_pos_ref
-            actual_dn = telemetry.nav_pos_ned[0] - n0
-            actual_de = telemetry.nav_pos_ned[1] - e0
+            # Still DIFFERENTIAL, against the first sample rather than an
+            # absolute origin, so the FC's own choice of origin cancels instead
+            # of having to be guessed at from outside.
+            lat_true = fdm[PROP_GPS_LAT_TRUE] * RAD2DEG
+            lon_true = fdm[PROP_GPS_LON_TRUE] * RAD2DEG
+            if math.isfinite(lat_true) and math.isfinite(lon_true):
+                if self.nav_pos_ref is None:
+                    self.nav_pos_ref = (lat_true, lon_true,
+                                        telemetry.nav_pos_ned[0], telemetry.nav_pos_ned[1])
+                lat0, lon0, n0, e0 = self.nav_pos_ref
 
-            # One frame of skew is structural and has to be tolerated.
-            # SimTelemetry_Task reads umsg_nav_state_t first and drains
-            # umsg_sensors_gps_t after, so a fix landing between those two reads
-            # puts an OLD nav position alongside a NEW echoed fix. Bounded at
-            # exactly one fix - hence two candidates, not a deque: allowing more
-            # would let the gate find a match for anything.
-            best = None
-            for lat, lon in [(telemetry.gps_lat, telemetry.gps_lon)] + self.nav_pos_prev:
-                expect_dn = math.radians(lat - lat0) * 6371000.0
-                expect_de = (math.radians(lon - lon0) * 6371000.0
+                expect_dn = math.radians(lat_true - lat0) * 6371000.0
+                expect_de = (math.radians(lon_true - lon0) * 6371000.0
                              * math.cos(math.radians(lat0)))
-                e = math.hypot(actual_dn - expect_dn, actual_de - expect_de)
-                best = e if best is None else min(best, e)
-            self.nav_pos_prev = [(telemetry.gps_lat, telemetry.gps_lon)]
+                actual_dn = telemetry.nav_pos_ned[0] - n0
+                actual_de = telemetry.nav_pos_ned[1] - e0
 
-            self.nav_pos_samples += 1
-            self.nav_pos_err_max = max(self.nav_pos_err_max, best)
+                self.nav_pos_samples += 1
+                self.nav_pos_err_max = max(
+                    self.nav_pos_err_max,
+                    math.hypot(actual_dn - expect_dn, actual_de - expect_de))
+
+        # Horizontal velocity, which only became an estimate worth gating when
+        # the same filter started producing it. Truth again, and no differential
+        # trick needed - velocity has no origin to cancel.
+        if valid & NAV_VALID_VELOCITY:
+            vn_true = fdm[PROP_GPS_VN_TRUE]
+            ve_true = fdm[PROP_GPS_VE_TRUE]
+            if math.isfinite(vn_true) and math.isfinite(ve_true):
+                self.nav_vel_samples += 1
+                self.nav_vel_err_max = max(
+                    self.nav_vel_err_max,
+                    math.hypot(telemetry.nav_vel_ned[0] - vn_true,
+                               telemetry.nav_vel_ned[1] - ve_true))
 
     def state(self, alt, euler, armed=False, sim_t=0.0):
         self.samples += 1
@@ -1075,9 +1171,11 @@ class _Checks:
                 fails.append("nav: GPS streamed but NAV_VALID_POSITION never set - "
                              "the fix reached the topic but not the estimate")
             elif self.nav_pos_err_max > NAV_POS_EPS_M:
-                fails.append(f"nav position off by {self.nav_pos_err_max:.2f} m "
-                             f"(limit {NAV_POS_EPS_M:.1f}) - check the north/east "
-                             f"projection in Nav_UpdateGps")
+                fails.append(f"nav horizontal position off truth by "
+                             f"{self.nav_pos_err_max:.2f} m (limit {NAV_POS_EPS_M:.1f})")
+            if self.nav_vel_samples and self.nav_vel_err_max > NAV_VEL_EPS_MPS:
+                fails.append(f"nav horizontal velocity off truth by "
+                             f"{self.nav_vel_err_max:.2f} m/s (limit {NAV_VEL_EPS_MPS:.1f})")
 
         print()
         print("[checks] ---------------------------------------------")
@@ -1099,6 +1197,9 @@ class _Checks:
         if self.nav_pos_samples:
             print(f"[checks] nav pos      {self.nav_pos_samples} samples, "
                   f"max err {self.nav_pos_err_max:.2f} m")
+        if self.nav_vel_samples:
+            print(f"[checks] nav vel      {self.nav_vel_samples} samples, "
+                  f"max err {self.nav_vel_err_max:.2f} m/s")
         if self.baro_frames or self.gps_sentences:
             print(f"[checks] nav valid    0x{self.nav_valid_seen:02x} "
                   f"(attitude={bool(self.nav_valid_seen & NAV_VALID_ATTITUDE)} "
@@ -1106,17 +1207,29 @@ class _Checks:
                   f"position={bool(self.nav_valid_seen & NAV_VALID_POSITION)} "
                   f"velocity={bool(self.nav_valid_seen & NAV_VALID_VELOCITY)})")
         if self.motor_frames and self.t_first is not None and self.t_last > self.t_first:
+            achieved = self.motor_frames / (self.t_last - self.t_first)
             print(f"[checks] control     {self.motor_frames} actuator frames over "
                   f"{self.t_last - self.t_first:.1f}s sim = "
-                  f"{self.motor_frames / (self.t_last - self.t_first):.0f} Hz")
+                  f"{achieved:.0f} Hz")
+            floor = CONTROL_RATE_FLOOR * self.nominal_rate_hz
+            if self.nominal_rate_hz and achieved < floor:
+                # Deliberately worded as "measured nothing", not as a firmware
+                # fault: every other FAIL here is a claim about the build, and
+                # this one is a claim about the host it ran on.
+                fails.append(
+                    f"rig underdelivered - {achieved:.0f} Hz achieved against "
+                    f"{self.nominal_rate_hz:.0f} nominal ({achieved / self.nominal_rate_hz:.0%}, "
+                    f"floor {CONTROL_RATE_FLOOR:.0%}). This run measured nothing; "
+                    f"free up the host and repeat rather than reading the gates below")
         pkpk = self._settle_pkpk()
         if pkpk is not None:
             print(f"[checks] attitude     peak roll {self.att_peak[0]:.1f} / pitch "
                   f"{self.att_peak[1]:.1f} deg; last {ATTITUDE_SETTLE_S:.0f}s pk-pk "
                   f"{pkpk[0]:.2f} / {pkpk[1]:.2f} deg")
         print(f"[checks] NaN samples  {self.nan}")
-        if self.gps_nonfinite:
-            print(f"[checks] FDM diverged {self.gps_nonfinite} non-finite ticks")
+        if self.gps_nonfinite or self.imu_nonfinite:
+            print(f"[checks] FDM diverged {self.gps_nonfinite} non-finite GPS ticks, "
+                  f"{self.imu_nonfinite} IMU")
         for f in fails:
             print(f"[checks] FAIL: {f}")
         print("[checks] " + ("PASS" if not fails else f"FAIL ({len(fails)})"))
@@ -1291,7 +1404,7 @@ def main(argv=None):
     tick = 0
     sim_t = 0.0
     arm_sim_t = None          # sim time at which the FC armed; plan t=0
-    checks = _Checks()
+    checks = _Checks(nominal_rate_hz=args.rate)
     gates = _Gates(flight_plan, keep_going=args.keep_going,
                    report_path=args.gate_report, trace_path=args.gate_trace)
 
@@ -1449,12 +1562,29 @@ def main(argv=None):
                 udot = fdm[PROP_UDOT]; vdot = fdm[PROP_VDOT]; wdot = fdm[PROP_WDOT]
 
         accel, gyro, mag = synthesize_sensors(phi, theta, psi, p, q, r, udot, vdot, wdot)
-        if imu_ser is not None:
+        # Same divergence guard the GPS path has below, and for the same reason:
+        # a diverged FDM hands back inf/NaN, struct.pack("<f") RAISES on inf,
+        # and that killed the bridge mid-run and took Checks.report() with it -
+        # hiding the run's actual verdict behind a crash in a sensor encoder.
+        # Measured cost of not having it: three settle-probe runs lost after the
+        # vehicle touched down at ~104 s of a 134 s plan, each one healthy up to
+        # that point.
+        #
+        # Go quiet rather than substitute a value. A part that has stopped
+        # producing samples is a real thing the FC handles (Imu_Update's
+        # data-ready timeout -> "IMU stopped producing data"), whereas feeding
+        # it a fabricated attitude would corrupt the estimate under test.
+        if not packs_as_f32((*accel, *gyro)):
+            if not checks.imu_nonfinite:
+                print("[bridge] WARNING: FDM state is not finite - IMU has gone silent "
+                      "for the rest of this run (the FDM has diverged)")
+            checks.imu_nonfinite += 1
+        elif imu_ser is not None:
             imu_ser.write(make_imu_push(accel, gyro))
         # Mag rides the sensor tick, but the part is what paces Mag_Task: it only
         # raises MEAS_M_DONE for a sample the driver has not already read, and
         # Mag_Task polls at 100 Hz, so pushing at 400 Hz costs the FC nothing.
-        if mag_ser is not None and mag_period and now >= next_mag:
+        if mag_ser is not None and mag_period and now >= next_mag and packs_as_f32(mag):
             next_mag = now + mag_period
             mag_ser.write(make_mag_push(mag))
 
@@ -1501,7 +1631,7 @@ def main(argv=None):
             # stopped producing fixes is a real thing the FC already handles
             # (GPS_FIX_TIMEOUT_US -> Gps_HasFix), and staying alive means the run
             # still reaches its verdict.
-            if not all(map(math.isfinite, (gps_lat, gps_lon, gps_alt, gps_vn, gps_ve))):
+            if not packs_as_f32((gps_lat, gps_lon, gps_alt, gps_vn, gps_ve)):
                 if not checks.gps_nonfinite:
                     print("[bridge] WARNING: FDM position is not finite - GPS has gone "
                           "silent for the rest of this run (the FDM has diverged)")
@@ -1583,7 +1713,9 @@ def main(argv=None):
                         # cannot see bank while the vehicle is translating".
                         "vdot_mps2": vdot * FT2M,
                         "wdot_mps2": wdot * FT2M,
-                    }, est=est_euler)
+                    }, est=est_euler,
+                       residual=(None if last_tm is None
+                                 else last_tm.nav_accel_residual_deg))
                     if gates.abort:
                         return checks.report(armed_ever=True) | gates.report()
             else:

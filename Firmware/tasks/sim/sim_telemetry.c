@@ -93,6 +93,7 @@ void SimTelemetry_Task (void* args) {
             .posNed    = { nav.pos_ned[0], nav.pos_ned[1], nav.pos_ned[2] },
             .velNed    = { nav.vel_ned[0], nav.vel_ned[1], nav.vel_ned[2] },
             .navValid  = nav.valid,
+            .accelResidualDeg = nav.accel_residual_deg,
         };
         SimLink_SendTelemetry (&tlm);
         vTaskDelay (pdMS_TO_TICKS (20));   // 50 Hz

@@ -72,5 +72,6 @@ eSTATUS_t SimLink_SendTelemetry (SimLinkTelemetry_t const* pTelemetry) {
     memcpy (msg.nav_pos_ned, pTelemetry->posNed, sizeof (msg.nav_pos_ned));
     memcpy (msg.nav_vel_ned, pTelemetry->velNed, sizeof (msg.nav_vel_ned));
     msg.nav_valid   = pTelemetry->navValid;
+    msg.nav_accel_residual_deg = pTelemetry->accelResidualDeg;
     return SimLink_SendFrame (SIM_MSG_TELEMETRY, Telemetry_fields, &msg);
 }

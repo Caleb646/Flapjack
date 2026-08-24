@@ -65,11 +65,26 @@
  * estimate (guidance.c), so the faster beta drags it, the harder the loop is
  * driven by a signal carrying no attitude information.
  *
- * 5.0 was 4.33 deg/s of slew regardless of error size. Betaflight's Mahony
- * equivalent (imu_dcm_kp 0.25, imu.c) corrects at Kp*error - 1.25 deg/s at a
- * 5 deg error, 0.25 deg/s at 1 deg - so this was 3.5-17x more accel-trusting
- * than a reference implementation flying the same cascade. 1.4 matches it at
- * typical in-flight error.
+ * BETA IS NOT THE LEVER FOR THAT, and this comment used to claim it was. The
+ * argument ran: 5.0 gave 4.33 deg/s of slew regardless of error size, against
+ * Betaflight's Mahony at Kp*error (imu_dcm_kp 0.25), so 1.4 "matches a
+ * reference implementation at typical in-flight error". Both halves are wrong.
+ *
+ *   The comparison. Kp 0.25 is 14.3 deg/s per unit sin(error), so Betaflight
+ *   corrects at 0.25 deg/s at 1 deg but 2.9 deg/s at 11.5 deg - the error 1.20
+ *   actually measures. At that error Betaflight is roughly TWICE as
+ *   accel-trusting as this filter, not less. The two curves cross near 5 deg,
+ *   which is the only place the old claim held.
+ *
+ *   The mechanism. Gain sets how fast the estimate converges on the apparent
+ *   vertical; it does not choose where that vertical is. Both filters have the
+ *   same fixed point - estimated up aligned with measured specific force - so
+ *   in trim the estimate ends up there at ANY gain. That is why 5.0 -> 1.4
+ *   slowed 1.20 without removing it, and why no further cut will.
+ *
+ * Moving the fixed point is what CFG_NAV_TRANS_ACCEL_* below does. Beta is now
+ * just a convergence-rate knob again, and with the reference corrected there is
+ * a case for raising it - unmeasured, so it has not been raised.
  *
  * The cost is convergence time, which the arming interlock pays for
  * (ARM_ATTITUDE_SETTLE_US wants 3 s of stillness after the estimate settles).
@@ -77,6 +92,141 @@
  */
 #define CFG_GYRO_MEASURE_ERROR_DEGS          1.4F
 #define CFG_GYRO_MEASURE_DRIFT_DEGS          0.2F
+
+/*
+ * Horizontal estimator gains (common/filter.c HorizontalFilter_t), and the
+ * kinematic accel correction they exist to feed.
+ *
+ * THE FAULT. Beta above sets how FAST the attitude filter converges on the
+ * accelerometer's apparent vertical. It does not choose where that vertical
+ * is. Both this filter and Betaflight's Mahony have the same fixed point -
+ * estimated up aligned with measured specific force - so in trim the estimate
+ * ends up wherever the accel points, at any gain. That is why cutting beta
+ * 5.0 -> 1.4 slowed KnownIssues 1.20 without removing it, and why no further
+ * cut will. The fix has to move the fixed point: subtract the vehicle's own
+ * translational acceleration so what is left really is gravity.
+ *
+ * WHERE THE NUMBER COMES FROM. The horizontal filter integrates the IMU and
+ * lets GPS argue with the result; its bias state converges on the standing
+ * horizontal specific force the vehicle is NOT actually accelerating with, and
+ * subtracting that leaves the real acceleration. This replaced differentiating
+ * the GPS velocity directly, which is the same idea with the conditioning
+ * inverted: the receiver reports velocity at 5 Hz with sigma = 0.1 m/s
+ * (SensorGps.xml), so differencing it yields 0.71 m/s^2 of noise against a
+ * ~2 m/s^2 signal. Measured, that put +/-1.25 m/s^2 - about 7 deg of false
+ * tilt - into the gravity reference during a HOVER and departed the vehicle.
+ * Integrating and correcting has the opposite noise behaviour.
+ *
+ * THE GAINS are the standard critically-damped pair for a time constant T:
+ * kVel = 2/T, kBias = 1/T^2, with T = 2 s - long enough to average the
+ * receiver's noise, short enough to track the seconds-scale transient 1.20
+ * lives in. kPos only trims position and is deliberately slack; nothing flies
+ * on position yet.
+ *
+ * MAX_BIAS is far larger than the vertical filter's 2.0, and for a different
+ * reason. Here the bias absorbs ATTITUDE error, not a part's offset: a tilt
+ * error theta leaks g*sin(theta) into the rotated horizontal accel, so 5.0
+ * covers about 30 deg - the whole of CFG_ANGLE_MAX_DEG. Clamping tighter would
+ * stop the state doing the job it exists for.
+ *
+ * MAX_AGE_MS drops the CORRECTION when fixes stop arriving. The filter keeps
+ * integrating either way, but a bias estimate no receiver has argued with for
+ * half a second must not keep rotating the gravity reference.
+ *
+ * MIN_SPEED is the one that stops this correcting things that do not need it.
+ * The error being removed is (b/mg)*v, so it VANISHES as the vehicle stops
+ * translating - while the noise in the bias estimate does not, because that
+ * comes from the receiver's 0.1 m/s velocity noise and is there at any speed.
+ * Below this there is nothing to correct and everything to inject, and 0.17
+ * m/s^2 of injected horizontal accel is one degree of false tilt.
+ *
+ * Measured cost of not having it: on the ground, stationary, with the
+ * correction ungated, the attitude estimate wandered several degrees instead
+ * of settling, and the vehicle NEVER ARMED - mission.c wants the estimate held
+ * within 1.0 deg for 3 s. It is gated on the FILTER's velocity rather than the
+ * raw fix because that one is smoothed by the same filter this feeds.
+ */
+#define CFG_NAV_HORIZ_K_POS                  0.5F
+#define CFG_NAV_HORIZ_K_VEL                  1.0F
+#define CFG_NAV_HORIZ_K_BIAS                 0.25F
+#define CFG_NAV_HORIZ_MAX_BIAS_MPS2          5.0F
+#define CFG_NAV_HORIZ_AID_MAX_AGE_MS         500U
+#define CFG_NAV_HORIZ_AID_MIN_SPEED_MPS      1.0F
+
+/*
+ * The translational-acceleration correction for KnownIssues 1.20, differenced
+ * from the GPS velocity.
+ *
+ * WHY NOT THE HORIZONTAL FILTER'S BIAS, which is smoother and right there.
+ * Because to correct attitude USING translation, the translation estimate must
+ * not itself depend on attitude - otherwise the correction is self-referential.
+ * The filter's (accelNed - accelBias) fails that on both terms: accelNed is the
+ * accel rotated through qEst, and accelBias is driven by the velocity
+ * innovation that same rotated accel feeds. Wiring it that way closed the
+ * horizontal filter and the attitude filter around each other, both at
+ * seconds-scale time constants, and measured 4.6-5.4 deg of estimate error
+ * with the vehicle oscillating at 5.7 deg peak-to-peak - against 2.9 deg for
+ * the differencing below, on the same plan at the same 489 Hz loop rate.
+ *
+ * Differencing GPS velocity is noisier and open-loop. That trade is the whole
+ * point: it cannot feed back.
+ *
+ * CUTOFF is the noise/lag balance and it was swept, not guessed. The receiver
+ * reports velocity at 5 Hz with sigma = 0.1 m/s (SensorGps.xml), which
+ * differences to 0.71 m/s^2 of noise against a ~2 m/s^2 signal:
+ *
+ *   cutoff Hz   max tilt injected   limited by
+ *      0.05           4.4 - 7.3     lag
+ *      0.10           2.5 - 4.4     lag
+ *      0.20           1.8 - 2.6     balanced
+ *      0.30           2.3 - 2.6     noise
+ *      1.00                 5.0     noise
+ *
+ * Both ends were seen for real. At 1 Hz the vehicle departed and crashed in a
+ * HOVER, where the true correction is zero, on differencing noise alone.
+ *
+ * MIN_SPEED: the error is (b/mg)*v and vanishes as the vehicle stops
+ * translating, while the noise does not. Below this there is nothing to correct
+ * and everything to inject.
+ *
+ * MAX_MPS2 is a glitch guard, not a tune - this airframe cannot pull more than
+ * g*tan(CFG_ANGLE_MAX_DEG) = 5.7 m/s^2 laterally. An over-range reading
+ * DISABLES the correction rather than clipping it, because clipping would
+ * quietly keep applying a bad direction at a legal size.
+ */
+#define CFG_NAV_TRANS_ACCEL_CUTOFF_HZ        0.2F
+#define CFG_NAV_TRANS_ACCEL_MIN_SPEED_MPS    1.0F
+#define CFG_NAV_TRANS_ACCEL_MAX_MPS2         8.0F
+
+/*
+ * What beta is multiplied by when the correction above is NOT available - no
+ * fix, a stale one, or an out-of-range reading.
+ *
+ * READ THIS BEFORE TUNING IT. This is damage limitation, not a fix, and it
+ * cannot be made into one. Without an independent velocity source there is no
+ * signal on this vehicle that separates "the accelerometer is pointing at a
+ * false vertical because we are translating" from "the accelerometer is right
+ * and the estimate has drifted" - that is exactly what KnownIssues 1.16 says,
+ * and it is why the residual monitor in nav.c is a monitor rather than a gate.
+ * The two want opposite responses and the number below picks a point between
+ * them for the whole flight:
+ *
+ *   toward 0   the estimate coasts on the gyro. 1.20 shrinks, and any real
+ *              attitude error - bias, the 1.21 yaw scale error, a knock -
+ *              persists longer because nothing is pulling it back.
+ *   toward 1   the accelerometer keeps its authority, and so does 1.20.
+ *
+ * Rejected on the way here: gating on the residual itself. It reads large in
+ * both cases, so suppressing on it would freeze a genuinely wrong estimate
+ * precisely when it most needs correcting. A gyro-rate term was rejected too -
+ * it addresses 1.21's rotation-scale error, not this one.
+ *
+ * 0.5 is a STARTING POINT, not a measured value. Halving beta halves the rate
+ * the estimate is dragged at, which is the only thing it is claimed to do.
+ * Measuring it wants a rig whose achieved loop rate is stable run to run
+ * (CONTROL_RATE_FLOOR in bridge.py) and a --gps-stop probe.
+ */
+#define CFG_NAV_ACCEL_TRUST_UNAIDED          0.5F
 
 /*
  * Vertical complementary filter (common/filter.c), as the standard third-order

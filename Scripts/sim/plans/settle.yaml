@@ -1,0 +1,117 @@
+# The §1.20 reproducer: does the attitude ESTIMATE track truth, and does that
+# depend on whether the vehicle is translating?
+#
+# This is the probe the est_* tolerances in acceptance.yaml were calibrated on,
+# and it exists because that plan cannot answer the question cleanly. Every
+# phase there commands two things at once, so a failing est_ gate leaves "which
+# input caused it" open. Here each phase moves exactly one axis, and the two
+# populations are separated by design rather than by reading them out of a
+# longer flight.
+#
+# THE PAIRS ARE THE MEASUREMENT. Each manoeuvre is followed by a recentre, and
+# the recentre is the diagnostic half: it removes the bank COMMAND while leaving
+# the lateral VELOCITY, because nothing in this firmware holds position or
+# velocity. If the error tracked bank it would clear the moment the stick
+# centres. It does not - §1.20 measures the recentre phases WORSE than the
+# commanded ones (9.66/9.32 deg vs 11.72/10.93), which is what identifies the
+# fault as "while translating" rather than "while banked".
+#
+# EXPECTED RESULT WHILE §1.20 IS OPEN (five runs, per-run maxima of
+# |estimate - FDM truth|, mean and CV across runs):
+#
+#   liftoff          roll  0.00 deg in 5 of 5        PASS
+#   hover            roll  0.00 deg in 5 of 5        PASS
+#   roll_right_12    roll  11.72 mean, CV 0.06       FAIL
+#   recentre_roll    roll   9.66 mean, CV 0.02       FAIL  (sticks CENTRED)
+#   pitch_down_9     pitch 10.93 mean, CV 0.03       FAIL
+#   recentre_pitch   pitch  9.32 mean, CV 0.03       FAIL  (sticks CENTRED)
+#
+# A CV of 0.02-0.06 over five independent runs - each its own Renode boot, its
+# own arming time - is what makes this structural rather than noise, and it is
+# the number to reproduce before and after any change to the estimator. Compare
+# spreads, not single runs: one run cannot tell a fix from a lucky boot.
+#
+# The tolerances are acceptance.yaml's, deliberately. A probe that graded itself
+# more leniently than the regression plan would let a change look fixed here and
+# fail there.
+name: settle
+
+phases:
+  # Pure climb: the vehicle accelerates, but along the thrust axis, so the
+  # apparent vertical stays put. This is the control that proves the fault is
+  # about DIRECTION and not about "is the vehicle accelerating at all".
+  # 40 s of hold, not 20: the climb is also this plan's ALTITUDE HEADROOM. The
+  # manoeuvre phases below sink, because �1.20's under-read makes the vehicle
+  # bank and pitch further than commanded and lift goes with the cosine, and a
+  # run that reaches the ground stops measuring the estimator and starts
+  # measuring the gear model (KnownIssues �3.4). Measured: ~21 m of climb left
+  # the vehicle touching down at 111 s of a 114 s plan.
+  - name: liftoff
+    set:    {throttle: 2000}          # 1.0 m/s, full scale
+    settle: 5.0
+    hold:   40.0
+    gates:
+      # Truth roll/pitch, NOT climb rate. The claim this phase makes is "no
+      # lateral translation", which is what makes it the control for the
+      # est_ gates below; how fast it climbed is a different question, gated
+      # in alt_hold.yaml and irrelevant here. Gating it as well only adds a
+      # way for the probe to abort before reaching the phases it exists for.
+      roll_deg:   {target: 0.0, tol: 2.0}
+      pitch_deg:  {target: 0.0, tol: 2.0}
+      est_roll_deg:  {tol: 3.0}
+      est_pitch_deg: {tol: 3.0}
+      est_yaw_deg:   {tol: 5.0}
+
+  - name: hover
+    set:    {throttle: 1500}          # centre is inside the deadband: hold
+    settle: 5.0
+    hold:   20.0
+    gates:
+      roll_deg:   {target: 0.0, tol: 2.0}
+      pitch_deg:  {target: 0.0, tol: 2.0}
+      est_roll_deg:  {tol: 3.0}
+      est_pitch_deg: {tol: 3.0}
+      est_yaw_deg:   {tol: 5.0}
+
+  # 12 s, not longer: with no position loop a held bank is a held lateral
+  # acceleration, and a long hold ends up in the part of tiltrotor.xml's
+  # envelope SilResearch §6 records as unvalidated.
+  - name: roll_right_12
+    set:    {roll: 1700}              # +12 deg
+    settle: 4.0
+    hold:   12.0
+    gates:
+      roll_deg:   {target: cmd, tol: 2.0}
+      est_roll_deg:  {tol: 3.0}
+      est_pitch_deg: {tol: 3.0}
+      est_yaw_deg:   {tol: 5.0}
+
+  - name: recentre_roll
+    set:    {roll: 1500}
+    settle: 4.0
+    hold:   12.0
+    gates:
+      roll_deg:   {target: 0.0, tol: 2.0}
+      est_roll_deg:  {tol: 3.0}
+      est_pitch_deg: {tol: 3.0}
+      est_yaw_deg:   {tol: 5.0}
+
+  - name: pitch_down_9
+    set:    {pitch: 1350}             # -9 deg
+    settle: 4.0
+    hold:   12.0
+    gates:
+      pitch_deg:  {target: cmd, tol: 2.0}
+      est_roll_deg:  {tol: 3.0}
+      est_pitch_deg: {tol: 3.0}
+      est_yaw_deg:   {tol: 5.0}
+
+  - name: recentre_pitch
+    set:    {pitch: 1500}
+    settle: 4.0
+    hold:   12.0
+    gates:
+      pitch_deg:  {target: 0.0, tol: 2.0}
+      est_roll_deg:  {tol: 3.0}
+      est_pitch_deg: {tol: 3.0}
+      est_yaw_deg:   {tol: 5.0}

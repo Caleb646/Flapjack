@@ -20,6 +20,7 @@
         {"name": "pos_ned", "type": "float", "length": 3},
         {"name": "vel_ned", "type": "float", "length": 3},
         {"name": "alt",     "type": "float"},
+        {"name": "accel_residual_deg", "type": "float"},
         {"name": "valid",   "type": "uint8"}
       ]
     }

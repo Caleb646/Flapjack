@@ -71,6 +71,15 @@ typedef struct _Telemetry {
     float nav_pos_ned[3]; /* metres, NED (down positive) */
     float nav_vel_ned[3]; /* metres/second, NED (down positive) */
     uint32_t nav_valid; /* NAV_VALID_* bitmask from nav.json */
+    /* Estimator innovation: the angle between measured specific force and the
+ estimate's own down axis, degrees. See Nav_AccelResidualDeg.
+
+ Carried because it is the one attitude cross-check that also exists on
+ hardware. Every est_* gate in the SIL is estimate-vs-FDM-truth, which is
+ a comparison a real vehicle cannot make (KnownIssues 1.16); this one is
+ computed entirely on board. Gating it here is what calibrates it for
+ use there. */
+    float nav_accel_residual_deg;
 } Telemetry;
 
 
@@ -81,10 +90,10 @@ extern "C" {
 /* Initializer values for message structs */
 #define ServoCmd_init_default                    {0, {0, 0, 0, 0, 0, 0, 0, 0}}
 #define MotorCmd_init_default                    {0, {0, 0, 0, 0, 0, 0, 0, 0}}
-#define Telemetry_init_default                   {{0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, {0, 0, 0}, {0, 0, 0}, 0}
+#define Telemetry_init_default                   {{0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, {0, 0, 0}, {0, 0, 0}, 0, 0}
 #define ServoCmd_init_zero                       {0, {0, 0, 0, 0, 0, 0, 0, 0}}
 #define MotorCmd_init_zero                       {0, {0, 0, 0, 0, 0, 0, 0, 0}}
-#define Telemetry_init_zero                      {{0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, {0, 0, 0}, {0, 0, 0}, 0}
+#define Telemetry_init_zero                      {{0, 0, 0}, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, {0, 0, 0}, {0, 0, 0}, 0, 0}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define ServoCmd_angle_tag                       1
@@ -103,6 +112,7 @@ extern "C" {
 #define Telemetry_nav_pos_ned_tag                12
 #define Telemetry_nav_vel_ned_tag                13
 #define Telemetry_nav_valid_tag                  14
+#define Telemetry_nav_accel_residual_deg_tag     15
 
 /* Struct field encoding specification for nanopb */
 #define ServoCmd_FIELDLIST(X, a) \
@@ -129,7 +139,8 @@ X(a, STATIC,   SINGULAR, UINT32,   gps_sats,         10) \
 X(a, STATIC,   SINGULAR, UINT32,   gps_count,        11) \
 X(a, STATIC,   FIXARRAY, FLOAT,    nav_pos_ned,      12) \
 X(a, STATIC,   FIXARRAY, FLOAT,    nav_vel_ned,      13) \
-X(a, STATIC,   SINGULAR, UINT32,   nav_valid,        14)
+X(a, STATIC,   SINGULAR, UINT32,   nav_valid,        14) \
+X(a, STATIC,   SINGULAR, FLOAT,    nav_accel_residual_deg,  15)
 #define Telemetry_CALLBACK NULL
 #define Telemetry_DEFAULT NULL
 
@@ -146,7 +157,7 @@ extern const pb_msgdesc_t Telemetry_msg;
 #define MotorCmd_size                            40
 #define SIM_PB_H_MAX_SIZE                        Telemetry_size
 #define ServoCmd_size                            40
-#define Telemetry_size                           107
+#define Telemetry_size                           112
 
 #ifdef __cplusplus
 } /* extern "C" */

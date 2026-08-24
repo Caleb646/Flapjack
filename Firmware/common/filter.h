@@ -64,6 +64,51 @@ typedef struct {
     float accelBias; // m/s^2, estimated vertical accelerometer bias
 } AltitudeFilter_t;
 
+/*
+ * Horizontal estimator: the same third-order complementary filter as
+ * AltitudeFilter, one axis each for North and East, fusing GPS with the
+ * horizontal acceleration recovered from the IMU.
+ *
+ * Same shape and the same reasoning as the vertical channel next door. GPS is
+ * quiet in the long run but arrives at ~10 Hz and carries metres of position
+ * noise; integrated accel is smooth and instantaneous but drifts without
+ * bound. So predict from accel at the IMU rate and correct towards GPS at the
+ * receiver's rate, as two calls rather than one, because they are driven by
+ * different sensors on different clocks.
+ *
+ * WHAT THE BIAS STATE IS FOR HERE, and it is not what the vertical one is for.
+ * On that axis it absorbs a sensor offset. On these two it absorbs any standing
+ * horizontal specific force the vehicle is not actually accelerating with -
+ * which is dominated by ATTITUDE ERROR, not by the part. A tilt error of theta
+ * leaks g*sin(theta) into the rotated horizontal accel, so 1 deg of it is
+ * 0.17 m/s^2, and GPS is what says the vehicle is not really accelerating that
+ * way. That is why maxBias is far larger than the vertical filter's: it has to
+ * accommodate the tilt errors it exists to absorb, not just a healthy part.
+ *
+ * WHY THE CORRECTION TAKES BOTH POSITION AND VELOCITY, where the baro gives
+ * only the one. The receiver reports both, and velocity is much the better
+ * conditioned of the two - the SIL's own model puts 0.1 m/s on velocity against
+ * metres on position (SensorGps.xml) - so velocity drives the bias, which is
+ * the state that matters, and position only trims position. Differentiating the
+ * position instead would hand the bias the noisiest signal available.
+ *
+ * Sign convention: NED, north and east positive, index 0 = North, 1 = East.
+ * Down is the AltitudeFilter's problem, not this one's.
+ */
+#define HORIZ_AXES 2
+
+typedef struct {
+    struct {
+        float kPos;    // position error -> position    [1/s]
+        float kVel;    // velocity error -> velocity    [1/s]
+        float kBias;   // velocity error -> accel bias  [1/s^2]
+        float maxBias; // clamp on the bias estimate    [m/s^2]
+    } cfg;
+    float pos[HORIZ_AXES];       // metres from the origin, N then E
+    float vel[HORIZ_AXES];       // metres/second, N then E
+    float accelBias[HORIZ_AXES]; // m/s^2, N then E
+} HorizontalFilter_t;
+
 typedef struct {
     // estimated orientation quaternion elements with initial conditions
     Vec4f qEst;
@@ -76,6 +121,24 @@ typedef struct {
     // Gamma_t (γt)
     float beta;
     float zeta;
+    /*
+     * How far the ACCELEROMETER is allowed to drag the estimate on the next
+     * update. 1.0 is "as configured"; Init leaves it there, so a caller that
+     * never touches it gets the unmodified filter.
+     *
+     * It exists because the caller sometimes knows something about the
+     * accelerometer that this filter cannot see. nav.c can subtract the
+     * vehicle's own translational acceleration when it has GPS velocity, and
+     * when it cannot, the reading is a false vertical the filter would converge
+     * on at full rate (KnownIssues 1.20).
+     *
+     * Accelerometer only, in BOTH paths - it must never slow the heading
+     * correction. The two get there differently and filter.c says why at each
+     * site: 9DOF scales the accel rows of the gradient, 6DOF has to scale beta,
+     * because with no mag rows to weigh against, normalising the gradient
+     * divides a common factor on the accel rows straight back out.
+     */
+    float accelTrust;
     // reference direction of flux in earth frame
     float bx;
     float bz;
@@ -84,8 +147,6 @@ typedef struct {
 
 // clang-format off
 
-void MadgwickFilter_Update_6DOF_ (MadgwickFilter_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyroDegs, float dt);
-void MadgwickFilter_Update_9DOF_ (MadgwickFilter_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyroDegs, Vec3f const* pMag, float dt);
 eSTATUS_t MadgwickFilter_Update (MadgwickFilter_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyro, Vec3f const* pMag, float dt, Vec3f* pOutAttitude);
 void MadgwickFilter_QuatToEuler (MadgwickFilter_t const* pFilter, Vec3f* pOutEuler);
 eSTATUS_t MadgwickFilter_Init (MadgwickFilter_t* pFilter);
@@ -93,10 +154,14 @@ eSTATUS_t MadgwickFilter_Init (MadgwickFilter_t* pFilter);
 eSTATUS_t LowPassFilter_Init (LowPassFilter_t* pFilter);
 float LowPassFilter_Update (LowPassFilter_t* pFilter, float input, float dt);
 
-float Baro_PressureToAltitude (float pressurePa, float referencePa, float referenceTempC);
 eSTATUS_t AltitudeFilter_Init (AltitudeFilter_t* pFilter);
 eSTATUS_t AltitudeFilter_Predict (AltitudeFilter_t* pFilter, float accelUp, float dt);
 eSTATUS_t AltitudeFilter_Correct (AltitudeFilter_t* pFilter, float baroAlt, float dt);
+
+eSTATUS_t HorizontalFilter_Init (HorizontalFilter_t* pFilter);
+eSTATUS_t HorizontalFilter_Predict (HorizontalFilter_t* pFilter, float const* accelNed, float dt);
+eSTATUS_t HorizontalFilter_Correct (HorizontalFilter_t* pFilter, float const* posNed,
+                                    float const* velNed, float dt);
 
 // clang-format on
 

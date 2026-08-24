@@ -77,6 +77,15 @@ add_library(drone_align_obj OBJECT
     ${COMMON_SRC_DIR}/common/align.c
 )
 
+# baro.c for Baro_PressureToAltitude, which is pure maths on a pressure ratio
+# and belongs under test. Its one driver dependency (BaroDrv_Init, reached only
+# through Baro_Init) is stubbed in the test itself - same arrangement as
+# drone_rx_obj and drone_gps_obj, and for the same reason: pulling in a real
+# backend would mean stubbing HAL to reach a function nothing here calls.
+add_library(drone_baro_obj OBJECT
+    ${COMMON_SRC_DIR}/devices/baro.c
+)
+
 # filter.c only. The altitude estimator is deliberately pure maths with no
 # FreeRTOS, umsg or driver dependency, precisely so it can be exercised here -
 # Nav_Update cannot be, so the filter is where the vertical maths has to be
@@ -93,6 +102,7 @@ foreach(lib
     drone_gps_obj
     drone_filter_obj
     drone_align_obj
+    drone_baro_obj
 )
     target_include_directories(${lib} PRIVATE
         ${COMMON_INC_DIR}
@@ -123,5 +133,7 @@ endfunction()
 
 add_test_exe(test_crsf OBJECTS drone_common_obj drone_peripherals_obj drone_rx_obj)
 add_test_exe(test_gps  OBJECTS drone_common_obj drone_peripherals_obj drone_gps_obj)
-add_test_exe(test_altitude OBJECTS drone_common_obj drone_filter_obj)
+add_test_exe(test_altitude OBJECTS drone_common_obj drone_filter_obj drone_baro_obj)
+add_test_exe(test_attitude OBJECTS drone_common_obj drone_filter_obj)
+add_test_exe(test_horizontal OBJECTS drone_common_obj drone_filter_obj)
 add_test_exe(test_align OBJECTS drone_common_obj drone_align_obj)

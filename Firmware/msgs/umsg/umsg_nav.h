@@ -25,6 +25,7 @@ typedef struct
     float pos_ned[3];
     float vel_ned[3];
     float alt;
+    float accel_residual_deg;
     uint8_t valid;
 } umsg_nav_state_t;
 

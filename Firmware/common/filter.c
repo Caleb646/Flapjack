@@ -33,7 +33,7 @@
 /* False when the accel magnitude says the reading cannot be gravity. Also false
  * for NaN, which is the point: both comparisons fail and the sample is dropped
  * rather than integrated. */
-STATIC bool MadgwickFilter_AccelUsable (float magMps2) {
+STATIC INLINE bool MadgwickFilter_AccelUsable (float magMps2) {
     float g = magMps2 / FILTER_GRAVITY_MPS2;
     return (g > FILTER_ACCEL_TRUST_MIN_G) && (g < FILTER_ACCEL_TRUST_MAX_G);
 }
@@ -46,7 +46,7 @@ STATIC bool MadgwickFilter_AccelUsable (float magMps2) {
  * 1g, 0) then the returned attitude will move towards (0, -90, 0).
  * Which is incorrect so the IMU data needs to be in FRD frame.
  */
-void MadgwickFilter_Update_6DOF_ (MadgwickFilter_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyroDegs, float dt) {
+static inline void MadgwickFilter_Update_6DOF_ (MadgwickFilter_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyroDegs, float dt) {
     // Source: https://courses.cs.washington.edu/courses/cse474/17wi/labs/l4/madgwick_internal_report.pdf
 
     // convert degrees per second to radians per second
@@ -56,7 +56,7 @@ void MadgwickFilter_Update_6DOF_ (MadgwickFilter_t* pFilter, Vec3f const* pAccel
     float w_x  = DEG2RAD (pGyroDegs->x);
     float w_y  = DEG2RAD (pGyroDegs->y);
     float w_z  = DEG2RAD (pGyroDegs->z);
-    float beta = pFilter->beta;
+    float beta = pFilter->beta * pFilter->accelTrust;
 
     float SEq_1 = pFilter->qEst.q1;
     float SEq_2 = pFilter->qEst.q2;
@@ -153,7 +153,7 @@ void MadgwickFilter_Update_6DOF_ (MadgwickFilter_t* pFilter, Vec3f const* pAccel
     pFilter->qEst.q4 = SEq_4;
 }
 
-void MadgwickFilter_Update_9DOF_ (MadgwickFilter_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyro, Vec3f const* pMag, float dt) {
+static inline void MadgwickFilter_Update_9DOF_ (MadgwickFilter_t* pFilter, Vec3f const* pAccel, Vec3f const* pGyro, Vec3f const* pMag, float dt) {
 
     float SEq_1 = pFilter->qEst.q1;
     float SEq_2 = pFilter->qEst.q2;
@@ -226,6 +226,11 @@ void MadgwickFilter_Update_9DOF_ (MadgwickFilter_t* pFilter, Vec3f const* pAccel
     a_x *= norm;
     a_y *= norm;
     a_z *= norm;
+
+    if (!MadgwickFilter_AccelUsable (accelMag)) {
+        beta = 0.0F;
+    }
+
     // normalise the magnetometer measurement
     norm = sqrtf (m_x * m_x + m_y * m_y + m_z * m_z) + 0.0001F;
     norm = 1.0F / norm;
@@ -240,15 +245,21 @@ void MadgwickFilter_Update_9DOF_ (MadgwickFilter_t* pFilter, Vec3f const* pAccel
     f_5 = twob_x * (SEq_2 * SEq_3 - SEq_1 * SEq_4) + twob_z * (SEq_1 * SEq_2 + SEq_3 * SEq_4) - m_y;
     f_6 = twob_x * (SEq_1SEq_3 + SEq_2SEq_4) + twob_z * (0.5F - SEq_2 * SEq_2 - SEq_3 * SEq_3) - m_z;
     /* f_1..f_3 are the accel rows of the objective function and f_4..f_6 the mag
-     * rows; the gradient below is linear in both, so zeroing the first three
-     * removes the accel's contribution and leaves the heading correction intact.
-     * That is the same split Betaflight makes - it gates the accel term out of
-     * the Mahony error while the mag/COG term still reaches the same gain. */
-    if (!MadgwickFilter_AccelUsable (accelMag)) {
-        f_1 = 0.0F;
-        f_2 = 0.0F;
-        f_3 = 0.0F;
-    }
+     * rows; the gradient below is linear in both, so scaling or zeroing the
+     * first three moves the accel's contribution and leaves the heading
+     * correction intact. That is the same split Betaflight makes - it gates the
+     * accel term out of the Mahony error while the mag/COG term still reaches
+     * the same gain.
+     *
+     * accelTrust therefore rides HERE and not on beta, which is a single gain
+     * over the combined gradient and would drag heading down with it. The 6DOF
+     * path has to put the same scaling on beta instead: with only these three
+     * rows in the gradient, normalising it divides any common factor straight
+     * back out, so scaling them there would do exactly nothing. */
+    f_1 *= pFilter->accelTrust;
+    f_2 *= pFilter->accelTrust;
+    f_3 *= pFilter->accelTrust;
+    
     J_11or24 = twoSEq_3; // J_11 negated in matrix multiplication
     J_12or23 = 2.0F * SEq_4;
     J_13or22 = twoSEq_1; // J_12 negated in matrix multiplication
@@ -402,6 +413,7 @@ eSTATUS_t MadgwickFilter_Init (MadgwickFilter_t* pFilter) {
     pFilter->usLastUpdateTime = GetMicroseconds ();
     pFilter->bx               = 1.0F;
     pFilter->bz               = 0.0F;
+    pFilter->accelTrust       = 1.0F;
     pFilter->beta             = sqrtf (3.0F / 4.0F) * DEG2RAD (pFilter->cfg.gyroMeasureErrorDegs);
     pFilter->zeta             = sqrtf (3.0F / 4.0F) * DEG2RAD (pFilter->cfg.gyroMeasureDriftDegs);
     pFilter->qEst.q1          = 1.0F;
@@ -452,59 +464,64 @@ float LowPassFilter_Update (LowPassFilter_t* pFilter, float input, float dt) {
     pFilter->state += alpha * (input - pFilter->state);
     return pFilter->state;
 }
-/*
- * Hypsometric altitude above a pressure datum:
- *
- *      h = (T0 / L) * (1 - (P/P0)^(1/5.255))
- *
- * referencePa/referenceTempC are the DATUM - the pressure and temperature
- * measured where altitude should read zero - so the result is height above that
- * point. Pass 101325 / 15.0 to get ISA pressure altitude instead.
- *
- * The familiar "44330" constant is not a constant at all: 288.15 K / 0.0065 K/m
- * IS 44330, i.e. the sea-level special case of T0/L. Using it at a datum that
- * is not at sea level leaves a pure SCALE error, because the air column being
- * measured is colder and therefore denser than the formula assumes. Substituting
- * the measured datum temperature removes it exactly - verified to below a
- * millimetre from 0 to 2000 m of field elevation, where the fixed constant was
- * over-reading by up to 4.7 %.
- *
- * THE TRADE THIS MAKES. Accuracy now depends on the temperature reading instead
- * of on field elevation, and a datum-temperature error of dT costs dT/T0, about
- * 0.35 % per degree C. Break-even against the old fixed constant:
- *
- *      field elevation     old error     temperature budget
- *          100 m             0.23 %          0.65 C
- *          500 m             1.14 %          3.25 C
- *         1000 m             2.31 %          6.50 C
- *
- * So this is a clear win at altitude and a WASH near sea level, and it becomes a
- * net loss if the temperature is off by more than the right-hand column. That
- * matters because a barometer reports its own DIE temperature, not ambient, and
- * a part sitting in a warm enclosure reads high. Two things keep it honest here:
- * the datum is taken at boot, when the board is closest to ambient, and the SIL
- * cannot see this failure at all (JSBSim reports true air temperature), so do
- * not read a clean SIL result as evidence the sensor is good enough.
- */
-float Baro_PressureToAltitude (float pressurePa, float referencePa, float referenceTempC) {
 
-    /* powf of a non-positive base is a domain error, and a zero reference is a
-     * divide by zero. Both mean the datum or the sample is garbage rather than
-     * that the vehicle is at some altitude, so report the datum height and let
-     * the caller's validity flag carry the doubt. */
-    if (pressurePa <= 0.0F || referencePa <= 0.0F) {
-        return 0.0F;
+eSTATUS_t HorizontalFilter_Init (HorizontalFilter_t* pFilter) {
+
+    if (!pFilter || pFilter->cfg.kPos < 0.0F || pFilter->cfg.kVel < 0.0F ||
+        pFilter->cfg.kBias < 0.0F || pFilter->cfg.maxBias <= 0.0F) {
+        return eSTATUS_FAILURE;
+    }
+    for (int i = 0; i < HORIZ_AXES; i++) {
+        pFilter->pos[i]       = 0.0F;
+        pFilter->vel[i]       = 0.0F;
+        pFilter->accelBias[i] = 0.0F;
+    }
+    return eSTATUS_SUCCESS;
+}
+
+eSTATUS_t HorizontalFilter_Predict (HorizontalFilter_t* pFilter, float const* accelNed, float dt) {
+
+    if (!pFilter || !accelNed || dt <= 0.0F) {
+        return eSTATUS_FAILURE;
+    }
+    for (int i = 0; i < HORIZ_AXES; i++) {
+        float accel = accelNed[i] - pFilter->accelBias[i];
+        pFilter->pos[i] += (pFilter->vel[i] * dt) + (0.5F * accel * dt * dt);
+        pFilter->vel[i] += accel * dt;
+    }
+    return eSTATUS_SUCCESS;
+}
+
+eSTATUS_t HorizontalFilter_Correct (HorizontalFilter_t* pFilter, float const* posNed,
+                                    float const* velNed, float dt) {
+
+    if (!pFilter || !posNed || !velNed || dt <= 0.0F) {
+        return eSTATUS_FAILURE;
     }
 
-    /* Below absolute zero is a dead or unread sensor, not cold weather. Fall
-     * back to the ISA sea-level value rather than returning nonsense: that is
-     * the behaviour this function had before it took a temperature at all. */
-    float kelvin = referenceTempC + 273.15F;
-    if (kelvin <= 1.0F) {
-        kelvin = 288.15F;
-    }
+    for (int i = 0; i < HORIZ_AXES; i++) {
+        pFilter->pos[i] += pFilter->cfg.kPos * (posNed[i] - pFilter->pos[i]) * dt;
 
-    return (kelvin / 0.0065F) * (1.0F - powf (pressurePa / referencePa, 1.0F / 5.255F));
+        /* Velocity carries the bias, not position. Same argument as the header:
+         * the receiver's velocity is the better-conditioned measurement by more
+         * than an order of magnitude, and the bias is the state worth spending
+         * it on. */
+        float velError = velNed[i] - pFilter->vel[i];
+        pFilter->vel[i] += pFilter->cfg.kVel * velError * dt;
+
+        /* Estimated velocity below the measured one (error > 0) means the accel
+         * path is under-integrating, i.e. the bias being subtracted is too
+         * large - so the bias moves opposite the error, exactly as the vertical
+         * filter's does against its altitude error. */
+        pFilter->accelBias[i] -= pFilter->cfg.kBias * velError * dt;
+
+        if (pFilter->accelBias[i] > pFilter->cfg.maxBias) {
+            pFilter->accelBias[i] = pFilter->cfg.maxBias;
+        } else if (pFilter->accelBias[i] < -pFilter->cfg.maxBias) {
+            pFilter->accelBias[i] = -pFilter->cfg.maxBias;
+        }
+    }
+    return eSTATUS_SUCCESS;
 }
 
 eSTATUS_t AltitudeFilter_Init (AltitudeFilter_t* pFilter) {

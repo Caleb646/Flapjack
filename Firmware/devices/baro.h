@@ -11,6 +11,7 @@ typedef struct {
     uint32_t usLastUpdate;
 } Baro_t;
 
+float Baro_PressureToAltitude (float pressurePa, float referencePa, float referenceTempC);
 /* pSignal may be NULL, in which case Baro_Update polls the part on its own. */
 eSTATUS_t Baro_Init (Baro_t* pOutSensor, DataReadySignal_t const* pSignal);
 eSTATUS_t Baro_Update (Baro_t* pSensor);

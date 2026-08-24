@@ -88,6 +88,7 @@ typedef struct {
     float    posNed[3];   // metres
     float    velNed[3];   // metres/second
     uint32_t navValid;    // NAV_VALID_* bitmask
+    float    accelResidualDeg;  // estimator innovation, deg (Nav_AccelResidualDeg)
 } SimLinkTelemetry_t;
 
 eSTATUS_t SimLink_SendTelemetry (SimLinkTelemetry_t const* pTelemetry);
