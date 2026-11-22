@@ -24,9 +24,14 @@ message ArmCmd {
     bool arm = 1;
 }
 
+// Re-logs the crash record held since power-on.
+message CrashReportCmd {
+}
+
 message Command {
     oneof cmd {
-        SetPidCmd set_pid    = 1;
-        ArmCmd    arm_disarm = 2;
+        SetPidCmd      set_pid      = 1;
+        ArmCmd         arm_disarm   = 2;
+        CrashReportCmd crash_report = 3;
     }
 }

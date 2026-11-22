@@ -1,5 +1,6 @@
 #include "tasks/guidance/guidance.h"
 #include "target.h"
+#include "common/maths.h"
 #include "core/core.h"
 #include "drivers/rx/rx.h"
 #include "umsg_nav.h"

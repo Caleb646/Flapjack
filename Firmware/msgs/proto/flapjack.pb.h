@@ -35,11 +35,17 @@ typedef struct _ArmCmd {
     bool arm;
 } ArmCmd;
 
+/* Re-logs the crash record held since power-on. */
+typedef struct _CrashReportCmd {
+    char dummy_field;
+} CrashReportCmd;
+
 typedef struct _Command {
     pb_size_t which_cmd;
     union _Command_cmd {
         SetPidCmd set_pid;
         ArmCmd arm_disarm;
+        CrashReportCmd crash_report;
     } cmd;
 } Command;
 
@@ -63,12 +69,15 @@ extern "C" {
 
 
 
+
 /* Initializer values for message structs */
 #define SetPidCmd_init_default                   {_Axis_MIN, _PidGainType_MIN, 0}
 #define ArmCmd_init_default                      {0}
+#define CrashReportCmd_init_default              {0}
 #define Command_init_default                     {0, {SetPidCmd_init_default}}
 #define SetPidCmd_init_zero                      {_Axis_MIN, _PidGainType_MIN, 0}
 #define ArmCmd_init_zero                         {0}
+#define CrashReportCmd_init_zero                 {0}
 #define Command_init_zero                        {0, {SetPidCmd_init_zero}}
 
 /* Field tags (for use in manual encoding/decoding) */
@@ -78,6 +87,7 @@ extern "C" {
 #define ArmCmd_arm_tag                           1
 #define Command_set_pid_tag                      1
 #define Command_arm_disarm_tag                   2
+#define Command_crash_report_tag                 3
 
 /* Struct field encoding specification for nanopb */
 #define SetPidCmd_FIELDLIST(X, a) \
@@ -92,26 +102,36 @@ X(a, STATIC,   SINGULAR, BOOL,     arm,               1)
 #define ArmCmd_CALLBACK NULL
 #define ArmCmd_DEFAULT NULL
 
+#define CrashReportCmd_FIELDLIST(X, a) \
+
+#define CrashReportCmd_CALLBACK NULL
+#define CrashReportCmd_DEFAULT NULL
+
 #define Command_FIELDLIST(X, a) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (cmd,set_pid,cmd.set_pid),   1) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (cmd,arm_disarm,cmd.arm_disarm),   2)
+X(a, STATIC,   ONEOF,    MESSAGE,  (cmd,arm_disarm,cmd.arm_disarm),   2) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (cmd,crash_report,cmd.crash_report),   3)
 #define Command_CALLBACK NULL
 #define Command_DEFAULT NULL
 #define Command_cmd_set_pid_MSGTYPE SetPidCmd
 #define Command_cmd_arm_disarm_MSGTYPE ArmCmd
+#define Command_cmd_crash_report_MSGTYPE CrashReportCmd
 
 extern const pb_msgdesc_t SetPidCmd_msg;
 extern const pb_msgdesc_t ArmCmd_msg;
+extern const pb_msgdesc_t CrashReportCmd_msg;
 extern const pb_msgdesc_t Command_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
 #define SetPidCmd_fields &SetPidCmd_msg
 #define ArmCmd_fields &ArmCmd_msg
+#define CrashReportCmd_fields &CrashReportCmd_msg
 #define Command_fields &Command_msg
 
 /* Maximum encoded size of messages (where known) */
 #define ArmCmd_size                              2
 #define Command_size                             11
+#define CrashReportCmd_size                      0
 #define FLAPJACK_PB_H_MAX_SIZE                   Command_size
 #define SetPidCmd_size                           9
 

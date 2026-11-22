@@ -432,6 +432,29 @@
 #define CFG_MOTOR_STARTUP_THROTTLE           0.25F // 25% throttle
 
 /*
+ * BLHeli_S settings the FC writes to every ESC at boot, through the ESC's
+ * bootloader on the motor wire (drivers/motor/blheli/). An ESC is only written
+ * when what it holds differs; anything not listed here is left as it is.
+ *
+ * These are the raw values BLHeli Configurator stores, not the labels it shows,
+ * and they start at the BLHeli_S defaults. Check them - DIRECTION especially -
+ * against what your ESCs hold now before flashing: the first boot with a
+ * battery connected makes the ESCs match this block.
+ *
+ * DIRECTION is per motor: 1 normal, 2 reversed. The bidirectional modes (3, 4)
+ * are rejected at compile time because dshot.c maps throttle onto the whole
+ * 48-2047 range, which in bidirectional mode spans both directions.
+ */
+#define CFG_ESC_MOTOR_1_DIRECTION            1U
+#define CFG_ESC_MOTOR_2_DIRECTION            1U
+#define CFG_ESC_STARTUP_POWER                9U  // 1-13 = 0.031-1.50; 9 = 0.50
+#define CFG_ESC_COMMUTATION_TIMING           3U  // 1 low .. 5 high; 3 = medium
+#define CFG_ESC_DEMAG_COMPENSATION           2U  // 1 off, 2 low, 3 high
+#define CFG_ESC_TEMPERATURE_PROTECTION       7U  // 0 off, 1-7 = 80-140 C (on/off only on BLHeli_S < 16.3)
+#define CFG_ESC_LOW_RPM_POWER_PROTECTION     1U  // 0 off, 1 on
+#define CFG_ESC_BRAKE_ON_STOP                0U  // 0 off, 1 on
+
+/*
  * Mixer output band. Deliberately NOT the CFG_MOTOR_* values above: those are a
  * bench cap the DShot driver applies on its own (dshot.c), and 0.40 sits below
  * the ~0.50 this airframe needs to hover. The mixer desaturates against the band

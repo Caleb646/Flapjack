@@ -80,10 +80,7 @@ STATIC eSTATUS_t SyncMailBoxWrite (uint32_t mbID, uint8_t const* pBuffer, uint32
 STATIC eSTATUS_t SyncMailBoxWriteNotify (uint32_t mbID, uint8_t const* pBuffer, uint32_t len) {
 
     eSTATUS_t status = SyncMailBoxWrite (mbID, pBuffer, len);
-#ifndef UNIT_TEST
-    asm volatile ("dsb");
-    asm volatile ("sev");
-#endif
+    Platform_NotifyOtherCore ();
     return eSTATUS_SUCCESS;
 }
 
@@ -175,19 +172,4 @@ eSTATUS_t SyncNotifyTaskUartOut (uint16_t len) {
     task.len             = len;
 
     return SyncMailBoxWriteNotify (SyncGetOtherCoresMailBoxID (), (uint8_t*)&task, sizeof (SyncTaskUartOut));
-}
-
-
-#define DEFAULT_SEMAPHORE_ID 1U
-
-bool LockTake (void) {
-
-    while (HAL_HSEM_FastTake (DEFAULT_SEMAPHORE_ID) != HAL_OK) {
-    }
-    return true;
-}
-
-void LockRelease (void) {
-
-    HAL_HSEM_Release (DEFAULT_SEMAPHORE_ID, 0);
 }

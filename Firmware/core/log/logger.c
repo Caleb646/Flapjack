@@ -198,7 +198,7 @@ eSTATUS_t LoggerInit (void) {
     }
 
     __disable_irq ();
-    LockTake ();
+    Platform_LockTake ();
 
     if (gLoggerInitialized) {
         goto end;
@@ -214,7 +214,7 @@ eSTATUS_t LoggerInit (void) {
         gLoggerInitialized = true;
     }
 end:
-    LockRelease ();
+    Platform_LockRelease ();
     __enable_irq ();
     return eSTATUS_SUCCESS;
 }

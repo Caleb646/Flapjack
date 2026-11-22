@@ -15,7 +15,7 @@
  *     not be a reason to count the frame invalid ... just ignore extra fields."
  *
  * Not covered: the inter-frame timeout resync. GetMicroseconds() returns 0 under
- * UNIT_TEST (core_shared.c), so the timeout branch is unreachable from here.
+ * UNIT_TEST (stubs/platform_stub.c), so the timeout branch is unreachable from here.
  * It is equally unreachable in the Renode SIL, which does not pace bytes at the
  * baud rate - covering it needs a time seam that does not exist yet.
  */
@@ -63,8 +63,8 @@ eSTATUS_t UartPort_Write (UartPort_t* pPort, uint8_t const* pData, uint32_t size
  * host would silently test a wire format the firmware never produces. The build
  * forces -mno-ms-bitfields; this catches it if that ever comes undone.
  */
-_Static_assert (sizeof (CrsfChannelsPayload_t) == CRSF_RC_PAYLOAD_BYTES,
-                "CrsfChannelsPayload_t must pack to 22 bytes, as it does on ARM EABI");
+STATIC_ASSERT (sizeof (CrsfChannelsPayload_t) == CRSF_RC_PAYLOAD_BYTES,
+               "CrsfChannelsPayload_t must pack to 22 bytes, as it does on ARM EABI");
 
 /* Spec channel values. */
 #define TICKS_MIN  172U  /* stick low  -> 988 us  */

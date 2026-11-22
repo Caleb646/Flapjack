@@ -67,7 +67,7 @@ void Baro_Task (void* args) {
     if (STATUS_FAIL (Baro_Init (&s_baro, &signal))) {
         LOG_ERROR ("BARO unavailable; task exiting");
         /* Not vTaskDelete: this build uses heap_1, whose vPortFree asserts -
-         * and configASSERT spins with interrupts disabled, wedging the FC. */
+         * and a failed configASSERT resets the FC, into the same failure every boot. */
         vTaskSuspend (NULL);
         return;
     }

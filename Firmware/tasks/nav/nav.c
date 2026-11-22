@@ -1,5 +1,6 @@
 #include "tasks/nav/nav.h"
 #include "common/filter.h"
+#include "common/maths.h"
 #include "devices/baro.h"
 #include "umsg_sensors.h"
 #include "umsg_nav.h"

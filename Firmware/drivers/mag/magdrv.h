@@ -16,6 +16,7 @@
  * This header is the boundary: it must not depend on any backend header.
  */
 
+#include "common/maths.h"
 #include "core/core.h"
 
 #include "drivers/device.h"

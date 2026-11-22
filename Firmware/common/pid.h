@@ -10,6 +10,12 @@
 #include <stdint.h>
 #include <string.h>
 
+#define AXIS_IDX_COUNT    4
+#define AXIS_IDX_ROLL     0
+#define AXIS_IDX_PITCH    1
+#define AXIS_IDX_YAW      2
+#define AXIS_IDX_THROTTLE 3
+
 typedef struct {
     float p, i, d;
     /* Maximum magnitude the I-term may contribute to the OUTPUT, in the same

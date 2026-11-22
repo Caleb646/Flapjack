@@ -60,7 +60,7 @@ Two constraints worth knowing before you pick what to compile in:
   `_Static_assert` on that size; do the same for any other struct whose memory layout is the thing
   under test.
 
-Note that `GetMicroseconds()` returns **0** under `UNIT_TEST` (`core/core_shared.c`), so anything
+Note that `GetMicroseconds()` returns **0** under `UNIT_TEST` (`stubs/platform_stub.c`), so anything
 gated on elapsed time — the CRSF inter-frame timeout, the RC link timeout — cannot be reached from
 here. Those need a time seam that does not exist yet.
 

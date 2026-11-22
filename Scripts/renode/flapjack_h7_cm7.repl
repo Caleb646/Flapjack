@@ -23,6 +23,9 @@ nvic:
 timer16:                        // HAL timebase (stm32h7xx_hal_timebase_tim.c)
     frequency: 64000000
 
+timer2:                         // Platform_GetMicroseconds() (platform.c), prescaled to 1 MHz
+    frequency: 64000000
+
 usart1:                         // debug log / sim link
     frequency: 64000000
 
@@ -33,9 +36,8 @@ usart3:                         // CRSF RC receiver (BRD_GET_UART_ID(RX))
     frequency: 64000000
 
 // --- DWT --------------------------------------------------------------------
-// core_shared.c GetMicroseconds() reads DWT->CYCCNT. The model exists upstream
-// but is not wired into the H7 platform; without it CYCCNT reads 0 and
-// microsecond timing collapses to 1 ms granularity.
+// platform.c enables DWT->CYCCNT at boot (Platform_Init). The model exists
+// upstream but is not wired into the H7 platform; without it CYCCNT reads 0.
 
 dwt: Miscellaneous.DWT @ sysbus 0xE0001000
     frequency: 64000000

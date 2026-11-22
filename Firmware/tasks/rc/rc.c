@@ -62,7 +62,7 @@ void Rc_Task(void* args) {
     if (STATUS_FAIL(Rc_Init())) {
         LOG_ERROR("RC unavailable; task exiting");
         /* Not vTaskDelete: this build uses heap_1, whose vPortFree asserts -
-         * and configASSERT spins with interrupts disabled, wedging the FC. */
+         * and a failed configASSERT resets the FC, into the same failure every boot. */
         vTaskSuspend(NULL);
         return;
     }

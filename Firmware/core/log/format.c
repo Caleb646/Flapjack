@@ -26,11 +26,9 @@ typedef void (*putcf) (void*, char);
 static putcf stdout_putf;
 static void* stdout_putp;
 
-#ifdef PRINTF_LONG_SUPPORT
-
 static void uli2a (unsigned long int num, unsigned int base, int uc, char* bf) {
-    int n          = 0;
-    unsigned int d = 1;
+    int n           = 0;
+    unsigned long d = 1;
     while (num / d >= base)
         d *= base;
     while (d != 0) {
@@ -52,8 +50,6 @@ static void li2a (long num, char* bf) {
     }
     uli2a (num, 10, 0, bf);
 }
-
-#endif
 
 static void ui2a (unsigned int num, unsigned int base, int uc, char* bf) {
     int n          = 0;
@@ -119,7 +115,8 @@ static void putchw (void* putp, putcf putf, int n, char z, char* bf) {
 }
 
 void tfp_format (void* putp, putcf putf, char const* fmt, va_list va) {
-    char bf[12];
+    // Holds the longest number uli2a/li2a can produce: a 64-bit host long (20 digits) plus NUL.
+    char bf[21];
 
     char ch;
 
@@ -129,9 +126,7 @@ void tfp_format (void* putp, putcf putf, char const* fmt, va_list va) {
             putf (putp, ch);
         else {
             char lz = 0;
-#ifdef PRINTF_LONG_SUPPORT
             char lng = 0;
-#endif
             int w = 0;
             ch    = *(fmt++);
             if (ch == '0') {
@@ -141,41 +136,38 @@ void tfp_format (void* putp, putcf putf, char const* fmt, va_list va) {
             if (ch >= '0' && ch <= '9') {
                 ch = a2i (ch, &fmt, 10, &w);
             }
-#ifdef PRINTF_LONG_SUPPORT
+            /*
+             * Required, not optional: arm-none-eabi makes uint32_t an unsigned
+             * long, so PRIu32 is "lu". Without this, "%lu" prints a literal 'u'
+             * and leaves its argument on the va_list for the next specifier.
+             */
             if (ch == 'l') {
                 ch  = *(fmt++);
                 lng = 1;
             }
-#endif
             switch (ch) {
             case 0: goto abort;
             case 'u': {
-#ifdef PRINTF_LONG_SUPPORT
                 if (lng)
                     uli2a (va_arg (va, unsigned long int), 10, 0, bf);
                 else
-#endif
                     ui2a (va_arg (va, unsigned int), 10, 0, bf);
                 putchw (putp, putf, w, lz, bf);
                 break;
             }
             case 'd': {
-#ifdef PRINTF_LONG_SUPPORT
                 if (lng)
                     li2a (va_arg (va, unsigned long int), bf);
                 else
-#endif
                     i2a (va_arg (va, int), bf);
                 putchw (putp, putf, w, lz, bf);
                 break;
             }
             case 'x':
             case 'X':
-#ifdef PRINTF_LONG_SUPPORT
                 if (lng)
                     uli2a (va_arg (va, unsigned long int), 16, (ch == 'X'), bf);
                 else
-#endif
                     ui2a (va_arg (va, unsigned int), 16, (ch == 'X'), bf);
                 putchw (putp, putf, w, lz, bf);
                 break;

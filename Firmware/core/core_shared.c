@@ -9,16 +9,43 @@
 #include <stdint.h>
 #include <string.h>
 
-float ge_ScaledSystemCoreClock = 0.0F;
+typedef struct {
+    uint32_t magic;
+    uint32_t reason;
+    uint32_t line;
+    uint32_t uptimeMs;
+    uint32_t exception; /* IPSR of the failing context; 0 = a task (thread mode) */
+    uint32_t reported;
+    char file[24];
+    char task[16];
+    uint32_t pc, lr, cfsr, hfsr, mmfar, bfar; /* faults only */
+} CrashRecord_t;
 
-static void DWTInit (void);
+/*
+ * Whole 64-bit words because H7 SRAM ECC is computed per 64 bits: the
+ * power-on clear has to leave every word of the record with valid ECC.
+ */
+STATIC_ASSERT (sizeof (CrashRecord_t) % 8U == 0U, "crash record must be whole 64-bit words");
+
+/* The size is folded in so a record left by a build with another layout fails the check. */
+#define CRASH_MAGIC (0xC2A5E000U | (uint32_t)sizeof (CrashRecord_t))
+
+static CrashRecord_t s_crash NOINIT_SECTION;
+static bool volatile s_inCriticalError = false;
+
+static char const* const s_reasonNames[] = {
+    [eCRIT_INIT]           = "INIT",
+    [eCRIT_ASSERT]         = "ASSERT",
+    [eCRIT_STACK_OVERFLOW] = "STACK_OVERFLOW",
+    [eCRIT_HARDFAULT]      = "HARDFAULT",
+    [eCRIT_MEMMANAGE]      = "MEMMANAGE",
+    [eCRIT_BUSFAULT]       = "BUSFAULT",
+    [eCRIT_USAGEFAULT]     = "USAGEFAULT",
+};
+
 static bool SanityCheckTimers (void);
 
 eSTATUS_t CoreShared_Init (void) {
-
-    DWTInit ();
-    // Scale by 10Mhz for fDelayMicroseconds function
-    ge_ScaledSystemCoreClock = (float)SystemCoreClock / 10000000.0F;
 
     if (SanityCheckTimers () == false) {
         return eSTATUS_FAILURE;
@@ -30,84 +57,154 @@ eSTATUS_t CoreShared_Init (void) {
 __attribute__ ((weak)) void CriticalErrorFlushHook (void) {
 }
 
-void CriticalErrorHandler (void) {
+static void CopyString (char* pDst, uint32_t size, char const* pSrc) {
 
-    CriticalErrorFlushHook ();
+    uint32_t i = 0U;
+    for (; (i + 1U) < size && pSrc[i] != '\0'; ++i) {
+        pDst[i] = pSrc[i];
+    }
+    pDst[i] = '\0';
+}
+
+/* pFault is the captured fault, NULL when not called from one. */
+static void CriticalErrorRecord (eCRIT_t reason, char const* pFile, uint32_t line, PlatformFault_t const* pFault) {
+
+    CrashRecord_t* const p = &s_crash;
+
+    p->magic     = 0U;
+    p->reason    = (uint32_t)reason;
+    p->line      = line;
+    p->uptimeMs  = GetMilliseconds ();
+    p->reported  = 0U;
+    p->exception = Platform_CurrentException ();
+    p->pc = p->lr = p->cfsr = p->hfsr = p->mmfar = p->bfar = 0U;
+
+    if (pFault != NULL) {
+        p->exception = pFault->exception;
+        p->pc        = pFault->pc;
+        p->lr        = pFault->lr;
+        p->cfsr      = pFault->cfsr;
+        p->hfsr      = pFault->hfsr;
+        p->mmfar     = pFault->mmfar;
+        p->bfar      = pFault->bfar;
+    }
+
+    /* __FILE__ is the full build path; the basename is what fits and what reads. */
+    char const* pBase = (pFile != NULL) ? pFile : "";
+    for (char const* pc = pBase; *pc != '\0'; ++pc) {
+        if (*pc == '/' || *pc == '\\') {
+            pBase = pc + 1;
+        }
+    }
+    CopyString (p->file, sizeof (p->file), pBase);
+    CopyString (p->task, sizeof (p->task), "-");
+
+#ifndef UNIT_TEST
+    /* Also right for a stack overflow: FreeRTOS checks the outgoing task from
+     * PendSV, before it switches, so the current task is the one that overflowed. */
+    if (xTaskGetSchedulerState () != taskSCHEDULER_NOT_STARTED) {
+        CopyString (p->task, sizeof (p->task), pcTaskGetName (NULL));
+    }
+#endif // UNIT_TEST
+
+    p->magic = CRASH_MAGIC;
+}
+
+__attribute__ ((noreturn)) static void CriticalErrorFinish (eCRIT_t reason, char const* pFile, uint32_t line, PlatformFault_t const* pFault) {
+
+    /* A second failure while handling the first - the flush faulting, say -
+     * must not overwrite the record of the one that started it. */
+    if (!s_inCriticalError) {
+        s_inCriticalError = true;
+        CriticalErrorRecord (reason, pFile, line, pFault);
+        /* Not from a fault: a fault is when the log ring is least likely to be
+         * intact, and a HardFault handler that faults locks up rather than resetting. */
+        if (pFault == NULL) {
+            CriticalErrorFlushHook ();
+        }
+    }
+
     __disable_irq ();
-    __BKPT (1);
-    while (1) {
-    };
+    Platform_Reset ();
+}
+
+void CriticalErrorHandler (eCRIT_t reason, char const* pFile, uint32_t line) {
+
+    CriticalErrorFinish (reason, pFile, line, NULL);
+}
+
+void Platform_OnFault (PlatformFault_t const* pFault) {
+
+    eCRIT_t reason = eCRIT_HARDFAULT;
+    switch (pFault->fault) {
+    case ePLATFORM_FAULT_MEMMANAGE: reason = eCRIT_MEMMANAGE; break;
+    case ePLATFORM_FAULT_BUS: reason = eCRIT_BUSFAULT; break;
+    case ePLATFORM_FAULT_USAGE: reason = eCRIT_USAGEFAULT; break;
+    case ePLATFORM_FAULT_HARD: break;
+    }
+    CriticalErrorFinish (reason, NULL, 0U, pFault);
+}
+
+void CriticalErrorInit (void) {
+
+    if (Platform_TakePowerOnReset ()) {
+        memset (&s_crash, 0, sizeof (s_crash));
+    }
+}
+
+void CriticalErrorReport (bool onlyIfUnreported) {
+
+    CrashRecord_t* const p = &s_crash;
+
+    if (p->magic != CRASH_MAGIC) {
+        if (!onlyIfUnreported) {
+            LOG_INFO ("No crash recorded since power-on");
+        }
+        return;
+    }
+    if (onlyIfUnreported && p->reported != 0U) {
+        return;
+    }
+    p->reported = 1U;
+
+    char const* pName = "?";
+    if (p->reason < ARRAY_SIZE (s_reasonNames) && s_reasonNames[p->reason] != NULL) {
+        pName = s_reasonNames[p->reason];
+    }
+
+    if (p->reason >= (uint32_t)eCRIT_HARDFAULT) {
+        LOG_ERROR (
+        "Crash: %s pc=0x%x lr=0x%x cfsr=0x%x hfsr=0x%x mmfar=0x%x bfar=0x%x task=%s exc=%u up=%ums",
+        pName,
+        (unsigned)p->pc,
+        (unsigned)p->lr,
+        (unsigned)p->cfsr,
+        (unsigned)p->hfsr,
+        (unsigned)p->mmfar,
+        (unsigned)p->bfar,
+        p->task,
+        (unsigned)p->exception,
+        (unsigned)p->uptimeMs
+        );
+    } else {
+        LOG_ERROR (
+        "Crash: %s at %s:%u task=%s exc=%u up=%ums",
+        pName,
+        p->file,
+        (unsigned)p->line,
+        p->task,
+        (unsigned)p->exception,
+        (unsigned)p->uptimeMs
+        );
+    }
 }
 
 void __assert_func (const char* file, int line, const char* func, const char* failedexpr) {
 
-    FJ_UNUSED (file);
-    FJ_UNUSED (line);
     FJ_UNUSED (func);
     FJ_UNUSED (failedexpr);
 
-    __BKPT (1);
-    // asm volatile ("bkpt 1");
-    CriticalErrorHandler ();
-    while (1) {
-    };
-}
-
-int32_t clipi32 (int32_t v, int32_t lower, int32_t upper) {
-    if (v < lower) {
-        return lower;
-    }
-    if (v > upper) {
-        return upper;
-    }
-    return v;
-}
-
-float clipf32 (float v, float lower, float upper) {
-    /*
-     * `!(v >= lower)` rather than `v < lower`, so that NaN takes this branch.
-     *
-     * Every comparison against NaN is false, so the natural form returned NaN
-     * unchanged and quietly broke the one guarantee this function exists to
-     * make: that its result lies within [lower, upper]. Callers cast that result
-     * to an integer - Mixer_MixServos does `(uint16_t)clipf32(us, 500, 2500)` -
-     * and a float-to-integer conversion of NaN is undefined behaviour, which on
-     * this target lands on 0. A 0 us pulse width is -1.5x full travel, i.e. a
-     * servo commanded 135 deg past its own mechanical stop; that exact value
-     * (-2.356 rad) is what showed up in the SIL when the flight model diverged
-     * and fed NaN back to the FC (KnownIssues 1.14).
-     *
-     * NaN clamps to `lower` because that is the cheapest way to restore the
-     * range guarantee, NOT because full negative deflection is a good failsafe.
-     * A caller that needs NaN to mean "neutral" has to say so itself - this
-     * function's only promise is that what comes out is in range.
-     */
-    if (!(v >= lower)) {
-        return lower;
-    }
-    if (v > upper) {
-        return upper;
-    }
-    return v;
-}
-
-float mapf32 (float v, float fromMin, float fromMax, float toMin, float toMax) {
-    if (ABS_F32 (fromMax - fromMin) < 0.0001F) {
-        return toMin;
-    }
-    return toMin + ((v - fromMin) / (fromMax - fromMin)) * (toMax - toMin);
-}
-
-static void DWTInit (void) {
-
-#ifndef UNIT_TEST
-    // Enable core debug access and trace unit
-    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-    // Enable DWT cycle counter
-    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
-    DWT->CYCCNT = 0;
-
-#endif // UNIT_TEST
+    CriticalErrorHandler (eCRIT_ASSERT, file, (uint32_t)line);
 }
 
 static bool SanityCheckTimers (void) {
@@ -141,55 +238,13 @@ static bool SanityCheckTimers (void) {
     return true;
 }
 
+// Can't be used inside a disable IRQ section because it uses HAL_GetTick.
 uint32_t GetMilliseconds (void) {
-    // return pdMS_TO_TICKS (xTaskGetTickCount ());
     return HAL_GetTick ();
 }
 
 uint32_t GetMicroseconds (void) {
-    /*
-     * Derived from DWT->CYCCNT rather than (HAL tick + SysTick->VAL).
-     *
-     * That pair cannot be read coherently under an RTOS. The millisecond tick
-     * only advances when the SysTick ISR runs, and FreeRTOS masks interrupts for
-     * every critical section, so SysTick can wrap and reload while the tick is
-     * still stale. Combining them then produces a timestamp up to a millisecond
-     * in the PAST, and no amount of re-reading the tick detects it because both
-     * reads return the same stale value.
-     *
-     * Every caller takes an unsigned difference against a previous reading, so
-     * one backwards step underflows to ~4295 seconds. Handed to the attitude
-     * filter as dt, that integrates a single enormous step and leaves the
-     * quaternion at an arbitrary orientation - measured at roughly one event
-     * every five seconds, which is what destroyed the estimate in the SIL.
-     * The same underflow corrupts the dt in pid.c and control.c.
-     *
-     * CYCCNT is one free-running register, so a single read is inherently
-     * coherent. It wraps every 2^32 cycles (67 s at 64 MHz), too soon to divide
-     * down directly - the quotient would wrap at ~67e6 instead of 2^32 and break
-     * the callers' difference arithmetic - so accumulate whole microseconds and
-     * carry the leftover cycles. This must be called at least once per 67 s or a
-     * wrap goes unnoticed; the GNC loop calls it hundreds of times a second.
-     */
-#ifndef UNIT_TEST
-    static uint32_t s_lastCycles = 0U;
-    static uint32_t s_us         = 0U;
-
-    uint32_t const cyclesPerUs = (SystemCoreClock / 1000000U);
-
-    uint32_t const primask = __get_PRIMASK ();
-    __disable_irq ();
-
-    uint32_t const elapsed = DWT->CYCCNT - s_lastCycles; /* correct across wrap */
-    uint32_t const us      = elapsed / cyclesPerUs;
-    s_lastCycles += us * cyclesPerUs;                    /* keep the remainder */
-    s_us += us;
-    uint32_t const now = s_us;
-
-    __set_PRIMASK (primask);
-    return now;
-#endif // UNIT_TEST
-    return 0;
+    return Platform_GetMicroseconds ();
 }
 
 void Delay (uint32_t ms) {
@@ -235,47 +290,4 @@ void DelayMicroseconds (uint32_t us) {
     }
 
 #endif // UNIT_TEST
-}
-
-
-// void fDelayMicroseconds (float us) {
-
-// #ifndef UNIT_TEST
-
-//     /*
-//      * Example: 6.67 us
-//      * time = 6.67 * 10 = 66.7
-//      * cycles = 66.7 * (64MHz / 10MHz) = 66.7 * 6.4 = uint32_t(426.88 + 0.5)
-//      * -> 427 cycles
-//      * error = 427 (cycles) - 426.88 (exact cycles) = 0.12 cycles
-//      */
-//     uint32_t start  = DWT->CYCCNT;
-//     uint32_t cycles = (uint32_t)(((us * 10.0F) * ge_ScaledSystemCoreClock) + 0.5F);
-//     while ((DWT->CYCCNT - start) < cycles) {
-//         __NOP ();
-//     }
-
-// #endif // UNIT_TEST
-// }
-
-/* Source --> Betaflight: https://github.com/betaflight/betaflight/blob/master/src/main/build/atomic.h */
-void BasePriRestoreMem (uint8_t* val) {
-
-#ifndef UNIT_TEST
-
-    __set_BASEPRI (*val);
-
-#endif // UNIT_TEST
-}
-
-// set BASEPRI_MAX, with global memory barrier, returns true
-uint8_t BasePriSetMemRetVal (uint8_t prio) {
-
-#ifndef UNIT_TEST
-
-    __set_BASEPRI_MAX (prio);
-    return 1;
-
-#endif // UNIT_TEST
-    return 1;
 }

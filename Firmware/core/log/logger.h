@@ -7,6 +7,7 @@
 #include "core/core_shared.h"
 #include "core/log/format.h"
 
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -122,7 +123,7 @@
  * heaviest users of the link, and they are what the GUI plots - so a build
  * below DEBUG stops those plots updating.
  */
-// Example usage: LOG_DATA("imu", "{\"roll\":%.2f,\"pitch\":%.2f,\"yaw\":%.2f}", roll, pitch, yaw);
+// Example usage: LOG_DATA("imu", "{\"roll\":%d,\"pitch\":%d,\"yaw\":%d}", roll, pitch, yaw);
 #if CFG_LOG_LEVEL >= CFG_LOG_LEVEL_DEBUG
 #define LOG_DATA(type, fmt, ...)                      \
     do {                                              \
@@ -141,30 +142,35 @@
 #endif
 
 
-#define _LOG_JSON_2(key1, val1) "\"%s\":%s", #key1, #val1
-#define _LOG_JSON_4(key1, val1, key2, val2) "\"%s\":%s,\"%s\":%s", #key1, #val1, #key2, #val2
-#define _LOG_JSON_6(key1, val1, key2, val2, key3, val3) "\"%s\":%s,\"%s\":%s,\"%s\":%s", #key1, #val1, #key2, #val2, #key3, #val3
-#define _LOG_JSON_8(key1, val1, key2, val2, key3, val3, key4, val4) "\"%s\":%s,\"%s\":%s,\"%s\":%s,\"%s\":%s", #key1, #val1, #key2, #val2, #key3, #val3, #key4, #val4
+/*
+ * Floats go out as int32 milli-units because tfp_format has no %f. int32, not
+ * int16: an int16 wrapped above 32.767, which gyro rates in deg/s pass in
+ * ordinary flight.
+ */
+#define _LOG_MILLI(v)        ((int32_t)((v) * 1000.0F))
+#define _LOG_JSON_MILLI(key) "\"" #key "\":%" PRId32
 
 #define LOG_4_FLOATS(type, k1, v1, k2, v2, k3, v3, k4, v4) \
-    LOG_DATA (type, "{" _LOG_JSON_8 (k1, "%d", k2, "%d", k3, "%d", k4, "%d") "}", \
-              (int16_t)((v1) * 1000.0F), (int16_t)((v2) * 1000.0F), (int16_t)((v3) * 1000.0F), (int16_t)((v4) * 1000.0F))
+    LOG_DATA (type, "{" _LOG_JSON_MILLI (k1) "," _LOG_JSON_MILLI (k2) "," _LOG_JSON_MILLI (k3) "," _LOG_JSON_MILLI (k4) "}", \
+              _LOG_MILLI (v1), _LOG_MILLI (v2), _LOG_MILLI (v3), _LOG_MILLI (v4))
 
 #define LOG_8_FLOATS(type, k1, v1, k2, v2, k3, v3, k4, v4, k5, v5, k6, v6, k7, v7, k8, v8) \
-    LOG_DATA (type, "{" _LOG_JSON_8 (k1, "%d", k2, "%d", k3, "%d", k4, "%d") "," _LOG_JSON_8 (k5, "%d", k6, "%d", k7, "%d", k8, "%d") "}", \
-              (int16_t)((v1) * 1000.0F), (int16_t)((v2) * 1000.0F), (int16_t)((v3) * 1000.0F), (int16_t)((v4) * 1000.0F), \
-              (int16_t)((v5) * 1000.0F), (int16_t)((v6) * 1000.0F), (int16_t)((v7) * 1000.0F), (int16_t)((v8) * 1000.0F))
+    LOG_DATA (type, "{" _LOG_JSON_MILLI (k1) "," _LOG_JSON_MILLI (k2) "," _LOG_JSON_MILLI (k3) "," _LOG_JSON_MILLI (k4) "," \
+                        _LOG_JSON_MILLI (k5) "," _LOG_JSON_MILLI (k6) "," _LOG_JSON_MILLI (k7) "," _LOG_JSON_MILLI (k8) "}", \
+              _LOG_MILLI (v1), _LOG_MILLI (v2), _LOG_MILLI (v3), _LOG_MILLI (v4), \
+              _LOG_MILLI (v5), _LOG_MILLI (v6), _LOG_MILLI (v7), _LOG_MILLI (v8))
 
 #define LOG_IMU_DATA(accel, gyro) LOG_8_FLOATS ("imu_data", ax, accel.x, ay, accel.y, az, accel.z, aw, 0.0F, gx, gyro.x, gy, gyro.y, gz, gyro.z, gw, 0.0F)
 
 #define LOG_DATA_IMU_CALIB(calib) \
-    LOG_DATA (LOG_DATA_TYPE_IMU_CALIB, "{\"rslt\":%d,\"err\":%d}", (calib).result, (calib).err, (calib).gyro.z)
+    LOG_DATA (LOG_DATA_TYPE_IMU_CALIB, "{\"rslt\":%d,\"err\":%d}", (calib).result, (calib).err)
 
 /* accel data is in meters per second squared and gyro is in degrees per second */
 #define LOG_DATA_IMU_DATA(accel, gyro) \
-    LOG_DATA (LOG_DATA_TYPE_IMU_DATA, "{\"ax\":%d,\"ay\":%d,\"az\":%d,\"gx\":%d,\"gy\":%d,\"gz\":%d}", \
-              (int16_t)(accel.x * 1000.0F), (int16_t)(accel.y * 1000.0F), (int16_t)(accel.z * 1000.0F), \
-              (int16_t)(gyro.x * 1000.0F), (int16_t)(gyro.y * 1000.0F), (int16_t)(gyro.z * 1000.0F))
+    LOG_DATA (LOG_DATA_TYPE_IMU_DATA, "{" _LOG_JSON_MILLI (ax) "," _LOG_JSON_MILLI (ay) "," _LOG_JSON_MILLI (az) "," \
+                                          _LOG_JSON_MILLI (gx) "," _LOG_JSON_MILLI (gy) "," _LOG_JSON_MILLI (gz) "}", \
+              _LOG_MILLI (accel.x), _LOG_MILLI (accel.y), _LOG_MILLI (accel.z), \
+              _LOG_MILLI (gyro.x), _LOG_MILLI (gyro.y), _LOG_MILLI (gyro.z))
               
 /* attitude is in degrees */
 #define LOG_DATA_CURRENT_ATTITUDE(attitude) \

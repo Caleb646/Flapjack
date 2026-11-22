@@ -2,6 +2,7 @@
 
 #include "target.h"
 
+#include "common/pid.h"
 #include "core/core.h"
 
 #include "drivers/serial/serial_link.h"
@@ -83,6 +84,7 @@ static void Shell_OnCommand (uint8_t const* pPayload, uint8_t len) {
     switch (cmd.which_cmd) {
     case Command_set_pid_tag: Shell_HandleSetPid (&cmd.cmd.set_pid); break;
     case Command_arm_disarm_tag: Shell_HandleArm (&cmd.cmd.arm_disarm); break;
+    case Command_crash_report_tag: CriticalErrorReport (false); break;
     default: LOG_WARN ("Shell: unknown command tag %d", (int)cmd.which_cmd); break;
     }
 }

@@ -37,10 +37,7 @@ The formats supported by this implementation are: 'd' 'u' 'c' 's' 'x' 'X'.
 
 Zero padding and field width are also supported.
 
-If the library is compiled with 'PRINTF_SUPPORT_LONG' defined then the
-long specifier is also
-supported. Note that this will pull in some long math routines (pun intended!)
-and thus make your executable noticably longer.
+The long modifier 'l' is supported on 'd' 'u' 'x' 'X'.
 
 The memory foot print of course depends on the target cpu, compiler and
 compiler options, but a rough guestimate (based on a H8S target) is about
@@ -93,10 +90,15 @@ regs Kusti, 23.10.2004
 // #include "core/core.h"
 #include <stdarg.h>
 
+/*
+ * Checked as printf formats so a specifier/argument mismatch is a compile-time
+ * warning rather than a shifted va_list at runtime. GCC checks against full
+ * printf, so it still accepts specifiers this subset lacks (%f, %p, %ll...).
+ */
 void init_printf (void* putp, void (*putf) (void*, char));
-void tfp_printf (char const* fmt, ...);
-void tfp_sprintf (char* s, char* fmt, ...);
-void tfp_format (void* putp, void (*putf) (void*, char), char const* fmt, va_list va);
+void tfp_printf (char const* fmt, ...) __attribute__ ((format (printf, 1, 2)));
+void tfp_sprintf (char* s, char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
+void tfp_format (void* putp, void (*putf) (void*, char), char const* fmt, va_list va) __attribute__ ((format (printf, 3, 0)));
 
 // #define GCC_NODISCARD             __attribute__ ((__warn_unused_result__))
 // #define GCC_ALIGN_ADDR(balign)    __attribute__ ((aligned (balign)))

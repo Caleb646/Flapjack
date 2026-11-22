@@ -22,6 +22,8 @@
 #define DATA_MISS_LIMIT        50U
 #define SPI_DEFAULT_TIMEOUT_MS 100U
 #define IMU_VALID(pIMU)        ((pIMU) != NULL && (pIMU)->isInitialized == true)
+#define BUF_TO_U16(BUF)        ((uint16_t)(((uint32_t)(BUF)[1] << 8U) | (uint16_t)(BUF)[0]))
+#define UNUSED_FN_DECL         __attribute__ ((unused))
 
 #define CALIB_IS_ONGOING(FEAT_REG) \
     ((FEAT_REG).feat_1.sc_st_complete == eBMI3_FEAT_CALIB_ONGOING && (FEAT_REG).feat_1.state == eBMI3_FEAT_STATE_CALIB_ONGOING)

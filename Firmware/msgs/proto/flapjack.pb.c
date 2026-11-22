@@ -12,6 +12,9 @@ PB_BIND(SetPidCmd, SetPidCmd, AUTO)
 PB_BIND(ArmCmd, ArmCmd, AUTO)
 
 
+PB_BIND(CrashReportCmd, CrashReportCmd, AUTO)
+
+
 PB_BIND(Command, Command, AUTO)
 
 

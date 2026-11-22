@@ -24,21 +24,23 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0e\x66lapjack.proto\"K\n\tSetPidCmd\x12\x13\n\x04\x61xis\x18\x01 \x01(\x0e\x32\x05.Axis\x12\x1a\n\x04gain\x18\x02 \x01(\x0e\x32\x0c.PidGainType\x12\r\n\x05value\x18\x03 \x01(\x02\"\x15\n\x06\x41rmCmd\x12\x0b\n\x03\x61rm\x18\x01 \x01(\x08\"N\n\x07\x43ommand\x12\x1d\n\x07set_pid\x18\x01 \x01(\x0b\x32\n.SetPidCmdH\x00\x12\x1d\n\narm_disarm\x18\x02 \x01(\x0b\x32\x07.ArmCmdH\x00\x42\x05\n\x03\x63md*2\n\x04\x41xis\x12\x08\n\x04ROLL\x10\x00\x12\t\n\x05PITCH\x10\x01\x12\x07\n\x03YAW\x10\x02\x12\x0c\n\x08THROTTLE\x10\x03*9\n\x0bPidGainType\x12\x06\n\x02KP\x10\x00\x12\x06\n\x02KI\x10\x01\x12\x06\n\x02KD\x10\x02\x12\x12\n\x0eINTEGRAL_LIMIT\x10\x03\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0e\x66lapjack.proto\"K\n\tSetPidCmd\x12\x13\n\x04\x61xis\x18\x01 \x01(\x0e\x32\x05.Axis\x12\x1a\n\x04gain\x18\x02 \x01(\x0e\x32\x0c.PidGainType\x12\r\n\x05value\x18\x03 \x01(\x02\"\x15\n\x06\x41rmCmd\x12\x0b\n\x03\x61rm\x18\x01 \x01(\x08\"\x10\n\x0e\x43rashReportCmd\"w\n\x07\x43ommand\x12\x1d\n\x07set_pid\x18\x01 \x01(\x0b\x32\n.SetPidCmdH\x00\x12\x1d\n\narm_disarm\x18\x02 \x01(\x0b\x32\x07.ArmCmdH\x00\x12\'\n\x0c\x63rash_report\x18\x03 \x01(\x0b\x32\x0f.CrashReportCmdH\x00\x42\x05\n\x03\x63md*2\n\x04\x41xis\x12\x08\n\x04ROLL\x10\x00\x12\t\n\x05PITCH\x10\x01\x12\x07\n\x03YAW\x10\x02\x12\x0c\n\x08THROTTLE\x10\x03*9\n\x0bPidGainType\x12\x06\n\x02KP\x10\x00\x12\x06\n\x02KI\x10\x01\x12\x06\n\x02KD\x10\x02\x12\x12\n\x0eINTEGRAL_LIMIT\x10\x03\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'flapjack_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_AXIS']._serialized_start=198
-  _globals['_AXIS']._serialized_end=248
-  _globals['_PIDGAINTYPE']._serialized_start=250
-  _globals['_PIDGAINTYPE']._serialized_end=307
+  _globals['_AXIS']._serialized_start=257
+  _globals['_AXIS']._serialized_end=307
+  _globals['_PIDGAINTYPE']._serialized_start=309
+  _globals['_PIDGAINTYPE']._serialized_end=366
   _globals['_SETPIDCMD']._serialized_start=18
   _globals['_SETPIDCMD']._serialized_end=93
   _globals['_ARMCMD']._serialized_start=95
   _globals['_ARMCMD']._serialized_end=116
-  _globals['_COMMAND']._serialized_start=118
-  _globals['_COMMAND']._serialized_end=196
+  _globals['_CRASHREPORTCMD']._serialized_start=118
+  _globals['_CRASHREPORTCMD']._serialized_end=134
+  _globals['_COMMAND']._serialized_start=136
+  _globals['_COMMAND']._serialized_end=255
 # @@protoc_insertion_point(module_scope)

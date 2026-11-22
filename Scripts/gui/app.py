@@ -416,6 +416,11 @@ class FlightViewer(QtWidgets.QWidget):
         if not ok:
             self.append_debug_console(f"Failed to send ARM command: {err}", "[ERROR]")
 
+    def send_crash_report_command(self):
+        ok, err = conf.write_crash_report_cmd(self.serial)
+        if not ok:
+            self.append_debug_console(f"Failed to send CRASH REPORT command: {err}", "[ERROR]")
+
     @QtCore.pyqtSlot(bool)
     def on_toggled(self, checked):
         self.button.setText("Disconnect" if checked else "Connect")
@@ -622,10 +627,16 @@ class FlightControlTab(QtWidgets.QWidget):
         self.disarm_btn.clicked.connect(self.send_disarm_command)
         self.disarm_btn.setEnabled(False)
 
+        self.crash_btn = QtWidgets.QPushButton("Crash Report")
+        self.crash_btn.setStyleSheet("QPushButton { background-color: #607D8B; color: white; font-weight: bold; padding: 10px; }")
+        self.crash_btn.clicked.connect(self.send_crash_report_command)
+        self.crash_btn.setEnabled(False)
+
         flight_control_layout.addWidget(self.start_btn)
         flight_control_layout.addWidget(self.stop_btn)
         flight_control_layout.addWidget(self.arm_btn)
         flight_control_layout.addWidget(self.disarm_btn)
+        flight_control_layout.addWidget(self.crash_btn)
         
         layout.addWidget(flight_control_group)
         
@@ -721,6 +732,7 @@ class FlightControlTab(QtWidgets.QWidget):
         self.stop_btn.setEnabled(enabled)
         self.arm_btn.setEnabled(enabled)
         self.disarm_btn.setEnabled(enabled)
+        self.crash_btn.setEnabled(enabled)
         self.forward_btn.setEnabled(enabled)
         self.backward_btn.setEnabled(enabled)
         self.left_btn.setEnabled(enabled)

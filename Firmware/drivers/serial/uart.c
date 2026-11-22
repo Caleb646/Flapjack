@@ -81,46 +81,11 @@ UART_DEF_ISR (UART, 5)
 
 eSTATUS_t Uart_InitSystem (void) {
 
-    RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = { 0 };
-
-    PeriphClkInitStruct.PeriphClockSelection      = RCC_PERIPHCLK_USART1;
-    PeriphClkInitStruct.Usart16ClockSelection     = RCC_USART16CLKSOURCE_D2PCLK2;
-    PeriphClkInitStruct.Usart234578ClockSelection = 0U;
-    if (HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct) != HAL_OK) {
-        return eSTATUS_FAILURE;
-    }
+    /* Kernel clock sources are selected in Platform_Init. */
     __HAL_RCC_USART1_CLK_ENABLE ();
-
-    PeriphClkInitStruct.PeriphClockSelection      = RCC_PERIPHCLK_USART2;
-    PeriphClkInitStruct.Usart16ClockSelection     = 0U;
-    PeriphClkInitStruct.Usart234578ClockSelection = RCC_USART234578CLKSOURCE_D2PCLK1;
-    if (HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct) != HAL_OK) {
-        return eSTATUS_FAILURE;
-    }
     __HAL_RCC_USART2_CLK_ENABLE ();
-
-    PeriphClkInitStruct.PeriphClockSelection      = RCC_PERIPHCLK_USART3;
-    PeriphClkInitStruct.Usart16ClockSelection     = 0U;
-    PeriphClkInitStruct.Usart234578ClockSelection = RCC_USART234578CLKSOURCE_D2PCLK1;
-    if (HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct) != HAL_OK) {
-        return eSTATUS_FAILURE;
-    }
     __HAL_RCC_USART3_CLK_ENABLE ();
-
-    PeriphClkInitStruct.PeriphClockSelection      = RCC_PERIPHCLK_UART4;
-    PeriphClkInitStruct.Usart16ClockSelection     = 0U;
-    PeriphClkInitStruct.Usart234578ClockSelection = RCC_USART234578CLKSOURCE_D2PCLK1;
-    if (HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct) != HAL_OK) {
-        return eSTATUS_FAILURE;
-    }
     __HAL_RCC_UART4_CLK_ENABLE ();
-
-    PeriphClkInitStruct.PeriphClockSelection      = RCC_PERIPHCLK_UART5;
-    PeriphClkInitStruct.Usart16ClockSelection     = 0U;
-    PeriphClkInitStruct.Usart234578ClockSelection = RCC_USART234578CLKSOURCE_D2PCLK1;
-    if (HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct) != HAL_OK) {
-        return eSTATUS_FAILURE;
-    }
     __HAL_RCC_UART5_CLK_ENABLE ();
 
 

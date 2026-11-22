@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "common/pid.h"
 #include "core/core.h"
 
 #include "target.h"

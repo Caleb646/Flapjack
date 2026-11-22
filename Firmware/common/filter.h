@@ -1,6 +1,7 @@
 #ifndef MOTION_CONTROL_FILTER_H
 #define MOTION_CONTROL_FILTER_H
 
+#include "common/maths.h"
 #include "core/core.h"
 
 #include <stdbool.h>

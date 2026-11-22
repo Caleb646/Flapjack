@@ -1,6 +1,7 @@
 #include "tasks/control/control.h"
 #include "tasks/control/mixer.h"
 
+#include "common/maths.h"
 #include "common/pid.h"
 
 #include "devices/motors.h"
@@ -44,8 +45,8 @@
 #define CONTROL_RATE_HZ      500U
 #define CONTROL_PERIOD_TICKS (configTICK_RATE_HZ / CONTROL_RATE_HZ)
 
-_Static_assert ((configTICK_RATE_HZ % CONTROL_RATE_HZ) == 0U,
-                "CONTROL_RATE_HZ must divide configTICK_RATE_HZ exactly");
+STATIC_ASSERT ((configTICK_RATE_HZ % CONTROL_RATE_HZ) == 0U,
+               "CONTROL_RATE_HZ must divide configTICK_RATE_HZ exactly");
 
 // Plausible bounds on one control interval. dt is still MEASURED rather than
 // assumed from the period above - an overrun should scale the integral and

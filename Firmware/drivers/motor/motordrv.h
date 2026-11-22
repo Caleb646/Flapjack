@@ -28,4 +28,11 @@ typedef struct MotorDriver_s {
 
 eSTATUS_t MotorDrv_Init (MotorDriver_t* pOutDriver);
 
+/*
+ * Brings the ESCs' own settings in line with the target config. Call once from
+ * main() before the scheduler starts. A failure leaves the ESCs on whatever
+ * settings they already hold, so it is reported but not fatal.
+ */
+eSTATUS_t MotorDrv_ConfigureEscs (void);
+
 #endif // DRIVERS_MOTOR_MOTOR_DRIVER_H

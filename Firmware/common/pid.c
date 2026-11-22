@@ -1,5 +1,6 @@
 #include "target.h"
 
+#include "common/maths.h"
 #include "core/core.h"
 
 #include "common/pid.h"

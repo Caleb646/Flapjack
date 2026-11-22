@@ -12,6 +12,7 @@
 #include "task.h"
 
 #include "drivers/bus/spi.h"
+#include "drivers/motor/motordrv.h"
 #include "drivers/serial/serial_link.h"
 #include "drivers/serial/uart.h"
 
@@ -33,16 +34,14 @@
  *
  * By the time this runs the overflowing task has already scribbled past its
  * stack, so do NOT log from here - the logger is printf-shaped and wants the
- * very stack that just ran out. Park the task name somewhere a debugger can
- * read it and halt.
+ * very stack that just ran out. The crash record takes the task name, and the
+ * next boot logs it.
  */
-char const* volatile g_pOverflowedTaskName = NULL;
-
 void vApplicationStackOverflowHook (TaskHandle_t xTask, char* pcTaskName) {
 
     FJ_UNUSED (xTask);
-    g_pOverflowedTaskName = pcTaskName;
-    CriticalErrorHandler ();
+    FJ_UNUSED (pcTaskName);
+    CRITICAL_ERROR (eCRIT_STACK_OVERFLOW);
 }
 
 FJ_DEFINE_SHARED (bool volatile, s_IsCM4Stuck)     = false;
@@ -126,41 +125,44 @@ FJ_DEFINE_SHARED (bool volatile, s_IsCM4Ready)     = false;
  *
  * LOG_ERROR is safe here: the scheduler is not running yet, so SerialLink
  * bypasses its buffering and writes straight to the UART. At CFG_LOG_LEVEL
- * none the message compiles out, but the halt still happens.
+ * none the message compiles out, but the reset still happens.
  */
 #define CREATE_TASK(fn, name, stack, prio)                                       \
     do {                                                                         \
         if (xTaskCreate ((fn), (name), (stack), NULL, (prio), NULL) != pdPASS) { \
             LOG_ERROR ("Failed to create task: %s", (name));                     \
-            CriticalErrorHandler ();                                             \
+            CRITICAL_ERROR (eCRIT_INIT);                                         \
         }                                                                        \
     } while (0)
 
 int main (void) {
 
+    CriticalErrorInit ();
+
     if (Platform_Init () != 0) {
-        CriticalErrorHandler ();
+        CRITICAL_ERROR (eCRIT_INIT);
     }
 
 #if defined(CORE_CM7)
 
     if (STATUS_FAIL (Spi_InitSystem ())) {
-        CriticalErrorHandler ();
+        CRITICAL_ERROR (eCRIT_INIT);
     }
 
     if (STATUS_FAIL (Uart_InitSystem ())) {
-        CriticalErrorHandler ();
+        CRITICAL_ERROR (eCRIT_INIT);
     }
 
     if (STATUS_FAIL (Core_Init ())) {
-        CriticalErrorHandler ();
+        CRITICAL_ERROR (eCRIT_INIT);
     }
 
     /* Sole owner of the debug UART. Log text and binary frames share it, so
      * logging and the shell stay available in a sim build. */
     if (STATUS_FAIL (SerialLink_Init ())) {
-        CriticalErrorHandler ();
+        CRITICAL_ERROR (eCRIT_INIT);
     }
+    CriticalErrorReport (true);
 
 #if !defined(SINGLE_CORE)
     s_IsSystemInited = true;
@@ -172,13 +174,19 @@ int main (void) {
 #ifdef SIM_HIL
     if (STATUS_FAIL (SimTelemetry_Init ())) {
         LOG_ERROR ("Failed to init sim telemetry");
-        CriticalErrorHandler ();
+        CRITICAL_ERROR (eCRIT_INIT);
     }
 #endif
 
     if (STATUS_FAIL (Shell_Init ())) {
         LOG_ERROR ("Failed to init shell");
-        CriticalErrorHandler ();
+        CRITICAL_ERROR (eCRIT_INIT);
+    }
+
+    /* Before the scheduler: the ESC bootloader link is bit-banged with
+     * busy-waited timing, and nothing else may be driving the motor pins. */
+    if (STATUS_FAIL (MotorDrv_ConfigureEscs ())) {
+        LOG_WARN ("ESC settings not verified on every ESC; they keep what they already hold");
     }
 
     LOG_INFO ("Starting scheduler");
@@ -212,10 +220,11 @@ int main (void) {
 
     if (Core_Init () != eSTATUS_SUCCESS) {
         s_IsCM4Stuck = true;
-        CriticalErrorHandler ();
+        CRITICAL_ERROR (eCRIT_INIT);
     }
 
     s_IsCM4Ready = true;
+    CriticalErrorReport (true);
     LOG_INFO ("Starting scheduler");
     /*
      * No application tasks. The receiver used to live here and reach CM7 through

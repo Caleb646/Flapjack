@@ -151,6 +151,15 @@ SECTIONS
     _edata = .;        /* define a global symbol at data end */
   } >RAM_D1 AT> FLASH
 
+  /* Survives a reset: startup neither loads nor zeroes it (the crash record) */
+  .noinit (NOLOAD) :
+  {
+    . = ALIGN(8);
+    *(.noinit)
+    *(.noinit*)
+    . = ALIGN(8);
+  } >RAM_D1
+
   /* Uninitialized data section into "RAM" Ram type memory */
   . = ALIGN(4);
   .bss :

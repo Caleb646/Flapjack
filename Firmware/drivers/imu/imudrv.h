@@ -20,6 +20,7 @@
  * (bmi323.h / bmixxx.h).
  */
 
+#include "common/maths.h"
 #include "core/core.h"
 
 #include "drivers/device.h"

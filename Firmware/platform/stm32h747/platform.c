@@ -5,7 +5,9 @@
 #include <stdint.h>
 #include <string.h>
 
-#define HSEM_ID_0 (0U)
+/* Every hardware semaphore this firmware uses is allocated here. */
+#define HSEM_ID_0    (0U) /* CM4 boot release */
+#define HSEM_ID_LOCK (1U) /* Platform_LockTake */
 
 extern void __SHARED_MEM_BSS_START__;
 extern void __SHARED_MEM_BSS_END__;
@@ -14,9 +16,14 @@ extern void __SHARED_MEM_DATA_END__;
 extern void __SHARED_MEM_DATA_FLASH_START__;
 
 static int SystemClock_Config(void);
+static int PeriphClock_Config(void);
+static void MicrosecondTimer_Config(void);
 static void MPU_Config(void);
 
 int Platform_Init(void) {
+
+    /* Otherwise all three escalate to HardFault and Platform_OnFault could not tell them apart. */
+    SCB->SHCSR |= SCB_SHCSR_MEMFAULTENA_Msk | SCB_SHCSR_BUSFAULTENA_Msk | SCB_SHCSR_USGFAULTENA_Msk;
 
 #if defined(CORE_CM7)
     // NOTE: disable mpu for now
@@ -41,12 +48,17 @@ int Platform_Init(void) {
     if(SystemClock_Config() != 0) {
         return -1;
     }
+    if(PeriphClock_Config() != 0) {
+        return -1;
+    }
 
     // Enable core debug access and trace unit
     CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
     // Enable DWT cycle counter
     DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
     DWT->CYCCNT = 0;
+
+    MicrosecondTimer_Config();
 
 #if !defined(SINGLE_CORE)
     /* Wake CM4 and wait for the D2 domain to come up. Skipped in single-core
@@ -72,10 +84,87 @@ int Platform_Init(void) {
 
     HAL_Init();
 
+    // DWT is per-core: CM7's enable above does not reach this one
+    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+    DWT->CYCCNT = 0;
+
 #endif /* CORE_CM4 */
 
     return 0;
 }
+
+/* Each core has its own copy of the reset flags, so each reads and clears its own. */
+bool Platform_TakePowerOnReset(void) {
+
+#if defined(CORE_CM4)
+    bool const isPowerOn = __HAL_RCC_C2_GET_FLAG(RCC_FLAG_PORRST) || __HAL_RCC_C2_GET_FLAG(RCC_FLAG_BORRST);
+    __HAL_RCC_C2_CLEAR_RESET_FLAGS();
+#else
+    bool const isPowerOn = __HAL_RCC_C1_GET_FLAG(RCC_FLAG_PORRST) || __HAL_RCC_C1_GET_FLAG(RCC_FLAG_BORRST);
+    __HAL_RCC_C1_CLEAR_RESET_FLAGS();
+#endif
+    return isPowerOn;
+}
+
+uint32_t Platform_CurrentException(void) {
+    return __get_IPSR() & IPSR_ISR_Msk;
+}
+
+void Platform_Reset(void) {
+
+    /* Without a debugger attached BKPT does not halt, it escalates to HardFault. */
+    if ((CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk) != 0U) {
+        __BKPT(1);
+    }
+    NVIC_SystemReset();
+}
+
+__attribute__ ((used, noreturn)) static void Platform_Fault(uint32_t const* pFrame) {
+
+    PlatformFault_t fault = { 0 };
+
+    switch (Platform_CurrentException()) {
+    case MemoryManagement_IRQn + 16: fault.fault = ePLATFORM_FAULT_MEMMANAGE; break;
+    case BusFault_IRQn + 16: fault.fault = ePLATFORM_FAULT_BUS; break;
+    case UsageFault_IRQn + 16: fault.fault = ePLATFORM_FAULT_USAGE; break;
+    default: fault.fault = ePLATFORM_FAULT_HARD; break;
+    }
+    fault.exception = Platform_CurrentException();
+    fault.cfsr      = SCB->CFSR;
+    fault.hfsr      = SCB->HFSR;
+    fault.mmfar     = SCB->MMFAR;
+    fault.bfar      = SCB->BFAR;
+
+    /* A stacking error means the frame was never written - and the HardFault
+     * handler faulting on a bad read locks the core up instead of resetting. */
+    if ((fault.cfsr & (SCB_CFSR_MSTKERR_Msk | SCB_CFSR_STKERR_Msk)) == 0U) {
+        fault.lr        = pFrame[5];
+        fault.pc        = pFrame[6];
+        fault.exception = pFrame[7] & IPSR_ISR_Msk;
+    }
+
+    Platform_OnFault(&fault);
+}
+
+/*
+ * Every fault vector lands here. Naked because a C prologue would push onto the
+ * stack being inspected and overwrite LR, whose EXC_RETURN bit 2 says which
+ * stack - MSP or PSP - holds the faulting context's frame.
+ */
+__attribute__ ((naked)) static void Platform_FaultEntry(void) {
+
+    __asm volatile ("tst   lr, #4          \n"
+                    "ite   eq              \n"
+                    "mrseq r0, msp         \n"
+                    "mrsne r0, psp         \n"
+                    "b     Platform_Fault  \n");
+}
+
+void HardFault_Handler(void) __attribute__ ((alias ("Platform_FaultEntry")));
+void MemManage_Handler(void) __attribute__ ((alias ("Platform_FaultEntry")));
+void BusFault_Handler(void) __attribute__ ((alias ("Platform_FaultEntry")));
+void UsageFault_Handler(void) __attribute__ ((alias ("Platform_FaultEntry")));
 
 int SystemClock_Config (void) {
     RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
@@ -149,6 +238,77 @@ int SystemClock_Config (void) {
         return -1;
     }
     return 0;
+}
+
+/*
+ * Kernel clock source for each SPI and U(S)ART. The drivers enable the bus
+ * clocks and set up the peripherals; which clock feeds them is chosen here,
+ * next to the clock tree it depends on.
+ */
+static int PeriphClock_Config (void) {
+
+    static RCC_PeriphCLKInitTypeDef const clocks[] = {
+        { .PeriphClockSelection = RCC_PERIPHCLK_SPI1, .Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL },
+        { .PeriphClockSelection = RCC_PERIPHCLK_SPI2, .Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL },
+        { .PeriphClockSelection = RCC_PERIPHCLK_SPI3, .Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL },
+        { .PeriphClockSelection = RCC_PERIPHCLK_SPI4, .Spi45ClockSelection = RCC_SPI45CLKSOURCE_PCLK2 },
+        { .PeriphClockSelection = RCC_PERIPHCLK_SPI5, .Spi45ClockSelection = RCC_SPI45CLKSOURCE_PCLK2 },
+        { .PeriphClockSelection = RCC_PERIPHCLK_USART1, .Usart16ClockSelection = RCC_USART16CLKSOURCE_D2PCLK2 },
+        { .PeriphClockSelection = RCC_PERIPHCLK_USART2, .Usart234578ClockSelection = RCC_USART234578CLKSOURCE_D2PCLK1 },
+        { .PeriphClockSelection = RCC_PERIPHCLK_USART3, .Usart234578ClockSelection = RCC_USART234578CLKSOURCE_D2PCLK1 },
+        { .PeriphClockSelection = RCC_PERIPHCLK_UART4, .Usart234578ClockSelection = RCC_USART234578CLKSOURCE_D2PCLK1 },
+        { .PeriphClockSelection = RCC_PERIPHCLK_UART5, .Usart234578ClockSelection = RCC_USART234578CLKSOURCE_D2PCLK1 },
+    };
+
+    for (uint32_t i = 0; i < sizeof (clocks) / sizeof (clocks[0]); ++i) {
+        RCC_PeriphCLKInitTypeDef clock = clocks[i];
+        if (HAL_RCCEx_PeriphCLKConfig (&clock) != HAL_OK) {
+            return -1;
+        }
+    }
+    return 0;
+}
+
+/*
+ * TIM2 because Platform_GetMicroseconds needs a 32-bit counter. CM7 only: CM4
+ * reads the same counter, and reconfiguring it would reset CM7's clock.
+ */
+static void MicrosecondTimer_Config (void) {
+
+    /* With TIMPRE clear, APB1 timers run at PCLK1 when the APB1 prescaler is 1
+     * and at 2x PCLK1 otherwise (RM0399, kernel clock distribution). */
+    uint32_t const pclk1    = HAL_RCC_GetPCLK1Freq ();
+    uint32_t const timClock = ((RCC->D2CFGR & RCC_D2CFGR_D2PPRE1) == RCC_APB1_DIV1) ? pclk1 : (2U * pclk1);
+
+    __HAL_RCC_TIM2_CLK_ENABLE ();
+    TIM2->CR1 = 0U;
+    TIM2->PSC = (timClock / 1000000U) - 1U;
+    TIM2->ARR = 0xFFFFFFFFU;
+    TIM2->CNT = 0U;
+    TIM2->EGR = TIM_EGR_UG; /* PSC is preloaded; latch it now, not at the first overflow */
+    TIM2->CR1 = TIM_CR1_CEN;
+}
+
+uint32_t Platform_GetMicroseconds (void) {
+    return TIM2->CNT;
+}
+
+void Platform_NotifyOtherCore (void) {
+    /* The barrier makes the mailbox write visible before the event lands. */
+    __DSB ();
+    __SEV ();
+}
+
+bool Platform_LockTake (void) {
+
+    while (HAL_HSEM_FastTake (HSEM_ID_LOCK) != HAL_OK) {
+    }
+    return true;
+}
+
+void Platform_LockRelease (void) {
+
+    HAL_HSEM_Release (HSEM_ID_LOCK, 0);
 }
 
 void MPU_Config(void)

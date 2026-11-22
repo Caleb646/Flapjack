@@ -28,6 +28,10 @@ STATIC eSTATUS_t Sim_Disarm (void* ctx) {
     return eSTATUS_SUCCESS;
 }
 
+eSTATUS_t MotorDrv_ConfigureEscs (void) {
+    return eSTATUS_SUCCESS;
+}
+
 eSTATUS_t MotorDrv_Init (MotorDriver_t* pOutDriver) {
 
     if (!pOutDriver) {

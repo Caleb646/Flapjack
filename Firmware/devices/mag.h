@@ -3,6 +3,7 @@
 
 #include "common/align.h"
 
+#include "common/maths.h"
 #include "core/core.h"
 
 #include "drivers/mag/magdrv.h"

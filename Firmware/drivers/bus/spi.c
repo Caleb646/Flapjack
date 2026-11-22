@@ -106,34 +106,12 @@ SPI_DEF_IRQ_HANDLER (5)
 
 eSTATUS_t Spi_InitSystem (void) {
 
-    RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = { 0 };
-
-    PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI1;
-    PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
+    /* Kernel clock sources are selected in Platform_Init. */
     __HAL_RCC_SPI1_CLK_ENABLE ();
-    HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct);
-
-    PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI2;
-    PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
     __HAL_RCC_SPI2_CLK_ENABLE ();
-    HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct);
-
-    PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI3;
-    PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
     __HAL_RCC_SPI3_CLK_ENABLE ();
-    HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct);
-
-    PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI4;
-    PeriphClkInitStruct.Spi123ClockSelection = 0U;
-    PeriphClkInitStruct.Spi45ClockSelection  = RCC_SPI45CLKSOURCE_PCLK2;
     __HAL_RCC_SPI4_CLK_ENABLE ();
-    HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct);
-
-    PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI5;
-    PeriphClkInitStruct.Spi123ClockSelection = 0U;
-    PeriphClkInitStruct.Spi45ClockSelection  = RCC_SPI45CLKSOURCE_PCLK2;
     __HAL_RCC_SPI5_CLK_ENABLE ();
-    HAL_RCCEx_PeriphCLKConfig (&PeriphClkInitStruct);
 
     for (uint32_t i = 0; i < g_NumSpiBuses; ++i) {
 

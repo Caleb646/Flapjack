@@ -48,6 +48,7 @@
 
 /* Ensure definitions are only used by the compiler, and not by the assembler. */
 #if defined(__ICCARM__) || defined(__CC_ARM) || defined(__GNUC__)
+#include <assert.h>
 #include <stdint.h>
 extern uint32_t SystemD2Clock;
 #endif
@@ -160,10 +161,11 @@ to all Cortex-M ports, and do not rely on any particular library functions. */
 See http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html. */
 #define configMAX_SYSCALL_INTERRUPT_PRIORITY 	( configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY << (8 - configPRIO_BITS) )
 
-/* Normal assert() semantics without relying on the provision of an assert.h
-header file. */
+/* Through __assert_func (core/core_shared.c), so a failed kernel assert is
+recorded with its file and line and resets, like any other assert. The
+expression is left out to keep its text out of flash. */
 /* USER CODE BEGIN 1 */
-#define configASSERT( x ) if ((x) == 0) {taskDISABLE_INTERRUPTS(); for( ;; );}
+#define configASSERT( x ) if ((x) == 0) { __assert_func (__FILE__, __LINE__, NULL, NULL); }
 /* USER CODE END 1 */
 
 /* Definitions that map the FreeRTOS port interrupt handlers to their CMSIS

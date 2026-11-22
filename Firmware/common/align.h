@@ -38,6 +38,7 @@
  * and it must never reach the gyro.
  */
 
+#include "common/maths.h"
 #include "core/core.h"
 
 #include <stdint.h>

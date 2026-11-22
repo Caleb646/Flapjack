@@ -60,6 +60,4 @@ eSTATUS_t SyncRegisterHandler (eSYNC_TASKID_t taskID, task_handler_fn_t);
 eSTATUS_t SyncProcessTasks (void);
 eSTATUS_t SyncNotifyTaskUartOut (uint16_t len);
 
-bool LockTake (void);
-void LockRelease (void);
 #endif // SYNC_SYNC_H

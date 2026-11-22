@@ -322,6 +322,11 @@ def write_arm_cmd(serial: QSerialPort, arm: bool) -> WRITE_CMD_RETURN_TYPE:
     cmd.arm_disarm.arm = arm
     return write_protobuf_command(serial, cmd)
 
+def write_crash_report_cmd(serial: QSerialPort) -> WRITE_CMD_RETURN_TYPE:
+    cmd = flapjack_pb2.Command()
+    cmd.crash_report.SetInParent()
+    return write_protobuf_command(serial, cmd)
+
 
 if __name__ == "__main__":
     filenames = ("Common/Inc/conf/conf.h", "Common/Inc/control.h", "Common/Inc/log/logger.h")

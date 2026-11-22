@@ -136,6 +136,15 @@ SECTIONS
     _edata = .;        /* define a global symbol at data end */
   } >RAM AT> FLASH
 
+  /* Survives a reset: startup neither loads nor zeroes it (the crash record) */
+  .noinit (NOLOAD) :
+  {
+    . = ALIGN(8);
+    *(.noinit)
+    *(.noinit*)
+    . = ALIGN(8);
+  } >RAM
+
 
   /* Uninitialized data section */
   . = ALIGN(4);

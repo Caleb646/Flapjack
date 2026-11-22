@@ -112,20 +112,27 @@ set(CFLAGS
     #
     # Promoted to errors, deliberately, while the rest stay warnings.
     #
-    # These two are the only ones in the set that mean "this call does not match
-    # the thing being called", and both are silent at runtime until they corrupt
+    # These are the only ones in the set that mean "this call does not match
+    # the thing being called", and all are silent at runtime until they corrupt
     # something. A BaroData_t vtable change left drivers/baro/sim.c on the old
     # two-float signature; the build still said "Build complete", and the FC then
     # wrote a float through an uninitialised pointer on every sample - the SIL
     # went dark with no fault, no log, and nothing to grep for. main.c called
     # Spi_InitSystem() with no declaration in scope for the same reason: the
-    # warning was there, buried in ~150 others.
+    # warning was there, buried in ~150 others. LOG_4_FLOATS passed its values
+    # as surplus format arguments and printed a literal "%d" in their place; a
+    # short argument list makes tfp_format read whatever is next on the stack.
     #
     # -Werror as a whole is not on: there are too many pre-existing warnings for
-    # that to be a small change. These two are free today and catch the failure
+    # that to be a small change. These are free today and catch the failure
     # mode that costs the most time.
     -Werror=incompatible-pointer-types
     -Werror=implicit-function-declaration
+    -Werror=format
+    # -Werror=format also resets -Wformat=2 back to level 1, silently dropping
+    # these two, so they are named explicitly.
+    -Werror=format-nonliteral
+    -Werror=format-security
 )
 list(JOIN CFLAGS " " CFLAGS_STRING)
 

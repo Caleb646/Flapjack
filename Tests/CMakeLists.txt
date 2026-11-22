@@ -43,7 +43,9 @@ add_library(drone_common_obj OBJECT
     ${COMMON_SRC_DIR}/common/queue.c
     ${COMMON_SRC_DIR}/common/umap.c
     ${COMMON_SRC_DIR}/common/ring_buff.c
+    ${COMMON_SRC_DIR}/common/maths.c
     ${UNITTEST_ROOT}/stubs/hal_stub.c
+    ${UNITTEST_ROOT}/stubs/platform_stub.c
 )
 
 add_library(drone_peripherals_obj OBJECT
@@ -137,3 +139,4 @@ add_test_exe(test_altitude OBJECTS drone_common_obj drone_filter_obj drone_baro_
 add_test_exe(test_attitude OBJECTS drone_common_obj drone_filter_obj)
 add_test_exe(test_horizontal OBJECTS drone_common_obj drone_filter_obj)
 add_test_exe(test_align OBJECTS drone_common_obj drone_align_obj)
+add_test_exe(test_format OBJECTS drone_common_obj)

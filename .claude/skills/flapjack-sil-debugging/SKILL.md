@@ -139,9 +139,12 @@ Useful plant numbers for this airframe: full differential thrust is ~9900 °/s²
   actuator deflection. Both trace back to a division by a zero `dt`.
 - **`GetMicroseconds()` has 1 µs resolution** and the loop is paced by queued IMU samples, so two
   iterations can land in the same microsecond. Any `x / dt` needs a guard.
-- **A silent hang is probably a stack overflow.** `configCHECK_FOR_STACK_OVERFLOW` is on and
-  `vApplicationStackOverflowHook` (in `main.c`) parks the task name in `g_pOverflowedTaskName`
-  before halting — read it in the debugger. The symptom is telemetry simply stopping.
+- **A spontaneous reboot is a recorded crash.** Stack overflows, asserts (FreeRTOS's included),
+  init failures and CPU faults all go through `CriticalErrorHandler` (`core/core_shared.c`), which
+  saves a crash record and resets. The next boot logs it as `Crash: <REASON> ...`, with file:line,
+  or with PC/LR and the fault registers for a fault, and the task name. The shell's `crash_report`
+  command (the GUI's Crash Report button) prints it again until the next power-on. The symptom is
+  telemetry stopping and boot logs starting over.
 
 ## Anti-patterns
 

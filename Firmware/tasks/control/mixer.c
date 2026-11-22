@@ -2,6 +2,7 @@
 
 #include "target.h"
 
+#include "common/maths.h"
 #include "core/core.h"
 
 #include "tasks/control/mixer.h"

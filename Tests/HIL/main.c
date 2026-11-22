@@ -102,7 +102,7 @@ static void hil_test_task (void* args) {
 int main (void) {
 
     if (Platform_Init () != 0) {
-        CriticalErrorHandler ();
+        CRITICAL_ERROR (eCRIT_INIT);
     }
 
 #ifdef CORE_CM7

@@ -10,10 +10,12 @@
 #include "hal.h"
 #include "target.h"
 
+#include "common/maths.h"
 #include "core/core.h"
 
 #include "drivers/dma.h"
 #include "drivers/io/gpio.h"
+#include "drivers/motor/blheli/blheli.h"
 #include "drivers/motor/dshot.h"
 #include "drivers/motor/motordrv.h"
 #include "drivers/timer.h"
@@ -234,6 +236,43 @@ static eSTATUS_t Dshot_Disarm (void* ctx) {
      * single frame. */
     s_armInProgress = false;
     return eSTATUS_SUCCESS;
+}
+
+STATIC_ASSERT (CFG_ESC_MOTOR_1_DIRECTION == 1U || CFG_ESC_MOTOR_1_DIRECTION == 2U, "motor 1 direction must be 1 (normal) or 2 (reversed)");
+STATIC_ASSERT (CFG_ESC_MOTOR_2_DIRECTION == 1U || CFG_ESC_MOTOR_2_DIRECTION == 2U, "motor 2 direction must be 1 (normal) or 2 (reversed)");
+STATIC_ASSERT (CFG_ESC_STARTUP_POWER >= 1U && CFG_ESC_STARTUP_POWER <= 13U, "startup power must be 1-13");
+STATIC_ASSERT (CFG_ESC_COMMUTATION_TIMING >= 1U && CFG_ESC_COMMUTATION_TIMING <= 5U, "commutation timing must be 1-5");
+STATIC_ASSERT (CFG_ESC_DEMAG_COMPENSATION >= 1U && CFG_ESC_DEMAG_COMPENSATION <= 3U, "demag compensation must be 1-3");
+STATIC_ASSERT (CFG_ESC_TEMPERATURE_PROTECTION <= 7U, "temperature protection must be 0-7");
+STATIC_ASSERT (CFG_ESC_LOW_RPM_POWER_PROTECTION <= 1U, "low RPM power protection must be 0 or 1");
+STATIC_ASSERT (CFG_ESC_BRAKE_ON_STOP <= 1U, "brake on stop must be 0 or 1");
+
+eSTATUS_t MotorDrv_ConfigureEscs (void) {
+
+    static uint8_t const directions[BRD_MOTOR_COUNT] = {
+        CFG_ESC_MOTOR_1_DIRECTION,
+#if defined(MOTOR_2_ENABLED) && (MOTOR_2_ENABLED == 1U)
+        CFG_ESC_MOTOR_2_DIRECTION,
+#endif
+    };
+
+    GPIO_TypeDef* ports[BRD_MOTOR_COUNT]        = { 0 };
+    uint32_t pins[BRD_MOTOR_COUNT]              = { 0 };
+    BLHeliSettings_t settings[BRD_MOTOR_COUNT]  = { 0 };
+    for (uint32_t i = 0; i < BRD_MOTOR_COUNT; ++i) {
+        ports[i]    = g_DShotBB.hardware.motorPins[i].pPort;
+        pins[i]     = g_DShotBB.hardware.motorPins[i].pin;
+        settings[i] = (BLHeliSettings_t){
+            .motorDirection        = directions[i],
+            .startupPower          = CFG_ESC_STARTUP_POWER,
+            .commutationTiming     = CFG_ESC_COMMUTATION_TIMING,
+            .demagCompensation     = CFG_ESC_DEMAG_COMPENSATION,
+            .temperatureProtection = CFG_ESC_TEMPERATURE_PROTECTION,
+            .lowRpmPowerProtection = CFG_ESC_LOW_RPM_POWER_PROTECTION,
+            .brakeOnStop           = CFG_ESC_BRAKE_ON_STOP,
+        };
+    }
+    return BLHeli_ApplySettings (ports, pins, settings, BRD_MOTOR_COUNT);
 }
 
 eSTATUS_t MotorDrv_Init (MotorDriver_t* pOutDriver) {

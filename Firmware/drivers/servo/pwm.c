@@ -82,7 +82,7 @@ eSTATUS_t ServoDrv_Init (ServoDriver_t* pOutDriver) {
         ServoHardware_t* pHardware      = pServos->pHardware[i];
 
         if (!pTimerHandle || !pHardware) {
-            LOG_ERROR ("Failed to get timer handle for servo %u", i);
+            LOG_ERROR ("Failed to get timer handle for servo %u", (unsigned int)i);
             return eSTATUS_FAILURE;
         }
 
@@ -134,7 +134,7 @@ eSTATUS_t ServoDrv_Init (ServoDriver_t* pOutDriver) {
 
     for (uint32_t i = 0; i < BRD_SERVO_COUNT; ++i) {
         if (HAL_TIM_PWM_Start (pServos->pTimerHandles[i], pServos->pHardware[i]->timerChannel) != HAL_OK) {
-            LOG_ERROR ("Failed to start PWM for servo %u", i);
+            LOG_ERROR ("Failed to start PWM for servo %u", (unsigned int)i);
             return eSTATUS_FAILURE;
         }
     }
