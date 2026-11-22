@@ -85,18 +85,18 @@
 #define IMU_INT_GPIO_PORT      GPIOC
 #define IMU_INT_GPIO_PIN       GPIO_PIN_5
 /*
- * BMI323 die placement (common/align.h). Recovered from the BMI323's own axis
- * remap register config - YXZ with all three sign bits negative, i.e.
- * out = (-y, -x, -z) - which is the only record of this part's placement that
- * has ever existed; it was written in the first IMU commit (4ac42ab) with no
- * comment and carried unchanged since. test_align.c asserts the equivalence.
+ * BMI323 die placement (common/align.h): die x toward the nose, die z out of
+ * the board's top face. MEASURED on the bench (2026-11-22, board in the
+ * airframe): tilts toward all four horizontal axes, plus gravity propagated
+ * through the gyro between holds landing within 1.5 deg of the next accel
+ * reading, so the gyro shares this frame and its handedness.
  *
- * UNVERIFIED against hardware. That register write goes to the feature engine,
- * so it may never have taken effect on the data registers at all, which means
- * nobody has confirmed this describes the real board. Treat it as the starting
- * hypothesis for the six-face static test, not as a measurement.
+ * It replaced FLIP_CW270, which came from the BMI323's axis-remap register
+ * config in the first IMU commit (4ac42ab). That was 90 deg out in yaw, which
+ * fits the register never having taken effect on the data registers; the
+ * driver no longer writes it.
  */
-#define IMU_ALIGN              eALIGN_FLIP_CW270
+#define IMU_ALIGN              eALIGN_FLIP_CW0
 
 #define EXT_FLASH_ENABLED           1U
 #define EXT_FLASH_SPI_BUS_ID        eSPI_3_BUS_ID
@@ -112,16 +112,15 @@
 #define MAG_INT_GPIO_PORT           GPIOF
 #define MAG_INT_GPIO_PIN            GPIO_PIN_3
 /*
- * TODO: the MMC5983 placement has never been established - unlike the IMU there
- * is no register config to recover it from, because MagDriverConf_t has never
- * carried an orientation at all. Identity is a placeholder, not a measurement.
+ * MMC5983 die placement, applied AFTER mmc5983.c un-mirrors the part's z axis.
+ * MEASURED in the same bench session as IMU_ALIGN, by fitting field + offset
+ * across the tilts with the IMU-derived attitude: this rotation fit 8x better
+ * than any other, at 0.42 G and +61 deg dip (northern hemisphere).
  *
- * This matters more than an unknown usually would: mag and IMU feed the same
- * 9-DOF Madgwick, so a correct IMU_ALIGN against a wrong MAG_ALIGN puts the two
- * in disagreeing frames and corrupts heading. Establish it with the same
- * six-face test before trusting yaw.
+ * Mag and IMU feed the same 9-DOF Madgwick, so the two must agree: a mag
+ * alignment wrong against a correct IMU_ALIGN corrupts heading.
  */
-#define MAG_ALIGN                   eALIGN_CW0
+#define MAG_ALIGN                   eALIGN_FLIP_CW90
 
 #define BARO_ENABLED                1U
 #define BARO_SPI_BUS_ID             eSPI_5_BUS_ID

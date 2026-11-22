@@ -159,10 +159,10 @@ RAD2DEG = 180.0 / math.pi
 #
 # NOTE what this does and does not prove. It exercises the alignment MACHINERY:
 # composition order, Align_Apply, the device wiring. It cannot tell you the
-# CONSTANT is right - both sides wrong the same way still cancels. Whether
-# FLIP_CW270 describes the real board is a six-face bench test, not a SIL run.
-IMU_ALIGN = "FLIP_CW270"
-MAG_ALIGN = "CW0"
+# CONSTANT is right - both sides wrong the same way still cancels. The values
+# themselves were measured on the real board in a bench tilt test.
+IMU_ALIGN = "FLIP_CW0"
+MAG_ALIGN = "FLIP_CW90"
 
 _COS = {0: 1, 90: 0, 180: -1, 270: 0}
 _SIN = {0: 0, 90: 1, 180: 0, 270: -1}
@@ -410,9 +410,12 @@ def synthesize_sensors(phi, theta, psi, p, q, r, udot, vdot, wdot):
     gyro = [p * RAD2DEG, q * RAD2DEG, r * RAD2DEG]
     mag = [sum(R[k][j] * B_NED[j] for j in range(3)) for k in range(3)]
     # Body -> die. Last step, so everything above stays readable as body frame.
+    mag_die = _apply(_MAG_BODY_TO_DIE, mag)
+    # The real MMC5983 reports z mirrored, and mmc5983.c undoes it; emulate it.
+    mag_die[2] = -mag_die[2]
     return (_apply(_IMU_BODY_TO_DIE, accel),
             _apply(_IMU_BODY_TO_DIE, gyro),
-            _apply(_MAG_BODY_TO_DIE, mag))
+            mag_die)
 
 
 def as_f32(x: float) -> float:

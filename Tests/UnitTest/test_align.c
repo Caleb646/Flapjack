@@ -180,27 +180,6 @@ void test_Align_NamedCasesMatchTheirRotation (void) {
     TEST_ASSERT_EQUAL_FLOAT (0.0F, out.z);
 }
 
-/*
- * The flapjack v1 BMI323 sits at YXZ with all three sign bits negative - the
- * only record of its placement, carried unchanged since the first IMU commit
- * (4ac42ab). Per bmixxx.h, YXZ is "x=y; y=x; z=z", so with the inversions that
- * register config is out = (-in.y, -in.x, -in.z). This asserts eALIGN_FLIP_CW270
- * is that same rotation, which is what makes it the right constant for
- * IMU_ALIGN. Note it is det +1, so the register config carries no part of the
- * accelerometer g - a negation - that is genuinely absent from the hardware
- * path and belongs in the BMI323 backend.
- */
-void test_Align_FlapjackImuMatchesBmi323RegisterConfig (void) {
-
-    Vec3f const in = { .x = 1.0F, .y = 2.0F, .z = 3.0F };
-    Vec3f out      = { 0 };
-
-    Align_Apply (eALIGN_FLIP_CW270, &in, &out);
-    TEST_ASSERT_EQUAL_FLOAT (-2.0F, out.x);
-    TEST_ASSERT_EQUAL_FLOAT (-1.0F, out.y);
-    TEST_ASSERT_EQUAL_FLOAT (-3.0F, out.z);
-}
-
 // devices/imu.c rotates its samples in place, so this is the calling pattern.
 void test_Align_IsInPlaceSafe (void) {
 
@@ -315,7 +294,6 @@ int main (void) {
     RUN_TEST (test_Align_EveryEntryIsOrthonormal);
     RUN_TEST (test_Align_EntriesAreAllDistinct);
     RUN_TEST (test_Align_NamedCasesMatchTheirRotation);
-    RUN_TEST (test_Align_FlapjackImuMatchesBmi323RegisterConfig);
     RUN_TEST (test_Align_IsInPlaceSafe);
     RUN_TEST (test_Align_PreservesMagnitude);
     RUN_TEST (test_Align_OutOfRangeFallsBackToIdentity);

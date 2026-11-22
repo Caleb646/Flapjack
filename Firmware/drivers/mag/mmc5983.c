@@ -105,7 +105,17 @@ STATIC Vec3f MagRaw2Norm (Mmc5983_t const* pMag, Vec3u raw) {
     Vec3f output = { 0 };
     output.x     = ((float)raw.x) - (float)MAG_SIGNED_POS_MAX;
     output.y     = ((float)raw.y) - (float)MAG_SIGNED_POS_MAX;
-    output.z     = ((float)raw.z) - (float)MAG_SIGNED_POS_MAX;
+    /*
+     * The part's raw axes are MIRRORED (det -1), measured on the bench: no
+     * proper rotation fits the data except with the Earth field pointing up,
+     * which the northern hemisphere rules out. eSensorAlign_t cannot express a
+     * reflection, by design, so it is undone here, in the backend that turns
+     * the part into the project's units. Which axis is the reversed one is not
+     * observable from outside the part - any choice gives the same body frame -
+     * so z is negated, which leaves the die z out of the board's top face as
+     * with the BMI323. MAG_ALIGN is measured against this.
+     */
+    output.z     = (float)MAG_SIGNED_POS_MAX - ((float)raw.z);
     if (pMag->normalize == true) {
         output.x /= (float)MAG_SIGNED_POS_MAX;
         output.y /= (float)MAG_SIGNED_POS_MAX;

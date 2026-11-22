@@ -118,8 +118,14 @@ FJ_DEFINE_SHARED (bool volatile, s_IsCM4Ready)     = false;
  */
 #define STACK_SERIAL_RX       512U   /* 285 used - the shell decode and its logs land here now */
 #define STACK_SERIAL_TX       256U   /* 51 used single-core; must never log (see serial_link.c) */
-#define STACK_SIMTLM          256U
-#define STACK_HEARTBEAT       384U   /* unmeasured; one 22-argument log call per beat */
+/*
+ * simtlm peaked at 247 words over a settle run, yet 256 overflowed mid-flight in
+ * another: the deepest frame is a preemption landing inside the telemetry encode
+ * and its blocking UART write (two payload-sized buffers deep), so one run's peak
+ * understates it. Hence 2x, although this task never logs.
+ */
+#define STACK_SIMTLM          512U
+#define STACK_HEARTBEAT       512U   /* unmeasured; one 22-argument log call per beat */
 
 /*
  * Every task below is required for flight, so a failed creation must not be
