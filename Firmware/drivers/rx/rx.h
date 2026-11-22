@@ -11,10 +11,16 @@
 #define RC_CHANNEL_MID  1500U
 #define RC_CHANNEL_MAX  2000U
 
+/*
+ * AETR, the ExpressLRS / EdgeTX / Betaflight default, so a stock radio binds
+ * without a custom mix. This used to be AERT, which read a RadioMaster's
+ * throttle stick as a yaw-rate command and its centred yaw stick as throttle.
+ * Scripts/sim/plan.py mirrors these indices.
+ */
 #define RC_CHANNEL_IDX_ROLL     0U
 #define RC_CHANNEL_IDX_PITCH    1U
-#define RC_CHANNEL_IDX_YAW      2U
-#define RC_CHANNEL_IDX_THROTTLE 3U
+#define RC_CHANNEL_IDX_THROTTLE 2U
+#define RC_CHANNEL_IDX_YAW      3U
 #define RC_CHANNEL_IDX_AUX_1    4U
 #define RC_CHANNEL_IDX_AUX_2    5U
 

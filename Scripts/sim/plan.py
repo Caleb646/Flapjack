@@ -69,8 +69,8 @@ from pathlib import Path
 CHANNELS = {
     "roll": 0,
     "pitch": 1,
-    "yaw": 2,
-    "throttle": 3,
+    "throttle": 2,
+    "yaw": 3,
     "aux1": 4,
     "aux2": 5,
 }
@@ -129,7 +129,7 @@ def commanded(channels) -> dict:
     rather than on Telemetry.euler).
     """
     roll_n = (channels[CHANNELS["roll"]] - 1500.0) / 500.0
-    pitch_n = (channels[CHANNELS["pitch"]] - 1500.0) / 500.0
+    pitch_n = (1500.0 - channels[CHANNELS["pitch"]]) / 500.0   # forward (high) = nose down
     yaw_n = (channels[CHANNELS["yaw"]] - 1500.0) / 500.0
     throt_n = (channels[CHANNELS["throttle"]] - 1500.0) / 500.0
 

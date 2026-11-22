@@ -33,8 +33,10 @@
 #error "UNIT_TEST should be defined in this file"
 #endif
 
-/* Set by the deframer once a whole frame has landed; owned by crsf.c. */
-extern bool volatile s_IsFrameComplete;
+/* The deframer's publish sequence and the reader's last-consumed value; owned
+ * by crsf.c. A frame is pending while they differ. */
+extern uint32_t volatile s_LatestSeq;
+extern uint32_t s_ConsumedSeq;
 
 /*
  * crsf.c reaches the UART through Crsf_Init and the (unused) Crsf_Bind. Nothing
@@ -141,7 +143,7 @@ static void FillChannels (uint32_t ticks[RC_MAX_CHANNELS], uint32_t value) {
 }
 
 void setUp (void) {
-    s_IsFrameComplete = false;
+    s_ConsumedSeq = s_LatestSeq;
 }
 
 void tearDown (void) {
@@ -205,7 +207,7 @@ void test_ProcessFrame_ValidRcFrame (void) {
     ticks[RC_CHANNEL_IDX_AUX_1]    = TICKS_2000;
 
     FeedRcFrame (ticks, CRSF_RC_PAYLOAD_BYTES);
-    TEST_ASSERT_TRUE (s_IsFrameComplete);
+    TEST_ASSERT_TRUE (s_LatestSeq != s_ConsumedSeq);
 
     uint32_t ch[RC_MAX_CHANNELS] = { 0 };
     TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, Crsf_ProcessFrame (ch));
@@ -372,9 +374,40 @@ void test_ProcessFrame_ConsumesFrame (void) {
 }
 
 /*
+ * The race this buffer exists for: the next frame starting to arrive between a
+ * frame completing and Rc_Task polling. The deframer used to assemble that next
+ * frame in the same buffer the poll read, so the poll saw the new frame's head
+ * on the old frame's tail and dropped it on CRC. The completed frame must
+ * decode intact, and the next one once it finishes.
+ */
+void test_ProcessFrame_NextFrameArrivingDoesNotCorruptLast (void) {
+    uint8_t payload[CRSF_MAX_FRAME_SIZE] = { 0 };
+    uint8_t second[CRSF_MAX_FRAME_SIZE]  = { 0 };
+    uint32_t ticks[RC_MAX_CHANNELS];
+
+    FillChannels (ticks, TICKS_MID);
+    ticks[RC_CHANNEL_IDX_THROTTLE] = TICKS_1000;
+    FeedRcFrame (ticks, CRSF_RC_PAYLOAD_BYTES);
+
+    ticks[RC_CHANNEL_IDX_THROTTLE] = TICKS_2000;
+    PackChannels (ticks, payload);
+    uint32_t const n = BuildFrame (CRSF_FRAME_TYPE_RC_CHANNELS, payload, CRSF_RC_PAYLOAD_BYTES, second);
+    FeedBytes (second, 10U);
+
+    uint32_t ch[RC_MAX_CHANNELS] = { 0 };
+    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, Crsf_ProcessFrame (ch));
+    TEST_ASSERT_EQUAL_UINT32 (1000U, ch[RC_CHANNEL_IDX_THROTTLE]);
+    TEST_ASSERT_TRUE (STATUS_FAIL (Crsf_ProcessFrame (ch)));
+
+    FeedBytes (&second[10], n - 10U);
+    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, Crsf_ProcessFrame (ch));
+    TEST_ASSERT_EQUAL_UINT32 (2000U, ch[RC_CHANNEL_IDX_THROTTLE]);
+}
+
+/*
  * Golden frame, produced by Scripts/sim/crsf.py:
  *
- *     ch = [1500]*16; ch[3] = 1000; ch[4] = 2000
+ *     ch = [1500]*16; ch[2] = 1000; ch[4] = 2000
  *     crsf.rc_frame(ch)
  *
  * i.e. centred sticks, throttle low, AUX1 high - the arming gesture the SIL
@@ -385,8 +418,8 @@ void test_ProcessFrame_ConsumesFrame (void) {
  */
 void test_ProcessFrame_GoldenFrameFromHostEncoder (void) {
     static uint8_t const golden[] = {
-        0xC8, 0x18, 0x16, 0xE0, 0x03, 0x1F, 0xF8, 0x80, 0x01, 0x70, 0xF0, 0x81, 0x0F,
-        0x7C, 0xE0, 0x03, 0x1F, 0xF8, 0xC0, 0x07, 0x3E, 0xF0, 0x81, 0x0F, 0x7C, 0xF9
+        0xC8, 0x18, 0x16, 0xE0, 0x03, 0x1F, 0x30, 0xC0, 0x07, 0x70, 0xF0, 0x81, 0x0F,
+        0x7C, 0xE0, 0x03, 0x1F, 0xF8, 0xC0, 0x07, 0x3E, 0xF0, 0x81, 0x0F, 0x7C, 0x24
     };
     TEST_ASSERT_EQUAL_UINT32 (CRSF_RC_PAYLOAD_BYTES + 4U, sizeof (golden));
 
@@ -439,6 +472,7 @@ int main (void) {
     RUN_TEST (test_ProcessFrame_UnknownTypeDoesNotCorruptState);
     RUN_TEST (test_ProcessFrame_BackToBackFrames);
     RUN_TEST (test_ProcessFrame_ConsumesFrame);
+    RUN_TEST (test_ProcessFrame_NextFrameArrivingDoesNotCorruptLast);
     RUN_TEST (test_ProcessFrame_GoldenFrameFromHostEncoder);
 
     return UNITY_END ();

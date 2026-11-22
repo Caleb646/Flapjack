@@ -41,6 +41,9 @@ typedef struct UartPort_s {
         uint32_t baudRate;
         UartRxCallback_t rxCallback;
         uint8_t irqPriority;
+        /* 16-byte RX FIFO: the ISR may then run up to 16 byte-times late
+         * instead of one before the port overruns. */
+        bool rxFifo;
     } cfg;
 } UartPort_t;
 

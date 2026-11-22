@@ -11,7 +11,18 @@ FJ_DEFINE_SHARED (Rx_t, g_Rx) = {
         .cfg = {
             .id = BRD_GET_UART_ID(RX),
             .baudRate = BRD_GET_BAUD_RATE(RX),
-            .irqPriority = 5,
+            /*
+             * Above configMAX_SYSCALL_INTERRUPT_PRIORITY (5), so neither kernel
+             * critical sections nor the four other priority-5 ISRs can delay it.
+             * CRSF streams a byte every 24 us: with a one-byte buffer at 5 it
+             * overran ~10x a second. Priority 4 and the FIFO each fixed that on
+             * their own (0 overruns either way, measured on the bench); both
+             * stay, for margin. The cost of 4 is that this ISR must never call
+             * a FreeRTOS API - it only assembles bytes, and Rc_Task polls the
+             * result. With the FIFO it could drop back to 5 if it ever needs to.
+             */
+            .irqPriority = 4,
+            .rxFifo      = true,
         },
     },
 };

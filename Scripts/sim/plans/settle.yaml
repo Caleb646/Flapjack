@@ -97,7 +97,7 @@ phases:
       est_yaw_deg:   {tol: 5.0}
 
   - name: pitch_down_9
-    set:    {pitch: 1350}             # -9 deg
+    set:    {pitch: 1650}             # -9 deg
     settle: 4.0
     hold:   12.0
     gates:

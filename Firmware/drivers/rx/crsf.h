@@ -93,6 +93,12 @@ typedef struct __attribute__ ((__packed__)) CrsfChannelsPayload_s {
 } CrsfChannelsPayload_t;
 
 eSTATUS_t Crsf_Init (UartPort_t* pPort);
+/*
+ * Task context on CM7 only - never from an interrupt. It spins while the RX
+ * ISR is mid-publish (crsf.c), so an ISR that preempted that publish and then
+ * called this would wait forever on a writer it is blocking. A CM4 caller
+ * would also need hardware barriers in place of the compiler-only fence.
+ */
 eSTATUS_t Crsf_ProcessFrame (uint32_t outChannels[RC_MAX_CHANNELS]);
 void Crsf_DataReceivedHandler_ (uint8_t const* pData, uint32_t len);
 // Channel value (11-bit CRSF ticks) -> pulse width in us, clamped to

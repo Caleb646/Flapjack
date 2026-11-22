@@ -99,9 +99,9 @@ def resolve_ports(args):
     return args
 
 
-# --- RC channel layout (matches drivers/rx/rx.h) -----------------------------
+# --- RC channel layout (plan.CHANNELS, which mirrors drivers/rx/rx.h) ---------
 RC_MIN, RC_MID, RC_MAX = 1000, 1500, 2000
-CH_ROLL, CH_PITCH, CH_YAW, CH_THROTTLE, CH_AUX1 = 0, 1, 2, 3, 4
+CH_THROTTLE, CH_AUX1 = planlib.CHANNELS["throttle"], planlib.CHANNELS["aux1"]
 
 # --- JSBSim property map (adjust to match the FDM) ---------------------------
 # These are the single place to tweak if the model uses different names.

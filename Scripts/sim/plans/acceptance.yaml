@@ -13,7 +13,8 @@
 #      express that gate.
 #
 # STICK -> COMMAND (tasks/guidance/guidance.c, Firmware/target/cfgs/cfg.h):
-#   roll/pitch  ANGLE, (us-1500)/500 * 30 deg     1700 = +12 deg, 1350 = -9 deg
+#   roll        ANGLE, (us-1500)/500 * 30 deg     1700 = +12 deg
+#   pitch       ANGLE, (1500-us)/500 * 30 deg     1650 = -9 deg (stick forward, nose down)
 #   yaw         RATE,  (us-1500)/500 * 180 deg/s  1650 = +54 deg/s
 #   throttle    CLIMB RATE, (us-1500)/500 * 1 m/s, +/-0.05 deadband
 #               1500 = hold, 1800 = +0.6 m/s, 1200 = -0.6 m/s
@@ -172,7 +173,7 @@ phases:
   # ~2.8x lower plant gain. Holding pitch to roll's tolerance would fail the tune
   # rather than a regression in it. Tighten these once the airframe is measured.
   - name: descend_in_pitch_down
-    set:    {pitch: 1350, throttle: 1200}    # -9 deg nose down, -0.6 m/s
+    set:    {pitch: 1650, throttle: 1200}    # -9 deg nose down, -0.6 m/s
     settle: 4.0
     hold:   12.0
     gates:
@@ -196,7 +197,7 @@ phases:
       est_yaw_deg:   {tol: 5.0}
 
   - name: climb_in_pitch_up
-    set:    {pitch: 1650, throttle: 1800}    # +9 deg nose up, mirror
+    set:    {pitch: 1350, throttle: 1800}    # +9 deg nose up, mirror
     settle: 4.0
     hold:   12.0
     gates:

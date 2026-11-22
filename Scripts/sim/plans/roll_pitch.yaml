@@ -7,5 +7,5 @@ plan:
   - {t: 5.0,  dur: 3.0}
   - {t: 8.0,  dur: 1.5,  set: {roll: 1650}}
   - {t: 9.5,  dur: 3.0,  set: {roll: 1500}}
-  - {t: 12.5, dur: 1.5,  set: {pitch: 1650}}
+  - {t: 12.5, dur: 1.5,  set: {pitch: 1350}}
   - {t: 14.0, dur: 6.0,  set: {pitch: 1500}}

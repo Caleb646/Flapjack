@@ -83,7 +83,9 @@ eSTATUS_t Guidance_Update(void) {
     bool altHold = (nav.valid & NAV_VALID_BARO_ALT) != 0U;
 
     float roll  = ((float)s_Guidance.rc.channels[RC_CHANNEL_IDX_ROLL]     - 1500.0f) / 500.0f;
-    float pitch = ((float)s_Guidance.rc.channels[RC_CHANNEL_IDX_PITCH]    - 1500.0f) / 500.0f;
+    /* Reversed: a radio on default settings sends HIGH for stick forward, which
+     * a pilot means as nose down, i.e. a negative FRD pitch. */
+    float pitch = (1500.0f - (float)s_Guidance.rc.channels[RC_CHANNEL_IDX_PITCH]) / 500.0f;
     float yaw   = ((float)s_Guidance.rc.channels[RC_CHANNEL_IDX_YAW]      - 1500.0f) / 500.0f;
     float throt = ((float)s_Guidance.rc.channels[RC_CHANNEL_IDX_THROTTLE] - 1000.0f) / 1000.0f;
 

@@ -50,9 +50,21 @@ void Uart_IrqHandler (uart_id_t id) {
     Uart_t* pUart = Uart_GetById (id);
     if (pUart) {
         USART_TypeDef* pInstance = pUart->hardware.pInstance;
-        if (__HAL_UART_GET_FLAG (&pUart->handle, UART_FLAG_RXNE) != RESET && pUart->rxCallback) {
+        /* while, not if: with cfg.rxFifo set, several bytes can be waiting. */
+        while (__HAL_UART_GET_FLAG (&pUart->handle, UART_FLAG_RXNE) != RESET && pUart->rxCallback) {
             uint8_t data = (uint8_t)(pInstance->RDR);
             pUart->rxCallback (&data, 1U);
+        }
+        /*
+         * HAL treats an overrun as a blocking error: HAL_UART_IRQHandler clears
+         * RXNEIE and nothing re-enables it, so one late byte used to silence the
+         * port until reboot - on the RC link, a lost link that never recovers.
+         * Clearing it first keeps HAL off that path; the dropped byte costs one
+         * frame its CRC. RDR was just read, so another overrun needs two more
+         * byte-times, far longer than HAL takes to sample the flags.
+         */
+        if (pUart->rxCallback && __HAL_UART_GET_FLAG (&pUart->handle, UART_FLAG_ORE) != RESET) {
+            __HAL_UART_CLEAR_FLAG (&pUart->handle, UART_CLEAR_OREF);
         }
         HAL_UART_IRQHandler (&pUart->handle);
     }
@@ -177,6 +189,12 @@ eSTATUS_t UartPort_Init (UartPort_t* pOutPort) {
             return eSTATUS_FAILURE;
         }
         __HAL_UART_ENABLE (&pUart->handle);
+    }
+
+    /* FIFOEN repurposes RXNEIE as FIFO-not-empty, so the RXNE interrupt
+     * enabled below drives the FIFO with no other change. */
+    if (pOutPort->cfg.rxFifo && HAL_UARTEx_EnableFifoMode (&pUart->handle) != HAL_OK) {
+        return eSTATUS_FAILURE;
     }
 
     if (pOutPort->cfg.rxCallback) {

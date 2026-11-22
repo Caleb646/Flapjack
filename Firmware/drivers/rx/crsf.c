@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "target.h"
 
@@ -10,9 +11,25 @@
 #include "drivers/rx/crsf.h"
 #include "drivers/rx/rx.h"
 
+/*
+ * The ISR assembles into s_CrsfFrame, which only it touches, and publishes each
+ * finished frame into s_LatestFrame under a sequence lock. Rc_Task used to read
+ * the assembly buffer itself, so a poll landing while the next frame arrived
+ * saw the head of one frame on the tail of another and failed its CRC.
+ *
+ * s_LatestSeq is odd while the ISR is writing s_LatestFrame, and each completed
+ * publish bumps it by two. The ISR sits above the FreeRTOS mask (rx.c), so a
+ * critical section would not keep it out; the reader retries instead.
+ */
 FJ_DEFINE_SHARED (CrsfFrame_t, s_CrsfFrame);
+FJ_DEFINE_SHARED (CrsfFrame_t, s_LatestFrame);
+FJ_DEFINE_SHARED (uint32_t volatile, s_LatestSeq)  = 0;
+FJ_DEFINE_SHARED (uint32_t, s_ConsumedSeq)         = 0;
 FJ_DEFINE_SHARED (UartPort_t*, s_pCrsfPort);
-FJ_DEFINE_SHARED (bool volatile, s_IsFrameComplete) = false;
+
+/* Writer and reader are an ISR and a task on the same core, so ordering only
+ * has to survive the compiler: a signal fence, not a hardware barrier. */
+#define CRSF_FENCE() __atomic_signal_fence (__ATOMIC_SEQ_CST)
 
 static uint8_t crc8 (uint8_t const* ptr, uint8_t len);
 
@@ -63,12 +80,24 @@ eSTATUS_t Crsf_Init (UartPort_t* pPort) {
 // source: https://github.com/tbs-fpv/tbs-crsf-spec/blob/main/crsf.md
 eSTATUS_t Crsf_ProcessFrame (uint32_t outChannels[RC_MAX_CHANNELS]) {
 
-    if (!outChannels || !s_IsFrameComplete) {
+    if (!outChannels) {
         return eSTATUS_FAILURE;
     }
 
-    CrsfFrame_t const* pFrame = &s_CrsfFrame;
-    s_IsFrameComplete         = false;
+    CrsfFrame_t frame;
+    uint32_t seq;
+    do {
+        seq = s_LatestSeq;
+        if (seq == s_ConsumedSeq) {
+            return eSTATUS_FAILURE;
+        }
+        CRSF_FENCE ();
+        memcpy (&frame, &s_LatestFrame, sizeof (frame));
+        CRSF_FENCE ();
+    } while (((seq & 1U) != 0U) || (seq != s_LatestSeq));
+    s_ConsumedSeq = seq;
+
+    CrsfFrame_t const* pFrame = &frame;
 
     uint8_t const frameLen = pFrame->header.length;
     if (frameLen < CRSF_MIN_FRAME_LENGTH || frameLen > CRSF_MAX_FRAME_LENGTH) {
@@ -147,9 +176,13 @@ void Crsf_DataReceivedHandler_ (uint8_t const* pData, uint32_t len) {
     s_CrsfFrame.bytes[frameByteIdx++] = *pData;
     if (frameByteIdx >= 3) {
         if (frameByteIdx == s_CrsfFrame.header.length + 2) {
-            frameByteIdx      = 0;
-            usFrameStartTime  = 0;
-            s_IsFrameComplete = true;
+            s_LatestSeq++;
+            CRSF_FENCE ();
+            memcpy (s_LatestFrame.bytes, s_CrsfFrame.bytes, frameByteIdx);
+            CRSF_FENCE ();
+            s_LatestSeq++;
+            frameByteIdx     = 0;
+            usFrameStartTime = 0;
         }
     }
 }
