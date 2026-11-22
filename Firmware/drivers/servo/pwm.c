@@ -1,10 +1,6 @@
 /*
- * PWM servo backend (real hardware). Moved verbatim from the old
- * devices/servos.c so the device layer can select it through ServoDriver_t.
- *
- * NOTE (pre-existing): the board hardware table below only populates SERVO_1.
- * The flapjack_v1 board also defines SERVO_2, but it was never added here; the
- * free-handle fallback leaves it un-pinned. Carried as-is (not in scope).
+ * PWM servo backend (real hardware). Moved from the old devices/servos.c so
+ * the device layer can select it through ServoDriver_t.
  */
 
 #include "target.h"
@@ -35,6 +31,13 @@ FJ_DEFINE_SHARED (ServoHardware_t, g_ServosHardware[BRD_SERVO_COUNT]) = {
       .timerChannel   = BRD_GET_TIMER_CHANNEL (SERVO_1),
       .pPort          = BRD_GET_GPIO_PORT (SERVO_1),
       .pin            = BRD_GET_GPIO_PIN (SERVO_1) },
+#if SERVO_2_ENABLED
+    { .pTimerInstance = BRD_GET_TIMER_INSTANCE (SERVO_2),
+      .timerAf        = BRD_GET_TIMER_AF (SERVO_2),
+      .timerChannel   = BRD_GET_TIMER_CHANNEL (SERVO_2),
+      .pPort          = BRD_GET_GPIO_PORT (SERVO_2),
+      .pin            = BRD_GET_GPIO_PIN (SERVO_2) },
+#endif
 };
 
 FJ_DEFINE_SHARED (TIM_HandleTypeDef, g_ServoTimerHandles[2U]) = { 0 };
@@ -96,6 +99,32 @@ eSTATUS_t ServoDrv_Init (ServoDriver_t* pOutDriver) {
         HAL_GPIO_Init (pHardware->pPort, &gpioInit);
         GPIO_SetLow (pHardware->pPort, pHardware->pin);
 
+        /*
+         * Servos on the same timer share its handle, so only the first one
+         * initializes it. This must come before HAL_TIM_PWM_ConfigChannel:
+         * that writes through pTimerHandle->Instance, and with the handle
+         * still zeroed it wrote to address 0 (CM7 ITCM, so no fault) and left
+         * the channel in RESET, which HAL_TIM_PWM_Start then refused.
+         */
+        if (!pTimerHandle->Instance) {
+            pTimerHandle->Instance               = pHardware->pTimerInstance;
+            pTimerHandle->Init.Prescaler         = 64 - 1;
+            pTimerHandle->Init.CounterMode       = TIM_COUNTERMODE_UP;
+            pTimerHandle->Init.Period            = 20000 - 1; // 20 ms period or 50 Hz
+            pTimerHandle->Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
+            pTimerHandle->Init.RepetitionCounter = 0;
+            pTimerHandle->Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+            // deinit first
+            if (HAL_TIM_PWM_DeInit (pTimerHandle) != HAL_OK) {
+                LOG_ERROR ("Failed to deinit Servo timer");
+                return eSTATUS_FAILURE;
+            }
+            if (HAL_TIM_PWM_Init (pTimerHandle) != HAL_OK) {
+                LOG_ERROR ("Failed to initialize Servo timer");
+                return eSTATUS_FAILURE;
+            }
+        }
+
         TIM_OC_InitTypeDef sConfig = { 0 };
         sConfig.OCMode             = TIM_OCMODE_PWM1;
         sConfig.OCPolarity         = TIM_OCPOLARITY_HIGH;
@@ -106,28 +135,6 @@ eSTATUS_t ServoDrv_Init (ServoDriver_t* pOutDriver) {
         sConfig.OCNIdleState       = TIM_OCNIDLESTATE_RESET;
         if (HAL_TIM_PWM_ConfigChannel (pTimerHandle, &sConfig, pHardware->timerChannel) != HAL_OK) {
             LOG_ERROR ("Failed to configure PWM channel");
-            return eSTATUS_FAILURE;
-        }
-
-        // NOTE: If instance is set the timer handle has already been initialized
-        if (!pTimerHandle->Instance) {
-            continue;
-        }
-
-        pTimerHandle->Instance               = pHardware->pTimerInstance;
-        pTimerHandle->Init.Prescaler         = 64 - 1;
-        pTimerHandle->Init.CounterMode       = TIM_COUNTERMODE_UP;
-        pTimerHandle->Init.Period            = 20000 - 1; // 20 ms period or 50 Hz
-        pTimerHandle->Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
-        pTimerHandle->Init.RepetitionCounter = 0;
-        pTimerHandle->Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
-        // deinit first
-        if (HAL_TIM_PWM_DeInit (pTimerHandle) != HAL_OK) {
-            LOG_ERROR ("Failed to deinit Servo timer");
-            return eSTATUS_FAILURE;
-        }
-        if (HAL_TIM_PWM_Init (pTimerHandle) != HAL_OK) {
-            LOG_ERROR ("Failed to initialize Servo timer");
             return eSTATUS_FAILURE;
         }
     }
