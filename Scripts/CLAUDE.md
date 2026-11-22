@@ -109,7 +109,8 @@ Build artifacts land in `Build/<board>/<config>/` as `cm7.elf` and `cm4.elf`. CM
   stick positions, which the bridge folds into the CRSF it is already sending. Arming is not
   among them - that stays with the bridge's own gesture.
 - **`utils.py`** — two helpers used by other scripts: `is_installed(binary)` (shutil.which) and `run_command(cmd, ...)` (subprocess, exits on failure).
-- **`stm32h747_dual_core.cfg`** — OpenOCD config for the dual-core STM32H747. Used directly by `flash`. Enables `DUAL_BANK` and `DUAL_CORE`, resets via `connect_assert_srst`, flashes both CM7 and CM4 banks.
+- **`stm32h747_dual_core.cfg`** — OpenOCD config for the dual-core STM32H747, used by `flash -b flapjack-v1`. Enables `DUAL_BANK` and `DUAL_CORE`, resets with the stock SYSRESETREQ (no NRST: `srst_only` times out on the H7 with the HLA ST-Link driver), flashes both CM7 and CM4 banks.
+- **`nucleo_h747zi.cfg`** — used by `flash -b nucleo-h747zi`. Sources `stm32h747_dual_core.cfg` and adds `reset_config srst_only srst_nogate connect_assert_srst` (connect under reset).
 
 ### HIL test flow
 

@@ -146,8 +146,10 @@ if PLATFORM == "win32":
 
 # ── OpenOCD flash constants ────────────────────────────────────────────────────
 
-_IFACE_CFG     = "interface/stlink.cfg"
-_TARGET_DUAL   = "Scripts/stm32h747_dual_core.cfg"
+_TARGET_CFG    = {
+    "flapjack-v1":   "Scripts/stm32h747_dual_core.cfg",
+    "nucleo-h747zi": "Scripts/nucleo_h747zi.cfg",
+}
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -479,18 +481,21 @@ def _flash(board: str, config: str, run_tests: bool, openocd: str) -> None:
             print(f"ERROR: {elf} not found.")
             print(f"       Build it first: python Scripts/board.py build -b {board}")
             sys.exit(1)
-    target = _TARGET_DUAL
+    target = _TARGET_CFG[board]
     cmds   = [
         "init",
         "reset init",
         "reset halt",
-        f"flash write_image erase {m7}",
-        f"flash write_image erase {m4}",
+        # as_posix: OpenOCD parses these as Tcl, which eats Windows backslashes.
+        f"flash write_image erase {m7.as_posix()}",
+        f"flash write_image erase {m4.as_posix()}",
         "reset run",
         "exit",
     ]
 
-    cmd = ["sudo", openocd, "-f", _IFACE_CFG, "-f", target]
+    # The target cfg sources interface/stlink.cfg itself; passing it again makes
+    # OpenOCD 0.12 fail with "already specified hl_layout stlink".
+    cmd = ["sudo", openocd, "-f", target]
     if PLATFORM == "win32":
         cmd = cmd[1:]  # Remove "sudo" on Windows
     for c in cmds:
