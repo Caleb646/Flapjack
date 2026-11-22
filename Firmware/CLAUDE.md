@@ -80,7 +80,7 @@ bridge, which asserts that what it sent is what the firmware decoded — see "Th
 
 ### The GPS path
 
-A receiver drives the GPS UART (`GPS_UART`, 115200 baud 8N1) with NMEA; the byte-wise ISR in
+A receiver drives the GPS UART (`GPS_UART`, 9600 baud 8N1) with NMEA; the byte-wise ISR in
 `drivers/gps/gps.c` assembles sentences and raises a `DataReadySignal_t` as each one terminates.
 `Gps_Task` wakes on that, parses with `minmea`, and publishes `umsg_sensors_gps_t` on any sentence
 that carried a position. Same wait as the IMU, mag and baro tasks — the source is a UART interrupt
@@ -92,11 +92,17 @@ with no lock cannot be mistaken for one sitting at 0,0. This matters more than i
 parser used to run and then discard every field while returning `SUCCESS`, so a fix and no fix
 were indistinguishable forever.
 
-**The driver holds exactly one assembled sentence.** A second landing before `Gps_Task` consumes
-the first overwrites it. Waking on the signal shrinks that window to the task's scheduling latency,
-but it does not close it, so the SIL bridge still spaces the two halves of a fix half a period
-apart. Renode does not pace bytes at the baud rate, so a back-to-back pair would otherwise land
-together.
+**The driver holds exactly one assembled sentence.** The ISR assembles into its own buffer and
+publishes finished sentences under a sequence lock, as `drivers/rx/crsf.c` does, so a parse never
+sees a torn sentence. A second landing before `Gps_Task` consumes the first still replaces it.
+Waking on the signal shrinks that window to the task's scheduling latency, but it does not close
+it, so the SIL bridge still spaces the two halves of a fix half a period apart. Renode does not
+pace bytes at the baud rate, so a back-to-back pair would otherwise land together.
+
+**The driver configures the BN-880 (u-blox M8) to 5 Hz, RMC and GGA only.** The setting lives in the
+receiver's RAM. The driver resends it, at most every 5 s, whenever a sentence type it disabled
+(GLL, GSA, GSV, VTG) arrives, which covers a slow receiver boot and a brownout. The SIL sends only
+RMC and GGA, so it never triggers this.
 
 As with RC, the SIL feeds **real NMEA on the real UART** rather than injecting a decoded fix, so
 the emulated run exercises the assembler, the checksum and minmea. `Tests/UnitTest/test_gps.c`

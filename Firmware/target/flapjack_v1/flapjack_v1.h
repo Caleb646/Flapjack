@@ -169,7 +169,7 @@
 #define GPS_ENABLED            1U
 // #define GPS_UART                 UART_3
 #define GPS_UART                    UART_2
-#define GPS_BAUD_RATE          115200U
+#define GPS_BAUD_RATE          9600U
 
 
 #endif

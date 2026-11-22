@@ -25,7 +25,7 @@
  * dead antenna looking like a good fix indefinitely.
  *
  * Waking per sentence also closes the window the old 100 Hz poll left open: the
- * driver holds exactly ONE assembled sentence (s_SentenceBuffer in
+ * driver holds exactly ONE assembled sentence (s_LatestSentence in
  * drivers/gps/gps.c), and a second landing before this task consumes the first
  * overwrites it. That window is now this task's scheduling latency instead of a
  * full poll period.

@@ -1298,7 +1298,7 @@ def main(argv=None):
                          "--rc-port this is the only GPS path: the sim link carries no "
                          "GPS frame, so the SIL exercises the real byte assembler and "
                          "minmea.")
-    ap.add_argument("--gps-baud", type=int, default=115200,
+    ap.add_argument("--gps-baud", type=int, default=9600,
                     help="GPS baud (matches GPS_BAUD_RATE); ignored for a socket:// URL")
     ap.add_argument("--gps-stop", type=float, default=None, metavar="SECONDS",
                     help="stop sending NMEA this many seconds in, imitating a dead "

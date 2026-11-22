@@ -155,7 +155,7 @@ the "no receiver" and "no fix" paths stay testable. Useful flags:
 | `--baro-port` | `socket://localhost:4012` | socket carrying Pa/°C to the emulated BMP390. **The only baro path** |
 | `--baro-rate` | 50 | barometer push rate (Hz), matching the ODR `bmp390.c` programs; also the FC's baro interrupt rate. 0 disables baro |
 | `--gps-port` | `socket://localhost:4002` | port carrying NMEA to the FC's GPS UART. **The only GPS path** |
-| `--gps-baud` | 115200 | matches `GPS_BAUD_RATE`; ignored for a `socket://` URL |
+| `--gps-baud` | 9600 | matches `GPS_BAUD_RATE`; ignored for a `socket://` URL. On a real port, 10 Hz GGA + RMC exceeds 9600 baud, so pass `--gps-rate 5` or lower |
 | `--gps-rate` | 10 | fix rate (Hz). GGA and RMC go out half a period apart — the driver holds one sentence, so a burst would lose the first |
 | `--plan` | (none) | YAML flight plan to fly once armed |
 | `--rc-stop` | (none) | stop sending CRSF after N seconds, imitating a receiver failsafe |

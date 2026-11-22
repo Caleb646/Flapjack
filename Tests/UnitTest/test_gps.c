@@ -44,10 +44,14 @@ eSTATUS_t UartPort_Init (UartPort_t* pOutPort) {
     return eSTATUS_SUCCESS;
 }
 
+static uint8_t s_TxBytes[128];
+static uint32_t s_TxLen = 0;
+
 eSTATUS_t UartPort_Write (UartPort_t* pPort, uint8_t const* pData, uint32_t size) {
     (void)pPort;
-    (void)pData;
-    (void)size;
+    TEST_ASSERT_LESS_OR_EQUAL_UINT32 (sizeof (s_TxBytes), s_TxLen + size);
+    memcpy (&s_TxBytes[s_TxLen], pData, size);
+    s_TxLen += size;
     return eSTATUS_SUCCESS;
 }
 
@@ -59,6 +63,10 @@ bool Gps_IsDataReady (void* ctx);
  * into it on the board; here it is written directly, for the same reason the
  * assembler is fed directly rather than through a UART. */
 extern DataReadySignal_t s_Signal;
+extern UartPort_t* s_pGpsPort;
+extern bool s_HasSentConfig;
+
+static UartPort_t s_TestPort;
 
 /* --- golden sentences, from `python -m sim.nmea` --------------------------- */
 
@@ -74,6 +82,7 @@ extern DataReadySignal_t s_Signal;
 #define COORD_EPS   1e-7
 
 void setUp (void) {
+    s_pGpsPort = &s_TestPort;
     /* Drain any partial sentence a previous test left in the assembler. */
     uint8_t const nl = '\n';
     Gps_DataReceivedHandler (&nl, 1U);
@@ -82,6 +91,8 @@ void setUp (void) {
     /* No signal by default: that is the polling configuration, which every
      * other test in this file exercises. */
     memset (&s_Signal, 0, sizeof (s_Signal));
+    s_HasSentConfig = false;
+    s_TxLen         = 0;
 }
 
 void tearDown (void) {
@@ -162,6 +173,41 @@ static void test_Rmc_PopulatesSpeedAndCourse (void) {
      * 1.94x error in every speed the estimator would ever see. */
     TEST_ASSERT_FLOAT_WITHIN (0.01f, 5.0f, out.speed);
     TEST_ASSERT_FLOAT_WITHIN (0.01f, 42.5f, out.course);
+}
+
+static void test_Rmc_EmptyCourse_KeepsLastCourse (void) {
+    GpsData_t out = { 0 };
+    Feed (GOLDEN_RMC);
+    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, Gps_Read (NULL, false, &out));
+
+    /* A stationary u-blox M8 sends an empty course. Passed on as NaN it reaches
+     * nav's horizontal filter, whose states then stay NaN until reboot. */
+    Feed ("$GNRMC,123519.00,A,3737.13400,N,12222.50000,W,0.012,,230625,,,A*70\r\n");
+    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, Gps_Read (NULL, false, &out));
+    TEST_ASSERT_FLOAT_WITHIN (0.01f, 42.5f, out.course);
+    TEST_ASSERT_FLOAT_WITHIN (0.001f, 0.012f * 0.514444f, out.speed);
+}
+
+static void test_Rmc_EmptySpeed_KeepsLastSpeed (void) {
+    GpsData_t out = { 0 };
+    Feed (GOLDEN_RMC);
+    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, Gps_Read (NULL, false, &out));
+
+    Feed ("$GNRMC,123519.00,A,3737.13400,N,12222.50000,W,,,230625,,,A*5D\r\n");
+    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, Gps_Read (NULL, false, &out));
+    TEST_ASSERT_FLOAT_WITHIN (0.01f, 5.0f, out.speed);
+    TEST_ASSERT_FLOAT_WITHIN (0.01f, 42.5f, out.course);
+}
+
+static void test_NextSentenceArriving_DoesNotCorruptLatest (void) {
+    GpsData_t out = { 0 };
+    /* The receiver sends sentences back to back, so the head of the next one
+     * can land before the task has read this one. */
+    Feed (GOLDEN_GGA);
+    Feed ("$GPRMC,999999.00,A,0000");
+    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, Gps_Read (NULL, false, &out));
+    AssertClose (EXPECT_LAT, out.latitude, COORD_EPS, "latitude with next sentence in flight");
+    TEST_ASSERT_EQUAL_UINT8 (9U, out.satellitesInUse);
 }
 
 static void test_VoidRmc_IsNotReportedAsAFix (void) {
@@ -252,6 +298,100 @@ static void test_NoSignal_StillAssembles (void) {
     TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, Gps_Read (NULL, false, &out));
 }
 
+/* --- receiver configuration ------------------------------------------------- */
+
+/* Walks s_TxBytes as UBX frames, checking sync and checksum, and returns the
+ * rate each NMEA sentence was set to (-1 if no frame mentioned it). */
+static void AssertConfigFrames (int outRates[6], uint32_t* pOutMeasRateMs) {
+    for (uint32_t i = 0; i < 6U; ++i) {
+        outRates[i] = -1;
+    }
+    *pOutMeasRateMs = 0;
+
+    uint32_t offset = 0;
+    while (offset < s_TxLen) {
+        uint8_t const* pFrame = &s_TxBytes[offset];
+        TEST_ASSERT_LESS_OR_EQUAL_UINT32 (s_TxLen, offset + 8U);
+        TEST_ASSERT_EQUAL_HEX8 (0xB5, pFrame[0]);
+        TEST_ASSERT_EQUAL_HEX8 (0x62, pFrame[1]);
+        uint32_t const payloadLen = (uint32_t)pFrame[4] | ((uint32_t)pFrame[5] << 8);
+        uint32_t const frameLen   = payloadLen + 8U;
+        TEST_ASSERT_LESS_OR_EQUAL_UINT32 (s_TxLen, offset + frameLen);
+
+        uint8_t ckA = 0;
+        uint8_t ckB = 0;
+        for (uint32_t j = 2; j < frameLen - 2U; ++j) {
+            ckA = (uint8_t)(ckA + pFrame[j]);
+            ckB = (uint8_t)(ckB + ckA);
+        }
+        TEST_ASSERT_EQUAL_HEX8 (ckA, pFrame[frameLen - 2U]);
+        TEST_ASSERT_EQUAL_HEX8 (ckB, pFrame[frameLen - 1U]);
+
+        TEST_ASSERT_EQUAL_HEX8 (0x06, pFrame[2]);
+        if (pFrame[3] == 0x08) {
+            TEST_ASSERT_EQUAL_UINT32 (6U, payloadLen);
+            *pOutMeasRateMs = (uint32_t)pFrame[6] | ((uint32_t)pFrame[7] << 8);
+        } else {
+            TEST_ASSERT_EQUAL_HEX8 (0x01, pFrame[3]);
+            TEST_ASSERT_EQUAL_UINT32 (3U, payloadLen);
+            TEST_ASSERT_EQUAL_HEX8 (0xF0, pFrame[6]);
+            TEST_ASSERT_LESS_THAN_UINT8 (6U, pFrame[7]);
+            outRates[pFrame[7]] = pFrame[8];
+        }
+        offset += frameLen;
+    }
+}
+
+static void test_DefaultSentence_SendsConfig (void) {
+    static char const* const defaults[] = {
+        "$GNGLL,3737.13400,N,12222.50000,W,123519.00,A,A*6A\r\n",
+        "$GNGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*2E\r\n",
+        "$GPGSV,1,1,01,03,,,07*7C\r\n",
+        "$GNVTG,,T,,M,0.012,N,0.022,K,A*3E\r\n",
+    };
+
+    for (uint32_t i = 0; i < (sizeof (defaults) / sizeof (defaults[0])); ++i) {
+        GpsData_t out = { 0 };
+        s_HasSentConfig = false;
+        s_TxLen         = 0;
+        Feed (defaults[i]);
+        (void)Gps_Read (NULL, false, &out);
+
+        int rates[6];
+        uint32_t measRateMs;
+        AssertConfigFrames (rates, &measRateMs);
+        TEST_ASSERT_EQUAL_UINT32 (200U, measRateMs);
+        TEST_ASSERT_EQUAL_INT (1, rates[0]); // GGA
+        TEST_ASSERT_EQUAL_INT (0, rates[1]); // GLL
+        TEST_ASSERT_EQUAL_INT (0, rates[2]); // GSA
+        TEST_ASSERT_EQUAL_INT (0, rates[3]); // GSV
+        TEST_ASSERT_EQUAL_INT (1, rates[4]); // RMC
+        TEST_ASSERT_EQUAL_INT (0, rates[5]); // VTG
+    }
+}
+
+static void test_ConfigIsNotRepeatedWithinRetryPeriod (void) {
+    GpsData_t out = { 0 };
+    Feed ("$GPGSV,1,1,01,03,,,07*7C\r\n");
+    (void)Gps_Read (NULL, false, &out);
+    uint32_t const sent = s_TxLen;
+    TEST_ASSERT_GREATER_THAN_UINT32 (0U, sent);
+
+    Feed ("$GNVTG,,T,,M,0.012,N,0.022,K,A*3E\r\n");
+    (void)Gps_Read (NULL, false, &out);
+    TEST_ASSERT_EQUAL_UINT32 (sent, s_TxLen);
+}
+
+static void test_ConfiguredOutput_SendsNothing (void) {
+    /* RMC and GGA are all a configured receiver and the SIL ever send. */
+    GpsData_t out = { 0 };
+    Feed (GOLDEN_RMC);
+    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, Gps_Read (NULL, false, &out));
+    Feed (GOLDEN_GGA);
+    TEST_ASSERT_EQUAL (eSTATUS_SUCCESS, Gps_Read (NULL, false, &out));
+    TEST_ASSERT_EQUAL_UINT32 (0U, s_TxLen);
+}
+
 static void test_NullArgs_AreRejected (void) {
     GpsData_t out = { 0 };
     TEST_ASSERT_EQUAL (eSTATUS_NULL_ARG, Gps_Read (NULL, false, NULL));
@@ -266,6 +406,9 @@ int main (void) {
     RUN_TEST (test_ByteAtATime_MatchesBulkDelivery);
     RUN_TEST (test_Gga_PopulatesOutData);
     RUN_TEST (test_Rmc_PopulatesSpeedAndCourse);
+    RUN_TEST (test_Rmc_EmptyCourse_KeepsLastCourse);
+    RUN_TEST (test_Rmc_EmptySpeed_KeepsLastSpeed);
+    RUN_TEST (test_NextSentenceArriving_DoesNotCorruptLatest);
     RUN_TEST (test_VoidRmc_IsNotReportedAsAFix);
     RUN_TEST (test_GgaNoFix_IsNotReportedAsAFix);
     RUN_TEST (test_NonPositionalSentence_DoesNotRepublish);
@@ -274,6 +417,9 @@ int main (void) {
     RUN_TEST (test_PartialSentence_RaisesNoSignal);
     RUN_TEST (test_ByteAtATime_RaisesOneSignalPerSentence);
     RUN_TEST (test_NoSignal_StillAssembles);
+    RUN_TEST (test_DefaultSentence_SendsConfig);
+    RUN_TEST (test_ConfigIsNotRepeatedWithinRetryPeriod);
+    RUN_TEST (test_ConfiguredOutput_SendsNothing);
     RUN_TEST (test_NullArgs_AreRejected);
     return UNITY_END ();
 }
