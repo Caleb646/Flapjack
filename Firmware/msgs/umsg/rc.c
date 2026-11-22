@@ -27,3 +27,7 @@ uint8_t umsg_rc_input_receive(umsg_sub_handle_t queue, umsg_rc_input_t* data, ui
 {
     return umsg_receive(queue, data, timeout);
 }
+uint32_t umsg_rc_input_count(void)
+{
+    return msg_rc_input.counter;
+}

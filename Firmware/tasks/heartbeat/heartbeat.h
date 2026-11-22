@@ -1,0 +1,6 @@
+#ifndef TASKS_HEARTBEAT_HEARTBEAT_H
+#define TASKS_HEARTBEAT_HEARTBEAT_H
+
+void Heartbeat_Task (void* args);
+
+#endif // TASKS_HEARTBEAT_HEARTBEAT_H

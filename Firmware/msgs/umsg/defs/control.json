@@ -1,0 +1,32 @@
+{
+  "enums": [
+    {
+      "name": "init",
+      "enumerators": [
+        "CONTROL_INIT_MOTORS = (1 << 0)",
+        "CONTROL_INIT_SERVOS = (1 << 1)",
+        "CONTROL_INIT_MIXER  = (1 << 2)",
+        "CONTROL_INIT_PID    = (1 << 3)"
+      ]
+    },
+    {
+      "name": "motor_state",
+      "enumerators": [
+        "CONTROL_MOTORS_DISARMED",
+        "CONTROL_MOTORS_ARMING",
+        "CONTROL_MOTORS_ARMED"
+      ]
+    }
+  ],
+  "msgs": [
+    {
+      "name": "status",
+      "fields": [
+        {"name": "init_ok",      "type": "uint8"},
+        {"name": "motor_state",  "type": "motor_state"},
+        {"name": "motor_writes", "type": "uint32"},
+        {"name": "servo_writes", "type": "uint32"}
+      ]
+    }
+  ]
+}

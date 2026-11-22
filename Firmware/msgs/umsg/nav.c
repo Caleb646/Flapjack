@@ -27,3 +27,7 @@ uint8_t umsg_nav_state_receive(umsg_sub_handle_t queue, umsg_nav_state_t* data, 
 {
     return umsg_receive(queue, data, timeout);
 }
+uint32_t umsg_nav_state_count(void)
+{
+    return msg_nav_state.counter;
+}

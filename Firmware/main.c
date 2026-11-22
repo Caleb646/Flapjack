@@ -28,6 +28,7 @@
 #include "tasks/shell/shell.h"
 #include "tasks/serial_link/serial_link.h"
 #include "tasks/sim/sim_telemetry.h"
+#include "tasks/heartbeat/heartbeat.h"
 
 /*
  * Stack-overflow trap (configCHECK_FOR_STACK_OVERFLOW == 2).
@@ -78,6 +79,8 @@ FJ_DEFINE_SHARED (bool volatile, s_IsCM4Ready)     = false;
  * time-slices with them instead, and the link degrades by dropping text.
  */
 #define TASK_PRIORITY_SERIAL_TX 1U
+/* Lowest too: a late beat costs nothing, and it must never preempt real work. */
+#define TASK_PRIORITY_HEARTBEAT 1U
 
 /*
  * Stack depths are in WORDS (x4 for bytes) and are sized from measurement, not
@@ -116,6 +119,7 @@ FJ_DEFINE_SHARED (bool volatile, s_IsCM4Ready)     = false;
 #define STACK_SERIAL_RX       512U   /* 285 used - the shell decode and its logs land here now */
 #define STACK_SERIAL_TX       256U   /* 51 used single-core; must never log (see serial_link.c) */
 #define STACK_SIMTLM          256U
+#define STACK_HEARTBEAT       384U   /* unmeasured; one 22-argument log call per beat */
 
 /*
  * Every task below is required for flight, so a failed creation must not be
@@ -201,6 +205,7 @@ int main (void) {
     CREATE_TASK (Mission_Task,      "mission",  STACK_MISSION,   TASK_PRIORITY_MISSION);
     CREATE_TASK (SerialLink_RxTask, "slrx",     STACK_SERIAL_RX, TASK_PRIORITY_SERIAL_RX);
     CREATE_TASK (SerialLink_TxTask, "sltx",     STACK_SERIAL_TX, TASK_PRIORITY_SERIAL_TX);
+    CREATE_TASK (Heartbeat_Task,    "hb",       STACK_HEARTBEAT, TASK_PRIORITY_HEARTBEAT);
 #ifdef SIM_HIL
     CREATE_TASK (SimTelemetry_Task, "simtlm",   STACK_SIMTLM,    TASK_PRIORITY_SIMTLM);
 #endif

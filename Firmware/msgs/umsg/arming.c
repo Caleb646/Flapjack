@@ -27,3 +27,7 @@ uint8_t umsg_arming_request_receive(umsg_sub_handle_t queue, umsg_arming_request
 {
     return umsg_receive(queue, data, timeout);
 }
+uint32_t umsg_arming_request_count(void)
+{
+    return msg_arming_request.counter;
+}

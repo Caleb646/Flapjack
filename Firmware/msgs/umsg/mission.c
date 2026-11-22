@@ -27,3 +27,7 @@ uint8_t umsg_mission_state_receive(umsg_sub_handle_t queue, umsg_mission_state_t
 {
     return umsg_receive(queue, data, timeout);
 }
+uint32_t umsg_mission_state_count(void)
+{
+    return msg_mission_state.counter;
+}

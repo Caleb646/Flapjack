@@ -27,3 +27,7 @@ uint8_t umsg_guidance_setpoints_receive(umsg_sub_handle_t queue, umsg_guidance_s
 {
     return umsg_receive(queue, data, timeout);
 }
+uint32_t umsg_guidance_setpoints_count(void)
+{
+    return msg_guidance_setpoints.counter;
+}

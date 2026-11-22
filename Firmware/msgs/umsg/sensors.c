@@ -31,6 +31,10 @@ uint8_t umsg_sensors_imu_receive(umsg_sub_handle_t queue, umsg_sensors_imu_t* da
 {
     return umsg_receive(queue, data, timeout);
 }
+uint32_t umsg_sensors_imu_count(void)
+{
+    return msg_sensors_imu.counter;
+}
 // sensors_imu_status
 umsg_sub_handle_t umsg_sensors_imu_status_subscribe(uint32_t prescaler, uint8_t length)
 {
@@ -51,6 +55,10 @@ void umsg_sensors_imu_status_publish_ch(umsg_sensors_imu_status_t* data, uint8_t
 uint8_t umsg_sensors_imu_status_receive(umsg_sub_handle_t queue, umsg_sensors_imu_status_t* data, uint32_t timeout)
 {
     return umsg_receive(queue, data, timeout);
+}
+uint32_t umsg_sensors_imu_status_count(void)
+{
+    return msg_sensors_imu_status.counter;
 }
 // sensors_mag
 umsg_sub_handle_t umsg_sensors_mag_subscribe(uint32_t prescaler, uint8_t length)
@@ -73,6 +81,10 @@ uint8_t umsg_sensors_mag_receive(umsg_sub_handle_t queue, umsg_sensors_mag_t* da
 {
     return umsg_receive(queue, data, timeout);
 }
+uint32_t umsg_sensors_mag_count(void)
+{
+    return msg_sensors_mag.counter;
+}
 // sensors_baro
 umsg_sub_handle_t umsg_sensors_baro_subscribe(uint32_t prescaler, uint8_t length)
 {
@@ -94,6 +106,10 @@ uint8_t umsg_sensors_baro_receive(umsg_sub_handle_t queue, umsg_sensors_baro_t* 
 {
     return umsg_receive(queue, data, timeout);
 }
+uint32_t umsg_sensors_baro_count(void)
+{
+    return msg_sensors_baro.counter;
+}
 // sensors_gps
 umsg_sub_handle_t umsg_sensors_gps_subscribe(uint32_t prescaler, uint8_t length)
 {
@@ -114,4 +130,8 @@ void umsg_sensors_gps_publish_ch(umsg_sensors_gps_t* data, uint8_t channel)
 uint8_t umsg_sensors_gps_receive(umsg_sub_handle_t queue, umsg_sensors_gps_t* data, uint32_t timeout)
 {
     return umsg_receive(queue, data, timeout);
+}
+uint32_t umsg_sensors_gps_count(void)
+{
+    return msg_sensors_gps.counter;
 }

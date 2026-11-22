@@ -27,3 +27,7 @@ uint8_t umsg_tune_pid_receive(umsg_sub_handle_t queue, umsg_tune_pid_t* data, ui
 {
     return umsg_receive(queue, data, timeout);
 }
+uint32_t umsg_tune_pid_count(void)
+{
+    return msg_tune_pid.counter;
+}

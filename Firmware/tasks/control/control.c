@@ -7,6 +7,7 @@
 #include "devices/motors.h"
 #include "devices/servos.h"
 
+#include "umsg_control.h"
 #include "umsg_guidance.h"
 #include "umsg_mission.h"
 #include "umsg_nav.h"
@@ -63,6 +64,10 @@ typedef struct {
     umsg_nav_state_t     nav;
     umsg_mission_state_t mission;
     umsg_guidance_setpoints_t sp;
+    /* Write counts are SUCCESSFUL writes, as running totals: an armed vehicle
+     * whose motor count stops climbing is not driving its ESCs, whatever the
+     * reason - including a failed servo write returning before the motor one. */
+    umsg_control_status_t status;
 } Control_t;
 
 static Control_t s_Control;
@@ -97,22 +102,26 @@ eSTATUS_t Control_Init(void) {
             status = eSTATUS_FAILURE;
             break;
         }
+        s_Control.status.init_ok |= CONTROL_INIT_MOTORS;
 
         if (STATUS_FAIL (Servos_Init ())) {
             LOG_ERROR ("Failed to initialize Servos");
             status = eSTATUS_FAILURE;
             break;
         }
+        s_Control.status.init_ok |= CONTROL_INIT_SERVOS;
         if (STATUS_FAIL (Mixer_Init ())) {
             LOG_ERROR ("Failed to initialize mixer");
             status = eSTATUS_FAILURE;
             break;
         }
+        s_Control.status.init_ok |= CONTROL_INIT_MIXER;
         if (STATUS_FAIL (Pid_Init (&s_pid))) {
             LOG_ERROR ("Failed to initialize pid");
             status = eSTATUS_FAILURE;
             break;
         }
+        s_Control.status.init_ok |= CONTROL_INIT_PID;
     } while(0);
 
     return status;
@@ -145,6 +154,9 @@ eSTATUS_t Control_Update(void) {
         Motors_Disarm(&s_motors);
     }
     s_prevArmed = armed;
+    s_Control.status.motor_state = s_motors.armed ? CONTROL_MOTORS_ARMED
+                                 : armed          ? CONTROL_MOTORS_ARMING
+                                                  : CONTROL_MOTORS_DISARMED;
 
     umsg_tune_pid_t tune;
     if (umsg_tune_pid_receive(s_Control.tune_sub, &tune, 0) && tune.axis < AXIS_IDX_COUNT) {
@@ -313,12 +325,14 @@ eSTATUS_t Control_Update(void) {
         LOG_ERROR("Control: failed to write servo outputs");
         return status;
     }
+    s_Control.status.servo_writes++;
 
     status = Motors_Write(&s_motors, g_Mixer.motorOutputs);
     if (STATUS_FAIL(status)) {
         LOG_ERROR("Control: failed to write motor outputs");
         return status;
     }
+    s_Control.status.motor_writes++;
 
     return eSTATUS_SUCCESS;
 }
@@ -329,6 +343,9 @@ void Control_Task(void* args) {
     TickType_t lastWake = xTaskGetTickCount();
     while (1) {
         Control_Update();
+        /* Here rather than inside Control_Update, which returns early on most
+         * paths; published every iteration so its count is the loop rate. */
+        umsg_control_status_publish (&s_Control.status);
         xTaskDelayUntil (&lastWake, CONTROL_PERIOD_TICKS);
     }
 }
