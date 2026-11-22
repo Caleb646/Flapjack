@@ -797,6 +797,10 @@ class FlightControlTab(QtWidgets.QWidget):
         self.parent_viewer.send_arm_command(arm=False)
         self.last_command_label.setText("Last Command: DISARM")
 
+    def send_crash_report_command(self):
+        self.parent_viewer.send_crash_report_command()
+        self.last_command_label.setText("Last Command: CRASH REPORT")
+
 class ConfigurationTab(QtWidgets.QWidget):
     def __init__(self, parent_viewer):
         super().__init__()
