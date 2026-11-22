@@ -35,7 +35,8 @@ the device and driver layers it uses sit in `devices/` and `drivers/`.
 | **Navigation** | `tasks/nav/nav.c` | `Nav_Init()` | `Nav_Update()` | `umsg_sensors_imu_t` | `umsg_sensors_mag_t`, `umsg_sensors_baro_t`, `umsg_sensors_gps_t` | `umsg_nav_state_t` |
 | **Mission** | `tasks/mission/mission.c` | `Mission_Init()` | `Mission_Update()` | `umsg_rc_input_t` (20 ms timeout) | `umsg_arming_request_t`, `umsg_nav_state_t` | `umsg_mission_state_t` |
 | **Guidance** | `tasks/guidance/guidance.c` | `Guidance_Init()` | `Guidance_Update()` | `umsg_nav_state_t` | `umsg_mission_state_t`, `umsg_rc_input_t` | `umsg_guidance_setpoints_t` |
-| **Control** | `tasks/control/control.c` (mixer `tasks/control/mixer.c`) | `Control_Init()` | `Control_Update()` | `umsg_guidance_setpoints_t` | `umsg_nav_state_t`, `umsg_mission_state_t`, `umsg_tune_pid_t` | motors/servos (direct) |
+| **Control** | `tasks/control/control.c` (mixer `tasks/control/mixer.c`) | `Control_Init()` | `Control_Update()` | nothing - self-paced at 500 Hz (`xTaskDelayUntil`) | `umsg_guidance_setpoints_t`, `umsg_nav_state_t`, `umsg_mission_state_t`, `umsg_tune_pid_t` | motors/servos (direct), `umsg_control_status_t` (every loop) |
+| **Heartbeat** (diagnostic) | `tasks/heartbeat/heartbeat.c` | - | - (inline loop) | nothing - 5 s `xTaskDelayUntil`, lowest priority | `umsg_nav_state_t`, `umsg_mission_state_t`, `umsg_sensors_gps_t`, `umsg_rc_input_t`, `umsg_control_status_t`; reads every topic's `umsg_<topic>_count()` | a `LOG_INFO` line only |
 
 Tasks are created and registered in `Firmware/main.c`.
 
@@ -166,6 +167,51 @@ Measured against the hover plan the estimate tracks truth to 0.01 m and 0.05 m/s
 Adding those fields took `Telemetry_size` to 107 bytes, which is what raised
 `SERIAL_LINK_MAX_PAYLOAD` from 96 to 128.
 
+### Reading the heartbeat
+
+The firmware logs only on events, so once it has booted the debug UART goes quiet, and a healthy
+idle FC looks the same as a hung one. `Heartbeat_Task` logs one line every 5 s to tell them apart:
+
+```
+HB up=10s heap=10824 armed=0 mode=0 nav_valid=0x9 | hz imu=400 mag=100 baro=50 gps=0 rc=50
+nav=400 guid=400 mis=50 ctl=500 | gps fix=0 sats=0 | rc lq=0 | ctl init=0xf motors=disarmed mot_wr=0 srv_wr=0
+```
+
+**Liveness comes from publish rates, not from tasks reporting on themselves.** Every task that
+matters publishes once per loop, so the `hz` block is each task's loop rate. A task that stalled, or
+suspended itself after a failed init, reads 0 Hz. The rates come from umsg's per-topic publish
+counter (`umsg_<topic>_count()`), divided by the time that actually elapsed. The beat arriving on
+time proves only that the scheduler is not saturated, because the heartbeat runs at the lowest priority.
+
+| Field | Meaning |
+|---|---|
+| `up`, `heap` | Uptime in s; free heap in bytes. `heap_1` never frees, so this is also the low-water mark |
+| `armed`, `mode` | From `umsg_mission_state_t`; `mode` is the `umsg_mission_mode_t` value |
+| `nav_valid` | `umsg_nav_state_t.valid`, the NAV_VALID bits below (`0x9` = attitude + baro altitude) |
+| `hz ...` | Publish rate per topic: imu 400, mag 100, baro 50, rc 50, nav/guid 400, mis 50, ctl 500 nominal |
+| `gps fix`, `sats` | Last `umsg_sensors_gps_t` |
+| `rc lq` | `link_quality`: 100 link up, 0 down |
+| `ctl init` | `CONTROL_INIT_*` bits from `umsg_control_status_t`; see below |
+| `motors` | `disarmed` / `arming` (ESC handshake in progress) / `armed` |
+| `mot_wr`, `srv_wr` | Successful motor / servo writes per second; ~500 each when armed, 0 when disarmed |
+
+`ctl init` is a bitmask that `Control_Init` builds as each step succeeds: `0x1` motors, `0x2`
+servos, `0x4` mixer, `0x8` pid. `0xf` is fully initialized. `Control_Init` stops at the first
+failure, so the first clear bit is the step that failed, and every bit above it is clear because
+that step never ran. A failed servo init reads `0x1`.
+
+Blind spots:
+- **`gps=0` is ambiguous.** The GPS task publishes only while it has a fix, so 0 Hz means either no
+  lock or no GPS at all.
+- **Write counts mean "commanded", not "moving".** DShot telemetry is off and servo PWM is
+  open-loop, so nothing confirms that a motor spins or a servo moves. `mot_wr` stalling while
+  `motors=armed` does reliably mean the ESCs are not being driven.
+- **The first beat under-reads** the IMU chain (imu/nav/guid), because the IMU spends part of the
+  first 5 s in reset and self-calibration.
+- **Rates are exact only with one publisher per topic.** `umsg_publish` increments the counter
+  without a lock, so a topic published from two tasks, or from a task and an ISR, loses counts.
+  Every topic has a single publishing task today.
+
 ---
 
 ## FreeRTOS Task Pattern
@@ -267,6 +313,7 @@ Generated message structs are in `Firmware/msgs/umsg/`. The JSON definitions are
 | `umsg_nav.h` | `umsg_nav_state_t` | `quat[4]`, `euler[3]` (deg), `gyro[3]` (deg/s), `pos_ned[3]`, `vel_ned[3]`, `alt`, `valid` |
 | `umsg_mission.h` | `umsg_mission_state_t` | `mode` (`eMissionMode_t`), `target_pos[3]`, `target_heading`, `armed` |
 | `umsg_guidance.h` | `umsg_guidance_setpoints_t` | `w[3]` (rad/s), `vel_b[3]` (body vel, `[2]`=target altitude in m, or throttle 0–1 in passthrough), `climb_rate` (m/s, up +ve), `quat[4]` |
+| `umsg_control.h` | `umsg_control_status_t` | `init_ok` (`CONTROL_INIT_*` bits), `motor_state` (disarmed/arming/armed), `motor_writes`, `servo_writes` (running totals of successful writes) |
 
 ### Unit conventions
 
@@ -286,9 +333,12 @@ Generated into `msgs/umsg/umsg_nav.h` from the `valid` enum in
 | Bit | Macro | Meaning |
 |---|---|---|
 | 0 | `NAV_VALID_ATTITUDE` | Attitude (quat/euler) is valid — always set when IMU is running |
-| 1 | `NAV_VALID_POSITION` | `pos_ned` is valid — not yet implemented |
-| 2 | `NAV_VALID_VELOCITY` | `vel_ned` is valid — not yet implemented |
-| 3 | `NAV_VALID_BARO_ALT` | Baro altitude is valid — not yet implemented |
+| 1 | `NAV_VALID_POSITION` | `pos_ned[0..1]` (horizontal) is valid — set while GPS has a fix |
+| 2 | `NAV_VALID_VELOCITY` | `vel_ned[0..1]` (horizontal) is valid — set while GPS has a fix |
+| 3 | `NAV_VALID_BARO_ALT` | `alt`, `pos_ned[2]`, `vel_ned[2]` (vertical) are valid — set once the baro datum is taken |
+
+The flags split by sensor, not by vector: baro owns the vertical and GPS the horizontal, and either
+can be valid without the other (`nav.c`, where `msg.valid` is built).
 
 Guidance and Control must check `NAV_VALID_ATTITUDE` before using attitude data.
 
