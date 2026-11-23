@@ -1,0 +1,294 @@
+(kicad_sch
+	(version 20260306)
+	(generator "schgen")
+	(generator_version "10.0")
+	(uuid "c3c4206a-8437-5b34-a720-8a29af815565")
+	(paper "A3")
+	(title_block
+		(title "Flapjack V3 Sensor Board")
+		(rev "A")
+	)
+	(lib_symbols)
+	(rectangle
+		(start 12.7 45.72)
+		(end 100.96 63.5)
+		(stroke
+			(width 0)
+			(type dash)
+		)
+		(fill
+			(type none)
+		)
+		(uuid "d1dc8466-5fc4-52d4-a714-c9c295ba6370")
+	)
+	(text "Notes"
+		(exclude_from_sim no)
+		(at 16.51 49.32 0)
+		(effects
+			(font
+				(size 1.778 1.778)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "d40da24a-7313-5328-8037-0b31dfb58bb9")
+	)
+	(text "Flapjack V3 sensor board, 2-layer. Net names follow Design/V3/pinmap.md."
+		(exclude_from_sim no)
+		(at 16.51 54.61 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "eed74238-e7f1-5360-871a-da02369a70c3")
+	)
+	(text "Sheets: Stack, Sensors, USB Power, Debug Probe, IO."
+		(exclude_from_sim no)
+		(at 16.51 57.15 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "88a4a85e-c121-58c1-b641-5c1323651454")
+	)
+	(sheet
+		(at 12.7 17.78)
+		(size 50.8 20.32)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "18538fcc-64e7-5f4b-932e-1372760f0299")
+		(property "Sheetname" "Stack"
+			(at 12.7 17.08 0)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "stack.kicad_sch"
+			(at 12.7 38.7 0)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "sensor_brd"
+				(path "/c3c4206a-8437-5b34-a720-8a29af815565"
+					(page "2")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 76.2 17.78)
+		(size 50.8 20.32)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "dd278e5c-94d4-5bcb-b249-6dda79d67d91")
+		(property "Sheetname" "Sensors"
+			(at 76.2 17.08 0)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "sensors.kicad_sch"
+			(at 76.2 38.7 0)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "sensor_brd"
+				(path "/c3c4206a-8437-5b34-a720-8a29af815565"
+					(page "3")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 139.7 17.78)
+		(size 50.8 20.32)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "590cdc48-e955-5e1e-914f-ee97fcf1b6a2")
+		(property "Sheetname" "USB Power"
+			(at 139.7 17.08 0)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "usb_power.kicad_sch"
+			(at 139.7 38.7 0)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "sensor_brd"
+				(path "/c3c4206a-8437-5b34-a720-8a29af815565"
+					(page "4")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 203.2 17.78)
+		(size 50.8 20.32)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "dc84352b-afe6-5453-8876-411394937167")
+		(property "Sheetname" "Debug Probe"
+			(at 203.2 17.08 0)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "debug_probe.kicad_sch"
+			(at 203.2 38.7 0)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "sensor_brd"
+				(path "/c3c4206a-8437-5b34-a720-8a29af815565"
+					(page "5")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 266.7 17.78)
+		(size 50.8 20.32)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "19d61cfc-e623-593f-b556-07a1bb076de3")
+		(property "Sheetname" "IO"
+			(at 266.7 17.08 0)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "io.kicad_sch"
+			(at 266.7 38.7 0)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "sensor_brd"
+				(path "/c3c4206a-8437-5b34-a720-8a29af815565"
+					(page "6")
+				)
+			)
+		)
+	)
+	(sheet_instances
+		(path "/"
+			(page "1")
+		)
+	)
+	(embedded_fonts no)
+)

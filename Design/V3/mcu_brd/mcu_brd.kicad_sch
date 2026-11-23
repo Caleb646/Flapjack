@@ -1,0 +1,340 @@
+(kicad_sch
+	(version 20260306)
+	(generator "schgen")
+	(generator_version "10.0")
+	(uuid "b06d38ab-7d55-5b3f-b421-ba1b7f77f588")
+	(paper "A3")
+	(title_block
+		(title "Flapjack V3 MCU board")
+		(rev "A")
+	)
+	(lib_symbols)
+	(rectangle
+		(start 12.7 45.72)
+		(end 105.44 63.5)
+		(stroke
+			(width 0)
+			(type dash)
+		)
+		(fill
+			(type none)
+		)
+		(uuid "7026468f-9fc0-5656-b739-bfe180d32203")
+	)
+	(text "Notes"
+		(exclude_from_sim no)
+		(at 16.51 49.32 0)
+		(effects
+			(font
+				(size 1.778 1.778)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "f6932f7d-6496-5da2-bc3a-d1970c9a4178")
+	)
+	(text "Flapjack V3 MCU board. STM32H747BIT6, LDO-only core supply, 400 MHz at VOS1."
+		(exclude_from_sim no)
+		(at 16.51 54.61 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "96135319-a199-54ef-8d76-6060981fcfd0")
+	)
+	(text "Pin assignments and net names: Design/V3/pinmap.md."
+		(exclude_from_sim no)
+		(at 16.51 57.15 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "62c6a707-3d78-5ec3-89e0-095fd4bed3ae")
+	)
+	(sheet
+		(at 12.7 17.78)
+		(size 50.8 20.32)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "e8527781-c77e-5bfc-94bf-94ec5441f12e")
+		(property "Sheetname" "MCU Ports A-D"
+			(at 12.7 17.08 0)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "mcu_ports_ad.kicad_sch"
+			(at 12.7 38.7 0)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "mcu_brd"
+				(path "/b06d38ab-7d55-5b3f-b421-ba1b7f77f588"
+					(page "2")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 76.2 17.78)
+		(size 50.8 20.32)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "432c8fb1-8340-5ed3-abd4-36abfa5cbbf6")
+		(property "Sheetname" "MCU Ports E-H"
+			(at 76.2 17.08 0)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "mcu_ports_eh.kicad_sch"
+			(at 76.2 38.7 0)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "mcu_brd"
+				(path "/b06d38ab-7d55-5b3f-b421-ba1b7f77f588"
+					(page "3")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 139.7 17.78)
+		(size 50.8 20.32)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "01e90dbe-2696-5b3f-a219-8c049dda9bc8")
+		(property "Sheetname" "MCU System"
+			(at 139.7 17.08 0)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "mcu_system.kicad_sch"
+			(at 139.7 38.7 0)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "mcu_brd"
+				(path "/b06d38ab-7d55-5b3f-b421-ba1b7f77f588"
+					(page "4")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 203.2 17.78)
+		(size 50.8 20.32)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "89e0675e-6e86-5654-86ff-204c9b05e98c")
+		(property "Sheetname" "Power"
+			(at 203.2 17.08 0)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "power.kicad_sch"
+			(at 203.2 38.7 0)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "mcu_brd"
+				(path "/b06d38ab-7d55-5b3f-b421-ba1b7f77f588"
+					(page "5")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 266.7 17.78)
+		(size 50.8 20.32)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "a18627bd-1895-5495-8bf4-d6b5ba1dd373")
+		(property "Sheetname" "3V3 Buck"
+			(at 266.7 17.08 0)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "buck.kicad_sch"
+			(at 266.7 38.7 0)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "mcu_brd"
+				(path "/b06d38ab-7d55-5b3f-b421-ba1b7f77f588"
+					(page "6")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 330.2 17.78)
+		(size 50.8 20.32)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "a9e7cb17-d5b5-5383-86ed-8b265141c9cf")
+		(property "Sheetname" "Connectors"
+			(at 330.2 17.08 0)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "connectors.kicad_sch"
+			(at 330.2 38.7 0)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "mcu_brd"
+				(path "/b06d38ab-7d55-5b3f-b421-ba1b7f77f588"
+					(page "7")
+				)
+			)
+		)
+	)
+	(sheet_instances
+		(path "/"
+			(page "1")
+		)
+	)
+	(embedded_fonts no)
+)
