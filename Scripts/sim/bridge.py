@@ -111,6 +111,9 @@ PROP_PSI = "attitude/psi-rad"
 PROP_P = "velocities/p-rad_sec"
 PROP_Q = "velocities/q-rad_sec"
 PROP_R = "velocities/r-rad_sec"
+PROP_U = "velocities/u-fps"
+PROP_V = "velocities/v-fps"
+PROP_W = "velocities/w-fps"
 PROP_UDOT = "accelerations/udot-ft_sec2"
 PROP_VDOT = "accelerations/vdot-ft_sec2"
 PROP_WDOT = "accelerations/wdot-ft_sec2"
@@ -384,7 +387,7 @@ def dcm_body_from_ned(phi, theta, psi):
     )
 
 
-def synthesize_sensors(phi, theta, psi, p, q, r, udot, vdot, wdot):
+def synthesize_sensors(phi, theta, psi, p, q, r, u, v, w, udot, vdot, wdot):
     """Return (accel[3] m/s^2, gyro[3] deg/s, mag[3] gauss) in each part's DIE frame.
 
     Two conversions separate what a part reports from what the FC wants, and
@@ -405,7 +408,13 @@ def synthesize_sensors(phi, theta, psi, p, q, r, udot, vdot, wdot):
     R = dcm_body_from_ned(phi, theta, psi)
     # Body linear acceleration, minus gravity projected into body.
     g_body = (-G * math.sin(theta), G * math.sin(phi) * math.cos(theta), G * math.cos(phi) * math.cos(theta))
-    a_lin = (udot * FT2M, vdot * FT2M, wdot * FT2M)
+    # udot/vdot/wdot are derivatives seen from the rotating body frame. An
+    # accelerometer feels inertial acceleration, which adds omega x v. Without it
+    # a 54 deg/s turn at 7.6 m/s reads 7.2 m/s^2 of sideways force that JSBSim's
+    # own force total puts at zero.
+    a_lin = ((udot + q * w - r * v) * FT2M,
+             (vdot + r * u - p * w) * FT2M,
+             (wdot + p * v - q * u) * FT2M)
     accel = [a_lin[k] - g_body[k] for k in range(3)]
     gyro = [p * RAD2DEG, q * RAD2DEG, r * RAD2DEG]
     mag = [sum(R[k][j] * B_NED[j] for j in range(3)) for k in range(3)]
@@ -1535,7 +1544,7 @@ def main(argv=None):
         # --- step the model / synthesize attitude ---
         if args.dry_run:
             phi, theta, psi = math.radians(20.0), 0.0, 0.0
-            p = q = r = udot = vdot = wdot = 0.0
+            p = q = r = u = v = w = udot = vdot = wdot = 0.0
         else:
             # Frozen at the initial condition until the FC arms. Otherwise the
             # model spends the ~20 s the attitude estimate needs to settle
@@ -1560,11 +1569,12 @@ def main(argv=None):
                 # instead fed the FC free fall for the whole pre-arm window,
                 # which the altitude estimator faithfully integrated to -7.7 m/s
                 # before the first real step rescued it.
-                udot = vdot = wdot = 0.0
+                u = v = w = udot = vdot = wdot = 0.0
             else:
+                u = fdm[PROP_U]; v = fdm[PROP_V]; w = fdm[PROP_W]
                 udot = fdm[PROP_UDOT]; vdot = fdm[PROP_VDOT]; wdot = fdm[PROP_WDOT]
 
-        accel, gyro, mag = synthesize_sensors(phi, theta, psi, p, q, r, udot, vdot, wdot)
+        accel, gyro, mag = synthesize_sensors(phi, theta, psi, p, q, r, u, v, w, udot, vdot, wdot)
         # Same divergence guard the GPS path has below, and for the same reason:
         # a diverged FDM hands back inf/NaN, struct.pack("<f") RAISES on inf,
         # and that killed the bridge mid-run and took Checks.report() with it -

@@ -247,6 +247,40 @@ void test_AccelTrust_DoesNotOverrideMagnitudeGate (void) {
     TEST_ASSERT_FLOAT_WITHIN (0.001F, 0.0F, euler.x);
 }
 
+/*
+ * The bias is learned only on 9DOF updates, which nav.c runs at the mag's 100 Hz
+ * against a 400 Hz IMU. The 6DOF updates between them have to subtract it too,
+ * or three gyro samples in four integrate uncorrected.
+ */
+#define TEST_BIAS_DPS 10.0F
+
+void test_GyroBias_AppliedWithoutMagnetometer (void) {
+    MadgwickFilter_t filter;
+    Init (&filter, 1.0F);
+    filter.gbias.z = TEST_BIAS_DPS * (float)M_PI / 180.0F;
+
+    Vec3f accel = { ACCEL_LEVEL_X, ACCEL_LEVEL_Y, ACCEL_LEVEL_Z };
+    Vec3f gyro  = { 0.0F, 0.0F, TEST_BIAS_DPS };
+    Vec3f euler = { 0.0F, 0.0F, 0.0F };
+    for (int i = 0; i < TEST_STEPS; i++) {
+        TEST_ASSERT_EQUAL (eSTATUS_SUCCESS,
+                           MadgwickFilter_Update (&filter, &accel, &gyro, NULL, TEST_STEP_DT, &euler));
+    }
+    TEST_ASSERT_FLOAT_WITHIN (0.01F, 0.0F, euler.z);
+}
+
+// Both update paths read the bias, so a filter on the stack must not start with garbage.
+void test_Init_ClearsGyroBias (void) {
+    MadgwickFilter_t filter;
+    filter.gbias.x = 1.0F;
+    filter.gbias.y = -1.0F;
+    filter.gbias.z = 1.0F;
+    Init (&filter, 1.0F);
+    TEST_ASSERT_EQUAL_FLOAT (0.0F, filter.gbias.x);
+    TEST_ASSERT_EQUAL_FLOAT (0.0F, filter.gbias.y);
+    TEST_ASSERT_EQUAL_FLOAT (0.0F, filter.gbias.z);
+}
+
 int main (void) {
     UNITY_BEGIN ();
     RUN_TEST (test_AccelTrust_DefaultsToUnity);
@@ -256,5 +290,7 @@ int main (void) {
     RUN_TEST (test_AccelTrust_9DOF_SlowsAccelNotHeading);
     RUN_TEST (test_AccelTrust_9DOF_FullTrustConverges);
     RUN_TEST (test_AccelTrust_DoesNotOverrideMagnitudeGate);
+    RUN_TEST (test_GyroBias_AppliedWithoutMagnetometer);
+    RUN_TEST (test_Init_ClearsGyroBias);
     return UNITY_END ();
 }

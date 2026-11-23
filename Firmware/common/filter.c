@@ -53,9 +53,11 @@ static inline void MadgwickFilter_Update_6DOF_ (MadgwickFilter_t* pFilter, Vec3f
     float a_x  = pAccel->x;
     float a_y  = pAccel->y;
     float a_z  = pAccel->z;
-    float w_x  = DEG2RAD (pGyroDegs->x);
-    float w_y  = DEG2RAD (pGyroDegs->y);
-    float w_z  = DEG2RAD (pGyroDegs->z);
+    /* Learned only on the 9DOF updates, but those run at the mag's 100 Hz
+     * against a 400 Hz IMU, so most gyro samples integrate through here. */
+    float w_x  = DEG2RAD (pGyroDegs->x) - pFilter->gbias.x;
+    float w_y  = DEG2RAD (pGyroDegs->y) - pFilter->gbias.y;
+    float w_z  = DEG2RAD (pGyroDegs->z) - pFilter->gbias.z;
     float beta = pFilter->beta * pFilter->accelTrust;
 
     float SEq_1 = pFilter->qEst.q1;
@@ -414,6 +416,9 @@ eSTATUS_t MadgwickFilter_Init (MadgwickFilter_t* pFilter) {
     pFilter->bx               = 1.0F;
     pFilter->bz               = 0.0F;
     pFilter->accelTrust       = 1.0F;
+    pFilter->gbias.x          = 0.0F;
+    pFilter->gbias.y          = 0.0F;
+    pFilter->gbias.z          = 0.0F;
     pFilter->beta             = sqrtf (3.0F / 4.0F) * DEG2RAD (pFilter->cfg.gyroMeasureErrorDegs);
     pFilter->zeta             = sqrtf (3.0F / 4.0F) * DEG2RAD (pFilter->cfg.gyroMeasureDriftDegs);
     pFilter->qEst.q1          = 1.0F;

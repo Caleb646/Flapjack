@@ -173,17 +173,18 @@
  *
  * CUTOFF is the noise/lag balance and it was swept, not guessed. The receiver
  * reports velocity at 5 Hz with sigma = 0.1 m/s (SensorGps.xml), which
- * differences to 0.71 m/s^2 of noise against a ~2 m/s^2 signal:
+ * differences to 0.71 m/s^2 of noise against a ~2 m/s^2 signal. One run each of
+ * acceptance.yaml without long_trim_hold, tilt error against FDM truth:
  *
- *   cutoff Hz   max tilt injected   limited by
- *      0.05           4.4 - 7.3     lag
- *      0.10           2.5 - 4.4     lag
- *      0.20           1.8 - 2.6     balanced
- *      0.30           2.3 - 2.6     noise
- *      1.00                 5.0     noise
+ *   cutoff Hz   gates failed   tilt rms / max deg   limited by
+ *      0.20          9            1.32 / 5.01       lag
+ *      0.50          0            0.90 / 3.79       balanced
+ *      0.80          1            0.76 / 3.42       heading (5.75 deg in descend)
  *
- * Both ends were seen for real. At 1 Hz the vehicle departed and crashed in a
- * HOVER, where the true correction is zero, on differencing noise alone.
+ * An older sweep favoured 0.2 Hz and saw a 1 Hz cutoff depart in a hover, but
+ * its SIL accelerometer was missing omega x v, so only the warning carries over:
+ * do not raise this without re-flying it. At 0.3 m/s of velocity noise, heading
+ * reaches ~11 deg at both 0.2 and 0.5 Hz, so that fault is not this cutoff's.
  *
  * MIN_SPEED: the error is (b/mg)*v and vanishes as the vehicle stops
  * translating, while the noise does not. Below this there is nothing to correct
@@ -194,7 +195,7 @@
  * DISABLES the correction rather than clipping it, because clipping would
  * quietly keep applying a bad direction at a legal size.
  */
-#define CFG_NAV_TRANS_ACCEL_CUTOFF_HZ        0.2F
+#define CFG_NAV_TRANS_ACCEL_CUTOFF_HZ        0.5F
 #define CFG_NAV_TRANS_ACCEL_MIN_SPEED_MPS    1.0F
 #define CFG_NAV_TRANS_ACCEL_MAX_MPS2         8.0F
 
