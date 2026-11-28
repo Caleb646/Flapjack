@@ -38,7 +38,6 @@
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/Firmware",
                 "${workspaceFolder}/Firmware/target",
-                "${workspaceFolder}/Firmware/inc",
                 "${workspaceFolder}/Firmware/msgs/proto",
                 "${workspaceFolder}/Firmware/msgs/umsg",
                 "${workspaceFolder}/Firmware/platform",
@@ -58,7 +57,7 @@
                 "USE_PWR_LDO_SUPPLY",
                 "BOARD_FLAPJACK_V1"
         ],
-            "compilerPath": "${workspaceFolder}/Tools/arm-gnu/bin/arm-none-eabi-gcc",
+            "compilerPath": "${workspaceFolder}/Tools/msys/ucrt64/bin/arm-none-eabi-gcc",
             "cStandard": "c11",
             "intelliSenseMode": "gcc-arm",
             "configurationProvider": "none"
