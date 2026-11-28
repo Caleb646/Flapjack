@@ -4,7 +4,7 @@ Flapjack tooling CLI (single entry point for the project's Python tools).
 
 Commands
 --------
-  install           Install SDK tools (ARM GCC, LLVM, OpenOCD)
+  install           Install SDK tools (ARM GCC, LLVM, OpenOCD; Renode on Windows)
   build             Configure and build firmware
   flash             Flash firmware; optionally run HIL tests
   gen               Regenerate protobuf + umsg sources (no toolchain/build)
@@ -50,6 +50,7 @@ import sys
 import tarfile
 import time
 import urllib.request
+import zipfile
 from pathlib import Path
 
 # ── Project paths ──────────────────────────────────────────────────────────────
@@ -102,7 +103,11 @@ if PLATFORM == "win32":
 MSYS_DIR            = TOOLS_ROOT / "msys"
 MSYS_EXE_FNAME      = "msys2-x86_64-20250830.exe"
 MSYS_EXE_URL        = f"https://repo.msys2.org/distrib/x86_64/{MSYS_EXE_FNAME}"
-MINGW64_BIN         = MSYS_DIR / "mingw64" / "bin"
+UCRT64_BIN          = MSYS_DIR / "ucrt64" / "bin"
+
+# Windows — Renode (portable)
+RENODE_ZIP          = "renode-latest.windows-portable.zip"
+RENODE_URL          = f"https://builds.renode.io/{RENODE_ZIP}"
 
 # Linux — ARM GNU (xPack)
 ARM_GNU_VERSION = "15.2.1-1.1"
@@ -140,8 +145,8 @@ _HOST_ARM_BIN    = ARM_GNU_BIN
 _OPENOCD_PATH    = OPENOCD_BIN / "openocd"
 _CMAKE_GENERATOR = "Unix Makefiles"
 if PLATFORM == "win32":
-    _HOST_ARM_BIN    = MINGW64_BIN
-    _OPENOCD_PATH    = MINGW64_BIN / "openocd.exe"
+    _HOST_ARM_BIN    = UCRT64_BIN
+    _OPENOCD_PATH    = UCRT64_BIN / "openocd.exe"
     _CMAKE_GENERATOR = "MinGW Makefiles"
 
 # ── OpenOCD flash constants ────────────────────────────────────────────────────
@@ -166,9 +171,32 @@ def _run_msys(command: str, error_msg: str) -> None:
         sys.exit(1)
 
 
+def _install_msys_packages() -> None:
+    # All Windows tools come from the UCRT64 environment. MINGW64 dropped
+    # mingw-w64-x86_64-arm-none-eabi-gcc in mid-2026.
+    _run_msys("pacman --noconfirm -Syuu", "MSYS2 core update failed")
+    _run_msys("pacman -S --needed --noconfirm base-devel", "Failed to install dev tools")
+    _run_msys("pacman -S --needed --noconfirm mingw-w64-ucrt-x86_64-toolchain", "Failed to install UCRT64 toolchain")
+    # mingw32-make is not part of the toolchain group.
+    _run_msys("pacman -S --needed --noconfirm mingw-w64-ucrt-x86_64-make", "Failed to install mingw32-make")
+    _run_msys("pacman -S --needed --noconfirm mingw-w64-ucrt-x86_64-arm-none-eabi-gcc", "Failed to install ARM GCC")
+    _run_msys("pacman -S --needed --noconfirm mingw-w64-ucrt-x86_64-clang", "Failed to install Clang")
+    _run_msys("pacman -S --needed --noconfirm mingw-w64-ucrt-x86_64-clang-tools-extra", "Failed to install Clang-tidy")
+    _run_msys("pacman -S --needed --noconfirm mingw-w64-ucrt-x86_64-openocd", "Failed to install OpenOCD")
+
+
 def _install_msys() -> None:
     if MSYS_DIR.is_dir():
-        print(f"MSYS2 already installed at: {MSYS_DIR}")
+        required = [UCRT64_BIN / "mingw32-make.exe",
+                    UCRT64_BIN / "arm-none-eabi-gcc.exe",
+                    UCRT64_BIN / "openocd.exe"]
+        if all(p.exists() for p in required):
+            print(f"MSYS2 already installed at: {MSYS_DIR}")
+            return
+        # Existing install from before the UCRT64 switch (tools under mingw64/).
+        print(f"MSYS2 found at {MSYS_DIR}, but UCRT64 tools are missing. Installing …")
+        _install_msys_packages()
+        print("MSYS2 UCRT64 packages installed.")
         return
 
     print("MSYS2 not found. Downloading and installing …")
@@ -190,13 +218,7 @@ def _install_msys() -> None:
         sys.exit(1)
 
     _run_msys(":", "MSYS2 initialization failed")
-    _run_msys("pacman --noconfirm -Syuu", "MSYS2 core update failed")
-    _run_msys("pacman -S --needed --noconfirm base-devel", "Failed to install dev tools")
-    _run_msys("pacman -S --needed --noconfirm mingw-w64-x86_64-toolchain", "Failed to install MinGW toolchain")
-    _run_msys("pacman -S --needed --noconfirm mingw-w64-x86_64-arm-none-eabi-gcc", "Failed to install ARM GCC")
-    _run_msys("pacman -S --needed --noconfirm mingw-w64-x86_64-clang", "Failed to install Clang")
-    _run_msys("pacman -S --needed --noconfirm mingw-w64-x86_64-clang-tools-extra", "Failed to install Clang-tidy")
-    _run_msys("pacman -S --needed --noconfirm mingw-w64-x86_64-openocd", "Failed to install OpenOCD")
+    _install_msys_packages()
     print("MSYS2 installation complete.")
 
 
@@ -206,17 +228,17 @@ def _download_progress(block_num: int, block_size: int, total_size: int) -> None
         print(f"\r  {pct}%", end="", flush=True)
 
 
-def _download_and_extract(url: str, tarball: str, dest: Path, label: str) -> None:
+def _download_and_extract(url: str, archive: str, dest: Path, label: str) -> None:
     if dest.is_dir():
         print(f"{label} already installed at: {dest}")
         return
 
     TOOLS_ROOT.mkdir(parents=True, exist_ok=True)
-    tarball_path = TOOLS_ROOT / tarball
+    archive_path = TOOLS_ROOT / archive
 
     print(f"Downloading {label} …\n  {url}")
     try:
-        urllib.request.urlretrieve(url, tarball_path, reporthook=_download_progress)
+        urllib.request.urlretrieve(url, archive_path, reporthook=_download_progress)
         print()
     except Exception as e:
         print(f"\nERROR: Failed to download {label}: {e}")
@@ -224,17 +246,31 @@ def _download_and_extract(url: str, tarball: str, dest: Path, label: str) -> Non
 
     print(f"Extracting {label} …")
     try:
-        with tarfile.open(tarball_path) as tf:
-            top_level = tf.getnames()[0].split("/")[0]
-            tf.extractall(TOOLS_ROOT)
+        if archive.endswith(".zip"):
+            with zipfile.ZipFile(archive_path) as zf:
+                top_level = zf.namelist()[0].split("/")[0]
+                zf.extractall(TOOLS_ROOT)
+        else:
+            with tarfile.open(archive_path) as tf:
+                top_level = tf.getnames()[0].split("/")[0]
+                tf.extractall(TOOLS_ROOT)
     except Exception as e:
         print(f"ERROR: Failed to extract {label}: {e}")
         sys.exit(1)
 
     extracted = TOOLS_ROOT / top_level
     if extracted != dest:
-        extracted.rename(dest)
-    tarball_path.unlink()
+        # Antivirus scanning the freshly extracted files holds them open for a
+        # moment on Windows, so an immediate rename fails with "Access is denied".
+        for attempt in range(10):
+            try:
+                extracted.rename(dest)
+                break
+            except PermissionError:
+                if attempt == 9:
+                    raise
+                time.sleep(1)
+    archive_path.unlink()
     print(f"Done: {label} installed at {dest}")
 
 
@@ -261,12 +297,13 @@ def _verify_install() -> bool:
     if PLATFORM == "win32":
         return _check_paths({
             "MSYS2":          MSYS_DIR,
-            "MinGW64 bin":    MINGW64_BIN,
-            "mingw32-make":   MINGW64_BIN / "mingw32-make.exe",
-            "ARM GCC":        MINGW64_BIN / f"{pfx}-gcc.exe",
-            "ARM G++":        MINGW64_BIN / f"{pfx}-g++.exe",
-            "ARM objcopy":    MINGW64_BIN / f"{pfx}-objcopy.exe",
-            "ARM size":       MINGW64_BIN / f"{pfx}-size.exe",
+            "UCRT64 bin":     UCRT64_BIN,
+            "mingw32-make":   UCRT64_BIN / "mingw32-make.exe",
+            "ARM GCC":        UCRT64_BIN / f"{pfx}-gcc.exe",
+            "ARM G++":        UCRT64_BIN / f"{pfx}-g++.exe",
+            "ARM objcopy":    UCRT64_BIN / f"{pfx}-objcopy.exe",
+            "ARM size":       UCRT64_BIN / f"{pfx}-size.exe",
+            "Renode":         RENODE_DIR / "renode.exe",
         })
     return _check_paths({
         "ARM GNU toolchain":     ARM_GNU_DIR,
@@ -287,6 +324,7 @@ def cmd_install(_: argparse.Namespace) -> None:
     print(f"Flapjack SDK Install  |  platform: {PLATFORM}  |  root: {PROJECT_ROOT}\n")
     if PLATFORM == "win32":
         _install_msys()
+        _download_and_extract(RENODE_URL, RENODE_ZIP, RENODE_DIR, "Renode")
     elif PLATFORM.startswith("linux"):
         _install_linux()
     else:
@@ -358,8 +396,8 @@ def _generate_umsg() -> None:
 
 def _verify_toolchain() -> None:
     if PLATFORM == "win32":
-        missing = [str(MINGW64_BIN), str(MINGW64_BIN / "mingw32-make.exe"),
-                   str(MINGW64_BIN / "arm-none-eabi-gcc.exe")]
+        missing = [str(UCRT64_BIN), str(UCRT64_BIN / "mingw32-make.exe"),
+                   str(UCRT64_BIN / "arm-none-eabi-gcc.exe")]
     else:
         missing = [str(ARM_GNU_BIN), str(ARM_GNU_BIN / "arm-none-eabi-gcc")]
 

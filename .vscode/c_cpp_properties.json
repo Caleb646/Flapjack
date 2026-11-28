@@ -26,7 +26,7 @@
                 "USE_PWR_LDO_SUPPLY",
                 "BOARD_FLAPJACK_V1"
         ],
-            "compilerPath": "${workspaceFolder}/Tools/msys/mingw64/bin/arm-none-eabi-gcc.exe",
+            "compilerPath": "${workspaceFolder}/Tools/msys/ucrt64/bin/arm-none-eabi-gcc.exe",
             "cStandard": "c11",
             "intelliSenseMode": "gcc-arm",
             "configurationProvider": "none"
